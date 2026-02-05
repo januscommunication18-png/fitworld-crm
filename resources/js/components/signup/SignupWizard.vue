@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full max-w-2xl mx-auto">
+    <div class="w-full max-w-[500px] mx-auto">
         <!-- Progress bar (steps 2-8) -->
         <ProgressBar v-if="currentStep >= 2 && currentStep <= 8" :current-step="currentStep" :total-steps="8" />
 

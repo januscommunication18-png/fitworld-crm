@@ -1,5 +1,5 @@
 <template>
-    <div class="card">
+    <div class="card w-[500px]">
         <div class="card-body text-center py-16">
             <div class="mb-6">
                 <span class="icon-[tabler--rocket] size-16 text-primary"></span>

@@ -1,5 +1,5 @@
 <template>
-    <div class="card">
+    <div class="card w-[500px]">
         <div class="card-body text-center py-12">
             <div class="mb-6">
                 <span class="icon-[tabler--mail-check] size-16 text-primary"></span>
