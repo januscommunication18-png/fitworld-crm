@@ -16,10 +16,12 @@
             </div>
 
             <div class="flex flex-col items-center gap-3">
-                <button type="button" class="btn btn-primary" @click="$emit('next')">
-                    Continue Setup <span class="icon-[tabler--arrow-right] size-4"></span>
+                <button type="button" class="btn btn-primary" :disabled="loading" @click="$emit('next')">
+                    <span v-if="loading" class="loading loading-spinner loading-xs"></span>
+                    <template v-else>Continue Setup <span class="icon-[tabler--arrow-right] size-4"></span></template>
                 </button>
-                <button type="button" class="link link-primary text-sm no-underline" @click="resendEmail" :disabled="resendCooldown > 0">
+                <button type="button" class="link link-primary text-sm no-underline"
+                    @click="handleResend" :disabled="resendCooldown > 0">
                     {{ resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend verification email' }}
                 </button>
             </div>
@@ -43,11 +45,12 @@ const props = defineProps({
     errors: { type: Object, default: () => ({}) },
 })
 
-defineEmits(['next', 'prev', 'update'])
+const emit = defineEmits(['next', 'prev', 'update', 'resend-email'])
 
 const resendCooldown = ref(0)
 
-function resendEmail() {
+function handleResend() {
+    emit('resend-email')
     resendCooldown.value = 60
     const timer = setInterval(() => {
         resendCooldown.value--

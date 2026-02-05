@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('hosts', function (Blueprint $table) {
             $table->id();
             $table->string('studio_name');
-            $table->string('subdomain')->unique();
+            $table->string('subdomain')->nullable()->unique();
             $table->json('studio_types')->nullable();
             $table->string('city')->nullable();
             $table->string('timezone')->default('America/New_York');

@@ -7,21 +7,25 @@
             <form @submit.prevent="handleSubmit" class="space-y-4">
                 <div>
                     <label class="label-text" for="address">Studio Address</label>
-                    <input id="address" type="text" class="input w-full" v-model="localData.address"
-                        placeholder="123 Main St, Austin, TX 78701" />
+                    <input id="address" type="text" class="input w-full" :class="{ 'input-error': errors.address }"
+                        v-model="localData.address" placeholder="123 Main St, Austin, TX 78701" />
+                    <p v-if="errors.address" class="text-error text-xs mt-1">{{ errors.address[0] }}</p>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="rooms">Number of Rooms</label>
-                        <input id="rooms" type="number" class="input w-full" v-model.number="localData.rooms"
-                            min="1" max="20" />
+                        <input id="rooms" type="number" class="input w-full" :class="{ 'input-error': errors.rooms }"
+                            v-model.number="localData.rooms" min="1" max="20" />
+                        <p v-if="errors.rooms" class="text-error text-xs mt-1">{{ errors.rooms[0] }}</p>
                     </div>
                     <div>
                         <label class="label-text" for="default_capacity">Default Capacity</label>
-                        <input id="default_capacity" type="number" class="input w-full" v-model.number="localData.default_capacity"
-                            min="1" max="200" />
-                        <p class="text-xs text-base-content/50 mt-1">Max students per class</p>
+                        <input id="default_capacity" type="number" class="input w-full" :class="{ 'input-error': errors.default_capacity }"
+                            v-model.number="localData.default_capacity" min="1" max="200" />
+                        <p class="text-xs mt-1" :class="errors.default_capacity ? 'text-error' : 'text-base-content/50'">
+                            {{ errors.default_capacity ? errors.default_capacity[0] : 'Max students per class' }}
+                        </p>
                     </div>
                 </div>
 
@@ -42,8 +46,9 @@
                     <button type="button" class="btn btn-ghost" @click="$emit('prev')">
                         <span class="icon-[tabler--arrow-left] size-4"></span> Back
                     </button>
-                    <button type="submit" class="btn btn-primary">
-                        Continue <span class="icon-[tabler--arrow-right] size-4"></span>
+                    <button type="submit" class="btn btn-primary" :disabled="loading">
+                        <span v-if="loading" class="loading loading-spinner loading-xs"></span>
+                        <template v-else>Continue <span class="icon-[tabler--arrow-right] size-4"></span></template>
                     </button>
                 </div>
             </form>

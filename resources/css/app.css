@@ -7,7 +7,59 @@
 @import "@tabler/icons-webfont/dist/tabler-icons.min.css";
 @import "flyonui/src/vendor/flatpickr.css";
 @import "flyonui/src/vendor/fullcalendar.css";
+@import "notyf/notyf.min.css";
 @import "flyonui/src/vendor/notyf.css";
 @plugin "flyonui/theme" {
     themes: light, dark;
+}
+
+/* ── Layout wrapper ────────────────────────────────────────── */
+#layout-wrapper { display: flex; min-height: 100vh; }
+
+/* ── Sidebar transitions ─────────────────────────────────── */
+#main-sidebar {
+    transition: width 0.3s ease, min-width 0.3s ease, transform 0.3s ease;
+    width: 256px;
+    min-width: 256px;
+}
+#main-sidebar.collapsed { width: 68px; min-width: 68px; }
+#main-sidebar.collapsed .sidebar-label,
+#main-sidebar.collapsed .sidebar-section-label,
+#main-sidebar.collapsed .sidebar-chevron { display: none; }
+#main-sidebar.collapsed .sidebar-submenu { display: none !important; }
+#main-sidebar.collapsed .sidebar-footer-detail { display: none; }
+#main-sidebar.collapsed .sidebar-logo-text { display: none; }
+
+/* Content column fills remaining space */
+#main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* Active nav item */
+.nav-item.active > a,
+.nav-item.active > button {
+    background-color: oklch(var(--p) / 0.1);
+    color: oklch(var(--p));
+}
+
+/* Submenu animation */
+.sidebar-submenu { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.sidebar-submenu.open { max-height: 500px; }
+
+/* Chevron rotation when submenu is open (JS adds .open) */
+li:has(> .sidebar-submenu.open) > button .sidebar-chevron { transform: rotate(180deg); }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1023px) {
+    #main-sidebar {
+        transform: translateX(-100%);
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: 40;
+    }
+    #main-sidebar.mobile-open { transform: translateX(0); }
+    #sidebar-backdrop.show { display: block; }
+}
+@media (min-width: 1024px) {
+    #sidebar-backdrop { display: none !important; }
 }

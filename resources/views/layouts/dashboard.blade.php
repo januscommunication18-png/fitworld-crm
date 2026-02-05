@@ -12,24 +12,35 @@
 </head>
 <body class="bg-base-200 min-h-screen">
 
-    {{-- Navbar --}}
-    @include('components.navbar')
+    {{-- Mobile sidebar backdrop --}}
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-black/50 z-30 hidden" onclick="window.FitCRM.closeMobileSidebar()"></div>
 
-    {{-- Sidebar --}}
-    @include('components.sidebar')
+    {{-- Layout wrapper: two-column flex --}}
+    <div id="layout-wrapper">
 
-    {{-- Main content wrapper — shifts when sidebar is open --}}
-    <div class="sm:overlay-layout-open:ps-64 overlay-layout-open-minified:ps-17 min-h-[calc(100vh-64px)] transition-all duration-300">
-        <main class="p-4 sm:p-6">
-            {{-- Breadcrumbs --}}
-            @include('components.breadcrumbs')
+        {{-- Column 1: Sidebar --}}
+        @include('components.sidebar')
 
-            {{-- Page content --}}
-            @yield('content')
-        </main>
+        {{-- Column 2: Main content --}}
+        <div id="main-content">
 
-        {{-- Footer --}}
-        @include('components.footer')
+            {{-- Toolbar --}}
+            @include('components.navbar')
+
+            {{-- Scrollable content area --}}
+            <div id="content-area" class="flex-1 overflow-y-auto">
+                <div class="p-6">
+                    {{-- Breadcrumbs --}}
+                    @include('components.breadcrumbs')
+
+                    {{-- Page content --}}
+                    @yield('content')
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            @include('components.footer')
+        </div>
     </div>
 
     {{-- Overlays --}}

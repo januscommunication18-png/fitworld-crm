@@ -8,26 +8,30 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="first_name">First Name</label>
-                        <input id="first_name" type="text" class="input w-full" v-model="localData.first_name"
-                            placeholder="Jane" required />
+                        <input id="first_name" type="text" class="input w-full" :class="{ 'input-error': errors.first_name }"
+                            v-model="localData.first_name" @input="localData.first_name = stripNumbers(localData.first_name)" placeholder="Jane" required />
+                        <p v-if="errors.first_name" class="text-error text-xs mt-1">{{ errors.first_name[0] }}</p>
                     </div>
                     <div>
                         <label class="label-text" for="last_name">Last Name</label>
-                        <input id="last_name" type="text" class="input w-full" v-model="localData.last_name"
-                            placeholder="Smith" required />
+                        <input id="last_name" type="text" class="input w-full" :class="{ 'input-error': errors.last_name }"
+                            v-model="localData.last_name" @input="localData.last_name = stripNumbers(localData.last_name)" placeholder="Smith" required />
+                        <p v-if="errors.last_name" class="text-error text-xs mt-1">{{ errors.last_name[0] }}</p>
                     </div>
                 </div>
 
                 <div>
                     <label class="label-text" for="email">Email</label>
-                    <input id="email" type="email" class="input w-full" v-model="localData.email"
-                        placeholder="jane@yourstudio.com" required />
+                    <input id="email" type="email" class="input w-full" :class="{ 'input-error': errors.email }"
+                        v-model="localData.email" placeholder="jane@yourstudio.com" required />
+                    <p v-if="errors.email" class="text-error text-xs mt-1">{{ errors.email[0] }}</p>
                 </div>
 
                 <div>
                     <label class="label-text" for="password">Password</label>
-                    <input id="password" type="password" class="input w-full" v-model="localData.password"
-                        placeholder="Create a strong password" required />
+                    <input id="password" type="password" class="input w-full" :class="{ 'input-error': errors.password }"
+                        v-model="localData.password" placeholder="Create a strong password" required />
+                    <p v-if="errors.password" class="text-error text-xs mt-1">{{ errors.password[0] }}</p>
                     <PasswordStrength :password="localData.password" />
                 </div>
 
@@ -50,8 +54,9 @@
                     <button type="button" class="btn btn-ghost" @click="$emit('prev')">
                         <span class="icon-[tabler--arrow-left] size-4"></span> Back
                     </button>
-                    <button type="submit" class="btn btn-primary" :disabled="!isValid">
-                        Continue <span class="icon-[tabler--arrow-right] size-4"></span>
+                    <button type="submit" class="btn btn-primary" :disabled="!isValid || loading">
+                        <span v-if="loading" class="loading loading-spinner loading-xs"></span>
+                        <template v-else>Continue <span class="icon-[tabler--arrow-right] size-4"></span></template>
                     </button>
                 </div>
             </form>
@@ -79,6 +84,10 @@ const localData = reactive({
     password: props.formData.password,
     is_studio_owner: props.formData.is_studio_owner,
 })
+
+function stripNumbers(value) {
+    return value.replace(/[0-9]/g, '')
+}
 
 const isValid = computed(() => {
     return localData.first_name && localData.last_name && localData.email && localData.password.length >= 8

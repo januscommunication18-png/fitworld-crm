@@ -80,6 +80,22 @@
 - **Reasoning:** Better perceived performance. Layout doesn't shift when data loads. Professional feel.
 - **Consequences:** Every Vue component that fetches data must have a `loading` state with skeleton markup.
 
+### ADR-007: Manual Auth (Not Laravel Breeze)
+
+- **Status:** Accepted
+- **Context:** Need login/logout for host dashboard. Breeze scaffolds its own views/controllers that conflict with FlyonUI layout.
+- **Decision:** Manual `AuthController` with `showLogin()`, `login()`, `logout()` methods. Custom login Blade page using FlyonUI components.
+- **Reasoning:** Breeze would overwrite the existing layout and introduce Tailwind-only components. Manual auth is simpler and keeps FlyonUI consistency.
+- **Consequences:** No password reset or registration via Breeze. Signup handles registration. Password reset to be built manually later.
+
+### ADR-008: Progressive Per-Step Signup Save
+
+- **Status:** Accepted
+- **Context:** Signup wizard has 9 steps. Need to decide whether to save all data at the end or progressively per-step.
+- **Decision:** Progressive per-step save. Account (User + Host) created at Step 2. Steps 3-8 update the Host record via authenticated API calls. Step 9 marks onboarding complete.
+- **Reasoning:** Prevents data loss if user abandons mid-flow. Enables resume-from-where-you-left-off. Each step validates independently.
+- **Consequences:** API endpoints need Sanctum auth for Steps 3-9. Step 2 is public. Re-save pattern (delete + recreate) used for instructors/classes to handle users going back.
+
 ---
 
 ## 2. Feature Plans
@@ -102,12 +118,12 @@
 
 ### FEAT-001: Signup / Onboarding Wizard (9 Steps)
 
-- **Status:** Completed (frontend scaffolding)
+- **Status:** Completed (frontend + backend)
 - **Priority:** P0 (critical)
 - **Description:** 9-step signup wizard for studio owners at `/signup`
 - **User Story:** As a studio owner, I want to create my account and configure my studio in a guided flow so that I can start using FitCRM quickly.
-- **Affected Areas:** `routes/web.php`, `SignupController`, `signup.blade.php`, 12 Vue components under `resources/js/components/signup/`
-- **Dependencies:** Laravel scaffold, Vite + Vue build pipeline
+- **Affected Areas:** `routes/web.php`, `routes/api.php`, `SignupController` (web + API), `signup.blade.php`, 12 Vue components under `resources/js/components/signup/`, 5 Form Request classes
+- **Dependencies:** Laravel scaffold, Vite + Vue build pipeline, Sanctum
 - **Approach:**
   - Standalone Blade page (no dashboard layout) loads `signup.js` Vue entrypoint
   - `SignupWizard.vue` orchestrates all 9 steps via `currentStep` ref and dynamic `<component :is="...">`
@@ -115,7 +131,10 @@
   - `ProgressBar.vue` shows progress for steps 2-8
   - `PasswordStrength.vue` provides real-time password validation with 4 rules + colored meter
   - Steps: Welcome → Account → Email Verify → Studio Basics → Location → Instructors → Class Setup → Payments → Go Live
-- **Open Questions:** API endpoints not yet implemented (step data saved client-side only for now)
+  - **Backend:** 9 API endpoints under `/api/v1/signup/` with progressive per-step saving (ADR-008)
+  - **Frontend-Backend wiring:** `SignupWizard.vue` calls API on each `nextStep()`, displays server errors under fields, shows loading states, uses Notyf toasts for feedback
+  - **Subdomain check:** Step 4 has debounced availability check with green/red indicator
+  - **Completion:** Step 9 calls `/signup/complete` which sets `is_live = true`, dispatches `HostOnboardingCompleted` event, then redirects to dashboard
 - **Notes:** Step 3 (Email Verification) is non-blocking — users can continue setup without verifying email
 
 ### FEAT-002: Dashboard Layout
@@ -135,6 +154,34 @@
   - Content wrapper uses `sm:overlay-layout-open:ps-64 overlay-layout-open-minified:ps-17` for responsive padding
   - Active sidebar items determined by `request()->is()` Blade directive
 - **Notes:** All components are static HTML/Blade. JavaScript interactivity handled by FlyonUI's built-in JS.
+
+### FEAT-003: Authentication System
+
+- **Status:** Completed
+- **Priority:** P0 (critical)
+- **Description:** Manual login/logout for host dashboard with route protection
+- **User Story:** As a studio owner, I want to log in securely so that only I can access my dashboard.
+- **Affected Areas:** `AuthController`, `login.blade.php`, `routes/web.php`, `navbar.blade.php`, `sidebar.blade.php`
+- **Approach:**
+  - Manual `AuthController` with `showLogin()`, `login()`, `logout()` (ADR-007)
+  - Standalone login page (not dashboard layout), centered card, FlyonUI styled
+  - `guest` middleware on login/signup routes, `auth` middleware on all dashboard routes
+  - Navbar shows `Auth::user()->full_name` and `Auth::user()->email`, POST logout form with CSRF
+  - Sidebar submenu items use `request()->is()` for active state detection
+
+### FEAT-004: Dashboard Navigation Pages (10 pages)
+
+- **Status:** Completed (shell pages with skeletons)
+- **Priority:** P1 (high)
+- **Description:** All sidebar navigation links resolve to real Blade pages with proper layout, breadcrumbs, and skeleton loading
+- **User Story:** As a studio owner, I want to navigate to all sections of my dashboard so I can manage my studio.
+- **Affected Areas:** 6 controllers, 10 Blade views, `routes/web.php`
+- **Approach:**
+  - Each page extends `layouts.dashboard` with breadcrumbs, skeleton loading, and empty states
+  - Pages: Class Schedule, Appointments, Calendar, Students, Instructors, Transactions, Memberships, Class Packs, Reports, Settings
+  - Controllers: `ScheduleController`, `StudentController`, `InstructorController`, `PaymentController`, `ReportController`, `SettingsController`
+  - Settings page displays real `Auth::user()->host` data
+  - Dashboard page shows dynamic counts (classes, instructors), personalized welcome, onboarding prompt
 
 <!-- Add feature plans below this line -->
 
@@ -212,19 +259,19 @@ Tables (planned):
 - Laravel API resources for response formatting
 - Sanctum for API authentication (if needed for Vue components)
 
-### Signup API Endpoints (Planned)
+### Signup API Endpoints (Implemented)
 
-| Method | Endpoint | Purpose | Status |
-|--------|----------|---------|--------|
-| `POST` | `/api/signup/register` | Create account (Step 2) | Planned |
-| `POST` | `/api/signup/verify-email` | Resend verification email (Step 3) | Planned |
-| `POST` | `/api/signup/studio` | Save studio basics (Step 4) | Planned |
-| `GET`  | `/api/signup/subdomain-check` | Check subdomain availability (Step 4) | Planned |
-| `POST` | `/api/signup/location` | Save location & space (Step 5) | Planned |
-| `POST` | `/api/signup/instructors` | Save instructor setup (Step 6) | Planned |
-| `POST` | `/api/signup/classes` | Save first class (Step 7) | Planned |
-| `POST` | `/api/signup/payments` | Save payment preferences (Step 8) | Planned |
-| `POST` | `/api/signup/complete` | Mark onboarding complete (Step 9) | Planned |
+| Method | Endpoint | Auth | Purpose | Status |
+|--------|----------|------|---------|--------|
+| `POST` | `/api/v1/signup/register` | Public | Create User + Host (Step 2) | Implemented |
+| `POST` | `/api/v1/signup/verify-email` | Sanctum | Resend verification email (Step 3) | Implemented |
+| `GET`  | `/api/v1/signup/subdomain-check` | Public | Check subdomain availability (Step 4) | Implemented |
+| `POST` | `/api/v1/signup/studio` | Sanctum | Save studio basics (Step 4) | Implemented |
+| `POST` | `/api/v1/signup/location` | Sanctum | Save location & space (Step 5) | Implemented |
+| `POST` | `/api/v1/signup/instructors` | Sanctum | Save instructor setup (Step 6) | Implemented |
+| `POST` | `/api/v1/signup/classes` | Sanctum | Save first class (Step 7) | Implemented |
+| `POST` | `/api/v1/signup/payments` | Sanctum | Save payment preferences (Step 8) | Implemented |
+| `POST` | `/api/v1/signup/complete` | Sanctum | Mark onboarding complete (Step 9) | Implemented |
 
 <!-- Add API endpoint plans below -->
 
@@ -261,6 +308,14 @@ Tables (planned):
 | `Step7ClassSetup.vue` | Class form or "skip" toggle |
 | `Step8Payments.vue` | Stripe connect card or "skip" checkbox |
 | `Step9GoLive.vue` | Summary card + celebration + dashboard CTA |
+
+### Shared JS Utilities (Implemented)
+
+| File | Purpose |
+|---|---|
+| `resources/js/utils/api.js` | Axios client with baseURL `/api/v1`, CSRF interceptor, 401→login redirect, `setAuthToken()` export |
+| `resources/js/utils/toast.js` | Notyf wrapper with success/error/warning/info methods, top-right position |
+| `resources/js/utils/debounce.js` | Standard debounce utility function |
 
 ### Shared Vue Components (Planned)
 
@@ -303,7 +358,7 @@ Tables (planned):
 | Q3 | Email provider? | SendGrid vs Mailgun vs Amazon SES | Open |
 | Q4 | Studio types: DB-managed or hardcoded? | Step 4 currently hardcodes list in Vue; `studio_types` migration exists | Open — need admin seeder |
 | Q5 | Tenant scoping middleware? | All queries need `host_id` filtering — global scope vs middleware | Open |
-| Q6 | Signup API: save per-step or all at end? | Current frontend stores all data client-side | Open |
+| Q6 | Signup API: save per-step or all at end? | Current frontend stores all data client-side | Resolved — per-step save (ADR-008) |
 
 ---
 
@@ -313,6 +368,13 @@ Log every decision with date and reasoning. Most recent first.
 
 | Date | Decision | Context | Outcome |
 |---|---|---|---|
+| 2026-02-05 | Progressive per-step signup save (ADR-008) | Need to decide save strategy for 9-step wizard | Account at Step 2, updates per-step, prevents data loss |
+| 2026-02-05 | Manual auth instead of Breeze (ADR-007) | Breeze scaffolding conflicts with FlyonUI layout | Custom login page + AuthController keeps UI consistency |
+| 2026-02-05 | Sanctum session + token auth for signup | Same-domain API calls need auth after Step 2 | Cookie-based session auth + Bearer token for API |
+| 2026-02-05 | Re-save pattern for instructors/classes | Users may go back and change data during signup | Delete existing + recreate on each save |
+| 2026-02-05 | Shell pages with skeletons for dashboard | Need all sidebar links to resolve to real pages | 10 Blade pages with FlyonUI skeletons, ready for Vue mounts |
+| 2026-02-05 | ApiResponse trait for JSON envelope | Need consistent API response format | `{ data, meta, errors }` envelope via reusable trait |
+| 2026-02-05 | HostOnboardingCompleted event | Need to trigger actions when onboarding finishes | Laravel event dispatched when `complete()` is called |
 | 2026-02-05 | Name class model `StudioClass` | PHP reserves `class` keyword; model uses `$table = 'classes'` | Avoids language conflict |
 | 2026-02-05 | Non-blocking email verification (Step 3) | Users shouldn't be stuck waiting for email during onboarding | Soft banner, can continue setup |
 | 2026-02-05 | Per-page Vue entrypoints (not SPA router) | Each Blade page mounts its own Vue app via `createApp()` | Consistent with ADR-002 |

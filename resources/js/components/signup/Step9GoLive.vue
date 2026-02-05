@@ -45,9 +45,10 @@
             </div>
 
             <div class="mt-8">
-                <a href="/dashboard" class="btn btn-primary btn-lg">
-                    Go to Dashboard <span class="icon-[tabler--arrow-right] size-5"></span>
-                </a>
+                <button type="button" class="btn btn-primary btn-lg" :disabled="loading" @click="$emit('complete')">
+                    <span v-if="loading" class="loading loading-spinner loading-sm"></span>
+                    <template v-else>Go to Dashboard <span class="icon-[tabler--arrow-right] size-5"></span></template>
+                </button>
             </div>
         </div>
     </div>
@@ -61,5 +62,5 @@ defineProps({
     errors: { type: Object, default: () => ({}) },
 })
 
-defineEmits(['next', 'prev', 'update'])
+defineEmits(['next', 'prev', 'update', 'complete'])
 </script>

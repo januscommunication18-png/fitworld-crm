@@ -27,12 +27,16 @@
 
                     <div v-for="(instructor, index) in localData.instructors" :key="index" class="flex gap-3 mb-3">
                         <div class="flex-1">
-                            <input type="text" class="input w-full" v-model="instructor.name"
-                                placeholder="Instructor name" />
+                            <input type="text" class="input w-full"
+                                :class="{ 'input-error': errors[`instructors.${index}.name`] }"
+                                v-model="instructor.name" @input="instructor.name = stripNumbers(instructor.name)" placeholder="Instructor name" />
+                            <p v-if="errors[`instructors.${index}.name`]" class="text-error text-xs mt-1">{{ errors[`instructors.${index}.name`][0] }}</p>
                         </div>
                         <div class="flex-1">
-                            <input type="email" class="input w-full" v-model="instructor.email"
-                                placeholder="Email address" />
+                            <input type="email" class="input w-full"
+                                :class="{ 'input-error': errors[`instructors.${index}.email`] }"
+                                v-model="instructor.email" placeholder="Email address" />
+                            <p v-if="errors[`instructors.${index}.email`]" class="text-error text-xs mt-1">{{ errors[`instructors.${index}.email`][0] }}</p>
                         </div>
                         <button type="button" class="btn btn-ghost btn-square btn-sm text-error" @click="removeInstructor(index)">
                             <span class="icon-[tabler--trash] size-4"></span>
@@ -44,8 +48,9 @@
                     <button type="button" class="btn btn-ghost" @click="$emit('prev')">
                         <span class="icon-[tabler--arrow-left] size-4"></span> Back
                     </button>
-                    <button type="submit" class="btn btn-primary">
-                        Continue <span class="icon-[tabler--arrow-right] size-4"></span>
+                    <button type="submit" class="btn btn-primary" :disabled="loading">
+                        <span v-if="loading" class="loading loading-spinner loading-xs"></span>
+                        <template v-else>Continue <span class="icon-[tabler--arrow-right] size-4"></span></template>
                     </button>
                 </div>
             </form>
@@ -69,6 +74,10 @@ const localData = reactive({
     add_self_as_instructor: props.formData.add_self_as_instructor,
     instructors: props.formData.instructors.map(i => ({ ...i })),
 })
+
+function stripNumbers(value) {
+    return value.replace(/[0-9]/g, '')
+}
 
 function addInstructor() {
     localData.instructors.push({ name: '', email: '' })

@@ -1,122 +1,254 @@
-<aside id="dashboard-sidebar"
-    class="overlay overlay-minified:w-17 [--body-scroll:true] border-base-content/20 overlay-open:translate-x-0 drawer drawer-start sm:overlay-layout-open:translate-x-0 hidden w-64 border-e [--auto-close:sm] [--is-layout-affect:true] [--opened:lg] sm:absolute sm:z-0 sm:flex sm:shadow-none lg:[--overlay-backdrop:false]"
-    role="dialog" tabindex="-1">
+<aside id="main-sidebar" class="sticky top-0 h-screen bg-base-100 border-e border-base-content/10 flex flex-col overflow-hidden">
 
-    {{-- Sidebar header --}}
-    <div class="drawer-header overlay-minified:px-3.75 py-2 w-full flex items-center justify-between gap-3">
-        <a href="{{ url('/dashboard') }}" class="link link-neutral text-xl font-bold no-underline overlay-minified:hidden">
-            FitCRM
+    {{-- Sidebar header: Logo + Collapse toggle --}}
+    <div class="flex items-center gap-2 px-4 h-16 border-b border-base-content/10 shrink-0">
+        <a href="{{ url('/dashboard') }}" class="flex items-center gap-2 no-underline">
+            <span class="icon-[tabler--activity] size-7 text-primary shrink-0"></span>
+            <span class="sidebar-logo-text text-xl font-bold text-base-content">FitCRM</span>
         </a>
-        <div class="hidden sm:block">
-            <button type="button" class="btn btn-circle btn-text"
-                aria-haspopup="dialog" aria-expanded="false"
-                aria-controls="dashboard-sidebar"
-                aria-label="Toggle sidebar"
-                data-overlay-minifier="#dashboard-sidebar">
-                <span class="icon-[tabler--menu-2] size-5"></span>
-            </button>
-        </div>
+        <button type="button" class="btn btn-ghost btn-xs btn-square ms-auto sidebar-label" id="sidebar-toggle" aria-label="Toggle sidebar">
+            <span class="icon-[tabler--chevron-left] size-4"></span>
+        </button>
     </div>
 
     {{-- Sidebar body --}}
-    <div class="drawer-body px-2 pt-2">
+    <div class="flex-1 overflow-y-auto px-3 py-4">
         <ul class="menu space-y-0.5 p-0">
 
-            {{-- Dashboard --}}
-            <li>
-                <a href="{{ url('/dashboard') }}" class="{{ request()->is('dashboard') ? 'bg-base-content/10' : '' }}">
-                    <span class="icon-[tabler--home] size-5"></span>
-                    <span class="overlay-minified:hidden">Dashboard</span>
-                </a>
+            {{-- Section: Main --}}
+            <li class="menu-title sidebar-section-label">
+                <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Main</span>
             </li>
 
-            {{-- Schedule (collapse submenu) --}}
-            <li class="space-y-0.5 dropdown relative [--adaptive:none] [--strategy:static] overlay-minified:[--adaptive:adaptive] overlay-minified:[--strategy:fixed] overlay-minified:[--offset:15] overlay-minified:[--trigger:hover] overlay-minified:[--placement:right-start]">
-                <button id="sidebar-schedule" type="button"
-                    class="dropdown-toggle collapse-toggle collapse-open:bg-base-content/10 overlay-minified:collapse-open:bg-transparent"
-                    data-collapse="#sidebar-schedule-collapse"
-                    aria-haspopup="menu" aria-expanded="false">
-                    <span class="icon-[tabler--calendar] size-5"></span>
-                    <span class="overlay-minified:hidden">Schedule</span>
-                    <span class="icon-[tabler--chevron-down] collapse-open:rotate-180 size-4 overlay-minified:hidden transition-all duration-300"></span>
+            {{-- Dashboard --}}
+            <li class="nav-item {{ request()->is('dashboard*') ? 'active' : '' }}" data-nav="dashboard">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--home] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Dashboard</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul id="sidebar-schedule-collapse"
-                    class="dropdown-menu mt-0 shadow-none overlay-minified:shadow-md overlay-minified:shadow-base-300/20 dropdown-open:opacity-100 hidden min-w-48 collapse w-auto space-y-0.5 overflow-hidden transition-[height] duration-300 overlay-minified:before:absolute overlay-minified:before:-start-4 overlay-minified:before:top-0 overlay-minified:before:h-full overlay-minified:before:w-4 before:bg-transparent"
-                    role="menu" aria-orientation="vertical" aria-labelledby="sidebar-schedule">
-                    <li><a href="{{ url('/schedule/classes') }}">
-                        <span class="icon-[tabler--calendar-event] size-5"></span>
-                        <span>Class Schedule</span>
+                <ul class="sidebar-submenu {{ request()->is('dashboard*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/dashboard') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--layout-dashboard] size-4 mr-2"></span>Overview
                     </a></li>
-                    <li><a href="{{ url('/schedule/appointments') }}">
-                        <span class="icon-[tabler--calendar-check] size-5"></span>
-                        <span>Appointments</span>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>Today's Classes
                     </a></li>
-                    <li><a href="{{ url('/schedule/calendar') }}">
-                        <span class="icon-[tabler--calendar-month] size-5"></span>
-                        <span>Calendar View</span>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--book] size-4 mr-2"></span>Upcoming Bookings
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--bell] size-4 mr-2"></span>Alerts &amp; Reminders
+                    </a></li>
+                </ul>
+            </li>
+
+            {{-- Schedule --}}
+            <li class="nav-item {{ request()->is('schedule*') ? 'active' : '' }}" data-nav="schedule">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Schedule</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('schedule*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>Calendar View
+                    </a></li>
+                    <li><a href="{{ url('/schedule/classes') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--list] size-4 mr-2"></span>Classes
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--category] size-4 mr-2"></span>Class Types
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--layout-grid] size-4 mr-2"></span>Rooms
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--hourglass] size-4 mr-2"></span>Waitlist
+                    </a></li>
+                </ul>
+            </li>
+
+            {{-- Bookings --}}
+            <li class="nav-item {{ request()->is('bookings*') ? 'active' : '' }}" data-nav="bookings">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--book] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Bookings</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('bookings*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--clipboard-list] size-4 mr-2"></span>All Bookings
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--clock] size-4 mr-2"></span>Upcoming
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--circle-x] size-4 mr-2"></span>Cancellations
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--user-x] size-4 mr-2"></span>No-Shows
                     </a></li>
                 </ul>
             </li>
 
             {{-- Students --}}
-            <li>
-                <a href="{{ url('/students') }}" class="{{ request()->is('students*') ? 'bg-base-content/10' : '' }}">
-                    <span class="icon-[tabler--users] size-5"></span>
-                    <span class="overlay-minified:hidden">Students</span>
-                </a>
-            </li>
-
-            {{-- Instructors --}}
-            <li>
-                <a href="{{ url('/instructors') }}" class="{{ request()->is('instructors*') ? 'bg-base-content/10' : '' }}">
-                    <span class="icon-[tabler--user-star] size-5"></span>
-                    <span class="overlay-minified:hidden">Instructors</span>
-                </a>
-            </li>
-
-            {{-- Payments (collapse submenu) --}}
-            <li class="space-y-0.5 dropdown relative [--adaptive:none] [--strategy:static] overlay-minified:[--adaptive:adaptive] overlay-minified:[--strategy:fixed] overlay-minified:[--offset:15] overlay-minified:[--trigger:hover] overlay-minified:[--placement:right-start]">
-                <button id="sidebar-payments" type="button"
-                    class="dropdown-toggle collapse-toggle collapse-open:bg-base-content/10 overlay-minified:collapse-open:bg-transparent"
-                    data-collapse="#sidebar-payments-collapse"
-                    aria-haspopup="menu" aria-expanded="false">
-                    <span class="icon-[tabler--credit-card] size-5"></span>
-                    <span class="overlay-minified:hidden">Payments</span>
-                    <span class="icon-[tabler--chevron-down] collapse-open:rotate-180 size-4 overlay-minified:hidden transition-all duration-300"></span>
+            <li class="nav-item {{ request()->is('students*') ? 'active' : '' }}" data-nav="students">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--users] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Students</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul id="sidebar-payments-collapse"
-                    class="dropdown-menu mt-0 shadow-none overlay-minified:shadow-md overlay-minified:shadow-base-300/20 dropdown-open:opacity-100 hidden min-w-48 collapse w-auto space-y-0.5 overflow-hidden transition-[height] duration-300 overlay-minified:before:absolute overlay-minified:before:-start-4 overlay-minified:before:top-0 overlay-minified:before:h-full overlay-minified:before:w-4 before:bg-transparent"
-                    role="menu" aria-orientation="vertical" aria-labelledby="sidebar-payments">
-                    <li><a href="{{ url('/payments/transactions') }}">
-                        <span class="icon-[tabler--receipt] size-5"></span>
-                        <span>Transactions</span>
+                <ul class="sidebar-submenu {{ request()->is('students*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/students') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--users] size-4 mr-2"></span>All Students
                     </a></li>
-                    <li><a href="{{ url('/payments/memberships') }}">
-                        <span class="icon-[tabler--id-badge] size-5"></span>
-                        <span>Memberships</span>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--target] size-4 mr-2"></span>Leads
                     </a></li>
-                    <li><a href="{{ url('/payments/class-packs') }}">
-                        <span class="icon-[tabler--package] size-5"></span>
-                        <span>Class Packs</span>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--user-check] size-4 mr-2"></span>Active Members
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--alert-triangle] size-4 mr-2"></span>At-Risk
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--tags] size-4 mr-2"></span>Tags
                     </a></li>
                 </ul>
             </li>
 
-            {{-- Reports --}}
-            <li>
-                <a href="{{ url('/reports') }}" class="{{ request()->is('reports*') ? 'bg-base-content/10' : '' }}">
-                    <span class="icon-[tabler--chart-bar] size-5"></span>
-                    <span class="overlay-minified:hidden">Reports</span>
-                </a>
+            {{-- Instructors --}}
+            <li class="nav-item {{ request()->is('instructors*') ? 'active' : '' }}" data-nav="instructors">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--user-star] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Instructors</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('instructors*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/instructors') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--list] size-4 mr-2"></span>Instructor List
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--clock] size-4 mr-2"></span>Availability
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--clipboard] size-4 mr-2"></span>Assignments
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--wallet] size-4 mr-2 opacity-50"></span><span class="opacity-50">Payouts</span> <span class="badge badge-xs badge-soft badge-neutral ml-1">Later</span>
+                    </a></li>
+                </ul>
+            </li>
+
+            {{-- Section: Commerce --}}
+            <li class="menu-title sidebar-section-label pt-4">
+                <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Commerce</span>
+            </li>
+
+            {{-- Offers --}}
+            <li class="nav-item {{ request()->is('offers*') ? 'active' : '' }}" data-nav="offers">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--gift] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Offers</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('offers*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--star] size-4 mr-2"></span>Intro Offers
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--package] size-4 mr-2"></span>Class Packs
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--id-badge] size-4 mr-2"></span>Memberships
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--percentage] size-4 mr-2"></span>Promo Codes
+                    </a></li>
+                </ul>
+            </li>
+
+            {{-- Insights --}}
+            <li class="nav-item {{ request()->is('insights*') || request()->is('reports*') ? 'active' : '' }}" data-nav="insights">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--chart-bar] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Insights</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('insights*') || request()->is('reports*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/reports') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--checks] size-4 mr-2"></span>Attendance
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--coin] size-4 mr-2"></span>Revenue
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--trophy] size-4 mr-2"></span>Class Performance
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--trending-up] size-4 mr-2"></span>Retention
+                    </a></li>
+                </ul>
+            </li>
+
+            {{-- Payments --}}
+            <li class="nav-item {{ request()->is('payments*') ? 'active' : '' }}" data-nav="payments">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--credit-card] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Payments</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('payments*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/payments/transactions') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--receipt] size-4 mr-2"></span>Transactions
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--repeat] size-4 mr-2"></span>Subscriptions
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--wallet] size-4 mr-2"></span>Payouts
+                    </a></li>
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                        <span class="icon-[tabler--arrow-back-up] size-4 mr-2"></span>Refunds
+                    </a></li>
+                </ul>
+            </li>
+
+            {{-- Section: System --}}
+            <li class="menu-title sidebar-section-label pt-4">
+                <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">System</span>
             </li>
 
             {{-- Settings --}}
-            <li>
-                <a href="{{ url('/settings') }}" class="{{ request()->is('settings*') ? 'bg-base-content/10' : '' }}">
-                    <span class="icon-[tabler--settings] size-5"></span>
-                    <span class="overlay-minified:hidden">Settings</span>
+            <li class="nav-item {{ request()->is('settings*') ? 'active' : '' }}" data-nav="settings">
+                <a href="{{ url('/settings') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
+                    <span class="icon-[tabler--settings] size-5 shrink-0"></span>
+                    <span class="sidebar-label">Settings</span>
                 </a>
             </li>
         </ul>
+    </div>
+
+    {{-- Sidebar footer --}}
+    <div class="border-t border-base-content/10 p-3 space-y-2">
+        <div class="flex items-center gap-3 px-2">
+            <div class="avatar avatar-placeholder">
+                <div class="bg-primary text-primary-content size-9 rounded-full text-sm font-bold">
+                    {{ strtoupper(substr(Auth::user()->first_name ?? 'F', 0, 1) . substr(Auth::user()->last_name ?? 'C', 0, 1)) }}
+                </div>
+            </div>
+            <div class="sidebar-footer-detail flex-1 min-w-0">
+                <div class="text-sm font-semibold truncate">{{ Auth::user()->host->studio_name ?? 'My Studio' }}</div>
+                <div class="text-xs text-base-content/50 truncate">{{ Auth::user()->host->subdomain ?? 'my-studio' }}.fitcrm.app</div>
+            </div>
+        </div>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-error hover:bg-error/10 transition-colors">
+                <span class="icon-[tabler--logout] size-5 shrink-0"></span>
+                <span class="sidebar-label">Sign Out</span>
+            </button>
+        </form>
     </div>
 </aside>

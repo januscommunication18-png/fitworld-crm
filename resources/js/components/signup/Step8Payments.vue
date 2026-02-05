@@ -35,8 +35,9 @@
                     <button type="button" class="btn btn-ghost" @click="$emit('prev')">
                         <span class="icon-[tabler--arrow-left] size-4"></span> Back
                     </button>
-                    <button type="button" class="btn btn-primary" @click="handleSubmit">
-                        Continue <span class="icon-[tabler--arrow-right] size-4"></span>
+                    <button type="button" class="btn btn-primary" :disabled="loading" @click="handleSubmit">
+                        <span v-if="loading" class="loading loading-spinner loading-xs"></span>
+                        <template v-else>Continue <span class="icon-[tabler--arrow-right] size-4"></span></template>
                     </button>
                 </div>
             </div>
