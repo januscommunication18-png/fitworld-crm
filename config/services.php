@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'smarty' => [
+        'website_key' => env('SMARTY_WEBSITE_KEY'),
+    ],
+
 ];

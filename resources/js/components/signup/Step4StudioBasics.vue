@@ -45,11 +45,11 @@
 
                 <div>
                     <label class="label-text" for="subdomain">Your Studio URL</label>
-                    <div class="input-group">
-                        <input id="subdomain" type="text" class="input grow"
+                    <div class="join w-full">
+                        <input id="subdomain" type="text" class="input join-item flex-1"
                             :class="{ 'input-error': errors.subdomain, 'input-success': subdomainAvailable === true }"
                             v-model="localData.subdomain" placeholder="yourstudio" @input="handleSubdomainInput" />
-                        <span class="input-group-text text-base-content/60">.fitcrm.app</span>
+                        <span class="btn btn-soft join-item pointer-events-none">.fitcrm.app</span>
                     </div>
                     <div class="flex items-center gap-1 mt-1">
                         <span v-if="checkingSubdomain" class="loading loading-spinner loading-xs text-base-content/40"></span>

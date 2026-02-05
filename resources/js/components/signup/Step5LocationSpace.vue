@@ -7,8 +7,14 @@
             <form @submit.prevent="handleSubmit" class="space-y-4">
                 <div>
                     <label class="label-text" for="address">Studio Address</label>
-                    <input id="address" type="text" class="input w-full" :class="{ 'input-error': errors.address }"
-                        v-model="localData.address" placeholder="123 Main St, Austin, TX 78701" />
+                    <AddressAutocomplete
+                        v-model="localData.address"
+                        :smarty-key="smartyKey"
+                        input-id="address"
+                        :input-class="{ 'input-error': errors.address }"
+                        placeholder="Start typing your address..."
+                        @select="handleAddressSelect"
+                    />
                     <p v-if="errors.address" class="text-error text-xs mt-1">{{ errors.address[0] }}</p>
                 </div>
 
@@ -58,10 +64,12 @@
 
 <script setup>
 import { reactive } from 'vue'
+import AddressAutocomplete from './AddressAutocomplete.vue'
 
 const props = defineProps({
     formData: { type: Object, required: true },
     csrfToken: { type: String, default: '' },
+    smartyKey: { type: String, default: '' },
     loading: { type: Boolean, default: false },
     errors: { type: Object, default: () => ({}) },
 })
@@ -72,10 +80,19 @@ const amenityOptions = ['Changing Rooms', 'Showers', 'Parking', 'Mat Rental', 'T
 
 const localData = reactive({
     address: props.formData.address,
+    city: props.formData.city || '',
+    state: props.formData.state || '',
+    zipcode: props.formData.zipcode || '',
     rooms: props.formData.rooms,
     default_capacity: props.formData.default_capacity,
     amenities: [...props.formData.amenities],
 })
+
+function handleAddressSelect(addressData) {
+    localData.city = addressData.city
+    localData.state = addressData.state
+    localData.zipcode = addressData.zipcode
+}
 
 function handleSubmit() {
     emit('update', { ...localData })
