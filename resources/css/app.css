@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@plugin "flyonui";
+@plugin "@iconify/tailwind4" {
+    prefixes: tabler;
+}
+@source "../../node_modules/flyonui/flyonui.js";
+@import "@tabler/icons-webfont/dist/tabler-icons.min.css";
+@import "flyonui/src/vendor/flatpickr.css";
+@import "flyonui/src/vendor/fullcalendar.css";
+@import "flyonui/src/vendor/notyf.css";
+@plugin "flyonui/theme" {
+    themes: light, dark;
+}

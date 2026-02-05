@@ -1,0 +1,46 @@
+# Dependencies
+/node_modules/
+/vendor/
+
+# Environment
+.env
+.env.backup
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+/public/build/
+/public/hot
+
+# Logs
+*.log
+
+# ============================================
+# NOTE: .ai/ directory is NOT gitignored.
+# It MUST be committed to the repository.
+# However, it must be EXCLUDED from deployment
+# to production and dev branches.
+#
+# In your deployment pipeline, add:
+#   --exclude='.ai/'
+#
+# Or in .dockerignore:
+#   .ai/
+#
+# Or in Laravel Forge / Envoyer:
+#   Exclude .ai/ from the deployment artifact
+# ============================================
+
+**/caddy
+frankenphp
+frankenphp-worker.php
