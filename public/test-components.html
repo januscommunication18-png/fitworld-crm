@@ -905,11 +905,112 @@
     </div>
   </section>
 
+  <!-- ============================================= -->
+  <!-- 20. Modal / Popup                             -->
+  <!-- ============================================= -->
+  <section class="mb-12">
+    <h2 class="text-lg font-semibold mb-4">20. Modal / Popup</h2>
+
+    <div class="flex flex-wrap gap-4">
+      <!-- Middle Start -->
+      <button type="button" class="btn btn-primary" aria-haspopup="dialog" aria-expanded="false" aria-controls="middle-start-modal" data-overlay="#middle-start-modal">Middle start</button>
+
+      <!-- Middle Center -->
+      <button type="button" class="btn btn-primary" aria-haspopup="dialog" aria-expanded="false" aria-controls="middle-center-modal" data-overlay="#middle-center-modal">Middle center</button>
+
+      <!-- Middle End -->
+      <button type="button" class="btn btn-primary" aria-haspopup="dialog" aria-expanded="false" aria-controls="middle-end-modal" data-overlay="#middle-end-modal">Middle end</button>
+    </div>
+
+  </section>
+
+  <!-- Modals (at body level, outside main content) -->
+  <!-- Middle Start Modal -->
+  <div id="middle-start-modal" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle-start hidden" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Dialog Title</h3>
+          <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#middle-start-modal">
+            <span class="icon-[tabler--x] size-4"></span>
+          </button>
+        </div>
+        <div class="modal-body">
+          This is some placeholder content to show the scrolling behavior for modals. Instead of repeating the text in the
+          modal, we use an inline style to set a minimum height, thereby extending the length of the overall modal and
+          demonstrating the overflow scrolling. When content becomes longer than the height of the viewport, scrolling
+          will move the modal as needed.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-soft btn-secondary" data-overlay="#middle-start-modal">Close</button>
+          <button type="button" class="btn btn-primary">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle Center Modal -->
+  <div id="middle-center-modal" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle hidden" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Dialog Title</h3>
+          <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#middle-center-modal">
+            <span class="icon-[tabler--x] size-4"></span>
+          </button>
+        </div>
+        <div class="modal-body">
+          This is some placeholder content to show the scrolling behavior for modals. Instead of repeating the text in the
+          modal, we use an inline style to set a minimum height, thereby extending the length of the overall modal and
+          demonstrating the overflow scrolling. When content becomes longer than the height of the viewport, scrolling
+          will move the modal as needed.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-soft btn-secondary" data-overlay="#middle-center-modal">Close</button>
+          <button type="button" class="btn btn-primary">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Middle End Modal -->
+  <div id="middle-end-modal" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle-end hidden" role="dialog" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Dialog Title</h3>
+          <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#middle-end-modal">
+            <span class="icon-[tabler--x] size-4"></span>
+          </button>
+        </div>
+        <div class="modal-body">
+          This is some placeholder content to show the scrolling behavior for modals. Instead of repeating the text in the
+          modal, we use an inline style to set a minimum height, thereby extending the length of the overall modal and
+          demonstrating the overflow scrolling. When content becomes longer than the height of the viewport, scrolling
+          will move the modal as needed.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-soft btn-secondary" data-overlay="#middle-end-modal">Close</button>
+          <button type="button" class="btn btn-primary">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notyf JS -->
   <script src="./node_modules/notyf/notyf.min.js"></script>
 
   <!-- FlyonUI JS -->
   <script src="./node_modules/flyonui/flyonui.js"></script>
+
+  <!-- Debug: Verify FlyonUI loaded -->
+  <script>
+    window.addEventListener('load', function() {
+      console.log('FlyonUI loaded:', typeof HSOverlay !== 'undefined');
+      console.log('HSOverlay:', HSOverlay);
+      console.log('Overlay collection:', window.$hsOverlayCollection);
+    });
+  </script>
 
   <!-- Calendar Init -->
   <script>

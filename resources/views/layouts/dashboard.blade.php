@@ -48,6 +48,29 @@
     @include('components.alerts-drawer')
     @include('components.app-modal')
 
+    {{-- Page-specific modals (pushed from child views) --}}
+    @stack('modals')
+
+    {{-- Test Modal (temporary - to verify FlyonUI overlay works) --}}
+    <div id="test-modal" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle hidden" role="dialog" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Test Modal</h3>
+                    <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#test-modal">
+                        <span class="icon-[tabler--x] size-4"></span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>If you can see this, FlyonUI overlay system is working!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-soft btn-secondary" data-overlay="#test-modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- Back to top button --}}
     <button id="back-to-top" type="button"
         class="btn btn-circle btn-primary btn-sm fixed bottom-4 right-4 z-50 hidden shadow-lg"
@@ -61,6 +84,14 @@
         aria-label="Support">
         <span class="icon-[tabler--headset] size-4"></span>
     </a>
+
+    {{-- Test Modal Trigger (temporary) --}}
+    <button type="button"
+        class="btn btn-circle btn-warning btn-sm fixed bottom-28 right-4 z-50 shadow-lg"
+        aria-haspopup="dialog" aria-expanded="false" aria-controls="test-modal" data-overlay="#test-modal"
+        title="Test Modal">
+        <span class="icon-[tabler--bug] size-4"></span>
+    </button>
 
     {{-- Back to top script --}}
     <script>

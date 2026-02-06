@@ -66,4 +66,48 @@ Route::middleware('auth')->group(function () {
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+
+    // Settings - Studio
+    Route::get('/settings/studio/profile', [SettingsController::class, 'studioProfile'])->name('settings.studio.profile');
+    Route::put('/settings/studio/profile', [SettingsController::class, 'updateStudioProfile'])->name('settings.studio.profile.update');
+    Route::put('/settings/studio/about', [SettingsController::class, 'updateStudioAbout'])->name('settings.studio.about.update');
+    Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
+
+    // Settings - Locations
+    Route::get('/settings/locations/rooms', [SettingsController::class, 'rooms'])->name('settings.locations.rooms');
+    Route::get('/settings/locations/booking-page', [SettingsController::class, 'bookingPage'])->name('settings.locations.booking-page');
+    Route::get('/settings/locations/policies', [SettingsController::class, 'policies'])->name('settings.locations.policies');
+
+    // Settings - Team
+    Route::get('/settings/team/users', [SettingsController::class, 'users'])->name('settings.team.users');
+    Route::get('/settings/team/instructors', [SettingsController::class, 'instructors'])->name('settings.team.instructors');
+    Route::get('/settings/team/permissions', [SettingsController::class, 'permissions'])->name('settings.team.permissions');
+
+    // Settings - Payments
+    Route::get('/settings/payments/settings', [SettingsController::class, 'paymentSettings'])->name('settings.payments.settings');
+    Route::get('/settings/payments/tax', [SettingsController::class, 'taxSettings'])->name('settings.payments.tax');
+    Route::get('/settings/payments/payouts', [SettingsController::class, 'payoutPreferences'])->name('settings.payments.payouts');
+
+    // Settings - Notifications
+    Route::get('/settings/notifications/email', [SettingsController::class, 'emailNotifications'])->name('settings.notifications.email');
+    Route::get('/settings/notifications/sms', [SettingsController::class, 'smsNotifications'])->name('settings.notifications.sms');
+    Route::get('/settings/notifications/automation', [SettingsController::class, 'automationRules'])->name('settings.notifications.automation');
+
+    // Settings - Integrations
+    Route::get('/settings/integrations/stripe', [SettingsController::class, 'stripeIntegration'])->name('settings.integrations.stripe');
+    Route::get('/settings/integrations/fitnearyou', [SettingsController::class, 'fitNearYouIntegration'])->name('settings.integrations.fitnearyou');
+    Route::get('/settings/integrations/calendar', [SettingsController::class, 'calendarSync'])->name('settings.integrations.calendar');
+    Route::get('/settings/integrations/paypal', [SettingsController::class, 'paypalIntegration'])->name('settings.integrations.paypal');
+    Route::get('/settings/integrations/cashapp', [SettingsController::class, 'cashAppIntegration'])->name('settings.integrations.cashapp');
+    Route::get('/settings/integrations/venmo', [SettingsController::class, 'venmoIntegration'])->name('settings.integrations.venmo');
+
+    // Settings - Plans & Billing
+    Route::get('/settings/billing/plan', [SettingsController::class, 'currentPlan'])->name('settings.billing.plan');
+    Route::get('/settings/billing/usage', [SettingsController::class, 'usage'])->name('settings.billing.usage');
+    Route::get('/settings/billing/invoices', [SettingsController::class, 'invoices'])->name('settings.billing.invoices');
+
+    // Settings - Advanced
+    Route::get('/settings/advanced/export', [SettingsController::class, 'dataExport'])->name('settings.advanced.export');
+    Route::get('/settings/advanced/audit', [SettingsController::class, 'auditLogs'])->name('settings.advanced.audit');
+    Route::get('/settings/advanced/danger', [SettingsController::class, 'dangerZone'])->name('settings.advanced.danger');
 });

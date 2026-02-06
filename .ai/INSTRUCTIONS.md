@@ -845,6 +845,83 @@ flatpickr('#flatpickr-time', { enableTime: true, noCalendar: true, dateFormat: '
 </nav>
 ```
 
+## 3.18 Modal / Popup
+
+FlyonUI modals use the overlay system with `data-overlay` attribute for triggering.
+
+### A. Middle Center (Default)
+
+```html
+<!-- Trigger Button -->
+<button type="button" class="btn btn-primary" aria-haspopup="dialog" aria-expanded="false" aria-controls="my-modal" data-overlay="#my-modal">
+  Open Modal
+</button>
+
+<!-- Modal -->
+<div id="my-modal" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle hidden" role="dialog" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Dialog Title</h3>
+        <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#my-modal">
+          <span class="icon-[tabler--x] size-4"></span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Modal content goes here.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-soft btn-secondary" data-overlay="#my-modal">Close</button>
+        <button type="button" class="btn btn-primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+### B. Position Variants
+
+Use position classes on the outer modal div:
+
+- **Middle center:** `modal-middle` (default, centered)
+- **Middle start:** `modal-middle-start` (left side)
+- **Middle end:** `modal-middle-end` (right side)
+
+```html
+<!-- Middle Start -->
+<div id="modal-start" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle-start hidden" ...>
+
+<!-- Middle End -->
+<div id="modal-end" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 modal-middle-end hidden" ...>
+```
+
+### C. Modal Sizing
+
+Add max-width classes to `modal-dialog`:
+
+```html
+<div class="modal-dialog max-w-sm">  <!-- Small -->
+<div class="modal-dialog max-w-md">  <!-- Medium -->
+<div class="modal-dialog max-w-lg">  <!-- Large -->
+<div class="modal-dialog max-w-xl">  <!-- Extra Large -->
+```
+
+### D. JavaScript Control
+
+```js
+// Open modal programmatically
+HSOverlay.open('#my-modal');
+
+// Close modal programmatically
+HSOverlay.close('#my-modal');
+```
+
+**Key points:**
+- Trigger uses `data-overlay="#modal-id"` attribute
+- Modal outer div needs: `overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden`
+- Close buttons also use `data-overlay="#modal-id"`
+- Position classes: `modal-middle`, `modal-middle-start`, `modal-middle-end`
+
 ---
 
 # 4. Key Rules (Always Follow)
