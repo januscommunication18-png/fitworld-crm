@@ -11,7 +11,12 @@ use App\Http\Controllers\Host\ScheduleController;
 use App\Http\Controllers\Host\SettingsController;
 use App\Http\Controllers\Host\SignupController;
 use App\Http\Controllers\Host\StudentController;
+use App\Http\Controllers\SecurityCodeController;
 use Illuminate\Support\Facades\Route;
+
+// Security Code Routes
+Route::get('/security-code', [SecurityCodeController::class, 'show'])->name('security-code');
+Route::post('/security-code', [SecurityCodeController::class, 'verify'])->name('security-code.verify');
 
 // Public
 Route::get('/', function () {
