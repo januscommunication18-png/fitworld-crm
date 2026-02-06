@@ -165,7 +165,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-4">
                 <div class="space-y-1">
                     <label class="text-sm text-base-content/60">Studio Email (Public)</label>
                     <p class="font-medium" id="display-studio-email">{{ $host->studio_email ?? 'Not set' }}</p>
@@ -199,7 +199,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-3">
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--brand-instagram] size-5 text-pink-500"></span>
                     <span id="display-instagram" class="text-sm">{{ $host->social_links['instagram'] ?? 'Not connected' }}</span>
@@ -340,12 +340,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
             </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-basic-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-basic-btn">
                 <span class="loading loading-spinner loading-xs hidden" id="basic-spinner"></span>
                 Save Changes
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-basic-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -377,12 +377,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
             </div>
             <p class="text-xs text-base-content/50 text-center mt-4">PNG, JPG, or WebP. Max 5MB. Recommended 400x400px.</p>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-logo-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="upload-logo-btn" disabled>
                 <span class="loading loading-spinner loading-xs hidden" id="logo-spinner"></span>
                 Upload Logo
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-logo-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -414,12 +414,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
             </div>
             <p class="text-xs text-base-content/50 text-center mt-4">PNG, JPG, or WebP. Max 5MB. Recommended 1200x400px.</p>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-cover-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="upload-cover-btn" disabled>
                 <span class="loading loading-spinner loading-xs hidden" id="cover-spinner"></span>
                 Upload Cover
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-cover-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -440,12 +440,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <p class="text-xs text-base-content/50 mt-1">This appears on your public booking page</p>
             </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-about-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-about-btn">
                 <span class="loading loading-spinner loading-xs hidden" id="about-spinner"></span>
                 Save Changes
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-about-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -486,12 +486,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
             </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-contact-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-contact-btn">
                 <span class="loading loading-spinner loading-xs hidden" id="contact-spinner"></span>
                 Save Changes
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-contact-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -533,12 +533,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
             </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-social-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-social-btn">
                 <span class="loading loading-spinner loading-xs hidden" id="social-spinner"></span>
                 Save Changes
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-social-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -563,12 +563,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 @endforeach
             </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-amenities-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-amenities-btn">
                 <span class="loading loading-spinner loading-xs hidden" id="amenities-spinner"></span>
                 Save Changes
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-amenities-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -602,12 +602,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
             </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-currency-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-currency-btn">
                 <span class="loading loading-spinner loading-xs hidden" id="currency-spinner"></span>
                 Save Changes
             </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-currency-drawer')">Cancel</button>
         </div>
     </form>
 </div>

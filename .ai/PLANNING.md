@@ -80,6 +80,15 @@
 - **Reasoning:** Better perceived performance. Layout doesn't shift when data loads. Professional feel.
 - **Consequences:** Every Vue component that fetches data must have a `loading` state with skeleton markup.
 
+### ADR-009: Dropdowns with Search
+
+- **Status:** Accepted
+- **Context:** Select inputs with many options (timezones, countries, currencies) need better UX
+- **Decision:** Use FlyonUI "Select with Search" pattern for all dropdowns with more than 5-6 options
+- **Reasoning:** Better user experience for long lists. Allows quick filtering. Professional feel.
+- **Reference:** See `test-components.html` for implementation pattern using `advance-select` component
+- **Consequences:** All select elements with many options should use the searchable dropdown pattern from FlyonUI.
+
 ### ADR-007: Manual Auth (Not Laravel Breeze)
 
 - **Status:** Accepted
@@ -368,6 +377,7 @@ Log every decision with date and reasoning. Most recent first.
 
 | Date | Decision | Context | Outcome |
 |---|---|---|---|
+| 2026-02-06 | Dropdowns with search (ADR-009) | Select inputs with many options need searchable UI | Use FlyonUI `advance-select` pattern for all long dropdowns (timezone, country, currency, etc.) |
 | 2026-02-05 | Progressive per-step signup save (ADR-008) | Need to decide save strategy for 9-step wizard | Account at Step 2, updates per-step, prevents data loss |
 | 2026-02-05 | Manual auth instead of Breeze (ADR-007) | Breeze scaffolding conflicts with FlyonUI layout | Custom login page + AuthController keeps UI consistency |
 | 2026-02-05 | Sanctum session + token auth for signup | Same-domain API calls need auth after Step 2 | Cookie-based session auth + Bearer token for API |

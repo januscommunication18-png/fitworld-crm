@@ -4,6 +4,7 @@ use App\Http\Controllers\Host\AuthController;
 use App\Http\Controllers\Host\BookingController;
 use App\Http\Controllers\Host\DashboardController;
 use App\Http\Controllers\Host\InstructorController;
+use App\Http\Controllers\Host\LocationController;
 use App\Http\Controllers\Host\OfferController;
 use App\Http\Controllers\Host\PaymentController;
 use App\Http\Controllers\Host\ReportController;
@@ -96,6 +97,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
 
     // Settings - Locations
+    Route::get('/settings/locations', [LocationController::class, 'index'])->name('settings.locations.index');
+    Route::get('/settings/locations/create', [LocationController::class, 'create'])->name('settings.locations.create');
+    Route::post('/settings/locations', [LocationController::class, 'store'])->name('settings.locations.store');
+    Route::get('/settings/locations/{location}/edit', [LocationController::class, 'edit'])->name('settings.locations.edit');
+    Route::put('/settings/locations/{location}', [LocationController::class, 'update'])->name('settings.locations.update');
+    Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('settings.locations.destroy');
+    Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
+
     Route::get('/settings/locations/rooms', [SettingsController::class, 'rooms'])->name('settings.locations.rooms');
     Route::get('/settings/locations/booking-page', [SettingsController::class, 'bookingPage'])->name('settings.locations.booking-page');
     Route::get('/settings/locations/policies', [SettingsController::class, 'policies'])->name('settings.locations.policies');

@@ -26,6 +26,9 @@
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Locations</div>
                     <ul class="menu menu-sm p-0">
+                        <li><a href="{{ route('settings.locations.index') }}" class="{{ request()->routeIs('settings.locations.index') ? 'active' : '' }}">
+                            <span class="icon-[tabler--map-pin] size-4"></span> Locations
+                        </a></li>
                         <li><a href="{{ route('settings.locations.rooms') }}" class="{{ request()->routeIs('settings.locations.rooms') ? 'active' : '' }}">
                             <span class="icon-[tabler--door] size-4"></span> Rooms
                         </a></li>

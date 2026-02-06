@@ -72,4 +72,14 @@ class Host extends Model
     {
         return $this->hasMany(StudioClass::class);
     }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(Location::class);
+    }
+
+    public function defaultLocation()
+    {
+        return $this->locations()->where('is_default', true)->first();
+    }
 }
