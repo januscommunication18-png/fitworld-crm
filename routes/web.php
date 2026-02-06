@@ -12,6 +12,8 @@ use App\Http\Controllers\Host\SettingsController;
 use App\Http\Controllers\Host\SignupController;
 use App\Http\Controllers\Host\StudentController;
 use App\Http\Controllers\SecurityCodeController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Security Code Routes
@@ -35,6 +37,21 @@ Route::get('/signup', [SignupController::class, 'index'])->name('signup');
 // Auth-required routes
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+    // Email Verification
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect('/dashboard')->with('verified', true);
+    })->middleware('signed')->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Verification link sent!');
+    })->middleware('throttle:6,1')->name('verification.send');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

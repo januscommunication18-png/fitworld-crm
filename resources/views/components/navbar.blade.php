@@ -1,6 +1,35 @@
+{{-- Email Verification Alert (above navbar) --}}
+@auth
+    @if(!Auth::user()->hasVerifiedEmail())
+    <div id="email-verification-alert" class="bg-gradient-to-r from-error/10 via-error/5 to-error/10 border-b border-error/20 px-6 py-2.5" role="alert">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 flex-1 justify-center">
+                <div class="flex items-center justify-center size-8 rounded-full bg-error/20">
+                    <span class="icon-[tabler--mail-exclamation] size-4 text-error"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-error">Email not verified</span>
+                    <span class="text-sm text-base-content/70 hidden sm:inline">— Please check your inbox and verify your email address</span>
+                </div>
+                <form method="POST" action="{{ route('verification.send') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="btn btn-error btn-sm gap-1">
+                        <span class="icon-[tabler--send] size-4"></span>
+                        <span class="hidden sm:inline">Resend</span>
+                    </button>
+                </form>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm btn-circle text-error/70 hover:text-error hover:bg-error/10" onclick="document.getElementById('email-verification-alert').remove()" aria-label="Dismiss">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+        </div>
+    </div>
+    @endif
+@endauth
+
 <div id="toolbar" class="flex items-center justify-between bg-base-100 border-b border-base-content/10 px-6 h-16 shrink-0">
     {{-- Left: mobile sidebar toggle + search --}}
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-3">
         <button type="button" class="btn btn-ghost btn-sm btn-square lg:hidden" id="mobile-sidebar-toggle" aria-label="Toggle sidebar">
             <span class="icon-[tabler--menu-2] size-5"></span>
         </button>
