@@ -27,8 +27,10 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/signup', [SignupController::class, 'index'])->name('signup');
 });
+
+// Signup - accessible by guests AND users who haven't completed onboarding
+Route::get('/signup', [SignupController::class, 'index'])->name('signup');
 
 // Auth-required routes
 Route::middleware('auth')->group(function () {

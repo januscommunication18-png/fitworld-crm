@@ -11,6 +11,7 @@ Route::prefix('v1')->group(function () {
 
     // Signup endpoints (authenticated — user registers at step 2, then continues)
     Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/signup/progress', [SignupController::class, 'progress']);
         Route::post('/signup/verify-email', [SignupController::class, 'verifyEmail']);
         Route::post('/signup/studio', [SignupController::class, 'saveStudio']);
         Route::post('/signup/location', [SignupController::class, 'saveLocation']);

@@ -84,7 +84,7 @@
 </template>
 
 <script setup>
-import { reactive, computed, ref } from 'vue'
+import { reactive, computed, ref, watch } from 'vue'
 import api from '../../utils/api.js'
 import { debounce } from '../../utils/debounce.js'
 import MultiSelect from './MultiSelect.vue'
@@ -102,6 +102,7 @@ const studioTypeOptions = ['Yoga', 'Pilates', 'Barre', 'Spinning', 'CrossFit', '
 
 const subdomainAvailable = ref(null)
 const checkingSubdomain = ref(false)
+const subdomainManuallyEdited = ref(false)
 
 const localData = reactive({
     studio_name: props.formData.studio_name,
@@ -112,6 +113,24 @@ const localData = reactive({
 })
 
 const isValid = computed(() => localData.studio_name && localData.subdomain && subdomainAvailable.value !== false)
+
+function generateSubdomainFromName(name) {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/--+/g, '-')
+        .replace(/^-|-$/g, '')
+}
+
+// Watch studio_name and auto-populate subdomain
+watch(() => localData.studio_name, (newName) => {
+    if (!subdomainManuallyEdited.value) {
+        localData.subdomain = generateSubdomainFromName(newName)
+        subdomainAvailable.value = null
+        checkSubdomainAvailability(localData.subdomain)
+    }
+})
 
 function formatSubdomain() {
     localData.subdomain = localData.subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-')
@@ -134,6 +153,7 @@ const checkSubdomainAvailability = debounce(async (value) => {
 }, 500)
 
 function handleSubdomainInput() {
+    subdomainManuallyEdited.value = true
     formatSubdomain()
     subdomainAvailable.value = null
     checkSubdomainAvailability(localData.subdomain)

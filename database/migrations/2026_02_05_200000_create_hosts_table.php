@@ -22,6 +22,7 @@ return new class extends Migration
             $table->json('amenities')->nullable();
             $table->string('stripe_account_id')->nullable();
             $table->boolean('is_live')->default(false);
+            $table->unsignedTinyInteger('onboarding_step')->default(2);
             $table->timestamp('onboarding_completed_at')->nullable();
             $table->timestamps();
         });

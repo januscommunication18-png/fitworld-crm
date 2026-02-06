@@ -1,12 +1,27 @@
 <template>
     <div class="w-full max-w-[500px] mx-auto">
-        <!-- Progress bar (steps 2-8) -->
-        <ProgressBar v-if="currentStep >= 2 && currentStep <= 8" :current-step="currentStep" :total-steps="8" />
+        <!-- Loading state while fetching progress -->
+        <div v-if="initialLoading" class="card w-[500px]">
+            <div class="card-body animate-pulse">
+                <div class="h-8 bg-base-300 rounded w-3/4 mb-6"></div>
+                <div class="h-4 bg-base-300 rounded w-1/2 mb-8"></div>
+                <div class="space-y-4">
+                    <div class="h-10 bg-base-300 rounded"></div>
+                    <div class="h-10 bg-base-300 rounded"></div>
+                    <div class="h-10 bg-base-300 rounded"></div>
+                </div>
+                <div class="h-12 bg-base-300 rounded mt-8 w-1/3 ml-auto"></div>
+            </div>
+        </div>
 
-        <!-- Step components -->
-        <transition name="fade" mode="out-in">
-            <div :key="currentStep" class="w-full">
-                <component
+        <template v-else>
+            <!-- Progress bar (steps 2-8) -->
+            <ProgressBar v-if="currentStep >= 2 && currentStep <= 8" :current-step="currentStep" :total-steps="8" />
+
+            <!-- Step components -->
+            <transition name="fade" mode="out-in">
+                <div :key="currentStep" class="w-full">
+                    <component
                     :is="stepComponent"
                     :form-data="formData"
                     :csrf-token="csrfToken"
@@ -18,14 +33,15 @@
                     @update="updateFormData"
                     @resend-email="resendVerificationEmail"
                     @complete="completeOnboarding"
-                />
-            </div>
-        </transition>
+                    />
+                </div>
+            </transition>
+        </template>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api, { setAuthToken, ensureCsrf } from '../../utils/api.js'
 import toast from '../../utils/toast.js'
 import ProgressBar from './ProgressBar.vue'
@@ -42,10 +58,12 @@ import Step9GoLive from './Step9GoLive.vue'
 const props = defineProps({
     csrfToken: { type: String, default: '' },
     smartyKey: { type: String, default: '' },
+    authenticated: { type: Boolean, default: false },
 })
 
 const currentStep = ref(1)
 const loading = ref(false)
+const initialLoading = ref(false)
 const errors = ref({})
 
 const formData = ref({
@@ -98,6 +116,35 @@ const steps = {
 }
 
 const stepComponent = computed(() => steps[currentStep.value])
+
+/**
+ * Load saved progress on mount if user is authenticated.
+ */
+onMounted(async () => {
+    if (!props.authenticated) return
+
+    initialLoading.value = true
+    try {
+        await ensureCsrf()
+        const res = await api.get('/signup/progress')
+        const { step, form_data } = res.data.data
+
+        // Restore form data
+        Object.assign(formData.value, form_data)
+
+        // Restore step (minimum step 4 for authenticated users)
+        currentStep.value = Math.max(step, 4)
+    } catch (err) {
+        // If 401, user is not authenticated via API (session only)
+        // Start at step 4 for logged-in users
+        if (err.response?.status !== 401) {
+            console.error('Failed to load progress:', err)
+        }
+        currentStep.value = 4
+    } finally {
+        initialLoading.value = false
+    }
+})
 
 /**
  * Save the current step's data to the API, then advance.

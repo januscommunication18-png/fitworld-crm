@@ -23,6 +23,59 @@ class SignupController extends Controller
     use ApiResponse;
 
     /**
+     * Get current onboarding progress and saved data.
+     */
+    public function progress(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $host = $user->host;
+
+        // Get instructors for step 6
+        $instructors = $host->instructors()
+            ->where('user_id', '!=', $user->id)
+            ->get(['name', 'email'])
+            ->toArray();
+
+        // Get first class for step 7
+        $class = $host->classes()->first();
+
+        return $this->success([
+            'step' => $host->onboarding_step ?? 4,
+            'form_data' => [
+                // Step 2: Account (already saved, don't return password)
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'is_studio_owner' => $user->role === 'owner',
+                // Step 4: Studio
+                'studio_name' => $host->studio_name,
+                'studio_types' => $host->studio_types ?? [],
+                'city' => $host->city ?? '',
+                'timezone' => $host->timezone ?? 'America/New_York',
+                'subdomain' => $host->subdomain ?? '',
+                // Step 5: Location
+                'address' => $host->address ?? '',
+                'rooms' => $host->rooms ?? 1,
+                'default_capacity' => $host->default_capacity ?? 20,
+                'amenities' => $host->amenities ?? [],
+                // Step 6: Instructors
+                'add_self_as_instructor' => $user->is_instructor,
+                'instructors' => $instructors,
+                // Step 7: Class
+                'skip_class_setup' => !$class,
+                'class_name' => $class?->name ?? '',
+                'class_type' => $class?->type ?? '',
+                'class_duration' => $class?->duration_minutes ?? 60,
+                'class_capacity' => $class?->capacity ?? 20,
+                'class_price' => $class?->price,
+                // Step 8: Payments
+                'skip_payments' => !$host->stripe_account_id,
+                'stripe_connected' => (bool) $host->stripe_account_id,
+            ],
+        ]);
+    }
+
+    /**
      * Step 2: Create user account + host record.
      */
     public function register(RegisterRequest $request): JsonResponse
@@ -117,6 +170,7 @@ class SignupController extends Controller
             'city' => $data['city'] ?? null,
             'timezone' => $data['timezone'],
             'subdomain' => $data['subdomain'],
+            'onboarding_step' => max($host->onboarding_step ?? 4, 5),
         ]);
 
         return $this->success($host->fresh(), 'Studio basics saved');
@@ -135,6 +189,7 @@ class SignupController extends Controller
             'rooms' => $data['rooms'] ?? 1,
             'default_capacity' => $data['default_capacity'] ?? 20,
             'amenities' => $data['amenities'] ?? [],
+            'onboarding_step' => max($host->onboarding_step ?? 5, 6),
         ]);
 
         return $this->success($host->fresh(), 'Location saved');
@@ -182,6 +237,9 @@ class SignupController extends Controller
             }
         }
 
+        // Update onboarding step
+        $host->update(['onboarding_step' => max($host->onboarding_step ?? 6, 7)]);
+
         return $this->success($instructors, 'Instructors saved');
     }
 
@@ -194,6 +252,7 @@ class SignupController extends Controller
         $data = $request->validated();
 
         if (!empty($data['skip_class_setup'])) {
+            $host->update(['onboarding_step' => max($host->onboarding_step ?? 7, 8)]);
             return $this->success(null, 'Class setup skipped');
         }
 
@@ -208,6 +267,9 @@ class SignupController extends Controller
             'price' => $data['class_price'] ?? null,
             'is_active' => true,
         ]);
+
+        // Update onboarding step
+        $host->update(['onboarding_step' => max($host->onboarding_step ?? 7, 8)]);
 
         return $this->success($class, 'Class created');
     }
@@ -226,7 +288,12 @@ class SignupController extends Controller
 
         if (!$request->boolean('skip_payments') && $request->boolean('stripe_connected')) {
             // Placeholder: actual Stripe Connect OAuth would set this
-            $host->update(['stripe_account_id' => 'pending_connect']);
+            $host->update([
+                'stripe_account_id' => 'pending_connect',
+                'onboarding_step' => max($host->onboarding_step ?? 8, 9),
+            ]);
+        } else {
+            $host->update(['onboarding_step' => max($host->onboarding_step ?? 8, 9)]);
         }
 
         return $this->success(null, 'Payment preferences saved');

@@ -23,6 +23,7 @@ class Host extends Model
         'amenities',
         'stripe_account_id',
         'is_live',
+        'onboarding_step',
         'onboarding_completed_at',
     ];
 

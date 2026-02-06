@@ -7,5 +7,6 @@ if (el) {
     createApp(SignupWizard, {
         csrfToken: el.dataset.csrfToken || '',
         smartyKey: el.dataset.smartyKey || '',
+        authenticated: el.dataset.authenticated === 'true',
     }).mount('#signup-app')
 }

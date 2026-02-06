@@ -12,7 +12,7 @@
 <body class="bg-base-200 min-h-screen flex items-center justify-center p-4">
 
     {{-- Vue mount point with skeleton loading --}}
-    <div id="signup-app" data-csrf-token="{{ csrf_token() }}" data-smarty-key="{{ config('services.smarty.website_key', '') }}">
+    <div id="signup-app" data-csrf-token="{{ csrf_token() }}" data-smarty-key="{{ config('services.smarty.website_key', '') }}" data-authenticated="{{ Auth::check() ? 'true' : 'false' }}">
         {{-- Skeleton placeholder (shown until Vue mounts) --}}
         <div class="card w-full max-w-2xl mx-auto">
             <div class="card-body animate-pulse">
