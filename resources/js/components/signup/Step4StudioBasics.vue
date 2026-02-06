@@ -1,5 +1,5 @@
 <template>
-    <div class="card">
+    <div class="card w-[500px]">
         <div class="card-body">
             <h2 class="text-2xl font-bold mb-1">Tell us about your studio</h2>
             <p class="text-base-content/60 mb-6">Basic info to get your profile started.</p>
@@ -15,14 +15,11 @@
                 <div>
                     <label class="label-text">Studio Types</label>
                     <p class="text-xs text-base-content/50 mb-2">Select all that apply</p>
-                    <div class="flex flex-wrap gap-2">
-                        <label v-for="type in studioTypeOptions" :key="type"
-                            class="custom-option flex flex-row items-center gap-2 px-3 py-2">
-                            <input type="checkbox" class="checkbox checkbox-primary checkbox-sm"
-                                :value="type" v-model="localData.studio_types" />
-                            <span class="label-text text-sm">{{ type }}</span>
-                        </label>
-                    </div>
+                    <MultiSelect
+                        v-model="localData.studio_types"
+                        :options="studioTypeOptions"
+                        placeholder="Select studio types..."
+                    />
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -48,11 +45,11 @@
 
                 <div>
                     <label class="label-text" for="subdomain">Your Studio URL</label>
-                    <div class="input-group">
-                        <input id="subdomain" type="text" class="input grow"
+                    <div class="join w-full">
+                        <input id="subdomain" type="text" class="input join-item flex-1"
                             :class="{ 'input-error': errors.subdomain, 'input-success': subdomainAvailable === true }"
                             v-model="localData.subdomain" placeholder="yourstudio" @input="handleSubdomainInput" />
-                        <span class="input-group-text text-base-content/60">.fitcrm.app</span>
+                        <span class="btn btn-soft join-item pointer-events-none">.fitcrm.app</span>
                     </div>
                     <div class="flex items-center gap-1 mt-1">
                         <span v-if="checkingSubdomain" class="loading loading-spinner loading-xs text-base-content/40"></span>
@@ -90,6 +87,7 @@
 import { reactive, computed, ref } from 'vue'
 import api from '../../utils/api.js'
 import { debounce } from '../../utils/debounce.js'
+import MultiSelect from './MultiSelect.vue'
 
 const props = defineProps({
     formData: { type: Object, required: true },

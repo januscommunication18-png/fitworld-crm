@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full max-w-2xl mx-auto">
+    <div class="w-full max-w-[500px] mx-auto">
         <!-- Progress bar (steps 2-8) -->
         <ProgressBar v-if="currentStep >= 2 && currentStep <= 8" :current-step="currentStep" :total-steps="8" />
 
@@ -10,6 +10,7 @@
                     :is="stepComponent"
                     :form-data="formData"
                     :csrf-token="csrfToken"
+                    :smarty-key="smartyKey"
                     :loading="loading"
                     :errors="errors"
                     @next="nextStep"
@@ -40,6 +41,7 @@ import Step9GoLive from './Step9GoLive.vue'
 
 const props = defineProps({
     csrfToken: { type: String, default: '' },
+    smartyKey: { type: String, default: '' },
 })
 
 const currentStep = ref(1)
@@ -61,6 +63,8 @@ const formData = ref({
     subdomain: '',
     // Step 5: Location
     address: '',
+    state: '',
+    zipcode: '',
     rooms: 1,
     default_capacity: 20,
     room_capacities: [],

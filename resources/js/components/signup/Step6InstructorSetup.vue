@@ -1,5 +1,5 @@
 <template>
-    <div class="card">
+    <div class="card w-[500px]">
         <div class="card-body">
             <h2 class="text-2xl font-bold mb-1">Instructor Setup</h2>
             <p class="text-base-content/60 mb-6">Who teaches at your studio?</p>
