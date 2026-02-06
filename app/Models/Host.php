@@ -15,7 +15,10 @@ class Host extends Model
         'subdomain',
         'studio_types',
         'city',
+        'country',
+        'currency',
         'phone',
+        'studio_email',
         'timezone',
         'address',
         'rooms',
@@ -23,7 +26,11 @@ class Host extends Model
         'room_capacities',
         'amenities',
         'about',
+        'social_links',
+        'contact_name',
+        'support_email',
         'logo_path',
+        'cover_image_path',
         'stripe_account_id',
         'is_live',
         'onboarding_step',
@@ -36,9 +43,19 @@ class Host extends Model
             'studio_types' => 'array',
             'room_capacities' => 'array',
             'amenities' => 'array',
+            'social_links' => 'array',
             'is_live' => 'boolean',
             'onboarding_completed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Check if studio has financial data (bookings, payments, memberships)
+     */
+    public function hasFinancialData(): bool
+    {
+        // TODO: Implement when booking/payment models exist
+        return false;
     }
 
     public function users(): HasMany

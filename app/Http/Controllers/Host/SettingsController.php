@@ -63,7 +63,7 @@ class SettingsController extends Controller
     public function uploadStudioLogo(Request $request)
     {
         $request->validate([
-            'logo' => 'required|image|mimes:png,jpg,jpeg,svg|max:2048',
+            'logo' => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
         ]);
 
         $host = auth()->user()->host;
@@ -81,6 +81,111 @@ class SettingsController extends Controller
             'success' => true,
             'message' => 'Logo uploaded successfully',
             'logo_url' => \Storage::url($path),
+        ]);
+    }
+
+    public function uploadStudioCover(Request $request)
+    {
+        $request->validate([
+            'cover' => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
+        ]);
+
+        $host = auth()->user()->host;
+
+        // Delete old cover if exists
+        if ($host->cover_image_path && \Storage::disk('public')->exists($host->cover_image_path)) {
+            \Storage::disk('public')->delete($host->cover_image_path);
+        }
+
+        // Store new cover
+        $path = $request->file('cover')->store('covers/' . $host->id, 'public');
+        $host->update(['cover_image_path' => $path]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cover image uploaded successfully',
+            'cover_url' => \Storage::url($path),
+        ]);
+    }
+
+    public function updateStudioContact(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'studio_email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:50',
+            'contact_name' => 'nullable|string|max:255',
+            'support_email' => 'nullable|email|max:255',
+        ]);
+
+        $host->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Contact information updated successfully',
+        ]);
+    }
+
+    public function updateStudioSocial(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'social_links' => 'nullable|array',
+            'social_links.instagram' => 'nullable|url|max:255',
+            'social_links.facebook' => 'nullable|url|max:255',
+            'social_links.website' => 'nullable|url|max:255',
+            'social_links.tiktok' => 'nullable|url|max:255',
+        ]);
+
+        $host->update(['social_links' => $validated['social_links'] ?? []]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Social links updated successfully',
+        ]);
+    }
+
+    public function updateStudioAmenities(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'amenities' => 'nullable|array',
+        ]);
+
+        $host->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Amenities updated successfully',
+        ]);
+    }
+
+    public function updateStudioCurrency(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'currency' => 'required|string|size:3',
+            'confirmed' => 'sometimes|boolean',
+        ]);
+
+        // Check if studio has financial data and confirmation is required
+        if ($host->hasFinancialData() && !($request->confirmed ?? false)) {
+            return response()->json([
+                'success' => false,
+                'requires_confirmation' => true,
+                'message' => 'Currency change requires confirmation due to existing financial data.',
+            ]);
+        }
+
+        $host->update(['currency' => $validated['currency']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Currency updated successfully',
         ]);
     }
 
