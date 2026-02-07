@@ -36,6 +36,7 @@ class Host extends Model
         'onboarding_step',
         'onboarding_completed_at',
         'booking_settings',
+        'policies',
     ];
 
     protected function casts(): array
@@ -46,6 +47,7 @@ class Host extends Model
             'amenities' => 'array',
             'social_links' => 'array',
             'booking_settings' => 'array',
+            'policies' => 'array',
             'is_live' => 'boolean',
             'onboarding_completed_at' => 'datetime',
         ];
@@ -88,6 +90,52 @@ class Host extends Model
             'filter_class_type' => true,
             'filter_instructor' => true,
             'filter_location' => true,
+        ];
+    }
+
+    /**
+     * Get a policy setting with default fallback
+     */
+    public function getPolicy(string $key, $default = null)
+    {
+        return $this->policies[$key] ?? $default;
+    }
+
+    /**
+     * Get default policies
+     */
+    public static function defaultPolicies(): array
+    {
+        return [
+            // Cancellation Policy
+            'allow_cancellations' => true,
+            'cancellation_window_hours' => 12,
+            'cancellation_fee' => null,
+            'late_cancellation_handling' => 'mark_late', // mark_late, charge_fee, deduct_credit
+
+            // No-Show Policy
+            'no_show_fee' => null,
+            'no_show_handling' => 'no_action', // no_action, charge_fee, deduct_credit, strike
+            'no_show_grace_period_minutes' => 15,
+
+            // Waitlist Policy
+            'enable_waitlist' => true,
+            'waitlist_auto_promote' => true,
+            'waitlist_promotion_window_minutes' => 120,
+            'waitlist_notify_on_promotion' => true,
+            'waitlist_hold_spot_minutes' => 15,
+
+            // Booking Limits
+            'max_bookings_per_class' => 1,
+            'max_active_bookings' => null,
+            'allow_booking_without_payment' => false,
+            'booking_earliest_days' => 30,
+            'booking_latest_minutes' => 30,
+
+            // Studio Rules
+            'house_rules' => null,
+            'liability_waiver_url' => null,
+            'arrival_instructions' => null,
         ];
     }
 

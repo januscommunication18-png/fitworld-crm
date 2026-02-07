@@ -7,6 +7,7 @@ use App\Http\Controllers\Host\InstructorController;
 use App\Http\Controllers\Host\LocationController;
 use App\Http\Controllers\Host\RoomController;
 use App\Http\Controllers\Host\BookingPageController;
+use App\Http\Controllers\Host\PoliciesController;
 use App\Http\Controllers\Host\OfferController;
 use App\Http\Controllers\Host\PaymentController;
 use App\Http\Controllers\Host\ReportController;
@@ -121,7 +122,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/locations/booking-page/cover', [BookingPageController::class, 'removeCover'])->name('settings.booking-page.remove-cover');
 
     // Policies
-    Route::get('/settings/locations/policies', [SettingsController::class, 'policies'])->name('settings.locations.policies');
+    // Policies
+    Route::get('/settings/locations/policies', [PoliciesController::class, 'index'])->name('settings.locations.policies');
+    Route::put('/settings/locations/policies', [PoliciesController::class, 'update'])->name('settings.policies.update');
 
     // Location CRUD (parameterized routes must come AFTER specific routes)
     Route::get('/settings/locations/{location}/edit', [LocationController::class, 'edit'])->name('settings.locations.edit');

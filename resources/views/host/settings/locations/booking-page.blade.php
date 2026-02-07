@@ -191,23 +191,23 @@
 
                     {{-- Toggle Options --}}
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                            <div>
-                                <div class="font-medium">Show Instructors</div>
-                                <div class="text-sm text-base-content/60">Display instructor list on booking page</div>
-                            </div>
-                            <input type="checkbox" name="show_instructors" value="1" class="toggle toggle-primary"
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="show_instructors" value="1" class="checkbox checkbox-primary mt-1"
                                 {{ old('show_instructors', $settings['show_instructors'] ?? true) ? 'checked' : '' }} />
-                        </div>
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Show Instructors</span>
+                                <span class="text-base-content/70 block">Display instructor list on booking page</span>
+                            </span>
+                        </label>
 
-                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                            <div>
-                                <div class="font-medium">Show Amenities</div>
-                                <div class="text-sm text-base-content/60">Display studio amenities on booking page</div>
-                            </div>
-                            <input type="checkbox" name="show_amenities" value="1" class="toggle toggle-primary"
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="show_amenities" value="1" class="checkbox checkbox-primary mt-1"
                                 {{ old('show_amenities', $settings['show_amenities'] ?? true) ? 'checked' : '' }} />
-                        </div>
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Show Amenities</span>
+                                <span class="text-base-content/70 block">Display studio amenities on booking page</span>
+                            </span>
+                        </label>
                     </div>
 
                     {{-- Location Display --}}
@@ -273,41 +273,41 @@
 
                     {{-- Toggle Options --}}
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                            <div>
-                                <div class="font-medium">Show Class Descriptions</div>
-                                <div class="text-sm text-base-content/60">Display full class descriptions on the schedule</div>
-                            </div>
-                            <input type="checkbox" name="show_class_descriptions" value="1" class="toggle toggle-primary"
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="show_class_descriptions" value="1" class="checkbox checkbox-primary mt-1"
                                 {{ old('show_class_descriptions', $settings['show_class_descriptions'] ?? true) ? 'checked' : '' }} />
-                        </div>
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Show Class Descriptions</span>
+                                <span class="text-base-content/70 block">Display full class descriptions on the schedule</span>
+                            </span>
+                        </label>
 
-                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                            <div>
-                                <div class="font-medium">Show Instructor Photos</div>
-                                <div class="text-sm text-base-content/60">Display instructor profile photos next to classes</div>
-                            </div>
-                            <input type="checkbox" name="show_instructor_photos" value="1" class="toggle toggle-primary"
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="show_instructor_photos" value="1" class="checkbox checkbox-primary mt-1"
                                 {{ old('show_instructor_photos', $settings['show_instructor_photos'] ?? true) ? 'checked' : '' }} />
-                        </div>
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Show Instructor Photos</span>
+                                <span class="text-base-content/70 block">Display instructor profile photos next to classes</span>
+                            </span>
+                        </label>
 
-                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                            <div>
-                                <div class="font-medium">Allow Waitlist</div>
-                                <div class="text-sm text-base-content/60">Let customers join a waitlist when classes are full</div>
-                            </div>
-                            <input type="checkbox" name="allow_waitlist" value="1" class="toggle toggle-primary"
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="allow_waitlist" value="1" class="checkbox checkbox-primary mt-1"
                                 {{ old('allow_waitlist', $settings['allow_waitlist'] ?? true) ? 'checked' : '' }} />
-                        </div>
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Allow Waitlist</span>
+                                <span class="text-base-content/70 block">Let customers join a waitlist when classes are full</span>
+                            </span>
+                        </label>
 
-                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                            <div>
-                                <div class="font-medium">Require Account to Book</div>
-                                <div class="text-sm text-base-content/60">Customers must create an account before booking</div>
-                            </div>
-                            <input type="checkbox" name="require_account" value="1" class="toggle toggle-primary"
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="require_account" value="1" class="checkbox checkbox-primary mt-1"
                                 {{ old('require_account', $settings['require_account'] ?? false) ? 'checked' : '' }} />
-                        </div>
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Require Account to Book</span>
+                                <span class="text-base-content/70 block">Customers must create an account before booking</span>
+                            </span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -320,33 +320,33 @@
                 <p class="text-base-content/60 text-sm mb-6">Choose which filters customers can use</p>
 
                 <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                        <div>
-                            <div class="font-medium">Filter by Class Type</div>
-                            <div class="text-sm text-base-content/60">Allow filtering classes by type (e.g., Yoga, Pilates)</div>
-                        </div>
-                        <input type="checkbox" name="filter_class_type" value="1" class="toggle toggle-primary"
+                    <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="filter_class_type" value="1" class="checkbox checkbox-primary mt-1"
                             {{ old('filter_class_type', $settings['filter_class_type'] ?? true) ? 'checked' : '' }} />
-                    </div>
+                        <span class="label-text w-full text-start">
+                            <span class="text-base font-medium">Filter by Class Type</span>
+                            <span class="text-base-content/70 block">Allow filtering classes by type (e.g., Yoga, Pilates)</span>
+                        </span>
+                    </label>
 
-                    <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                        <div>
-                            <div class="font-medium">Filter by Instructor</div>
-                            <div class="text-sm text-base-content/60">Allow filtering classes by instructor</div>
-                        </div>
-                        <input type="checkbox" name="filter_instructor" value="1" class="toggle toggle-primary"
+                    <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="filter_instructor" value="1" class="checkbox checkbox-primary mt-1"
                             {{ old('filter_instructor', $settings['filter_instructor'] ?? true) ? 'checked' : '' }} />
-                    </div>
+                        <span class="label-text w-full text-start">
+                            <span class="text-base font-medium">Filter by Instructor</span>
+                            <span class="text-base-content/70 block">Allow filtering classes by instructor</span>
+                        </span>
+                    </label>
 
                     @if($locations->count() > 1)
-                    <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                        <div>
-                            <div class="font-medium">Filter by Location</div>
-                            <div class="text-sm text-base-content/60">Allow filtering classes by location</div>
-                        </div>
-                        <input type="checkbox" name="filter_location" value="1" class="toggle toggle-primary"
+                    <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                        <input type="checkbox" name="filter_location" value="1" class="checkbox checkbox-primary mt-1"
                             {{ old('filter_location', $settings['filter_location'] ?? true) ? 'checked' : '' }} />
-                    </div>
+                        <span class="label-text w-full text-start">
+                            <span class="text-base font-medium">Filter by Location</span>
+                            <span class="text-base-content/70 block">Allow filtering classes by location</span>
+                        </span>
+                    </label>
                     @endif
                 </div>
             </div>
