@@ -111,6 +111,9 @@
                                     <span class="icon-[tabler--dots-vertical] size-5"></span>
                                 </summary>
                                 <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+                                    <li><a href="javascript:void(0)" onclick="viewLocation({{ $location->id }})">
+                                        <span class="icon-[tabler--eye] size-4"></span> View
+                                    </a></li>
                                     <li><a href="{{ route('settings.locations.edit', $location) }}">
                                         <span class="icon-[tabler--edit] size-4"></span> Edit
                                     </a></li>
@@ -148,6 +151,83 @@
     </div>
 </div>
 
+{{-- Location View Drawer --}}
+<div id="location-drawer" class="fixed inset-0 z-[60] pointer-events-none">
+    {{-- Backdrop --}}
+    <div id="drawer-backdrop" class="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300" onclick="closeLocationDrawer()"></div>
+    {{-- Drawer Panel --}}
+    <div id="drawer-panel" class="absolute top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl transform translate-x-full transition-transform duration-300">
+        <div class="flex flex-col h-full">
+            {{-- Header --}}
+            <div class="flex items-center justify-between p-4 border-b border-base-200">
+                <h3 class="text-lg font-semibold">Location Details</h3>
+                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="closeLocationDrawer()">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
+            </div>
+            {{-- Content --}}
+            <div class="flex-1 overflow-y-auto p-4" id="drawer-content">
+                {{-- Loading State --}}
+                <div id="drawer-loading" class="flex items-center justify-center py-12">
+                    <span class="loading loading-spinner loading-lg text-primary"></span>
+                </div>
+                {{-- Location Details --}}
+                <div id="drawer-details" class="hidden space-y-6">
+                    {{-- Location Info --}}
+                    <div class="flex items-start gap-4">
+                        <div class="flex items-center justify-center size-12 rounded-lg bg-primary/10 shrink-0">
+                            <span class="icon-[tabler--map-pin] size-6 text-primary"></span>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-lg" id="drawer-location-name"></h4>
+                            <p class="text-sm text-base-content/70 mt-1" id="drawer-location-address"></p>
+                        </div>
+                    </div>
+
+                    {{-- Contact Info --}}
+                    <div class="space-y-2" id="drawer-contact-section">
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider">Contact</h5>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2" id="drawer-phone-row">
+                                <span class="icon-[tabler--phone] size-4 text-base-content/60"></span>
+                                <span id="drawer-location-phone"></span>
+                            </div>
+                            <div class="flex items-center gap-2" id="drawer-email-row">
+                                <span class="icon-[tabler--mail] size-4 text-base-content/60"></span>
+                                <span id="drawer-location-email"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Notes --}}
+                    <div id="drawer-notes-section" class="hidden">
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-2">Notes</h5>
+                        <div class="p-3 bg-base-200 rounded-lg text-sm" id="drawer-location-notes"></div>
+                    </div>
+
+                    {{-- Rooms --}}
+                    <div>
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-3">Rooms</h5>
+                        <div id="drawer-rooms-list" class="space-y-2">
+                            {{-- Rooms will be populated here --}}
+                        </div>
+                        <div id="drawer-no-rooms" class="hidden text-center py-6 border border-dashed border-base-content/20 rounded-lg">
+                            <span class="icon-[tabler--door] size-8 text-base-content/30"></span>
+                            <p class="text-sm text-base-content/60 mt-2">No rooms in this location</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{-- Footer --}}
+            <div class="p-4 border-t border-base-200">
+                <a href="#" id="drawer-edit-link" class="btn btn-primary w-full">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit Location
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Delete Confirmation Modal --}}
 <div id="delete-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200">
     <div class="card bg-base-100 w-full max-w-md mx-4 transform scale-95 transition-transform duration-200">
@@ -179,6 +259,121 @@
 <script>
 var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 var deleteLocationId = null;
+
+// Location data for drawer
+var locationsData = @json($locations->load('rooms'));
+
+// View location drawer
+function viewLocation(id) {
+    // Close all open dropdowns
+    document.querySelectorAll('details.dropdown[open]').forEach(function(d) { d.removeAttribute('open'); });
+
+    var location = locationsData.find(function(loc) { return loc.id === id; });
+    if (!location) return;
+
+    // Show drawer
+    openLocationDrawer();
+
+    // Hide loading, show details
+    document.getElementById('drawer-loading').classList.add('hidden');
+    document.getElementById('drawer-details').classList.remove('hidden');
+
+    // Populate location info
+    document.getElementById('drawer-location-name').textContent = location.name;
+    document.getElementById('drawer-location-address').textContent = location.full_address || [
+        location.address_line_1,
+        location.address_line_2,
+        location.city,
+        location.state,
+        location.postal_code
+    ].filter(Boolean).join(', ');
+
+    // Contact info
+    var hasContact = location.phone || location.email;
+    document.getElementById('drawer-contact-section').classList.toggle('hidden', !hasContact);
+
+    if (location.phone) {
+        document.getElementById('drawer-phone-row').classList.remove('hidden');
+        document.getElementById('drawer-location-phone').textContent = location.phone;
+    } else {
+        document.getElementById('drawer-phone-row').classList.add('hidden');
+    }
+
+    if (location.email) {
+        document.getElementById('drawer-email-row').classList.remove('hidden');
+        document.getElementById('drawer-location-email').textContent = location.email;
+    } else {
+        document.getElementById('drawer-email-row').classList.add('hidden');
+    }
+
+    // Notes
+    if (location.notes) {
+        document.getElementById('drawer-notes-section').classList.remove('hidden');
+        document.getElementById('drawer-location-notes').textContent = location.notes;
+    } else {
+        document.getElementById('drawer-notes-section').classList.add('hidden');
+    }
+
+    // Rooms
+    var roomsList = document.getElementById('drawer-rooms-list');
+    var noRooms = document.getElementById('drawer-no-rooms');
+    roomsList.innerHTML = '';
+
+    if (location.rooms && location.rooms.length > 0) {
+        noRooms.classList.add('hidden');
+        location.rooms.forEach(function(room) {
+            var roomHtml = '<div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">' +
+                '<div class="flex items-center gap-3">' +
+                '<span class="icon-[tabler--door] size-5 text-base-content/60"></span>' +
+                '<div>' +
+                '<div class="font-medium">' + room.name + '</div>' +
+                '<div class="text-sm text-base-content/60">Capacity: ' + room.capacity + '</div>' +
+                '</div>' +
+                '</div>' +
+                '<span class="badge badge-' + (room.is_active ? 'success' : 'neutral') + ' badge-soft badge-sm">' + (room.is_active ? 'Active' : 'Inactive') + '</span>' +
+                '</div>';
+            roomsList.insertAdjacentHTML('beforeend', roomHtml);
+        });
+    } else {
+        noRooms.classList.remove('hidden');
+    }
+
+    // Edit link
+    document.getElementById('drawer-edit-link').href = '/settings/locations/' + location.id + '/edit';
+}
+
+function openLocationDrawer() {
+    var drawer = document.getElementById('location-drawer');
+    var backdrop = document.getElementById('drawer-backdrop');
+    var panel = document.getElementById('drawer-panel');
+
+    drawer.classList.remove('pointer-events-none');
+    drawer.classList.add('pointer-events-auto');
+    backdrop.classList.remove('opacity-0');
+    backdrop.classList.add('opacity-100');
+    panel.classList.remove('translate-x-full');
+    panel.classList.add('translate-x-0');
+
+    // Reset to loading state
+    document.getElementById('drawer-loading').classList.remove('hidden');
+    document.getElementById('drawer-details').classList.add('hidden');
+}
+
+function closeLocationDrawer() {
+    var drawer = document.getElementById('location-drawer');
+    var backdrop = document.getElementById('drawer-backdrop');
+    var panel = document.getElementById('drawer-panel');
+
+    backdrop.classList.add('opacity-0');
+    backdrop.classList.remove('opacity-100');
+    panel.classList.add('translate-x-full');
+    panel.classList.remove('translate-x-0');
+
+    setTimeout(function() {
+        drawer.classList.add('pointer-events-none');
+        drawer.classList.remove('pointer-events-auto');
+    }, 300);
+}
 
 function showToast(message, type) {
     type = type || 'success';
@@ -261,6 +456,7 @@ document.getElementById('confirm-delete-btn').addEventListener('click', function
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeDeleteModal();
+        closeLocationDrawer();
     }
 });
 </script>

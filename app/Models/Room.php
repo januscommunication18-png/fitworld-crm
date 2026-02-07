@@ -15,12 +15,15 @@ class Room extends Model
         'name',
         'capacity',
         'description',
+        'dimensions',
+        'amenities',
         'is_active',
     ];
 
     protected function casts(): array
     {
         return [
+            'amenities' => 'array',
             'is_active' => 'boolean',
         ];
     }

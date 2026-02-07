@@ -5,6 +5,7 @@ use App\Http\Controllers\Host\BookingController;
 use App\Http\Controllers\Host\DashboardController;
 use App\Http\Controllers\Host\InstructorController;
 use App\Http\Controllers\Host\LocationController;
+use App\Http\Controllers\Host\RoomController;
 use App\Http\Controllers\Host\OfferController;
 use App\Http\Controllers\Host\PaymentController;
 use App\Http\Controllers\Host\ReportController;
@@ -105,7 +106,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('settings.locations.destroy');
     Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
 
-    Route::get('/settings/locations/rooms', [SettingsController::class, 'rooms'])->name('settings.locations.rooms');
+    Route::get('/settings/locations/rooms', [RoomController::class, 'index'])->name('settings.locations.rooms');
+    Route::get('/settings/locations/rooms/create', [RoomController::class, 'create'])->name('settings.rooms.create');
+    Route::post('/settings/locations/rooms', [RoomController::class, 'store'])->name('settings.rooms.store');
+    Route::get('/settings/locations/rooms/{room}/edit', [RoomController::class, 'edit'])->name('settings.rooms.edit');
+    Route::put('/settings/locations/rooms/{room}', [RoomController::class, 'update'])->name('settings.rooms.update');
+    Route::delete('/settings/locations/rooms/{room}', [RoomController::class, 'destroy'])->name('settings.rooms.destroy');
+    Route::post('/settings/locations/rooms/{room}/toggle-status', [RoomController::class, 'toggleStatus'])->name('settings.rooms.toggle-status');
+
     Route::get('/settings/locations/booking-page', [SettingsController::class, 'bookingPage'])->name('settings.locations.booking-page');
     Route::get('/settings/locations/policies', [SettingsController::class, 'policies'])->name('settings.locations.policies');
 
