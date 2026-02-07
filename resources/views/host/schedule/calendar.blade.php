@@ -3,8 +3,11 @@
 @section('title', 'Schedule')
 
 @section('breadcrumbs')
-    <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-    <li aria-current="page"><span class="icon-[tabler--calendar] me-1 size-4"></span> Schedule</li>
+    <ol>
+        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li aria-current="page"><span class="icon-[tabler--calendar] me-1 size-4"></span> Schedule</li>
+    </ol>
 @endsection
 
 @section('content')
