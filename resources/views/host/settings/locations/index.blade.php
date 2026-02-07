@@ -104,22 +104,24 @@
                             </span>
                         </div>
 
-                        {{-- Actions Dropdown --}}
-                        <div class="dropdown relative inline-flex [--auto-close:inside] [--placement:bottom-end]">
-                            <button id="dropdown-loc-{{ $location->id }}" type="button" class="dropdown-toggle btn btn-ghost btn-sm btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
-                                <span class="icon-[tabler--dots-vertical] size-5"></span>
-                            </button>
-                            <div class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu" aria-orientation="vertical" aria-labelledby="dropdown-loc-{{ $location->id }}">
-                                <div><a class="dropdown-item" href="{{ route('settings.locations.edit', $location) }}">
-                                    <span class="icon-[tabler--edit] size-4"></span> Edit
-                                </a></div>
-                                <div><a class="dropdown-item" href="javascript:void(0)" onclick="toggleLocationStatus({{ $location->id }}, {{ $location->is_active ?? 1 }})">
-                                    <span class="icon-[tabler--eye-off] size-4"></span> Mark as Inactive
-                                </a></div>
-                                <div><a class="dropdown-item" href="javascript:void(0)" onclick="confirmDeleteLocation({{ $location->id }}, '{{ addslashes($location->name) }}', {{ $location->rooms_count ?? 0 }})">
-                                    <span class="icon-[tabler--trash] size-4 text-error"></span> <span class="text-error">Delete</span>
-                                </a></div>
-                            </div>
+                        {{-- Actions Dropdown (CSS-only) --}}
+                        <div class="relative">
+                            <details class="dropdown dropdown-bottom dropdown-end">
+                                <summary class="btn btn-ghost btn-sm btn-square list-none cursor-pointer">
+                                    <span class="icon-[tabler--dots-vertical] size-5"></span>
+                                </summary>
+                                <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+                                    <li><a href="{{ route('settings.locations.edit', $location) }}">
+                                        <span class="icon-[tabler--edit] size-4"></span> Edit
+                                    </a></li>
+                                    <li><a href="javascript:void(0)" onclick="toggleLocationStatus({{ $location->id }}, {{ $location->is_active ?? 1 }})">
+                                        <span class="icon-[tabler--eye-off] size-4"></span> Mark as Inactive
+                                    </a></li>
+                                    <li><a href="javascript:void(0)" onclick="confirmDeleteLocation({{ $location->id }}, '{{ addslashes($location->name) }}', {{ $location->rooms_count ?? 0 }})" class="text-error">
+                                        <span class="icon-[tabler--trash] size-4"></span> Delete
+                                    </a></li>
+                                </ul>
+                            </details>
                         </div>
                     </div>
                 </div>

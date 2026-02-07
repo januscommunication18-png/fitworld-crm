@@ -31,6 +31,7 @@
     .icon-\[tabler--clock\]::before { content: "\ea70"; font-family: "tabler-icons"; }
     .icon-\[tabler--chevron-right\]::before { content: "\ea61"; font-family: "tabler-icons"; }
     .icon-\[tabler--dots\]::before { content: "\ea95"; font-family: "tabler-icons"; }
+    .icon-\[tabler--dots-vertical\]::before { content: "\ea96"; font-family: "tabler-icons"; }
     .icon-\[tabler--file\]::before { content: "\eaa4"; font-family: "tabler-icons"; }
     .icon-\[tabler--x\]::before { content: "\eb55"; font-family: "tabler-icons"; }
     .icon-\[tabler--checks\]::before { content: "\ebaa"; font-family: "tabler-icons"; }
@@ -997,6 +998,41 @@
     </div>
   </div>
 
+  <!-- ============================================= -->
+  <!-- 21. Dropdown with Icon Button                 -->
+  <!-- ============================================= -->
+  <section class="mb-12">
+    <h2 class="text-lg font-semibold mb-4">21. Dropdown with Icon Button</h2>
+
+    <div class="flex gap-4">
+      <!-- Simple Dropdown -->
+      <div class="dropdown relative inline-flex">
+        <button id="dropdown-simple" type="button" class="dropdown-toggle btn btn-secondary" aria-haspopup="menu" aria-expanded="false" aria-label="Dropdown">
+          Simple Dropdown
+          <span class="icon-[tabler--chevron-down] dropdown-open:rotate-180 size-4"></span>
+        </button>
+        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60 text-base-content" role="menu" aria-orientation="vertical" aria-labelledby="dropdown-simple">
+          <li><a class="dropdown-item" href="#">Action</a></li>
+          <li><a class="dropdown-item" href="#">Another action</a></li>
+          <li><a class="dropdown-item" href="#">Something else</a></li>
+        </ul>
+      </div>
+
+      <!-- Icon Button Dropdown -->
+      <div class="dropdown relative inline-flex">
+        <button id="dropdown-icon-btn" type="button" class="dropdown-toggle btn btn-square btn-primary" aria-haspopup="menu" aria-expanded="false" aria-label="Dropdown">
+          <span class="icon-[tabler--dots-vertical] size-6"></span>
+        </button>
+        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-60 text-base-content" role="menu" aria-orientation="vertical" aria-labelledby="dropdown-icon-btn">
+          <li><a class="dropdown-item" href="#">My Profile</a></li>
+          <li><a class="dropdown-item" href="#">Settings</a></li>
+          <li><a class="dropdown-item" href="#">Billing</a></li>
+          <li><a class="dropdown-item" href="#">FAQs</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
   <!-- Notyf JS -->
   <script src="./node_modules/notyf/notyf.min.js"></script>
 
@@ -1009,6 +1045,14 @@
       console.log('FlyonUI loaded:', typeof HSOverlay !== 'undefined');
       console.log('HSOverlay:', HSOverlay);
       console.log('Overlay collection:', window.$hsOverlayCollection);
+      console.log('HSDropdown:', typeof HSDropdown !== 'undefined' ? HSDropdown : 'NOT FOUND');
+      console.log('Dropdown collection:', window.$hsDropdownCollection);
+
+      // Force reinitialize dropdowns
+      if (typeof HSStaticMethods !== 'undefined') {
+        HSStaticMethods.autoInit(['dropdown']);
+        console.log('Dropdowns reinitialized');
+      }
     });
   </script>
 

@@ -37,14 +37,16 @@
                         <div class="flex-1">
                             <div class="flex items-center justify-between">
                                 <div class="font-medium">Jane Smith</div>
-                                <div class="dropdown dropdown-end">
-                                    <button class="btn btn-ghost btn-xs btn-square">
-                                        <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item"><span class="icon-[tabler--edit] size-4"></span> Edit</a></li>
-                                        <li><a class="dropdown-item"><span class="icon-[tabler--calendar] size-4"></span> View Schedule</a></li>
-                                    </ul>
+                                <div class="relative">
+                                    <details class="dropdown dropdown-bottom dropdown-end">
+                                        <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
+                                            <span class="icon-[tabler--dots-vertical] size-4"></span>
+                                        </summary>
+                                        <ul class="dropdown-content menu bg-base-100 rounded-box w-44 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+                                            <li><a href="#"><span class="icon-[tabler--edit] size-4"></span> Edit</a></li>
+                                            <li><a href="#"><span class="icon-[tabler--calendar] size-4"></span> View Schedule</a></li>
+                                        </ul>
+                                    </details>
                                 </div>
                             </div>
                             <div class="text-sm text-base-content/60">jane@zenyoga.com</div>
@@ -67,14 +69,16 @@
                         <div class="flex-1">
                             <div class="flex items-center justify-between">
                                 <div class="font-medium">Mike Johnson</div>
-                                <div class="dropdown dropdown-end">
-                                    <button class="btn btn-ghost btn-xs btn-square">
-                                        <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item"><span class="icon-[tabler--edit] size-4"></span> Edit</a></li>
-                                        <li><a class="dropdown-item"><span class="icon-[tabler--calendar] size-4"></span> View Schedule</a></li>
-                                    </ul>
+                                <div class="relative">
+                                    <details class="dropdown dropdown-bottom dropdown-end">
+                                        <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
+                                            <span class="icon-[tabler--dots-vertical] size-4"></span>
+                                        </summary>
+                                        <ul class="dropdown-content menu bg-base-100 rounded-box w-44 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+                                            <li><a href="#"><span class="icon-[tabler--edit] size-4"></span> Edit</a></li>
+                                            <li><a href="#"><span class="icon-[tabler--calendar] size-4"></span> View Schedule</a></li>
+                                        </ul>
+                                    </details>
                                 </div>
                             </div>
                             <div class="text-sm text-base-content/60">mike@zenyoga.com</div>

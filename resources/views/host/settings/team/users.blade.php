@@ -77,14 +77,16 @@
                             <td><span class="badge badge-success badge-soft badge-sm">Active</span></td>
                             <td class="text-sm text-base-content/60">2 hours ago</td>
                             <td>
-                                <div class="dropdown dropdown-end">
-                                    <button class="btn btn-ghost btn-xs btn-square">
-                                        <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item"><span class="icon-[tabler--edit] size-4"></span> Edit Role</a></li>
-                                        <li><a class="dropdown-item text-error"><span class="icon-[tabler--trash] size-4"></span> Remove</a></li>
-                                    </ul>
+                                <div class="relative">
+                                    <details class="dropdown dropdown-bottom dropdown-end">
+                                        <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
+                                            <span class="icon-[tabler--dots-vertical] size-4"></span>
+                                        </summary>
+                                        <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+                                            <li><a href="#"><span class="icon-[tabler--edit] size-4"></span> Edit Role</a></li>
+                                            <li><a href="#" class="text-error"><span class="icon-[tabler--trash] size-4"></span> Remove</a></li>
+                                        </ul>
+                                    </details>
                                 </div>
                             </td>
                         </tr>
@@ -106,14 +108,16 @@
                             <td><span class="badge badge-warning badge-soft badge-sm">Pending</span></td>
                             <td class="text-sm text-base-content/60">Invited 2 days ago</td>
                             <td>
-                                <div class="dropdown dropdown-end">
-                                    <button class="btn btn-ghost btn-xs btn-square">
-                                        <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><a class="dropdown-item"><span class="icon-[tabler--send] size-4"></span> Resend Invite</a></li>
-                                        <li><a class="dropdown-item text-error"><span class="icon-[tabler--x] size-4"></span> Cancel Invite</a></li>
-                                    </ul>
+                                <div class="relative">
+                                    <details class="dropdown dropdown-bottom dropdown-end">
+                                        <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
+                                            <span class="icon-[tabler--dots-vertical] size-4"></span>
+                                        </summary>
+                                        <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+                                            <li><a href="#"><span class="icon-[tabler--send] size-4"></span> Resend Invite</a></li>
+                                            <li><a href="#" class="text-error"><span class="icon-[tabler--x] size-4"></span> Cancel Invite</a></li>
+                                        </ul>
+                                    </details>
                                 </div>
                             </td>
                         </tr>
