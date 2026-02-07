@@ -120,7 +120,7 @@ function generateSubdomainFromName(name) {
         .replace(/[^a-z0-9\s-]/g, '')
         .replace(/\s+/g, '-')
         .replace(/--+/g, '-')
-        .replace(/^-|-$/g, '')
+        .replace(/(?:^-|-$)/g, '')
 }
 
 // Watch studio_name and auto-populate subdomain
