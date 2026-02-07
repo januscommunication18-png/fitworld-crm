@@ -245,17 +245,17 @@
 
 {{-- Permissions Modal --}}
 <div id="permissions-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200 overflow-y-auto py-8">
-    <div class="card bg-base-100 w-full max-w-3xl mx-4 transform scale-95 transition-transform duration-200">
+    <div class="card bg-base-100 w-full max-w-lg mx-4 transform scale-95 transition-transform duration-200">
         <div class="card-body p-0">
             {{-- Modal Header --}}
-            <div class="flex items-center justify-between p-6 pb-4 border-b border-base-content/10">
+            <div class="flex items-center justify-between p-5 pb-4 border-b border-base-content/10">
                 <div>
                     <h3 class="text-lg font-semibold flex items-center gap-2">
                         <span class="icon-[tabler--shield-cog] size-5 text-primary"></span>
                         Customize Permissions
                     </h3>
                     <p class="text-base-content/60 text-sm mt-1">
-                        Configuring access for <span id="permissions-user-name" class="font-semibold text-primary"></span>
+                        <span id="permissions-user-name" class="font-semibold text-primary"></span>
                         <span id="permissions-user-role" class="badge badge-soft badge-sm ml-1"></span>
                     </p>
                 </div>
@@ -268,72 +268,81 @@
                 @csrf
                 @method('PUT')
 
-                {{-- Permissions Grid --}}
-                <div class="max-h-[60vh] overflow-y-auto p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @php
-                            $categoryIcons = [
-                                'schedule' => 'icon-[tabler--calendar]',
-                                'bookings' => 'icon-[tabler--clipboard-list]',
-                                'students' => 'icon-[tabler--users]',
-                                'offers' => 'icon-[tabler--tag]',
-                                'insights' => 'icon-[tabler--chart-bar]',
-                                'payments' => 'icon-[tabler--credit-card]',
-                                'studio' => 'icon-[tabler--building-store]',
-                                'team' => 'icon-[tabler--users-group]',
-                                'billing' => 'icon-[tabler--receipt]',
-                            ];
-                            $categoryColors = [
-                                'schedule' => 'text-primary',
-                                'bookings' => 'text-secondary',
-                                'students' => 'text-info',
-                                'offers' => 'text-warning',
-                                'insights' => 'text-accent',
-                                'payments' => 'text-success',
-                                'studio' => 'text-primary',
-                                'team' => 'text-secondary',
-                                'billing' => 'text-info',
-                            ];
-                        @endphp
+                {{-- Permissions Accordion --}}
+                <div class="max-h-[60vh] overflow-y-auto p-5">
+                    @php
+                        $categoryIcons = [
+                            'schedule' => 'icon-[tabler--calendar]',
+                            'bookings' => 'icon-[tabler--clipboard-list]',
+                            'students' => 'icon-[tabler--users]',
+                            'offers' => 'icon-[tabler--tag]',
+                            'insights' => 'icon-[tabler--chart-bar]',
+                            'payments' => 'icon-[tabler--credit-card]',
+                            'studio' => 'icon-[tabler--building-store]',
+                            'team' => 'icon-[tabler--users-group]',
+                            'billing' => 'icon-[tabler--receipt]',
+                        ];
+                        $categoryColors = [
+                            'schedule' => 'text-primary bg-primary/10',
+                            'bookings' => 'text-secondary bg-secondary/10',
+                            'students' => 'text-info bg-info/10',
+                            'offers' => 'text-warning bg-warning/10',
+                            'insights' => 'text-accent bg-accent/10',
+                            'payments' => 'text-success bg-success/10',
+                            'studio' => 'text-primary bg-primary/10',
+                            'team' => 'text-secondary bg-secondary/10',
+                            'billing' => 'text-info bg-info/10',
+                        ];
+                    @endphp
 
+                    <div class="space-y-2">
                         @foreach($groupedPermissions as $category => $permissions)
-                        <div class="bg-base-200/50 rounded-xl p-4">
-                            <div class="flex items-center gap-2 mb-3">
-                                <span class="{{ $categoryIcons[$category] ?? 'icon-[tabler--settings]' }} size-5 {{ $categoryColors[$category] ?? 'text-base-content' }}"></span>
-                                <h4 class="font-semibold text-sm">{{ ucfirst($category) }}</h4>
-                                <button type="button" class="ml-auto text-xs text-primary hover:underline" onclick="toggleCategory('{{ $category }}')">
-                                    Toggle all
-                                </button>
-                            </div>
-                            <div class="space-y-2">
+                        <details class="group border border-base-content/10 rounded-lg overflow-hidden" id="perm-section-{{ $category }}">
+                            <summary class="flex items-center gap-3 p-3 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center {{ $categoryColors[$category] ?? 'text-base-content bg-base-200' }}">
+                                    <span class="{{ $categoryIcons[$category] ?? 'icon-[tabler--settings]' }} size-4"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-sm">{{ ucfirst($category) }}</h4>
+                                    <p class="text-xs text-base-content/50" id="perm-count-{{ $category }}">0 of {{ count($permissions) }} enabled</p>
+                                </div>
+                                <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                            </summary>
+                            <div class="border-t border-base-content/10 bg-base-200/30 p-3 space-y-1">
+                                <div class="flex justify-end mb-2">
+                                    <button type="button" class="text-xs text-primary hover:underline" onclick="toggleCategory('{{ $category }}'); updateCategoryCount('{{ $category }}');">
+                                        Toggle all
+                                    </button>
+                                </div>
                                 @foreach($permissions as $permission => $label)
-                                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-100 cursor-pointer transition-colors group">
+                                <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-100 cursor-pointer transition-colors">
                                     <input type="checkbox"
                                            name="permissions[]"
                                            value="{{ $permission }}"
                                            class="checkbox checkbox-primary checkbox-sm permission-checkbox"
                                            data-permission="{{ $permission }}"
-                                           data-category="{{ $category }}" />
-                                    <span class="text-sm group-hover:text-base-content">{{ $label }}</span>
+                                           data-category="{{ $category }}"
+                                           onchange="updateCategoryCount('{{ $category }}')" />
+                                    <span class="text-sm">{{ $label }}</span>
                                 </label>
                                 @endforeach
                             </div>
-                        </div>
+                        </details>
                         @endforeach
                     </div>
                 </div>
 
                 {{-- Modal Footer --}}
-                <div class="flex items-center justify-between p-6 pt-4 border-t border-base-content/10 bg-base-200/30">
+                <div class="flex items-center justify-between p-5 pt-4 border-t border-base-content/10 bg-base-200/30">
                     <button type="button" class="btn btn-ghost btn-sm gap-2" onclick="resetToRoleDefaults()">
                         <span class="icon-[tabler--refresh] size-4"></span>
-                        Reset to Defaults
+                        Reset
                     </button>
                     <div class="flex gap-2">
                         <button type="button" class="btn btn-ghost" onclick="closePermissionsModal()">Cancel</button>
                         <button type="submit" class="btn btn-primary gap-2">
                             <span class="icon-[tabler--check] size-4"></span>
-                            Save Permissions
+                            Save
                         </button>
                     </div>
                 </div>
@@ -397,6 +406,12 @@ function openPermissionsModal(userId) {
         checkbox.checked = permissions.includes(checkbox.dataset.permission);
     });
 
+    // Update all category counts
+    updateAllCategoryCounts();
+
+    // Collapse all sections initially
+    document.querySelectorAll('#permissions-modal details').forEach(d => d.removeAttribute('open'));
+
     // Show modal
     var modal = document.getElementById('permissions-modal');
     modal.classList.remove('opacity-0', 'pointer-events-none');
@@ -424,6 +439,8 @@ function resetToRoleDefaults() {
     document.querySelectorAll('.permission-checkbox').forEach(checkbox => {
         checkbox.checked = defaults.includes(checkbox.dataset.permission);
     });
+
+    updateAllCategoryCounts();
 }
 
 function toggleCategory(category) {
@@ -433,6 +450,26 @@ function toggleCategory(category) {
     checkboxes.forEach(checkbox => {
         checkbox.checked = !allChecked;
     });
+
+    updateCategoryCount(category);
+}
+
+function updateCategoryCount(category) {
+    const checkboxes = document.querySelectorAll('.permission-checkbox[data-category="' + category + '"]');
+    const total = checkboxes.length;
+    const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+    const countEl = document.getElementById('perm-count-' + category);
+    if (countEl) {
+        countEl.textContent = checked + ' of ' + total + ' enabled';
+    }
+}
+
+function updateAllCategoryCounts() {
+    const categories = new Set();
+    document.querySelectorAll('.permission-checkbox').forEach(cb => {
+        categories.add(cb.dataset.category);
+    });
+    categories.forEach(category => updateCategoryCount(category));
 }
 
 // Close modal on escape key

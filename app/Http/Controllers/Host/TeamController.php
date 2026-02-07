@@ -39,6 +39,7 @@ class TeamController extends Controller
             'invitations' => $invitations,
             'roles' => User::getRoles(),
             'statuses' => User::getStatuses(),
+            'groupedPermissions' => User::getAllPermissions(),
         ]);
     }
 
@@ -59,6 +60,7 @@ class TeamController extends Controller
                     ->where('status', TeamInvitation::STATUS_PENDING),
             ],
             'role' => 'required|in:admin,staff,instructor',
+            'permissions' => 'nullable|array',
             'instructor_id' => 'nullable|exists:instructors,id',
         ], [
             'email.unique' => 'This email is already registered or has a pending invitation.',
@@ -68,6 +70,7 @@ class TeamController extends Controller
             'host_id' => $host->id,
             'email' => $validated['email'],
             'role' => $validated['role'],
+            'permissions' => $validated['permissions'] ?? null,
             'instructor_id' => $validated['instructor_id'] ?? null,
             'token' => TeamInvitation::generateToken(),
             'status' => TeamInvitation::STATUS_PENDING,

@@ -107,6 +107,9 @@ class SignupController extends Controller
         // Log the user into the session as well (for web auth)
         Auth::login($result['user']);
 
+        // Send email verification notification
+        $result['user']->sendEmailVerificationNotification();
+
         return $this->success([
             'user' => [
                 'id' => $result['user']->id,

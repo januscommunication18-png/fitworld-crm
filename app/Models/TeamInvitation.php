@@ -20,6 +20,7 @@ class TeamInvitation extends Model
         'host_id',
         'email',
         'role',
+        'permissions',
         'instructor_id',
         'token',
         'status',
@@ -33,6 +34,7 @@ class TeamInvitation extends Model
         return [
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',
+            'permissions' => 'array',
         ];
     }
 

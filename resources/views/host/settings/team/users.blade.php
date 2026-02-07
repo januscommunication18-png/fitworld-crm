@@ -59,7 +59,16 @@
                             <td>
                                 <div class="flex items-center gap-3">
                                     <div class="avatar placeholder">
-                                        <div class="bg-{{ $user->isOwner() ? 'primary' : ($user->isAdmin() ? 'secondary' : 'base-300') }} text-{{ $user->isOwner() ? 'primary' : ($user->isAdmin() ? 'secondary' : 'base') }}-content w-10 rounded-full">
+                                        @php
+                                            $bgColor = match($user->role) {
+                                                'owner' => 'bg-primary text-primary-content',
+                                                'admin' => 'bg-secondary text-secondary-content',
+                                                'staff' => 'bg-info text-info-content',
+                                                'instructor' => 'bg-accent text-accent-content',
+                                                default => 'bg-base-300 text-base-content'
+                                            };
+                                        @endphp
+                                        <div class="{{ $bgColor }} w-10 rounded-full">
                                             <span>{{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}</span>
                                         </div>
                                     </div>
@@ -294,39 +303,133 @@
 </div>
 
 {{-- Invite Modal --}}
-<div id="invite-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="card bg-base-100 w-full max-w-md mx-4 transform scale-95 transition-transform duration-200">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Invite Team Member</h3>
+<div id="invite-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200 overflow-y-auto py-8">
+    <div class="card bg-base-100 w-full max-w-lg mx-4 transform scale-95 transition-transform duration-200">
+        <div class="card-body p-0">
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between p-5 pb-4 border-b border-base-content/10">
+                <div>
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <span class="icon-[tabler--user-plus] size-5 text-primary"></span>
+                        Invite Team Member
+                    </h3>
+                    <p class="text-base-content/60 text-sm mt-1">Send an invitation to join your studio</p>
+                </div>
                 <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="closeInviteModal()">
                     <span class="icon-[tabler--x] size-5"></span>
                 </button>
             </div>
+
             <form action="{{ route('settings.team.invite') }}" method="POST">
                 @csrf
-                <div class="space-y-4">
-                    <div>
-                        <label class="label-text" for="invite-email">Email Address</label>
-                        <input type="email" id="invite-email" name="email" class="input w-full" required placeholder="colleague@example.com" />
+
+                <div class="max-h-[60vh] overflow-y-auto p-5">
+                    {{-- Basic Info --}}
+                    <div class="space-y-4 mb-5">
+                        <div>
+                            <label class="label-text" for="invite-email">Email Address</label>
+                            <input type="email" id="invite-email" name="email" class="input w-full" required placeholder="colleague@example.com" />
+                        </div>
+                        <div>
+                            <label class="label-text" for="invite-role">Role</label>
+                            <select id="invite-role" name="role" class="select w-full" required onchange="updateInvitePermissions()">
+                                <option value="admin">Admin</option>
+                                <option value="staff" selected>Staff</option>
+                                <option value="instructor">Instructor</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label class="label-text" for="invite-role">Role</label>
-                        <select id="invite-role" name="role" class="select w-full" required>
-                            <option value="admin">Admin</option>
-                            <option value="staff" selected>Staff</option>
-                            <option value="instructor">Instructor</option>
-                        </select>
+
+                    {{-- Permissions Accordion --}}
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="label-text flex items-center gap-2">
+                                <span class="icon-[tabler--shield-cog] size-4 text-primary"></span>
+                                Permissions
+                            </label>
+                        </div>
+
+                        @php
+                            $categoryIcons = [
+                                'schedule' => 'icon-[tabler--calendar]',
+                                'bookings' => 'icon-[tabler--clipboard-list]',
+                                'students' => 'icon-[tabler--users]',
+                                'offers' => 'icon-[tabler--tag]',
+                                'insights' => 'icon-[tabler--chart-bar]',
+                                'payments' => 'icon-[tabler--credit-card]',
+                                'studio' => 'icon-[tabler--building-store]',
+                                'team' => 'icon-[tabler--users-group]',
+                                'billing' => 'icon-[tabler--receipt]',
+                            ];
+                            $categoryColors = [
+                                'schedule' => 'text-primary bg-primary/10',
+                                'bookings' => 'text-secondary bg-secondary/10',
+                                'students' => 'text-info bg-info/10',
+                                'offers' => 'text-warning bg-warning/10',
+                                'insights' => 'text-accent bg-accent/10',
+                                'payments' => 'text-success bg-success/10',
+                                'studio' => 'text-primary bg-primary/10',
+                                'team' => 'text-secondary bg-secondary/10',
+                                'billing' => 'text-info bg-info/10',
+                            ];
+                        @endphp
+
+                        <div class="space-y-2">
+                            @foreach($groupedPermissions as $category => $permissions)
+                            <details class="group border border-base-content/10 rounded-lg overflow-hidden" id="invite-perm-section-{{ $category }}">
+                                <summary class="flex items-center gap-3 p-3 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center {{ $categoryColors[$category] ?? 'text-base-content bg-base-200' }}">
+                                        <span class="{{ $categoryIcons[$category] ?? 'icon-[tabler--settings]' }} size-4"></span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-medium text-sm">{{ ucfirst($category) }}</h4>
+                                        <p class="text-xs text-base-content/50" id="invite-perm-count-{{ $category }}">0 of {{ count($permissions) }} enabled</p>
+                                    </div>
+                                    <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                                </summary>
+                                <div class="border-t border-base-content/10 bg-base-200/30 p-3 space-y-1">
+                                    <div class="flex justify-end mb-2">
+                                        <button type="button" class="text-xs text-primary hover:underline" onclick="toggleInviteCategory('{{ $category }}'); updateInviteCategoryCount('{{ $category }}');">
+                                            Toggle all
+                                        </button>
+                                    </div>
+                                    @foreach($permissions as $permission => $label)
+                                    <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-100 cursor-pointer transition-colors">
+                                        <input type="checkbox"
+                                               name="permissions[]"
+                                               value="{{ $permission }}"
+                                               class="checkbox checkbox-primary checkbox-sm invite-permission-checkbox"
+                                               data-permission="{{ $permission }}"
+                                               data-category="{{ $category }}"
+                                               onchange="updateInviteCategoryCount('{{ $category }}')" />
+                                        <span class="text-sm">{{ $label }}</span>
+                                    </label>
+                                    @endforeach
+                                </div>
+                            </details>
+                            @endforeach
+                        </div>
                     </div>
-                    <p class="text-sm text-base-content/60">
-                        An invitation email will be sent with a link to join your studio. The link expires in 7 days.
-                    </p>
+
+                    <div class="alert alert-soft alert-info">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        <span class="text-sm">An invitation email will be sent with a link to join your studio. The link expires in 7 days.</span>
+                    </div>
                 </div>
-                <div class="flex justify-start gap-2 mt-6">
-                    <button type="submit" class="btn btn-primary">
-                        <span class="icon-[tabler--send] size-4"></span> Send Invitation
+
+                {{-- Modal Footer --}}
+                <div class="flex items-center justify-between p-5 pt-4 border-t border-base-content/10 bg-base-200/30">
+                    <button type="button" class="btn btn-ghost btn-sm gap-2" onclick="resetInviteToRoleDefaults()">
+                        <span class="icon-[tabler--refresh] size-4"></span>
+                        Reset
                     </button>
-                    <button type="button" class="btn btn-ghost" onclick="closeInviteModal()">Cancel</button>
+                    <div class="flex gap-2">
+                        <button type="button" class="btn btn-ghost" onclick="closeInviteModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary gap-2">
+                            <span class="icon-[tabler--send] size-4"></span>
+                            Send Invitation
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -368,8 +471,27 @@
 
 @push('scripts')
 <script>
+// Role default permissions
+const roleDefaults = {
+    admin: @json(\App\Models\User::getDefaultPermissionsForRole('admin')),
+    staff: @json(\App\Models\User::getDefaultPermissionsForRole('staff')),
+    instructor: @json(\App\Models\User::getDefaultPermissionsForRole('instructor'))
+};
+
 // Invite Modal
 function openInviteModal() {
+    // Reset form
+    document.getElementById('invite-email').value = '';
+    document.getElementById('invite-role').value = 'staff';
+
+    // Set default permissions for staff role
+    updateInvitePermissions();
+
+    // Collapse all sections initially
+    document.querySelectorAll('#invite-modal details').forEach(function(d) {
+        d.removeAttribute('open');
+    });
+
     var modal = document.getElementById('invite-modal');
     modal.classList.remove('opacity-0', 'pointer-events-none');
     modal.classList.add('opacity-100', 'pointer-events-auto');
@@ -383,6 +505,53 @@ function closeInviteModal() {
     modal.classList.remove('opacity-100', 'pointer-events-auto');
     modal.querySelector('.card').classList.add('scale-95');
     modal.querySelector('.card').classList.remove('scale-100');
+}
+
+function updateInvitePermissions() {
+    var role = document.getElementById('invite-role').value;
+    var defaults = roleDefaults[role] || [];
+
+    document.querySelectorAll('.invite-permission-checkbox').forEach(function(checkbox) {
+        checkbox.checked = defaults.includes(checkbox.dataset.permission);
+    });
+
+    // Update all category counts
+    updateAllInviteCategoryCounts();
+}
+
+function resetInviteToRoleDefaults() {
+    updateInvitePermissions();
+}
+
+function toggleInviteCategory(category) {
+    var checkboxes = document.querySelectorAll('.invite-permission-checkbox[data-category="' + category + '"]');
+    var allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
+
+    checkboxes.forEach(function(checkbox) {
+        checkbox.checked = !allChecked;
+    });
+
+    updateInviteCategoryCount(category);
+}
+
+function updateInviteCategoryCount(category) {
+    var checkboxes = document.querySelectorAll('.invite-permission-checkbox[data-category="' + category + '"]');
+    var total = checkboxes.length;
+    var checked = Array.from(checkboxes).filter(function(cb) { return cb.checked; }).length;
+    var countEl = document.getElementById('invite-perm-count-' + category);
+    if (countEl) {
+        countEl.textContent = checked + ' of ' + total + ' enabled';
+    }
+}
+
+function updateAllInviteCategoryCounts() {
+    var categories = new Set();
+    document.querySelectorAll('.invite-permission-checkbox').forEach(function(cb) {
+        categories.add(cb.dataset.category);
+    });
+    categories.forEach(function(category) {
+        updateInviteCategoryCount(category);
+    });
 }
 
 // Role Modal

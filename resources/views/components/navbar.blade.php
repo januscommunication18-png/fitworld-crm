@@ -1,3 +1,38 @@
+{{-- Email Verified Success Message --}}
+@if(session('verified'))
+<div id="email-verified-alert" class="bg-gradient-to-r from-success/10 via-success/5 to-success/10 border-b border-success/20 px-6 py-2.5" role="alert">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3 flex-1 justify-center">
+            <div class="flex items-center justify-center size-8 rounded-full bg-success/20">
+                <span class="icon-[tabler--mail-check] size-4 text-success"></span>
+            </div>
+            <span class="text-sm font-medium text-success">Your email has been verified successfully!</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle text-success/70 hover:text-success hover:bg-success/10" onclick="document.getElementById('email-verified-alert').remove()" aria-label="Dismiss">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+</div>
+<script>sessionStorage.removeItem('email_alert_dismissed');</script>
+@endif
+
+{{-- Email Verification Resent Message --}}
+@if(session('message'))
+<div id="email-resent-alert" class="bg-gradient-to-r from-success/10 via-success/5 to-success/10 border-b border-success/20 px-6 py-2.5" role="alert">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3 flex-1 justify-center">
+            <div class="flex items-center justify-center size-8 rounded-full bg-success/20">
+                <span class="icon-[tabler--check] size-4 text-success"></span>
+            </div>
+            <span class="text-sm font-medium text-success">{{ session('message') }}</span>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm btn-circle text-success/70 hover:text-success hover:bg-success/10" onclick="document.getElementById('email-resent-alert').remove()" aria-label="Dismiss">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+</div>
+@endif
+
 {{-- Email Verification Alert (above navbar) --}}
 @auth
     @if(!Auth::user()->hasVerifiedEmail())
@@ -11,19 +46,25 @@
                     <span class="text-sm font-medium text-error">Email not verified</span>
                     <span class="text-sm text-base-content/70 hidden sm:inline">— Please check your inbox and verify your email address</span>
                 </div>
-                <form method="POST" action="{{ route('verification.send') }}" class="inline">
+                <form method="POST" action="{{ route('verification.send') }}" class="inline" id="resend-verification-form">
                     @csrf
-                    <button type="submit" class="btn btn-error btn-sm gap-1">
+                    <button type="submit" class="btn btn-error btn-sm gap-1" id="resend-verification-btn">
                         <span class="icon-[tabler--send] size-4"></span>
                         <span class="hidden sm:inline">Resend</span>
                     </button>
                 </form>
             </div>
-            <button type="button" class="btn btn-ghost btn-sm btn-circle text-error/70 hover:text-error hover:bg-error/10" onclick="document.getElementById('email-verification-alert').remove()" aria-label="Dismiss">
+            <button type="button" class="btn btn-ghost btn-sm btn-circle text-error/70 hover:text-error hover:bg-error/10" onclick="this.closest('#email-verification-alert').style.display='none'; sessionStorage.setItem('email_alert_dismissed', '1')" aria-label="Dismiss">
                 <span class="icon-[tabler--x] size-5"></span>
             </button>
         </div>
     </div>
+    <script>
+        // Hide alert if dismissed in this session
+        if (sessionStorage.getItem('email_alert_dismissed') === '1') {
+            document.getElementById('email-verification-alert').style.display = 'none';
+        }
+    </script>
     @endif
 @endauth
 

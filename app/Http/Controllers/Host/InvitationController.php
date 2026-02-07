@@ -81,6 +81,7 @@ class InvitationController extends Controller
             $existingUser->update([
                 'host_id' => $invitation->host_id,
                 'role' => $invitation->role,
+                'permissions' => $invitation->permissions,
                 'status' => User::STATUS_ACTIVE,
                 'instructor_id' => $invitation->instructor_id,
                 'is_instructor' => $invitation->role === 'instructor',
@@ -103,6 +104,7 @@ class InvitationController extends Controller
                 'email' => $invitation->email,
                 'password' => Hash::make($request->password),
                 'role' => $invitation->role,
+                'permissions' => $invitation->permissions,
                 'status' => User::STATUS_ACTIVE,
                 'instructor_id' => $invitation->instructor_id,
                 'is_instructor' => $invitation->role === 'instructor',
