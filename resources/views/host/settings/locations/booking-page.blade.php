@@ -13,84 +13,474 @@
 @endsection
 
 @section('settings-content')
-<div class="space-y-6">
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold">Booking Page Settings</h2>
-                    <p class="text-base-content/60 text-sm">Customize how your public booking page looks and behaves</p>
-                </div>
-                <a href="#" class="btn btn-soft btn-sm" target="_blank">
+<form method="POST" action="{{ route('settings.booking-page.update') }}">
+    @csrf
+    @method('PUT')
+
+    <div class="space-y-6">
+        {{-- Flash Messages --}}
+        @if(session('success'))
+        <div class="alert alert-soft alert-success">
+            <span class="icon-[tabler--check] size-5"></span>
+            <span>{{ session('success') }}</span>
+        </div>
+        @endif
+
+        {{-- Header --}}
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-xl font-semibold">Booking Page</h1>
+                <p class="text-base-content/60 text-sm">Customize your public booking page for customers</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ url('/' . $host->subdomain) }}" class="btn btn-ghost btn-sm" target="_blank">
                     <span class="icon-[tabler--external-link] size-4"></span> Preview
                 </a>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <span class="icon-[tabler--check] size-4"></span> Save Changes
+                </button>
             </div>
+        </div>
 
-            <div class="space-y-4">
-                <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
-                    <div>
-                        <div class="font-medium">Show class descriptions</div>
-                        <div class="text-sm text-base-content/60">Display full class descriptions on the schedule</div>
-                    </div>
-                    <input type="checkbox" class="toggle toggle-primary" checked />
-                </div>
+        {{-- Section A: Branding & Layout --}}
+        <div class="card bg-base-100">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold mb-1">Branding & Layout</h2>
+                <p class="text-base-content/60 text-sm mb-6">Customize how your booking page looks</p>
 
-                <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                <div class="space-y-6">
+                    {{-- Logo Upload --}}
                     <div>
-                        <div class="font-medium">Show instructor photos</div>
-                        <div class="text-sm text-base-content/60">Display instructor profile photos next to classes</div>
+                        <label class="label-text mb-2 block">Logo</label>
+                        <div class="flex items-center gap-4">
+                            <div id="logo-preview" class="flex items-center justify-center size-20 bg-base-200 rounded-lg border-2 border-dashed border-base-content/20 overflow-hidden">
+                                @if($host->logo_path)
+                                <img src="{{ Storage::url($host->logo_path) }}" alt="Logo" class="w-full h-full object-contain" />
+                                @else
+                                <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
+                                @endif
+                            </div>
+                            <div class="space-y-2">
+                                <input type="file" id="logo-input" class="hidden" accept="image/*" />
+                                <button type="button" onclick="document.getElementById('logo-input').click()" class="btn btn-soft btn-sm">
+                                    <span class="icon-[tabler--upload] size-4"></span> Upload Logo
+                                </button>
+                                @if($host->logo_path)
+                                <button type="button" onclick="removeLogo()" class="btn btn-ghost btn-sm text-error">
+                                    <span class="icon-[tabler--trash] size-4"></span> Remove
+                                </button>
+                                @endif
+                                <p class="text-xs text-base-content/60">Recommended: 200x200px, PNG or SVG</p>
+                            </div>
+                        </div>
                     </div>
-                    <input type="checkbox" class="toggle toggle-primary" checked />
-                </div>
 
-                <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                    {{-- Cover Image Upload --}}
                     <div>
-                        <div class="font-medium">Allow waitlist</div>
-                        <div class="text-sm text-base-content/60">Let students join a waitlist when classes are full</div>
+                        <label class="label-text mb-2 block">Cover Image</label>
+                        <div id="cover-preview" class="relative w-full h-40 bg-base-200 rounded-lg border-2 border-dashed border-base-content/20 overflow-hidden flex items-center justify-center">
+                            @if($host->cover_image_path)
+                            <img src="{{ Storage::url($host->cover_image_path) }}" alt="Cover" class="w-full h-full object-cover" />
+                            <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <button type="button" onclick="document.getElementById('cover-input').click()" class="btn btn-sm btn-ghost text-white">
+                                    <span class="icon-[tabler--edit] size-4"></span> Change
+                                </button>
+                                <button type="button" onclick="removeCover()" class="btn btn-sm btn-ghost text-white">
+                                    <span class="icon-[tabler--trash] size-4"></span> Remove
+                                </button>
+                            </div>
+                            @else
+                            <div class="text-center">
+                                <span class="icon-[tabler--photo] size-10 text-base-content/30"></span>
+                                <p class="text-sm text-base-content/60 mt-2">No cover image</p>
+                            </div>
+                            @endif
+                        </div>
+                        <input type="file" id="cover-input" class="hidden" accept="image/*" />
+                        @if(!$host->cover_image_path)
+                        <button type="button" onclick="document.getElementById('cover-input').click()" class="btn btn-soft btn-sm mt-2">
+                            <span class="icon-[tabler--upload] size-4"></span> Upload Cover Image
+                        </button>
+                        @endif
+                        <p class="text-xs text-base-content/60 mt-1">Recommended: 1200x400px, JPG or PNG</p>
                     </div>
-                    <input type="checkbox" class="toggle toggle-primary" checked />
-                </div>
 
-                <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                    {{-- Display Name --}}
                     <div>
-                        <div class="font-medium">Require account to book</div>
-                        <div class="text-sm text-base-content/60">Guests must create an account before booking</div>
+                        <label class="label-text" for="display_name">Display Name</label>
+                        <input
+                            id="display_name"
+                            name="display_name"
+                            type="text"
+                            class="input w-full"
+                            placeholder="{{ $host->studio_name }}"
+                            value="{{ old('display_name', $settings['display_name'] ?? '') }}"
+                        />
+                        <p class="text-xs text-base-content/60 mt-1">Leave blank to use your studio name</p>
                     </div>
-                    <input type="checkbox" class="toggle toggle-primary" />
+
+                    {{-- Primary Color --}}
+                    <div>
+                        <label class="label-text" for="primary_color">Brand Color</label>
+                        <div class="flex items-center gap-3">
+                            <input
+                                type="color"
+                                id="color-picker"
+                                value="{{ old('primary_color', $settings['primary_color'] ?? '#6366f1') }}"
+                                class="w-12 h-10 rounded-lg border border-base-content/20 cursor-pointer"
+                                onchange="document.getElementById('primary_color').value = this.value"
+                            />
+                            <input
+                                id="primary_color"
+                                name="primary_color"
+                                type="text"
+                                class="input w-32"
+                                value="{{ old('primary_color', $settings['primary_color'] ?? '#6366f1') }}"
+                                pattern="^#[0-9A-Fa-f]{6}$"
+                                onchange="document.getElementById('color-picker').value = this.value"
+                            />
+                        </div>
+                    </div>
+
+                    {{-- Theme & Font --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="label-text" for="theme">Theme</label>
+                            <select id="theme" name="theme" class="select w-full">
+                                @foreach($themes as $value => $label)
+                                <option value="{{ $value }}" {{ old('theme', $settings['theme'] ?? 'light') === $value ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="label-text" for="font">Font</label>
+                            <select id="font" name="font" class="select w-full">
+                                @foreach($fonts as $value => $label)
+                                <option value="{{ $value }}" {{ old('font', $settings['font'] ?? 'inter') === $value ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <h2 class="text-lg font-semibold mb-4">Theme & Colors</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="space-y-2">
-                    <label class="text-sm text-base-content/60">Primary Color</label>
-                    <div class="flex items-center gap-2">
-                        <div class="w-10 h-10 rounded-lg bg-primary"></div>
-                        <input type="text" class="input input-sm w-28" value="#6366f1" />
+        {{-- Section B: Public Content --}}
+        <div class="card bg-base-100">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold mb-1">Public Content</h2>
+                <p class="text-base-content/60 text-sm mb-6">What information to show on your booking page</p>
+
+                <div class="space-y-6">
+                    {{-- About Text --}}
+                    <div>
+                        <label class="label-text" for="about_text">About Your Studio</label>
+                        <textarea
+                            id="about_text"
+                            name="about_text"
+                            class="textarea w-full"
+                            rows="4"
+                            placeholder="Tell customers about your studio, classes, and what makes you unique..."
+                        >{{ old('about_text', $settings['about_text'] ?? '') }}</textarea>
+                        <p class="text-xs text-base-content/60 mt-1">This appears on your booking page. Keep it concise.</p>
                     </div>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-sm text-base-content/60">Background</label>
-                    <select class="select select-sm w-full">
-                        <option selected>Light</option>
-                        <option>Dark</option>
-                        <option>Auto (System)</option>
-                    </select>
-                </div>
-                <div class="space-y-2">
-                    <label class="text-sm text-base-content/60">Font</label>
-                    <select class="select select-sm w-full">
-                        <option selected>Inter</option>
-                        <option>Roboto</option>
-                        <option>Open Sans</option>
-                    </select>
+
+                    {{-- Toggle Options --}}
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                            <div>
+                                <div class="font-medium">Show Instructors</div>
+                                <div class="text-sm text-base-content/60">Display instructor list on booking page</div>
+                            </div>
+                            <input type="checkbox" name="show_instructors" value="1" class="toggle toggle-primary"
+                                {{ old('show_instructors', $settings['show_instructors'] ?? true) ? 'checked' : '' }} />
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                            <div>
+                                <div class="font-medium">Show Amenities</div>
+                                <div class="text-sm text-base-content/60">Display studio amenities on booking page</div>
+                            </div>
+                            <input type="checkbox" name="show_amenities" value="1" class="toggle toggle-primary"
+                                {{ old('show_amenities', $settings['show_amenities'] ?? true) ? 'checked' : '' }} />
+                        </div>
+                    </div>
+
+                    {{-- Location Display --}}
+                    <div>
+                        <label class="label-text" for="location_display">Location Display</label>
+                        <select
+                            id="location_display"
+                            name="location_display"
+                            data-select='{
+                                "hasSearch": true,
+                                "searchPlaceholder": "Search...",
+                                "placeholder": "Select display mode...",
+                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                                "toggleClasses": "advance-select-toggle w-full",
+                                "dropdownClasses": "advance-select-menu max-h-48 overflow-y-auto",
+                                "optionClasses": "advance-select-option selected:select-active",
+                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+                            }'
+                            class="hidden"
+                        >
+                            <option value="auto" {{ old('location_display', $settings['location_display'] ?? 'auto') === 'auto' ? 'selected' : '' }}>
+                                Auto (based on number of locations)
+                            </option>
+                            <option value="single" {{ old('location_display', $settings['location_display'] ?? 'auto') === 'single' ? 'selected' : '' }}>
+                                Single location view
+                            </option>
+                            <option value="multi" {{ old('location_display', $settings['location_display'] ?? 'auto') === 'multi' ? 'selected' : '' }}>
+                                Multi-location view
+                            </option>
+                        </select>
+                        <p class="text-xs text-base-content/60 mt-1">You have {{ $locations->count() }} location(s)</p>
+                    </div>
                 </div>
             </div>
         </div>
+
+        {{-- Section C: Booking UX --}}
+        <div class="card bg-base-100">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold mb-1">Booking Experience</h2>
+                <p class="text-base-content/60 text-sm mb-6">Configure how customers book classes</p>
+
+                <div class="space-y-6">
+                    {{-- Default View --}}
+                    <div>
+                        <label class="label-text mb-3 block">Default Schedule View</label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer p-3 border border-base-content/10 rounded-lg has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="default_view" value="calendar" class="radio radio-primary radio-sm"
+                                    {{ old('default_view', $settings['default_view'] ?? 'calendar') === 'calendar' ? 'checked' : '' }} />
+                                <span class="icon-[tabler--calendar] size-5"></span>
+                                <span>Calendar</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer p-3 border border-base-content/10 rounded-lg has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="default_view" value="list" class="radio radio-primary radio-sm"
+                                    {{ old('default_view', $settings['default_view'] ?? 'calendar') === 'list' ? 'checked' : '' }} />
+                                <span class="icon-[tabler--list] size-5"></span>
+                                <span>List</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {{-- Toggle Options --}}
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                            <div>
+                                <div class="font-medium">Show Class Descriptions</div>
+                                <div class="text-sm text-base-content/60">Display full class descriptions on the schedule</div>
+                            </div>
+                            <input type="checkbox" name="show_class_descriptions" value="1" class="toggle toggle-primary"
+                                {{ old('show_class_descriptions', $settings['show_class_descriptions'] ?? true) ? 'checked' : '' }} />
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                            <div>
+                                <div class="font-medium">Show Instructor Photos</div>
+                                <div class="text-sm text-base-content/60">Display instructor profile photos next to classes</div>
+                            </div>
+                            <input type="checkbox" name="show_instructor_photos" value="1" class="toggle toggle-primary"
+                                {{ old('show_instructor_photos', $settings['show_instructor_photos'] ?? true) ? 'checked' : '' }} />
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                            <div>
+                                <div class="font-medium">Allow Waitlist</div>
+                                <div class="text-sm text-base-content/60">Let customers join a waitlist when classes are full</div>
+                            </div>
+                            <input type="checkbox" name="allow_waitlist" value="1" class="toggle toggle-primary"
+                                {{ old('allow_waitlist', $settings['allow_waitlist'] ?? true) ? 'checked' : '' }} />
+                        </div>
+
+                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                            <div>
+                                <div class="font-medium">Require Account to Book</div>
+                                <div class="text-sm text-base-content/60">Customers must create an account before booking</div>
+                            </div>
+                            <input type="checkbox" name="require_account" value="1" class="toggle toggle-primary"
+                                {{ old('require_account', $settings['require_account'] ?? false) ? 'checked' : '' }} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Section D: Filters --}}
+        <div class="card bg-base-100">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold mb-1">Filter Options</h2>
+                <p class="text-base-content/60 text-sm mb-6">Choose which filters customers can use</p>
+
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                        <div>
+                            <div class="font-medium">Filter by Class Type</div>
+                            <div class="text-sm text-base-content/60">Allow filtering classes by type (e.g., Yoga, Pilates)</div>
+                        </div>
+                        <input type="checkbox" name="filter_class_type" value="1" class="toggle toggle-primary"
+                            {{ old('filter_class_type', $settings['filter_class_type'] ?? true) ? 'checked' : '' }} />
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                        <div>
+                            <div class="font-medium">Filter by Instructor</div>
+                            <div class="text-sm text-base-content/60">Allow filtering classes by instructor</div>
+                        </div>
+                        <input type="checkbox" name="filter_instructor" value="1" class="toggle toggle-primary"
+                            {{ old('filter_instructor', $settings['filter_instructor'] ?? true) ? 'checked' : '' }} />
+                    </div>
+
+                    @if($locations->count() > 1)
+                    <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg">
+                        <div>
+                            <div class="font-medium">Filter by Location</div>
+                            <div class="text-sm text-base-content/60">Allow filtering classes by location</div>
+                        </div>
+                        <input type="checkbox" name="filter_location" value="1" class="toggle toggle-primary"
+                            {{ old('filter_location', $settings['filter_location'] ?? true) ? 'checked' : '' }} />
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Booking Page URL --}}
+        <div class="card bg-base-100">
+            <div class="card-body">
+                <h2 class="text-lg font-semibold mb-1">Your Booking Page</h2>
+                <p class="text-base-content/60 text-sm mb-4">Share this link with your customers</p>
+
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 p-3 bg-base-200 rounded-lg font-mono text-sm">
+                        {{ config('app.url') }}/{{ $host->subdomain }}
+                    </div>
+                    <button type="button" onclick="copyBookingUrl()" class="btn btn-soft btn-sm">
+                        <span class="icon-[tabler--copy] size-4"></span> Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{-- Save Button (Bottom) --}}
+        <div class="flex justify-end">
+            <button type="submit" class="btn btn-primary">
+                <span class="icon-[tabler--check] size-4"></span> Save Changes
+            </button>
+        </div>
     </div>
-</div>
+</form>
 @endsection
+
+@push('scripts')
+<script>
+var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+function showToast(message, type) {
+    type = type || 'success';
+    var toast = document.createElement('div');
+    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] alert alert-' + type + ' shadow-lg max-w-sm';
+    toast.innerHTML = '<span class="icon-[tabler--' + (type === 'success' ? 'check' : 'alert-circle') + '] size-5"></span><span>' + message + '</span>';
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+}
+
+// Logo upload
+document.getElementById('logo-input').addEventListener('change', function(e) {
+    if (!e.target.files[0]) return;
+
+    var formData = new FormData();
+    formData.append('logo', e.target.files[0]);
+
+    fetch('{{ route("settings.booking-page.upload-logo") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            document.getElementById('logo-preview').innerHTML = '<img src="' + result.path + '" alt="Logo" class="w-full h-full object-contain" />';
+            showToast('Logo uploaded');
+            location.reload();
+        } else {
+            showToast('Failed to upload logo', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); });
+});
+
+// Cover upload
+document.getElementById('cover-input').addEventListener('change', function(e) {
+    if (!e.target.files[0]) return;
+
+    var formData = new FormData();
+    formData.append('cover', e.target.files[0]);
+
+    fetch('{{ route("settings.booking-page.upload-cover") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            showToast('Cover image uploaded');
+            location.reload();
+        } else {
+            showToast('Failed to upload cover', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); });
+});
+
+// Remove logo
+function removeLogo() {
+    fetch('{{ route("settings.booking-page.remove-logo") }}', {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            showToast('Logo removed');
+            location.reload();
+        }
+    });
+}
+
+// Remove cover
+function removeCover() {
+    fetch('{{ route("settings.booking-page.remove-cover") }}', {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            showToast('Cover image removed');
+            location.reload();
+        }
+    });
+}
+
+// Copy booking URL
+function copyBookingUrl() {
+    var url = '{{ config("app.url") }}/{{ $host->subdomain }}';
+    navigator.clipboard.writeText(url).then(function() {
+        showToast('URL copied to clipboard');
+    });
+}
+</script>
+@endpush

@@ -35,6 +35,7 @@ class Host extends Model
         'is_live',
         'onboarding_step',
         'onboarding_completed_at',
+        'booking_settings',
     ];
 
     protected function casts(): array
@@ -44,8 +45,49 @@ class Host extends Model
             'room_capacities' => 'array',
             'amenities' => 'array',
             'social_links' => 'array',
+            'booking_settings' => 'array',
             'is_live' => 'boolean',
             'onboarding_completed_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * Get a booking setting with default fallback
+     */
+    public function getBookingSetting(string $key, $default = null)
+    {
+        return $this->booking_settings[$key] ?? $default;
+    }
+
+    /**
+     * Get default booking settings
+     */
+    public static function defaultBookingSettings(): array
+    {
+        return [
+            // Branding
+            'display_name' => null,
+            'primary_color' => '#6366f1',
+            'theme' => 'light', // light, dark, auto
+            'font' => 'inter',
+
+            // Public Content
+            'about_text' => null,
+            'show_instructors' => true,
+            'show_amenities' => true,
+            'location_display' => 'auto', // auto, single, multi
+
+            // Booking UX
+            'default_view' => 'calendar', // calendar, list
+            'show_class_descriptions' => true,
+            'show_instructor_photos' => true,
+            'allow_waitlist' => true,
+            'require_account' => false,
+
+            // Filters
+            'filter_class_type' => true,
+            'filter_instructor' => true,
+            'filter_location' => true,
         ];
     }
 

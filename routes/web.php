@@ -6,6 +6,7 @@ use App\Http\Controllers\Host\DashboardController;
 use App\Http\Controllers\Host\InstructorController;
 use App\Http\Controllers\Host\LocationController;
 use App\Http\Controllers\Host\RoomController;
+use App\Http\Controllers\Host\BookingPageController;
 use App\Http\Controllers\Host\OfferController;
 use App\Http\Controllers\Host\PaymentController;
 use App\Http\Controllers\Host\ReportController;
@@ -97,15 +98,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
     Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
 
-    // Settings - Locations
+    // Settings - Locations (specific routes first, then parameterized routes)
     Route::get('/settings/locations', [LocationController::class, 'index'])->name('settings.locations.index');
     Route::get('/settings/locations/create', [LocationController::class, 'create'])->name('settings.locations.create');
     Route::post('/settings/locations', [LocationController::class, 'store'])->name('settings.locations.store');
-    Route::get('/settings/locations/{location}/edit', [LocationController::class, 'edit'])->name('settings.locations.edit');
-    Route::put('/settings/locations/{location}', [LocationController::class, 'update'])->name('settings.locations.update');
-    Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('settings.locations.destroy');
-    Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
 
+    // Rooms
     Route::get('/settings/locations/rooms', [RoomController::class, 'index'])->name('settings.locations.rooms');
     Route::get('/settings/locations/rooms/create', [RoomController::class, 'create'])->name('settings.rooms.create');
     Route::post('/settings/locations/rooms', [RoomController::class, 'store'])->name('settings.rooms.store');
@@ -114,8 +112,22 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/locations/rooms/{room}', [RoomController::class, 'destroy'])->name('settings.rooms.destroy');
     Route::post('/settings/locations/rooms/{room}/toggle-status', [RoomController::class, 'toggleStatus'])->name('settings.rooms.toggle-status');
 
-    Route::get('/settings/locations/booking-page', [SettingsController::class, 'bookingPage'])->name('settings.locations.booking-page');
+    // Booking Page
+    Route::get('/settings/locations/booking-page', [BookingPageController::class, 'index'])->name('settings.locations.booking-page');
+    Route::put('/settings/locations/booking-page', [BookingPageController::class, 'update'])->name('settings.booking-page.update');
+    Route::post('/settings/locations/booking-page/logo', [BookingPageController::class, 'uploadLogo'])->name('settings.booking-page.upload-logo');
+    Route::post('/settings/locations/booking-page/cover', [BookingPageController::class, 'uploadCover'])->name('settings.booking-page.upload-cover');
+    Route::delete('/settings/locations/booking-page/logo', [BookingPageController::class, 'removeLogo'])->name('settings.booking-page.remove-logo');
+    Route::delete('/settings/locations/booking-page/cover', [BookingPageController::class, 'removeCover'])->name('settings.booking-page.remove-cover');
+
+    // Policies
     Route::get('/settings/locations/policies', [SettingsController::class, 'policies'])->name('settings.locations.policies');
+
+    // Location CRUD (parameterized routes must come AFTER specific routes)
+    Route::get('/settings/locations/{location}/edit', [LocationController::class, 'edit'])->name('settings.locations.edit');
+    Route::put('/settings/locations/{location}', [LocationController::class, 'update'])->name('settings.locations.update');
+    Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('settings.locations.destroy');
+    Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
 
     // Settings - Team
     Route::get('/settings/team/users', [SettingsController::class, 'users'])->name('settings.team.users');
