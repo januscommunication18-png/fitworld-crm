@@ -336,4 +336,83 @@ class SettingsController extends Controller
     {
         return view('host.settings.advanced.danger');
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // Developer Tools (only in local/development)
+    // ─────────────────────────────────────────────────────────────
+
+    public function emailLogs()
+    {
+        // Only allow in local environment
+        if (!app()->environment('local')) {
+            abort(404);
+        }
+
+        $emails = [];
+        $logPath = storage_path('logs/laravel.log');
+
+        if (file_exists($logPath)) {
+            $content = file_get_contents($logPath);
+
+            // Match email log entries - Laravel logs emails with "local.DEBUG: From:"
+            // Pattern: [timestamp] local.DEBUG: From: ... followed by email content until next log entry
+            preg_match_all('/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\][^\[]*?local\.DEBUG: From:([^\n]+)\nTo:([^\n]+)\nSubject:([^\n]+)(.*?)(?=\[\d{4}-\d{2}-\d{2}|\z)/s', $content, $matches, PREG_SET_ORDER);
+
+            foreach ($matches as $match) {
+                $timestamp = $match[1];
+                $from = trim($match[2]);
+                $to = trim($match[3]);
+                $subject = trim($match[4]);
+                $body = trim($match[5]);
+
+                // Extract HTML content from multipart email
+                // Look for Content-Type: text/html section
+                $html = '';
+                if (preg_match('/Content-Type:\s*text\/html[^\n]*\n(?:Content-Transfer-Encoding:[^\n]*\n)?\n(<!DOCTYPE.*?<\/html>)/si', $body, $htmlMatch)) {
+                    $html = $htmlMatch[1];
+                } elseif (preg_match('/(<!DOCTYPE.*?<\/html>)/si', $body, $htmlMatch)) {
+                    // Fallback: just find the HTML document
+                    $html = $htmlMatch[1];
+                }
+
+                // Extract plain text for preview
+                $plainBody = '';
+                if (preg_match('/Content-Type:\s*text\/plain[^\n]*\n(?:Content-Transfer-Encoding:[^\n]*\n)?\n(.*?)(?=--[a-zA-Z0-9_]+|$)/si', $body, $textMatch)) {
+                    $plainBody = trim($textMatch[1]);
+                    $plainBody = preg_replace('/\s+/', ' ', $plainBody);
+                    $plainBody = substr($plainBody, 0, 200) . (strlen($plainBody) > 200 ? '...' : '');
+                }
+
+                $emails[] = [
+                    'timestamp' => $timestamp,
+                    'to' => $to,
+                    'from' => $from,
+                    'subject' => $subject,
+                    'body' => $plainBody,
+                    'html' => $html,
+                ];
+            }
+
+            // Reverse to show newest first
+            $emails = array_reverse($emails);
+        }
+
+        return view('host.settings.advanced.email-logs', compact('emails'));
+    }
+
+    public function clearEmailLogs()
+    {
+        // Only allow in local environment
+        if (!app()->environment('local')) {
+            abort(404);
+        }
+
+        $logPath = storage_path('logs/laravel.log');
+
+        if (file_exists($logPath)) {
+            file_put_contents($logPath, '');
+        }
+
+        return back()->with('success', 'Email logs cleared.');
+    }
 }

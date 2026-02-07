@@ -4,6 +4,7 @@ use App\Http\Controllers\Host\AuthController;
 use App\Http\Controllers\Host\BookingController;
 use App\Http\Controllers\Host\DashboardController;
 use App\Http\Controllers\Host\InstructorController;
+use App\Http\Controllers\Host\InvitationController;
 use App\Http\Controllers\Host\LocationController;
 use App\Http\Controllers\Host\RoomController;
 use App\Http\Controllers\Host\BookingPageController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Host\ReportController;
 use App\Http\Controllers\Host\ScheduleController;
 use App\Http\Controllers\Host\SettingsController;
 use App\Http\Controllers\Host\SignupController;
+use App\Http\Controllers\Host\TeamController;
 use App\Http\Controllers\Host\StudentController;
 use App\Http\Controllers\SecurityCodeController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -37,6 +39,10 @@ Route::middleware('guest')->group(function () {
 
 // Signup - accessible by guests AND users who haven't completed onboarding
 Route::get('/signup', [SignupController::class, 'index'])->name('signup');
+
+// Team Invitation - accessible by guests
+Route::get('/invite/accept/{token}', [InvitationController::class, 'show'])->name('invitation.show');
+Route::post('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
 
 // Auth-required routes
 Route::middleware('auth')->group(function () {
@@ -133,9 +139,26 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
 
     // Settings - Team
-    Route::get('/settings/team/users', [SettingsController::class, 'users'])->name('settings.team.users');
-    Route::get('/settings/team/instructors', [SettingsController::class, 'instructors'])->name('settings.team.instructors');
-    Route::get('/settings/team/permissions', [SettingsController::class, 'permissions'])->name('settings.team.permissions');
+    Route::get('/settings/team/users', [TeamController::class, 'users'])->name('settings.team.users');
+    Route::post('/settings/team/invite', [TeamController::class, 'invite'])->name('settings.team.invite');
+    Route::post('/settings/team/invitations/{invitation}/resend', [TeamController::class, 'resendInvite'])->name('settings.team.invite.resend');
+    Route::delete('/settings/team/invitations/{invitation}', [TeamController::class, 'revokeInvite'])->name('settings.team.invite.revoke');
+    Route::put('/settings/team/users/{user}/role', [TeamController::class, 'updateRole'])->name('settings.team.users.role');
+    Route::post('/settings/team/users/{user}/deactivate', [TeamController::class, 'deactivate'])->name('settings.team.users.deactivate');
+    Route::post('/settings/team/users/{user}/reactivate', [TeamController::class, 'reactivate'])->name('settings.team.users.reactivate');
+    Route::post('/settings/team/users/{user}/suspend', [TeamController::class, 'suspend'])->name('settings.team.users.suspend');
+    Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
+
+    Route::get('/settings/team/instructors', [TeamController::class, 'instructors'])->name('settings.team.instructors');
+    Route::post('/settings/team/instructors', [TeamController::class, 'storeInstructor'])->name('settings.team.instructors.store');
+    Route::put('/settings/team/instructors/{instructor}', [TeamController::class, 'updateInstructor'])->name('settings.team.instructors.update');
+    Route::post('/settings/team/instructors/{instructor}/photo', [TeamController::class, 'uploadInstructorPhoto'])->name('settings.team.instructors.photo');
+    Route::delete('/settings/team/instructors/{instructor}/photo', [TeamController::class, 'removeInstructorPhoto'])->name('settings.team.instructors.photo.remove');
+    Route::post('/settings/team/instructors/{instructor}/invite', [TeamController::class, 'inviteInstructor'])->name('settings.team.instructors.invite');
+    Route::delete('/settings/team/instructors/{instructor}', [TeamController::class, 'deleteInstructor'])->name('settings.team.instructors.delete');
+
+    Route::get('/settings/team/permissions', [TeamController::class, 'permissions'])->name('settings.team.permissions');
+    Route::put('/settings/team/permissions/{user}', [TeamController::class, 'updatePermissions'])->name('settings.team.permissions.update');
 
     // Settings - Payments
     Route::get('/settings/payments/settings', [SettingsController::class, 'paymentSettings'])->name('settings.payments.settings');
@@ -164,4 +187,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/advanced/export', [SettingsController::class, 'dataExport'])->name('settings.advanced.export');
     Route::get('/settings/advanced/audit', [SettingsController::class, 'auditLogs'])->name('settings.advanced.audit');
     Route::get('/settings/advanced/danger', [SettingsController::class, 'dangerZone'])->name('settings.advanced.danger');
+
+    // Settings - Developer Tools (local only)
+    Route::get('/settings/dev/email-logs', [SettingsController::class, 'emailLogs'])->name('settings.dev.email-logs');
+    Route::post('/settings/dev/email-logs/clear', [SettingsController::class, 'clearEmailLogs'])->name('settings.dev.email-logs.clear');
 });

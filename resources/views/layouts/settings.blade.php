@@ -147,6 +147,18 @@
                     </ul>
                 </div>
 
+                {{-- Developer Tools (local only) --}}
+                @if(app()->environment('local'))
+                <div>
+                    <div class="text-xs font-semibold text-warning uppercase tracking-wider px-3 mb-1">Dev Tools</div>
+                    <ul class="menu menu-sm p-0">
+                        <li><a href="{{ route('settings.dev.email-logs') }}" class="{{ request()->routeIs('settings.dev.email-logs') ? 'active' : '' }}">
+                            <span class="icon-[tabler--mail-code] size-4"></span> Email Logs
+                        </a></li>
+                    </ul>
+                </div>
+                @endif
+
             </div>
         </div>
 
@@ -157,3 +169,17 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+// Close all details dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    var allDetails = document.querySelectorAll('details.dropdown[open]');
+    allDetails.forEach(function(details) {
+        if (!details.contains(e.target)) {
+            details.removeAttribute('open');
+        }
+    });
+});
+</script>
+@endpush

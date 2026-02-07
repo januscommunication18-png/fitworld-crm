@@ -21,6 +21,11 @@ class CheckSecurityCode
     protected array $exemptRoutes = [
         'security-code',
         'security-code.verify',
+        'login',
+        'logout',
+        'signup',
+        'invitation.show',
+        'invitation.accept',
     ];
 
     /**
