@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Host extends Model
 {
@@ -210,9 +211,17 @@ class Host extends Model
     }
 
     /**
-     * Get the owner user
+     * Get the owner user (relationship for eager loading)
      */
-    public function owner()
+    public function owner(): HasOne
+    {
+        return $this->hasOne(User::class)->where('role', User::ROLE_OWNER);
+    }
+
+    /**
+     * Get the owner user (direct query)
+     */
+    public function getOwner(): ?User
     {
         return $this->users()->where('role', User::ROLE_OWNER)->first();
     }

@@ -22,6 +22,7 @@ class Plan extends Model
         'features',
         'is_active',
         'is_featured',
+        'is_default',
         'sort_order',
     ];
 
@@ -33,6 +34,7 @@ class Plan extends Model
             'price_yearly' => 'decimal:2',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'is_default' => 'boolean',
         ];
     }
 

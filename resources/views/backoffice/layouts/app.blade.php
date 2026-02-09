@@ -7,7 +7,7 @@
 
     <title>@yield('title', 'Admin') — {{ config('app.name', 'FitCRM') }} Backoffice</title>
 
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/js/layout.js'])
     @stack('styles')
 </head>
 <body class="bg-base-200 min-h-screen">

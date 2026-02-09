@@ -128,9 +128,14 @@ class EmailTemplateController extends Controller
             'app_name' => config('app.name'),
         ];
 
-        $renderedHtml = $emailTemplate->render($sampleData);
+        $rendered = $emailTemplate->render($sampleData);
 
-        return view('backoffice.email-templates.preview', compact('emailTemplate', 'renderedHtml'));
+        return view('backoffice.email-templates.preview', [
+            'emailTemplate' => $emailTemplate,
+            'renderedSubject' => $rendered['subject'],
+            'renderedHtml' => $rendered['body_html'],
+            'renderedText' => $rendered['body_text'],
+        ]);
     }
 
     public function duplicate(EmailTemplate $emailTemplate)

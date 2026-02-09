@@ -91,3 +91,14 @@ li:has(> .sidebar-submenu.open) > button .sidebar-chevron { transform: rotate(18
 @media (min-width: 1024px) {
     #admin-sidebar-backdrop { display: none !important; }
 }
+
+/* ── Fix dropdown menu capturing clicks when closed ─────────────────────── */
+.dropdown-menu:not(.dropdown-open) {
+    pointer-events: none;
+    visibility: hidden;
+}
+.dropdown.dropdown-open > .dropdown-menu,
+.dropdown:focus-within > .dropdown-menu {
+    pointer-events: auto;
+    visibility: visible;
+}

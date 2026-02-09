@@ -104,9 +104,9 @@ class SecurityController extends Controller
                 ->withErrors(['code' => 'Invalid or expired verification code.']);
         }
 
-        // Mark OTP as verified in session
+        // Mark OTP as verified in session (use Unix timestamp for reliable serialization)
         $request->session()->put('admin_otp_verified', true);
-        $request->session()->put('admin_otp_verified_at', now());
+        $request->session()->put('admin_otp_verified_at', time());
         $request->session()->put('admin_otp_email', $email);
 
         // Redirect to intended URL or login

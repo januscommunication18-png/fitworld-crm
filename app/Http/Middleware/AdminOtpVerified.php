@@ -25,14 +25,19 @@ class AdminOtpVerified
 
         // Check if OTP session has expired (30 minutes of inactivity)
         $lastActivity = $request->session()->get('admin_otp_verified_at');
-        if ($lastActivity && now()->diffInMinutes($lastActivity) > 30) {
-            $request->session()->forget(['admin_otp_verified', 'admin_otp_verified_at']);
-            return redirect()->route('backoffice.security')
-                ->with('error', 'Your session has expired. Please verify again.');
+        if ($lastActivity) {
+            $lastActivityTime = is_numeric($lastActivity) ? $lastActivity : strtotime($lastActivity);
+            $minutesSinceActivity = (time() - $lastActivityTime) / 60;
+
+            if ($minutesSinceActivity > 30) {
+                $request->session()->forget(['admin_otp_verified', 'admin_otp_verified_at', 'admin_otp_email']);
+                return redirect()->route('backoffice.security')
+                    ->with('error', 'Your session has expired. Please verify again.');
+            }
         }
 
-        // Update last activity timestamp
-        $request->session()->put('admin_otp_verified_at', now());
+        // Update last activity timestamp (use Unix timestamp for reliable serialization)
+        $request->session()->put('admin_otp_verified_at', time());
 
         return $next($request);
     }

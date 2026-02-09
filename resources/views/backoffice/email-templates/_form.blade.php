@@ -71,7 +71,7 @@
                     <input type="text" id="subject" name="subject"
                         value="{{ old('subject', $emailTemplate?->subject) }}"
                         class="input w-full @error('subject') input-error @enderror"
-                        placeholder="e.g., Welcome to {{ '{{studio_name}}' }}!"
+                        placeholder="e.g., Welcome to @{{studio_name}}!"
                         required>
                     @error('subject')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -144,35 +144,35 @@
                 </p>
                 <div class="space-y-1 text-sm">
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{user_name}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{user_name}}</code>
                         <span class="text-base-content/60">User's name</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{user_email}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{user_email}}</code>
                         <span class="text-base-content/60">User's email</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{studio_name}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{studio_name}}</code>
                         <span class="text-base-content/60">Studio name</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{class_name}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{class_name}}</code>
                         <span class="text-base-content/60">Class name</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{class_date}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{class_date}}</code>
                         <span class="text-base-content/60">Class date</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{class_time}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{class_time}}</code>
                         <span class="text-base-content/60">Class time</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{instructor_name}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{instructor_name}}</code>
                         <span class="text-base-content/60">Instructor</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">{{ '{{booking_reference}}' }}</code>
+                        <code class="bg-base-200 px-2 py-0.5 rounded text-xs">@{{booking_reference}}</code>
                         <span class="text-base-content/60">Booking ref</span>
                     </div>
                 </div>

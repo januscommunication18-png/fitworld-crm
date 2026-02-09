@@ -40,7 +40,7 @@
                             </div>
                             <div class="flex">
                                 <span class="text-base-content/60 w-16">Subject:</span>
-                                <span class="font-medium">{{ $emailTemplate->subject }}</span>
+                                <span class="font-medium">{{ $renderedSubject }}</span>
                             </div>
                         </div>
                     </div>

@@ -145,42 +145,29 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="dropdown dropdown-end">
-                                    <button type="button" class="btn btn-ghost btn-sm btn-square" tabindex="0">
-                                        <span class="icon-[tabler--dots-vertical] size-5"></span>
+                                <div class="flex items-center gap-1">
+                                    <a href="{{ route('backoffice.clients.show', $client) }}"
+                                       class="btn btn-ghost btn-xs btn-square" title="View Details">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                    <a href="{{ route('backoffice.clients.edit', $client) }}"
+                                       class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <span class="icon-[tabler--edit] size-4"></span>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-ghost btn-xs btn-square"
+                                            title="Change Status"
+                                            onclick="openStatusModal({{ $client->id }}, '{{ $client->status }}')">
+                                        <span class="icon-[tabler--toggle-left] size-4"></span>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-open:opacity-100 w-48" role="menu" tabindex="0">
-                                        <li>
-                                            <a href="{{ route('backoffice.clients.show', $client) }}" class="dropdown-item">
-                                                <span class="icon-[tabler--eye] size-4"></span>
-                                                View Details
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('backoffice.clients.edit', $client) }}" class="dropdown-item">
-                                                <span class="icon-[tabler--edit] size-4"></span>
-                                                Edit
-                                            </a>
-                                        </li>
-                                        <li class="dropdown-divider"></li>
-                                        <li>
-                                            <button type="button" class="dropdown-item" onclick="openStatusModal({{ $client->id }}, '{{ $client->status }}')">
-                                                <span class="icon-[tabler--toggle-left] size-4"></span>
-                                                Change Status
-                                            </button>
-                                        </li>
-                                        @if(!$client->verified_at && $client->owner)
-                                        <li>
-                                            <form action="{{ route('backoffice.clients.resend-verification', $client) }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="dropdown-item">
-                                                    <span class="icon-[tabler--mail-forward] size-4"></span>
-                                                    Resend Verification
-                                                </button>
-                                            </form>
-                                        </li>
-                                        @endif
-                                    </ul>
+                                    @if(!$client->verified_at && $client->owner)
+                                    <form action="{{ route('backoffice.clients.resend-verification', $client) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-ghost btn-xs btn-square" title="Resend Verification">
+                                            <span class="icon-[tabler--mail-forward] size-4"></span>
+                                        </button>
+                                    </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

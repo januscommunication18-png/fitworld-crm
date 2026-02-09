@@ -6,10 +6,25 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
+    <div>
+        <p class="text-base-content/60">Manage subscription plans and their features.</p>
+    </div>
+
+    {{-- Tabs --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-            <p class="text-base-content/60">Manage subscription plans and their features.</p>
+        <div class="tabs tabs-bordered">
+            <a href="{{ route('backoffice.plans.index', ['tab' => 'default']) }}"
+               class="tab {{ $tab === 'default' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--settings] size-4 mr-2"></span>
+                Default Plans
+            </a>
+            <a href="{{ route('backoffice.plans.index', ['tab' => 'custom']) }}"
+               class="tab {{ $tab === 'custom' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--license] size-4 mr-2"></span>
+                Custom Plans
+            </a>
         </div>
+
         <a href="{{ route('backoffice.plans.create') }}" class="btn btn-primary">
             <span class="icon-[tabler--plus] size-5"></span>
             Add New Plan

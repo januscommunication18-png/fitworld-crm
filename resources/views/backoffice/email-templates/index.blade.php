@@ -6,14 +6,8 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-            <p class="text-base-content/60">Manage system and client email templates.</p>
-        </div>
-        <a href="{{ route('backoffice.email-templates.create', ['host_id' => $tab === 'client' ? $hostId : null]) }}" class="btn btn-primary">
-            <span class="icon-[tabler--plus] size-5"></span>
-            Add Template
-        </a>
+    <div>
+        <p class="text-base-content/60">Manage system and client email templates.</p>
     </div>
 
     {{-- Tabs --}}
@@ -31,19 +25,25 @@
             </a>
         </div>
 
-        @if($tab === 'client')
-        <form action="{{ route('backoffice.email-templates.index') }}" method="GET" class="w-full sm:w-72">
-            <input type="hidden" name="tab" value="client">
-            <select name="host_id" class="select w-full" onchange="this.form.submit()">
-                <option value="">Select a client...</option>
-                @foreach($hosts as $host)
-                    <option value="{{ $host->id }}" {{ $hostId == $host->id ? 'selected' : '' }}>
-                        {{ $host->studio_name }}
-                    </option>
-                @endforeach
-            </select>
-        </form>
-        @endif
+        <div class="flex items-center gap-4">
+            @if($tab === 'client')
+            <form action="{{ route('backoffice.email-templates.index') }}" method="GET" class="w-full sm:w-72">
+                <input type="hidden" name="tab" value="client">
+                <select name="host_id" class="select w-full" onchange="this.form.submit()">
+                    <option value="">Select a client...</option>
+                    @foreach($hosts as $host)
+                        <option value="{{ $host->id }}" {{ $hostId == $host->id ? 'selected' : '' }}>
+                            {{ $host->studio_name }}
+                        </option>
+                    @endforeach
+                </select>
+            </form>
+            @endif
+            <a href="{{ route('backoffice.email-templates.create', ['host_id' => $tab === 'client' ? $hostId : null]) }}" class="btn btn-primary">
+                <span class="icon-[tabler--plus] size-5"></span>
+                Add Template
+            </a>
+        </div>
     </div>
 
     {{-- Templates List --}}

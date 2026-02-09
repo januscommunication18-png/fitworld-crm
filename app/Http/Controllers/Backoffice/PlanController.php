@@ -9,13 +9,17 @@ use Illuminate\Support\Str;
 
 class PlanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $plans = Plan::orderBy('sort_order')
+        $tab = $request->get('tab', 'default');
+
+        $plans = Plan::when($tab === 'default', fn($q) => $q->where('is_default', true))
+            ->when($tab === 'custom', fn($q) => $q->where('is_default', false))
+            ->orderBy('sort_order')
             ->orderBy('created_at')
             ->get();
 
-        return view('backoffice.plans.index', compact('plans'));
+        return view('backoffice.plans.index', compact('plans', 'tab'));
     }
 
     public function create()
@@ -48,9 +52,11 @@ class PlanController extends Controller
         // Process features
         $validated['features'] = $this->processFeatures($request);
 
-        Plan::create($validated);
+        $plan = Plan::create($validated);
 
-        return redirect()->route('backoffice.plans.index')
+        $tab = $plan->is_default ? 'default' : 'custom';
+
+        return redirect()->route('backoffice.plans.index', ['tab' => $tab])
             ->with('success', 'Plan created successfully.');
     }
 
