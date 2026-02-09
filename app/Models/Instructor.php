@@ -81,6 +81,22 @@ class Instructor extends Model
         return $this->hasMany(ServiceSlot::class);
     }
 
+    public function primarySessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class, 'primary_instructor_id');
+    }
+
+    public function backupSessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class, 'backup_instructor_id');
+    }
+
+    public function allSessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class, 'primary_instructor_id')
+            ->orWhere('backup_instructor_id', $this->id);
+    }
+
     /**
      * Get photo URL
      */

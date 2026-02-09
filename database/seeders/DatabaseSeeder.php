@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             $this->call([
                 ClassPlanSeeder::class,
                 ServicePlanSeeder::class,
+                ClassSessionSeeder::class,
             ]);
         }
     }

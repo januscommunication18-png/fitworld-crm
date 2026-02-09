@@ -8,6 +8,7 @@
     <title>@yield('title', 'Dashboard') — {{ config('app.name', 'FitCRM') }}</title>
 
     @vite(['resources/css/app.css', 'resources/js/layout.js'])
+    <link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
     @stack('styles')
 </head>
 <body class="bg-base-200 min-h-screen">
@@ -106,6 +107,7 @@
         })();
     </script>
 
+    <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

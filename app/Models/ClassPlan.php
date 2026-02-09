@@ -81,6 +81,16 @@ class ClassPlan extends Model
         return $this->hasMany(StudioClass::class, 'class_plan_id');
     }
 
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class);
+    }
+
+    public function classRequests(): HasMany
+    {
+        return $this->hasMany(ClassRequest::class);
+    }
+
     /**
      * Get image URL
      */

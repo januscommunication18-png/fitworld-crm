@@ -33,9 +33,9 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-xl font-semibold">Locations</h1>
-            <p class="text-base-content/60 text-sm">Manage your studio locations (max 3)</p>
+            <p class="text-base-content/60 text-sm">Manage your studio, public, and virtual locations (max 5)</p>
         </div>
-        @if($locations->count() < 3)
+        @if($locations->count() < 5)
         <a href="{{ route('settings.locations.create') }}" class="btn btn-primary">
             <span class="icon-[tabler--plus] size-4"></span> Add Location
         </a>
@@ -63,11 +63,24 @@
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex items-start gap-4">
                         <div class="flex items-center justify-center size-12 rounded-lg bg-primary/10 shrink-0">
-                            <span class="icon-[tabler--map-pin] size-6 text-primary"></span>
+                            <span class="{{ $location->type_icon }} size-6 text-primary"></span>
                         </div>
                         <div>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2 flex-wrap">
                                 <h3 class="font-semibold">{{ $location->name }}</h3>
+                                @if($location->location_types && count($location->location_types) > 0)
+                                    @foreach($location->location_types as $type)
+                                    <span class="badge badge-soft badge-sm {{ match($type) {
+                                        'in_person' => 'badge-primary',
+                                        'public' => 'badge-success',
+                                        'virtual' => 'badge-info',
+                                        'mobile' => 'badge-warning',
+                                        default => 'badge-neutral',
+                                    } }}">{{ \App\Models\Location::getLocationTypeOptions()[$type] ?? $type }}</span>
+                                    @endforeach
+                                @else
+                                    <span class="badge {{ $location->type_badge_class }} badge-soft badge-sm">{{ $location->type_label }}</span>
+                                @endif
                                 @if($location->is_default)
                                 <span class="badge badge-primary badge-sm">Default</span>
                                 @endif
@@ -94,10 +107,12 @@
                     <div class="flex items-center gap-2">
                         {{-- Stats --}}
                         <div class="flex items-center gap-4 text-sm text-base-content/60 mr-4">
+                            @if($location->isInPerson())
                             <span class="flex items-center gap-1" title="Rooms">
                                 <span class="icon-[tabler--door] size-4"></span>
                                 {{ $location->rooms_count ?? 0 }}
                             </span>
+                            @endif
                             <span class="flex items-center gap-1" title="Classes (next 30 days)">
                                 <span class="icon-[tabler--calendar] size-4"></span>
                                 {{ $location->upcoming_classes_count ?? 0 }}
@@ -184,6 +199,12 @@
                         </div>
                     </div>
 
+                    {{-- Location Types --}}
+                    <div id="drawer-location-types-section" class="hidden">
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-2">Location Types</h5>
+                        <div class="flex flex-wrap gap-2" id="drawer-location-types"></div>
+                    </div>
+
                     {{-- Contact Info --}}
                     <div class="space-y-2" id="drawer-contact-section">
                         <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider">Contact</h5>
@@ -205,8 +226,29 @@
                         <div class="p-3 bg-base-200 rounded-lg text-sm" id="drawer-location-notes"></div>
                     </div>
 
-                    {{-- Rooms --}}
-                    <div>
+                    {{-- Virtual Location Info --}}
+                    <div id="drawer-virtual-section" class="hidden">
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-2">Virtual Details</h5>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--video] size-4 text-base-content/60"></span>
+                                <span id="drawer-virtual-platform"></span>
+                            </div>
+                            <div id="drawer-virtual-notes-row" class="flex items-start gap-2">
+                                <span class="icon-[tabler--note] size-4 text-base-content/60 mt-0.5"></span>
+                                <span id="drawer-virtual-notes" class="text-sm"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Public Location Info --}}
+                    <div id="drawer-public-section" class="hidden">
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-2">Meeting Instructions</h5>
+                        <div class="p-3 bg-base-200 rounded-lg text-sm" id="drawer-public-notes"></div>
+                    </div>
+
+                    {{-- Rooms (only for in-person) --}}
+                    <div id="drawer-rooms-section">
                         <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-3">Rooms</h5>
                         <div id="drawer-rooms-list" class="space-y-2">
                             {{-- Rooms will be populated here --}}
@@ -288,6 +330,25 @@ function viewLocation(id) {
         location.postal_code
     ].filter(Boolean).join(', ');
 
+    // Location types
+    var locationTypesSection = document.getElementById('drawer-location-types-section');
+    var locationTypesContainer = document.getElementById('drawer-location-types');
+    var typeLabels = { 'in_person': 'In-Person Studio', 'public': 'Public Location', 'virtual': 'Virtual', 'mobile': 'Mobile/Travel Studio' };
+    var typeBadgeClasses = { 'in_person': 'badge-primary', 'public': 'badge-success', 'virtual': 'badge-info', 'mobile': 'badge-warning' };
+
+    if (location.location_types && location.location_types.length > 0) {
+        locationTypesSection.classList.remove('hidden');
+        locationTypesContainer.innerHTML = '';
+        location.location_types.forEach(function(type) {
+            var badge = document.createElement('span');
+            badge.className = 'badge badge-soft badge-sm ' + (typeBadgeClasses[type] || 'badge-neutral');
+            badge.textContent = typeLabels[type] || type;
+            locationTypesContainer.appendChild(badge);
+        });
+    } else {
+        locationTypesSection.classList.add('hidden');
+    }
+
     // Contact info
     var hasContact = location.phone || location.email;
     document.getElementById('drawer-contact-section').classList.toggle('hidden', !hasContact);
@@ -314,28 +375,66 @@ function viewLocation(id) {
         document.getElementById('drawer-notes-section').classList.add('hidden');
     }
 
-    // Rooms
+    // Location type-specific sections
+    var virtualSection = document.getElementById('drawer-virtual-section');
+    var publicSection = document.getElementById('drawer-public-section');
+    var roomsSection = document.getElementById('drawer-rooms-section');
     var roomsList = document.getElementById('drawer-rooms-list');
     var noRooms = document.getElementById('drawer-no-rooms');
+
+    // Hide all type-specific sections first
+    virtualSection.classList.add('hidden');
+    publicSection.classList.add('hidden');
+    roomsSection.classList.add('hidden');
     roomsList.innerHTML = '';
 
-    if (location.rooms && location.rooms.length > 0) {
-        noRooms.classList.add('hidden');
-        location.rooms.forEach(function(room) {
-            var roomHtml = '<div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">' +
-                '<div class="flex items-center gap-3">' +
-                '<span class="icon-[tabler--door] size-5 text-base-content/60"></span>' +
-                '<div>' +
-                '<div class="font-medium">' + room.name + '</div>' +
-                '<div class="text-sm text-base-content/60">Capacity: ' + room.capacity + '</div>' +
-                '</div>' +
-                '</div>' +
-                '<span class="badge badge-' + (room.is_active ? 'success' : 'neutral') + ' badge-soft badge-sm">' + (room.is_active ? 'Active' : 'Inactive') + '</span>' +
-                '</div>';
-            roomsList.insertAdjacentHTML('beforeend', roomHtml);
-        });
-    } else {
-        noRooms.classList.remove('hidden');
+    // Check which types are selected
+    var types = location.location_types || [location.location_type];
+    var hasInPerson = types.includes('in_person');
+    var hasPublic = types.includes('public');
+    var hasVirtual = types.includes('virtual');
+
+    // Show virtual info if virtual type is selected
+    if (hasVirtual) {
+        virtualSection.classList.remove('hidden');
+        var platformLabels = { zoom: 'Zoom', google_meet: 'Google Meet', teams: 'Microsoft Teams', other: 'Other' };
+        document.getElementById('drawer-virtual-platform').textContent = platformLabels[location.virtual_platform] || location.virtual_platform || 'Not specified';
+
+        if (location.virtual_access_notes) {
+            document.getElementById('drawer-virtual-notes-row').classList.remove('hidden');
+            document.getElementById('drawer-virtual-notes').textContent = location.virtual_access_notes;
+        } else {
+            document.getElementById('drawer-virtual-notes-row').classList.add('hidden');
+        }
+    }
+
+    // Show public location info if public type is selected
+    if (hasPublic) {
+        publicSection.classList.remove('hidden');
+        document.getElementById('drawer-public-notes').textContent = location.public_location_notes || 'No instructions provided.';
+    }
+
+    // Show rooms for in-person type
+    if (hasInPerson) {
+        roomsSection.classList.remove('hidden');
+        if (location.rooms && location.rooms.length > 0) {
+            noRooms.classList.add('hidden');
+            location.rooms.forEach(function(room) {
+                var roomHtml = '<div class="flex items-center justify-between p-3 bg-base-200 rounded-lg">' +
+                    '<div class="flex items-center gap-3">' +
+                    '<span class="icon-[tabler--door] size-5 text-base-content/60"></span>' +
+                    '<div>' +
+                    '<div class="font-medium">' + room.name + '</div>' +
+                    '<div class="text-sm text-base-content/60">Capacity: ' + room.capacity + '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '<span class="badge badge-' + (room.is_active ? 'success' : 'neutral') + ' badge-soft badge-sm">' + (room.is_active ? 'Active' : 'Inactive') + '</span>' +
+                    '</div>';
+                roomsList.insertAdjacentHTML('beforeend', roomHtml);
+            });
+        } else {
+            noRooms.classList.remove('hidden');
+        }
     }
 
     // Edit link

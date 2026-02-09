@@ -366,71 +366,91 @@ The `ResolveTenant` middleware reads the subdomain, looks up the host, and sets 
 
 ## 3.1 Select Dropdown (FlyonUI Advance Select)
 
-### A. Multi-Select with Search
+> **IMPORTANT:** All form dropdowns should use the advance-select with search functionality. This is the standard pattern for the project.
 
-Use this variant when users need to **select multiple options** with a **search filter**.
+### A. Single Select with Search (Default for all dropdowns)
+
+Use this for **all form dropdowns**. Always include search for better UX.
 
 ```html
-<div class="max-w-sm">
-  <label class="label-text" for="multi-select-members">Select Members</label>
-  <select
-    id="multi-select-members"
-    multiple
-    data-select='{
-      "hasSearch": true,
-      "isSearchDirectMatch": false,
-      "searchPlaceholder": "Search options...",
-      "placeholder": "Select options...",
-      "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-      "toggleClasses": "advance-select-toggle select-disabled:pointer-events-none select-disabled:opacity-40",
-      "dropdownClasses": "advance-select-menu max-h-48 -ms-1 overflow-y-auto pt-0",
-      "optionClasses": "advance-select-option selected:select-active",
-      "optionTemplate": "<div class=\"flex items-center\"> <div class=\"size-8 me-2\" data-icon></div><div><div class=\"text-sm font-semibold text-base-content\" data-title></div> <div class=\"text-xs text-base-content/80\" data-description></div></div><div class=\"flex justify-between items-center flex-1\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block \"></span></div> </div>",
-      "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content absolute top-1/2 end-3 -translate-y-1/2 \"></span>"
-    }'
-    class="hidden"
-    aria-label="Advance select"
-  >
-    <option value="">Choose</option>
-    <option value="1" data-select-option='{"icon": "<img class=\"rounded-full\" src=\"AVATAR_URL\" alt=\"Name\" />"}'>
-      Option 1
-    </option>
-  </select>
+<div>
+    <label class="label-text" for="instructor_id">Instructor</label>
+    <select id="instructor_id" name="instructor_id" class="hidden" required
+        data-select='{
+            "hasSearch": true,
+            "searchPlaceholder": "Search instructors...",
+            "placeholder": "Select an instructor...",
+            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+            "toggleClasses": "advance-select-toggle",
+            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+            "optionClasses": "advance-select-option selected:select-active",
+            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+        }'>
+        <option value="">Select an instructor...</option>
+        @foreach($instructors as $instructor)
+        <option value="{{ $instructor->id }}" {{ old('instructor_id') == $instructor->id ? 'selected' : '' }}>
+            {{ $instructor->name }}
+        </option>
+        @endforeach
+    </select>
+    @error('instructor_id')
+        <p class="text-error text-sm mt-1">{{ $message }}</p>
+    @enderror
 </div>
 ```
 
-### B. Single Select (No Search, No Multi-Select)
+### B. Single Select without Search (Small lists only)
 
-Use this variant for a **simple single-select** dropdown.
+Only use for dropdowns with **5 or fewer options** (like status selects).
 
 ```html
-<div class="max-w-sm">
-  <label class="label-text" for="single-select-member">Select Member</label>
-  <select
-    id="single-select-member"
+<select id="status" name="status" class="hidden"
     data-select='{
-      "placeholder": "Select option...",
-      "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-      "toggleClasses": "advance-select-toggle select-disabled:pointer-events-none select-disabled:opacity-40",
-      "dropdownClasses": "advance-select-menu max-h-48 -ms-1 overflow-y-auto pt-0",
-      "optionClasses": "advance-select-option selected:select-active",
-      "optionTemplate": "<div class=\"flex items-center\"> <div class=\"size-8 me-2\" data-icon></div><div><div class=\"text-sm font-semibold text-base-content\" data-title></div> <div class=\"text-xs text-base-content/80\" data-description></div></div><div class=\"flex justify-between items-center flex-1\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block \"></span></div> </div>",
-      "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content absolute top-1/2 end-3 -translate-y-1/2 \"></span>"
-    }'
-    class="hidden"
-    aria-label="Advance select"
-  >
-    <option value="">Choose</option>
-    <option value="1" data-select-option='{"icon": "<img class=\"rounded-full\" src=\"AVATAR_URL\" alt=\"Name\" />"}'>
-      Option 1
-    </option>
-  </select>
-</div>
+        "placeholder": "Select status...",
+        "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+        "toggleClasses": "advance-select-toggle",
+        "dropdownClasses": "advance-select-menu",
+        "optionClasses": "advance-select-option selected:select-active",
+        "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+        "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+    }'>
+    <option value="">All Statuses</option>
+    <option value="draft">Draft</option>
+    <option value="published">Published</option>
+</select>
 ```
 
-**Key differences:**
-- **Multi-select:** has `multiple` attribute, `"hasSearch": true`, `"isSearchDirectMatch": false`, `"searchPlaceholder": "..."`
-- **Single select:** no `multiple` attribute, no search-related properties in `data-select`
+### C. Multi-Select with Search
+
+Use when users need to **select multiple options**.
+
+```html
+<select id="multi-select-members" name="members[]" multiple class="hidden"
+    data-select='{
+        "hasSearch": true,
+        "isSearchDirectMatch": false,
+        "searchPlaceholder": "Search members...",
+        "placeholder": "Select members...",
+        "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+        "toggleClasses": "advance-select-toggle",
+        "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+        "optionClasses": "advance-select-option selected:select-active",
+        "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+        "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+    }'>
+    <option value="">Choose</option>
+    <option value="1">Option 1</option>
+    <option value="2">Option 2</option>
+</select>
+```
+
+**Key points:**
+- **Always use `class="hidden"`** on the select element
+- **Always include search** for lists with more than 5 options
+- Use `max-h-72 overflow-y-auto` in `dropdownClasses` for longer lists
+- The `data-select` JSON must be properly escaped
+- Works with standard form submission and Laravel validation
 
 ## 3.2 Alerts (FlyonUI Alert Component)
 
@@ -708,44 +728,127 @@ Scroll-triggered animations using `intersect:motion-*` utility classes.
 </div>
 ```
 
-## 3.13 Date & Time Pickers (Flatpickr)
+## 3.13 Action Dropdown (Three-Dot Menu)
+
+> **Standard pattern for row actions in tables/lists.** Use HTML5 `<details>/<summary>` pattern for reliable behavior.
+
+```html
+<details class="dropdown dropdown-bottom dropdown-end">
+    <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
+        <span class="icon-[tabler--dots-vertical] size-4"></span>
+    </summary>
+    <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+        <li>
+            <form action="/route" method="POST" class="m-0">
+                @csrf
+                <button type="submit" class="w-full text-left flex items-center gap-2">
+                    <span class="icon-[tabler--copy] size-4"></span> Duplicate
+                </button>
+            </form>
+        </li>
+        <li>
+            <a href="/edit">
+                <span class="icon-[tabler--edit] size-4"></span> Edit
+            </a>
+        </li>
+        <li>
+            <form action="/delete" method="POST" class="m-0" onsubmit="return confirm('Delete?')">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                </button>
+            </form>
+        </li>
+    </ul>
+</details>
+```
+
+**Key points:**
+- Use `<details>` and `<summary>` instead of `<div>` with JS-based toggle
+- `summary` needs `list-none cursor-pointer` to hide default marker
+- `dropdown-content menu` classes for the menu, with inline `style` for z-index
+- Forms inside `<li>` with `class="m-0"` to remove default margin
+- Buttons inside forms use `w-full text-left flex items-center gap-2`
+- Destructive actions use `text-error` class
+
+## 3.14 Date & Time Pickers (Flatpickr)
+
+> **IMPORTANT:** Always use Flatpickr for date and time inputs instead of native HTML date/time inputs. This provides a consistent, user-friendly experience.
 
 **Required local packages:** Flatpickr
 
-### A. Date Picker (Human Friendly)
+### A. Date Picker (Human Friendly) - Default for all date fields
+
+Use this pattern for **all date inputs**. Shows human-readable format but submits Y-m-d format.
 
 ```html
-<label class="label-text" for="flatpickr-human-friendly">Select Date</label>
-<input type="text" class="input max-w-sm" placeholder="Month DD, YYYY" id="flatpickr-human-friendly" />
+<label class="label-text" for="session_date">Date</label>
+<input type="text" id="session_date" name="session_date"
+    value="{{ old('session_date', $date) }}"
+    class="input w-full"
+    placeholder="Select date..."
+    required>
 ```
 
 ```js
-flatpickr('#flatpickr-human-friendly', { altInput: true, altFormat: 'F j, Y', dateFormat: 'Y-m-d' })
+flatpickr('#session_date', {
+    altInput: true,
+    altFormat: 'F j, Y',
+    dateFormat: 'Y-m-d',
+    minDate: 'today'  // optional: prevent past dates
+});
 ```
 
-### B. Date & Time Picker
+### B. Time Only Picker - Default for all time fields
+
+Use this pattern for **all time inputs**. 24-hour format with 5-minute increments.
 
 ```html
-<label class="label-text" for="flatpickr-date-time">Select Date & Time</label>
-<input type="text" class="input max-w-sm" placeholder="YYYY-MM-DD HH:MM" id="flatpickr-date-time" />
+<label class="label-text" for="session_time">Start Time</label>
+<input type="text" id="session_time" name="session_time"
+    value="{{ old('session_time', '09:00') }}"
+    class="input w-full"
+    placeholder="HH:MM"
+    required>
 ```
 
 ```js
-flatpickr('#flatpickr-date-time', { enableTime: true, dateFormat: 'Y-m-d H:i' })
+flatpickr('#session_time', {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: 'H:i',
+    time_24hr: true,
+    minuteIncrement: 5
+});
 ```
 
-### C. Time Only Picker
+### C. Date & Time Picker (Combined)
+
+Use when both date and time are needed in a single field.
 
 ```html
-<label class="label-text" for="flatpickr-time">Select Time</label>
-<input type="text" class="input max-w-sm" placeholder="HH:MM" id="flatpickr-time" />
+<label class="label-text" for="datetime">Select Date & Time</label>
+<input type="text" id="datetime" name="datetime" class="input w-full" placeholder="Select date & time...">
 ```
 
 ```js
-flatpickr('#flatpickr-time', { enableTime: true, noCalendar: true, dateFormat: 'H:i' })
+flatpickr('#datetime', {
+    enableTime: true,
+    dateFormat: 'Y-m-d H:i',
+    altInput: true,
+    altFormat: 'F j, Y at H:i'
+});
 ```
 
-## 3.14 Footer
+**Key points:**
+- Always use `type="text"` instead of `type="date"` or `type="time"`
+- Use `altInput: true` with `altFormat` for human-readable display
+- `dateFormat` determines the actual submitted value
+- Add `minDate: 'today'` to prevent selecting past dates
+- Use `onChange` callback to trigger updates in dependent fields
+
+## 3.15 Footer
 
 ```html
 <footer class="footer bg-base-200/60 p-10">
@@ -769,7 +872,7 @@ flatpickr('#flatpickr-time', { enableTime: true, noCalendar: true, dateFormat: '
 </footer>
 ```
 
-## 3.15 Number Input
+## 3.16 Number Input
 
 ```html
 <div class="max-w-sm" data-input-number>
@@ -788,7 +891,7 @@ flatpickr('#flatpickr-time', { enableTime: true, noCalendar: true, dateFormat: '
 </div>
 ```
 
-## 3.16 Menu with Badges
+## 3.17 Menu with Badges
 
 ```html
 <ul class="menu lg:menu-horizontal">
@@ -815,7 +918,7 @@ flatpickr('#flatpickr-time', { enableTime: true, noCalendar: true, dateFormat: '
 </ul>
 ```
 
-## 3.17 Pagination
+## 3.18 Pagination
 
 ```html
 <nav class="flex items-center gap-x-1">
@@ -845,7 +948,7 @@ flatpickr('#flatpickr-time', { enableTime: true, noCalendar: true, dateFormat: '
 </nav>
 ```
 
-## 3.18 Modal / Popup
+## 3.19 Modal / Popup
 
 FlyonUI modals use the overlay system with `data-overlay` attribute for triggering.
 

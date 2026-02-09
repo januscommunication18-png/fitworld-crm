@@ -19,6 +19,8 @@ use App\Http\Controllers\Host\TeamController;
 use App\Http\Controllers\Host\StudentController;
 use App\Http\Controllers\Host\CatalogController;
 use App\Http\Controllers\Host\ClassPlanController;
+use App\Http\Controllers\Host\ClassSessionController;
+use App\Http\Controllers\Host\ClassRequestController;
 use App\Http\Controllers\Host\ServicePlanController;
 use App\Http\Controllers\Host\ServiceSlotController;
 use App\Http\Controllers\SecurityCodeController;
@@ -98,6 +100,21 @@ Route::middleware('auth')->group(function () {
     // Service Slots
     Route::resource('service-slots', ServiceSlotController::class)->names('service-slots');
     Route::post('/service-slots/bulk', [ServiceSlotController::class, 'bulkCreate'])->name('service-slots.bulk');
+
+    // Class Sessions
+    Route::resource('class-sessions', ClassSessionController::class)->names('class-sessions');
+    Route::patch('/class-sessions/{class_session}/publish', [ClassSessionController::class, 'publish'])->name('class-sessions.publish');
+    Route::patch('/class-sessions/{class_session}/unpublish', [ClassSessionController::class, 'unpublish'])->name('class-sessions.unpublish');
+    Route::patch('/class-sessions/{class_session}/cancel', [ClassSessionController::class, 'cancel'])->name('class-sessions.cancel');
+    Route::patch('/class-sessions/{class_session}/promote-backup', [ClassSessionController::class, 'promoteBackup'])->name('class-sessions.promote-backup');
+    Route::post('/class-sessions/{class_session}/duplicate', [ClassSessionController::class, 'duplicate'])->name('class-sessions.duplicate');
+
+    // Class Requests
+    Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');
+    Route::get('/class-requests/{class_request}', [ClassRequestController::class, 'show'])->name('class-requests.show');
+    Route::post('/class-requests/{class_request}/schedule', [ClassRequestController::class, 'scheduleFromRequest'])->name('class-requests.schedule');
+    Route::patch('/class-requests/{class_request}/ignore', [ClassRequestController::class, 'ignore'])->name('class-requests.ignore');
+    Route::delete('/class-requests/{class_request}', [ClassRequestController::class, 'destroy'])->name('class-requests.destroy');
 
     // Payments
     Route::get('/payments/transactions', [PaymentController::class, 'transactions'])->name('payments.transactions');

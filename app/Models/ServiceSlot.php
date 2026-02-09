@@ -15,6 +15,8 @@ class ServiceSlot extends Model
     const STATUS_AVAILABLE = 'available';
     const STATUS_BOOKED = 'booked';
     const STATUS_BLOCKED = 'blocked';
+    const STATUS_DRAFT = 'draft';
+    const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
         'host_id',
@@ -29,6 +31,8 @@ class ServiceSlot extends Model
         'notes',
         'recurrence_rule',
         'recurrence_parent_id',
+        'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected function casts(): array
@@ -36,6 +40,7 @@ class ServiceSlot extends Model
         return [
             'start_time' => 'datetime',
             'end_time' => 'datetime',
+            'cancelled_at' => 'datetime',
             'price' => 'decimal:2',
         ];
     }
@@ -82,6 +87,33 @@ class ServiceSlot extends Model
     {
         return $this->status === self::STATUS_AVAILABLE
             && $this->start_time->isFuture();
+    }
+
+    /**
+     * Check if slot is draft
+     */
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    /**
+     * Check if slot is cancelled
+     */
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
+    }
+
+    /**
+     * Cancel the slot
+     */
+    public function cancel(?string $reason = null): bool
+    {
+        $this->status = self::STATUS_CANCELLED;
+        $this->cancelled_at = now();
+        $this->cancellation_reason = $reason;
+        return $this->save();
     }
 
     /**
@@ -209,6 +241,8 @@ class ServiceSlot extends Model
             self::STATUS_AVAILABLE => 'Available',
             self::STATUS_BOOKED => 'Booked',
             self::STATUS_BLOCKED => 'Blocked',
+            self::STATUS_DRAFT => 'Draft',
+            self::STATUS_CANCELLED => 'Cancelled',
         ];
     }
 
@@ -221,7 +255,33 @@ class ServiceSlot extends Model
             self::STATUS_AVAILABLE => 'badge-success',
             self::STATUS_BOOKED => 'badge-info',
             self::STATUS_BLOCKED => 'badge-neutral',
+            self::STATUS_DRAFT => 'badge-warning',
+            self::STATUS_CANCELLED => 'badge-error',
             default => 'badge-neutral',
         };
+    }
+
+    /**
+     * Scope not cancelled slots
+     */
+    public function scopeNotCancelled($query)
+    {
+        return $query->where('status', '!=', self::STATUS_CANCELLED);
+    }
+
+    /**
+     * Scope draft slots
+     */
+    public function scopeDraft($query)
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    /**
+     * Scope cancelled slots
+     */
+    public function scopeCancelled($query)
+    {
+        return $query->where('status', self::STATUS_CANCELLED);
     }
 }

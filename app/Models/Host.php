@@ -199,6 +199,16 @@ class Host extends Model
         return $this->hasMany(ServiceSlot::class);
     }
 
+    public function classSessions(): HasMany
+    {
+        return $this->hasMany(ClassSession::class);
+    }
+
+    public function classRequests(): HasMany
+    {
+        return $this->hasMany(ClassRequest::class);
+    }
+
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class);

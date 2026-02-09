@@ -52,21 +52,28 @@
             </li>
 
             {{-- Schedule --}}
-            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') ? 'active' : '' }}" data-nav="schedule">
+            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('class-requests*') ? 'active' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">Schedule</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('class-requests*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
                     <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>Calendar View
                     </a></li>
-                    <li><a href="{{ url('/schedule/classes') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/classes') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--list] size-4 mr-2"></span>Classes
+                    <li><a href="{{ url('/class-sessions') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-sessions*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>Class Sessions
                     </a></li>
                     <li><a href="{{ url('/service-slots') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('service-slots*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>Service Slots
+                        <span class="icon-[tabler--clock] size-4 mr-2"></span>Service Slots
+                    </a></li>
+                    <li><a href="{{ url('/class-requests') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-requests*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--message-circle-question] size-4 mr-2"></span>Requests
+                        @php $pendingRequests = auth()->user()?->host?->classRequests()->pending()->count() ?? 0; @endphp
+                        @if($pendingRequests > 0)
+                        <span class="badge badge-xs badge-warning ml-1">{{ $pendingRequests }}</span>
+                        @endif
                     </a></li>
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--hourglass] size-4 mr-2"></span>Waitlist
