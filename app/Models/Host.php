@@ -4,11 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Host extends Model
 {
     use HasFactory;
+
+    const STATUS_ACTIVE = 'active';
+    const STATUS_INACTIVE = 'inactive';
+    const STATUS_PENDING_VERIFY = 'pending_verify';
+    const STATUS_SUSPENDED = 'suspended';
+
+    const SUBSCRIPTION_TRIALING = 'trialing';
+    const SUBSCRIPTION_ACTIVE = 'active';
+    const SUBSCRIPTION_PAST_DUE = 'past_due';
+    const SUBSCRIPTION_CANCELED = 'canceled';
 
     protected $fillable = [
         'studio_name',
@@ -37,6 +48,12 @@ class Host extends Model
         'onboarding_completed_at',
         'booking_settings',
         'policies',
+        'status',
+        'verified_at',
+        'plan_id',
+        'subscription_status',
+        'trial_ends_at',
+        'subscription_ends_at',
     ];
 
     protected function casts(): array
@@ -50,6 +67,9 @@ class Host extends Model
             'policies' => 'array',
             'is_live' => 'boolean',
             'onboarding_completed_at' => 'datetime',
+            'verified_at' => 'datetime',
+            'trial_ends_at' => 'datetime',
+            'subscription_ends_at' => 'datetime',
         ];
     }
 
@@ -171,5 +191,124 @@ class Host extends Model
     public function defaultLocation()
     {
         return $this->locations()->where('is_default', true)->first();
+    }
+
+    /**
+     * Get the plan for this host
+     */
+    public function plan(): BelongsTo
+    {
+        return $this->belongsTo(Plan::class);
+    }
+
+    /**
+     * Get status history
+     */
+    public function statusHistory(): HasMany
+    {
+        return $this->hasMany(HostStatusHistory::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get the owner user
+     */
+    public function owner()
+    {
+        return $this->users()->where('role', User::ROLE_OWNER)->first();
+    }
+
+    /**
+     * Check if host is active
+     */
+    public function isActive(): bool
+    {
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    /**
+     * Check if host is pending verification
+     */
+    public function isPendingVerify(): bool
+    {
+        return $this->status === self::STATUS_PENDING_VERIFY;
+    }
+
+    /**
+     * Check if host is suspended
+     */
+    public function isSuspended(): bool
+    {
+        return $this->status === self::STATUS_SUSPENDED;
+    }
+
+    /**
+     * Check if email is verified
+     */
+    public function isVerified(): bool
+    {
+        return $this->verified_at !== null;
+    }
+
+    /**
+     * Mark host as verified
+     */
+    public function markVerified(?int $adminUserId = null): void
+    {
+        $oldStatus = $this->status;
+        $this->update([
+            'status' => self::STATUS_ACTIVE,
+            'verified_at' => now(),
+        ]);
+
+        HostStatusHistory::log(
+            $this->id,
+            self::STATUS_ACTIVE,
+            $oldStatus,
+            $adminUserId,
+            'Email verified'
+        );
+    }
+
+    /**
+     * Change host status
+     */
+    public function changeStatus(string $status, ?int $adminUserId = null, ?string $reason = null): void
+    {
+        $oldStatus = $this->status;
+        $this->update(['status' => $status]);
+
+        HostStatusHistory::log(
+            $this->id,
+            $status,
+            $oldStatus,
+            $adminUserId,
+            $reason
+        );
+    }
+
+    /**
+     * Get available statuses
+     */
+    public static function getStatuses(): array
+    {
+        return [
+            self::STATUS_ACTIVE => 'Active',
+            self::STATUS_INACTIVE => 'Inactive',
+            self::STATUS_PENDING_VERIFY => 'Pending Verification',
+            self::STATUS_SUSPENDED => 'Suspended',
+        ];
+    }
+
+    /**
+     * Get available subscription statuses
+     */
+    public static function getSubscriptionStatuses(): array
+    {
+        return [
+            self::SUBSCRIPTION_TRIALING => 'Trialing',
+            self::SUBSCRIPTION_ACTIVE => 'Active',
+            self::SUBSCRIPTION_PAST_DUE => 'Past Due',
+            self::SUBSCRIPTION_CANCELED => 'Canceled',
+        ];
     }
 }
