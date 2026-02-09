@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 
 class Instructor extends Model
@@ -61,6 +62,23 @@ class Instructor extends Model
     public function invitation(): HasOne
     {
         return $this->hasOne(TeamInvitation::class);
+    }
+
+    public function servicePlans(): BelongsToMany
+    {
+        return $this->belongsToMany(ServicePlan::class, 'service_plan_instructors')
+            ->withPivot(['custom_price', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function activeServicePlans(): BelongsToMany
+    {
+        return $this->servicePlans()->wherePivot('is_active', true);
+    }
+
+    public function serviceSlots(): HasMany
+    {
+        return $this->hasMany(ServiceSlot::class);
     }
 
     /**

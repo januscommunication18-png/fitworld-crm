@@ -43,25 +43,30 @@
                 </ul>
             </li>
 
+            {{-- Catalog --}}
+            <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }}" data-nav="catalog">
+                <a href="{{ url('/catalog') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
+                    <span class="icon-[tabler--layout-grid] size-5 shrink-0"></span>
+                    <span class="sidebar-label">Catalog</span>
+                </a>
+            </li>
+
             {{-- Schedule --}}
-            <li class="nav-item {{ request()->is('schedule*') ? 'active' : '' }}" data-nav="schedule">
+            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') ? 'active' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">Schedule</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('schedule*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>Calendar View
                     </a></li>
-                    <li><a href="{{ url('/schedule/classes') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ url('/schedule/classes') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/classes') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--list] size-4 mr-2"></span>Classes
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--category] size-4 mr-2"></span>Class Types
-                    </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--layout-grid] size-4 mr-2"></span>Rooms
+                    <li><a href="{{ url('/service-slots') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('service-slots*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>Service Slots
                     </a></li>
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--hourglass] size-4 mr-2"></span>Waitlist

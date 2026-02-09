@@ -184,6 +184,21 @@ class Host extends Model
         return $this->hasMany(StudioClass::class);
     }
 
+    public function classPlans(): HasMany
+    {
+        return $this->hasMany(ClassPlan::class);
+    }
+
+    public function servicePlans(): HasMany
+    {
+        return $this->hasMany(ServicePlan::class);
+    }
+
+    public function serviceSlots(): HasMany
+    {
+        return $this->hasMany(ServiceSlot::class);
+    }
+
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class);

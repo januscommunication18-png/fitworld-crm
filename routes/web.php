@@ -17,6 +17,10 @@ use App\Http\Controllers\Host\SettingsController;
 use App\Http\Controllers\Host\SignupController;
 use App\Http\Controllers\Host\TeamController;
 use App\Http\Controllers\Host\StudentController;
+use App\Http\Controllers\Host\CatalogController;
+use App\Http\Controllers\Host\ClassPlanController;
+use App\Http\Controllers\Host\ServicePlanController;
+use App\Http\Controllers\Host\ServiceSlotController;
 use App\Http\Controllers\SecurityCodeController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -76,6 +80,24 @@ Route::middleware('auth')->group(function () {
 
     // Instructors
     Route::get('/instructors', [InstructorController::class, 'index'])->name('instructors.index');
+
+    // Catalog (Classes & Services)
+    Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog.index');
+
+    // Class Plans
+    Route::resource('class-plans', ClassPlanController::class)->names('class-plans');
+    Route::patch('/class-plans/{classPlan}/toggle-active', [ClassPlanController::class, 'toggleActive'])->name('class-plans.toggle-active');
+    Route::post('/class-plans/reorder', [ClassPlanController::class, 'reorder'])->name('class-plans.reorder');
+
+    // Service Plans
+    Route::resource('service-plans', ServicePlanController::class)->names('service-plans');
+    Route::patch('/service-plans/{servicePlan}/toggle-active', [ServicePlanController::class, 'toggleActive'])->name('service-plans.toggle-active');
+    Route::get('/service-plans/{servicePlan}/instructors', [ServicePlanController::class, 'manageInstructors'])->name('service-plans.instructors');
+    Route::post('/service-plans/{servicePlan}/instructors', [ServicePlanController::class, 'updateInstructors'])->name('service-plans.instructors.update');
+
+    // Service Slots
+    Route::resource('service-slots', ServiceSlotController::class)->names('service-slots');
+    Route::post('/service-slots/bulk', [ServiceSlotController::class, 'bulkCreate'])->name('service-slots.bulk');
 
     // Payments
     Route::get('/payments/transactions', [PaymentController::class, 'transactions'])->name('payments.transactions');

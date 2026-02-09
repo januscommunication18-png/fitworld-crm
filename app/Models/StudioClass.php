@@ -14,6 +14,7 @@ class StudioClass extends Model
 
     protected $fillable = [
         'host_id',
+        'class_plan_id',
         'instructor_id',
         'name',
         'type',
@@ -39,5 +40,24 @@ class StudioClass extends Model
     public function instructor(): BelongsTo
     {
         return $this->belongsTo(Instructor::class);
+    }
+
+    public function classPlan(): BelongsTo
+    {
+        return $this->belongsTo(ClassPlan::class);
+    }
+
+    /**
+     * Inherit properties from the associated class plan
+     */
+    public function inheritFromPlan(): void
+    {
+        if ($this->classPlan) {
+            $this->name = $this->classPlan->name;
+            $this->type = $this->classPlan->category;
+            $this->duration_minutes = $this->classPlan->default_duration_minutes;
+            $this->capacity = $this->classPlan->default_capacity;
+            $this->price = $this->classPlan->default_price;
+        }
     }
 }

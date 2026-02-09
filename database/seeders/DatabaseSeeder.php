@@ -20,5 +20,13 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             PlanSeeder::class,
         ]);
+
+        // Host-specific seeders (only run if hosts exist)
+        if (\App\Models\Host::exists()) {
+            $this->call([
+                ClassPlanSeeder::class,
+                ServicePlanSeeder::class,
+            ]);
+        }
     }
 }
