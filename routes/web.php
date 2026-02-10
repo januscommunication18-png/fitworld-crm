@@ -179,9 +179,12 @@ Route::middleware('auth')->group(function () {
 
     // Settings - Team
     Route::get('/settings/team/users', [TeamController::class, 'users'])->name('settings.team.users');
+    Route::get('/settings/team/users/invite', [TeamController::class, 'showInvite'])->name('settings.team.users.invite');
     Route::post('/settings/team/invite', [TeamController::class, 'invite'])->name('settings.team.invite');
     Route::post('/settings/team/invitations/{invitation}/resend', [TeamController::class, 'resendInvite'])->name('settings.team.invite.resend');
     Route::delete('/settings/team/invitations/{invitation}', [TeamController::class, 'revokeInvite'])->name('settings.team.invite.revoke');
+    Route::get('/settings/team/users/{user}/edit', [TeamController::class, 'editUser'])->name('settings.team.users.edit');
+    Route::put('/settings/team/users/{user}', [TeamController::class, 'updateUser'])->name('settings.team.users.update');
     Route::put('/settings/team/users/{user}/role', [TeamController::class, 'updateRole'])->name('settings.team.users.role');
     Route::post('/settings/team/users/{user}/deactivate', [TeamController::class, 'deactivate'])->name('settings.team.users.deactivate');
     Route::post('/settings/team/users/{user}/reactivate', [TeamController::class, 'reactivate'])->name('settings.team.users.reactivate');
@@ -189,7 +192,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
 
     Route::get('/settings/team/instructors', [TeamController::class, 'instructors'])->name('settings.team.instructors');
+    Route::get('/settings/team/instructors/create', [TeamController::class, 'createInstructor'])->name('settings.team.instructors.create');
     Route::post('/settings/team/instructors', [TeamController::class, 'storeInstructor'])->name('settings.team.instructors.store');
+    Route::get('/settings/team/instructors/{instructor}/edit', [TeamController::class, 'editInstructor'])->name('settings.team.instructors.edit');
     Route::put('/settings/team/instructors/{instructor}', [TeamController::class, 'updateInstructor'])->name('settings.team.instructors.update');
     Route::post('/settings/team/instructors/{instructor}/photo', [TeamController::class, 'uploadInstructorPhoto'])->name('settings.team.instructors.photo');
     Route::delete('/settings/team/instructors/{instructor}/photo', [TeamController::class, 'removeInstructorPhoto'])->name('settings.team.instructors.photo.remove');
@@ -197,6 +202,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/team/instructors/{instructor}', [TeamController::class, 'deleteInstructor'])->name('settings.team.instructors.delete');
 
     Route::get('/settings/team/permissions', [TeamController::class, 'permissions'])->name('settings.team.permissions');
+    Route::get('/settings/team/permissions/{user}/edit', [TeamController::class, 'editPermissions'])->name('settings.team.permissions.edit');
     Route::put('/settings/team/permissions/{user}', [TeamController::class, 'updatePermissions'])->name('settings.team.permissions.update');
 
     // Settings - Payments

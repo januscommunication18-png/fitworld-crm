@@ -377,6 +377,7 @@ Log every decision with date and reasoning. Most recent first.
 
 | Date | Decision | Context | Outcome |
 |---|---|---|---|
+| 2026-02-10 | Instructor Employment & Availability | Instructors need employment details, workload limits, and availability windows | Added 10 new fields to instructors table; multi-step modal UI; soft warnings during class scheduling |
 | 2026-02-06 | Dropdowns with search (ADR-009) | Select inputs with many options need searchable UI | Use FlyonUI `advance-select` pattern for all long dropdowns (timezone, country, currency, etc.) |
 | 2026-02-05 | Progressive per-step signup save (ADR-008) | Need to decide save strategy for 9-step wizard | Account at Step 2, updates per-step, prevents data loss |
 | 2026-02-05 | Manual auth instead of Breeze (ADR-007) | Breeze scaffolding conflicts with FlyonUI layout | Custom login page + AuthController keeps UI consistency |

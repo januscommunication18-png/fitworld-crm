@@ -5,6 +5,7 @@ namespace App\Services\Schedule;
 use App\Models\ClassSession;
 use App\Models\ServiceSlot;
 use App\Models\Room;
+use App\Models\Instructor;
 use Carbon\Carbon;
 
 class ConflictChecker
@@ -275,5 +276,32 @@ class ConflictChecker
             : 'Room is already booked: ';
 
         return $prefix . implode(', ', $messages);
+    }
+
+    /**
+     * Check instructor availability (working days + time windows + workload)
+     * Returns warnings (soft errors that can be overridden)
+     */
+    public function checkInstructorAvailability(
+        int $instructorId,
+        Carbon $startTime,
+        Carbon $endTime,
+        int $hostId,
+        ?int $excludeSessionId = null
+    ): array {
+        $instructor = Instructor::find($instructorId);
+        if (!$instructor) {
+            return [];
+        }
+
+        $availabilityChecker = app(AvailabilityChecker::class);
+
+        return $availabilityChecker->checkAll(
+            $instructor,
+            $startTime,
+            $endTime,
+            $hostId,
+            $excludeSessionId
+        );
     }
 }

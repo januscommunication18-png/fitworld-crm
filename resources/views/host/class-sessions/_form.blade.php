@@ -187,6 +187,27 @@
             </div>
         </div>
 
+        {{-- Availability Warnings --}}
+        @if(session('availability_warnings'))
+        <div class="alert alert-soft alert-warning">
+            <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+            <div class="flex-1">
+                <h4 class="font-semibold">Scheduling Warning</h4>
+                <ul class="list-disc list-inside mt-1 text-sm">
+                    @foreach(session('availability_warnings') as $warning)
+                    <li>{{ $warning['message'] }}</li>
+                    @endforeach
+                </ul>
+                <div class="mt-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="override_availability_warnings" value="1" class="checkbox checkbox-sm checkbox-warning" required>
+                        <span class="text-sm">I understand and want to proceed anyway</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        @endif
+
         {{-- Date & Time --}}
         <div class="card bg-base-100">
             <div class="card-header">

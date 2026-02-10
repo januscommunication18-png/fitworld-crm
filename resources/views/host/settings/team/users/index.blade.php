@@ -32,14 +32,29 @@
     {{-- Team Members --}}
     <div class="card bg-base-100 overflow-visible">
         <div class="card-body overflow-visible">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h2 class="text-lg font-semibold">Team Members</h2>
                     <p class="text-base-content/60 text-sm">Manage who has access to your studio dashboard</p>
                 </div>
-                <button class="btn btn-primary btn-sm" onclick="openInviteModal()">
-                    <span class="icon-[tabler--plus] size-4"></span> Invite User
-                </button>
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"></span>
+                        <input type="text"
+                            id="search-input"
+                            class="input input-sm pl-9 pr-8 w-48"
+                            placeholder="Search users..."
+                            value="{{ $search ?? '' }}" />
+                        @if($search)
+                        <a href="{{ route('settings.team.users') }}" class="absolute right-2 top-1/2 -translate-y-1/2 text-base-content/50 hover:text-base-content">
+                            <span class="icon-[tabler--x] size-4"></span>
+                        </a>
+                        @endif
+                    </div>
+                    <a href="{{ route('settings.team.users.invite') }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--plus] size-4"></span> Invite User
+                    </a>
+                </div>
             </div>
 
             <div class="overflow-visible">
@@ -120,8 +135,8 @@
                                             </summary>
                                             <ul class="dropdown-content menu bg-base-100 rounded-box w-44 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
                                                 <li>
-                                                    <a href="javascript:void(0)" onclick="openRoleModal({{ $user->id }}, '{{ $user->role }}', '{{ $user->full_name }}')">
-                                                        <span class="icon-[tabler--edit] size-4"></span> Change Role
+                                                    <a href="{{ route('settings.team.users.edit', $user) }}">
+                                                        <span class="icon-[tabler--edit] size-4"></span> Edit User
                                                     </a>
                                                 </li>
                                                 @if($user->status === 'active')
@@ -167,14 +182,41 @@
                             </td>
                         </tr>
                         @endforeach
+                        @if($users->isEmpty())
+                        <tr>
+                            <td colspan="5" class="text-center py-8">
+                                <div class="text-base-content/50">
+                                    <span class="icon-[tabler--search] size-8 mb-2 block mx-auto"></span>
+                                    @if($search)
+                                        No users found matching "{{ $search }}"
+                                    @else
+                                        No team members yet
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                        @endif
                     </tbody>
                 </table>
             </div>
+
+            {{-- Pagination / Results Info --}}
+            @if($users->total() > 0)
+            <div class="mt-4 pt-4 border-t border-base-content/10">
+                @if($users->hasPages())
+                    {{ $users->links() }}
+                @else
+                    <div class="text-sm text-base-content/60 text-center">
+                        Showing <span class="font-medium text-base-content">{{ $users->total() }}</span> {{ Str::plural('result', $users->total()) }}
+                    </div>
+                @endif
+            </div>
+            @endif
         </div>
     </div>
 
     {{-- Pending Invitations --}}
-    @if($invitations->count() > 0)
+    @if($invitations->total() > 0)
     <div class="card bg-base-100 overflow-visible">
         <div class="card-body overflow-visible">
             <h2 class="text-lg font-semibold mb-4">Pending Invitations</h2>
@@ -240,6 +282,19 @@
                     </tbody>
                 </table>
             </div>
+
+            {{-- Pagination / Results Info --}}
+            @if($invitations->total() > 0)
+            <div class="mt-4 pt-4 border-t border-base-content/10">
+                @if($invitations->hasPages())
+                    {{ $invitations->links() }}
+                @else
+                    <div class="text-sm text-base-content/60 text-center">
+                        Showing <span class="font-medium text-base-content">{{ $invitations->total() }}</span> pending {{ Str::plural('invitation', $invitations->total()) }}
+                    </div>
+                @endif
+            </div>
+            @endif
         </div>
     </div>
     @endif
@@ -258,7 +313,7 @@
                             </div>
                             <div class="text-sm text-base-content/60">Full access to all features including billing and danger zone</div>
                         </div>
-                        <span class="badge badge-primary badge-soft badge-sm">{{ $users->where('role', 'owner')->count() }} user</span>
+                        <span class="badge badge-primary badge-soft badge-sm">{{ $roleCounts['owner'] ?? 0 }} user</span>
                     </div>
                 </div>
                 <div class="p-4 border border-base-content/10 rounded-lg">
@@ -270,7 +325,7 @@
                             </div>
                             <div class="text-sm text-base-content/60">Can manage scheduling, bookings, students, instructors, and team</div>
                         </div>
-                        <span class="badge badge-soft badge-sm">{{ $users->where('role', 'admin')->count() }} users</span>
+                        <span class="badge badge-soft badge-sm">{{ $roleCounts['admin'] ?? 0 }} users</span>
                     </div>
                 </div>
                 <div class="p-4 border border-base-content/10 rounded-lg">
@@ -282,7 +337,7 @@
                             </div>
                             <div class="text-sm text-base-content/60">Can manage bookings, students, and mark attendance</div>
                         </div>
-                        <span class="badge badge-soft badge-sm">{{ $users->where('role', 'staff')->count() }} users</span>
+                        <span class="badge badge-soft badge-sm">{{ $roleCounts['staff'] ?? 0 }} users</span>
                     </div>
                 </div>
                 <div class="p-4 border border-base-content/10 rounded-lg">
@@ -294,301 +349,61 @@
                             </div>
                             <div class="text-sm text-base-content/60">Can view own schedule and mark attendance for their classes</div>
                         </div>
-                        <span class="badge badge-soft badge-sm">{{ $users->where('role', 'instructor')->count() }} users</span>
+                        <span class="badge badge-soft badge-sm">{{ $roleCounts['instructor'] ?? 0 }} users</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-{{-- Invite Modal --}}
-<div id="invite-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200 overflow-y-auto py-8">
-    <div class="card bg-base-100 w-full max-w-lg mx-4 transform scale-95 transition-transform duration-200">
-        <div class="card-body p-0">
-            {{-- Modal Header --}}
-            <div class="flex items-center justify-between p-5 pb-4 border-b border-base-content/10">
-                <div>
-                    <h3 class="text-lg font-semibold flex items-center gap-2">
-                        <span class="icon-[tabler--user-plus] size-5 text-primary"></span>
-                        Invite Team Member
-                    </h3>
-                    <p class="text-base-content/60 text-sm mt-1">Send an invitation to join your studio</p>
-                </div>
-                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="closeInviteModal()">
-                    <span class="icon-[tabler--x] size-5"></span>
-                </button>
-            </div>
-
-            <form action="{{ route('settings.team.invite') }}" method="POST">
-                @csrf
-
-                <div class="max-h-[60vh] overflow-y-auto p-5">
-                    {{-- Basic Info --}}
-                    <div class="space-y-4 mb-5">
-                        <div>
-                            <label class="label-text" for="invite-email">Email Address</label>
-                            <input type="email" id="invite-email" name="email" class="input w-full" required placeholder="colleague@example.com" />
-                        </div>
-                        <div>
-                            <label class="label-text" for="invite-role">Role</label>
-                            <select id="invite-role" name="role" class="select w-full" required onchange="updateInvitePermissions()">
-                                <option value="admin">Admin</option>
-                                <option value="staff" selected>Staff</option>
-                                <option value="instructor">Instructor</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {{-- Permissions Accordion --}}
-                    <div class="mb-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <label class="label-text flex items-center gap-2">
-                                <span class="icon-[tabler--shield-cog] size-4 text-primary"></span>
-                                Permissions
-                            </label>
-                        </div>
-
-                        @php
-                            $categoryIcons = [
-                                'schedule' => 'icon-[tabler--calendar]',
-                                'bookings' => 'icon-[tabler--clipboard-list]',
-                                'students' => 'icon-[tabler--users]',
-                                'offers' => 'icon-[tabler--tag]',
-                                'insights' => 'icon-[tabler--chart-bar]',
-                                'payments' => 'icon-[tabler--credit-card]',
-                                'studio' => 'icon-[tabler--building-store]',
-                                'team' => 'icon-[tabler--users-group]',
-                                'billing' => 'icon-[tabler--receipt]',
-                            ];
-                            $categoryColors = [
-                                'schedule' => 'text-primary bg-primary/10',
-                                'bookings' => 'text-secondary bg-secondary/10',
-                                'students' => 'text-info bg-info/10',
-                                'offers' => 'text-warning bg-warning/10',
-                                'insights' => 'text-accent bg-accent/10',
-                                'payments' => 'text-success bg-success/10',
-                                'studio' => 'text-primary bg-primary/10',
-                                'team' => 'text-secondary bg-secondary/10',
-                                'billing' => 'text-info bg-info/10',
-                            ];
-                        @endphp
-
-                        <div class="space-y-2">
-                            @foreach($groupedPermissions as $category => $permissions)
-                            <details class="group border border-base-content/10 rounded-lg overflow-hidden" id="invite-perm-section-{{ $category }}">
-                                <summary class="flex items-center gap-3 p-3 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
-                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center {{ $categoryColors[$category] ?? 'text-base-content bg-base-200' }}">
-                                        <span class="{{ $categoryIcons[$category] ?? 'icon-[tabler--settings]' }} size-4"></span>
-                                    </div>
-                                    <div class="flex-1">
-                                        <h4 class="font-medium text-sm">{{ ucfirst($category) }}</h4>
-                                        <p class="text-xs text-base-content/50" id="invite-perm-count-{{ $category }}">0 of {{ count($permissions) }} enabled</p>
-                                    </div>
-                                    <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
-                                </summary>
-                                <div class="border-t border-base-content/10 bg-base-200/30 p-3 space-y-1">
-                                    <div class="flex justify-end mb-2">
-                                        <button type="button" class="text-xs text-primary hover:underline" onclick="toggleInviteCategory('{{ $category }}'); updateInviteCategoryCount('{{ $category }}');">
-                                            Toggle all
-                                        </button>
-                                    </div>
-                                    @foreach($permissions as $permission => $label)
-                                    <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-100 cursor-pointer transition-colors">
-                                        <input type="checkbox"
-                                               name="permissions[]"
-                                               value="{{ $permission }}"
-                                               class="checkbox checkbox-primary checkbox-sm invite-permission-checkbox"
-                                               data-permission="{{ $permission }}"
-                                               data-category="{{ $category }}"
-                                               onchange="updateInviteCategoryCount('{{ $category }}')" />
-                                        <span class="text-sm">{{ $label }}</span>
-                                    </label>
-                                    @endforeach
-                                </div>
-                            </details>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div class="alert alert-soft alert-info">
-                        <span class="icon-[tabler--info-circle] size-5"></span>
-                        <span class="text-sm">An invitation email will be sent with a link to join your studio. The link expires in 7 days.</span>
-                    </div>
-                </div>
-
-                {{-- Modal Footer --}}
-                <div class="flex items-center justify-between p-5 pt-4 border-t border-base-content/10 bg-base-200/30">
-                    <button type="button" class="btn btn-ghost btn-sm gap-2" onclick="resetInviteToRoleDefaults()">
-                        <span class="icon-[tabler--refresh] size-4"></span>
-                        Reset
-                    </button>
-                    <div class="flex gap-2">
-                        <button type="button" class="btn btn-ghost" onclick="closeInviteModal()">Cancel</button>
-                        <button type="submit" class="btn btn-primary gap-2">
-                            <span class="icon-[tabler--send] size-4"></span>
-                            Send Invitation
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Role Change Modal --}}
-<div id="role-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="card bg-base-100 w-full max-w-md mx-4 transform scale-95 transition-transform duration-200">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Change Role for <span id="role-user-name"></span></h3>
-                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="closeRoleModal()">
-                    <span class="icon-[tabler--x] size-5"></span>
-                </button>
-            </div>
-            <form id="role-form" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="space-y-4">
-                    <div>
-                        <label class="label-text" for="new-role">New Role</label>
-                        <select id="new-role" name="role" class="select w-full" required>
-                            <option value="admin">Admin</option>
-                            <option value="staff">Staff</option>
-                            <option value="instructor">Instructor</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="flex justify-start gap-2 mt-6">
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                    <button type="button" class="btn btn-ghost" onclick="closeRoleModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-@endsection
 
 @push('scripts')
 <script>
-// Role default permissions
-const roleDefaults = {
-    admin: @json(\App\Models\User::getDefaultPermissionsForRole('admin')),
-    staff: @json(\App\Models\User::getDefaultPermissionsForRole('staff')),
-    instructor: @json(\App\Models\User::getDefaultPermissionsForRole('instructor'))
-};
+document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('search-input');
+    var searchTimeout = null;
 
-// Invite Modal
-function openInviteModal() {
-    // Reset form
-    document.getElementById('invite-email').value = '';
-    document.getElementById('invite-role').value = 'staff';
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
 
-    // Set default permissions for staff role
-    updateInvitePermissions();
+        searchTimeout = setTimeout(function() {
+            var searchValue = searchInput.value;
+            var url = new URL(window.location.href);
 
-    // Collapse all sections initially
-    document.querySelectorAll('#invite-modal details').forEach(function(d) {
-        d.removeAttribute('open');
+            if (searchValue) {
+                url.searchParams.set('search', searchValue);
+            } else {
+                url.searchParams.delete('search');
+            }
+
+            // Reset to first page when searching
+            url.searchParams.delete('page');
+            url.searchParams.delete('invitations_page');
+
+            window.location.href = url.toString();
+        }, 400);
     });
 
-    var modal = document.getElementById('invite-modal');
-    modal.classList.remove('opacity-0', 'pointer-events-none');
-    modal.classList.add('opacity-100', 'pointer-events-auto');
-    modal.querySelector('.card').classList.remove('scale-95');
-    modal.querySelector('.card').classList.add('scale-100');
-}
+    // Handle Enter key
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            clearTimeout(searchTimeout);
+            var searchValue = searchInput.value;
+            var url = new URL(window.location.href);
 
-function closeInviteModal() {
-    var modal = document.getElementById('invite-modal');
-    modal.classList.add('opacity-0', 'pointer-events-none');
-    modal.classList.remove('opacity-100', 'pointer-events-auto');
-    modal.querySelector('.card').classList.add('scale-95');
-    modal.querySelector('.card').classList.remove('scale-100');
-}
+            if (searchValue) {
+                url.searchParams.set('search', searchValue);
+            } else {
+                url.searchParams.delete('search');
+            }
 
-function updateInvitePermissions() {
-    var role = document.getElementById('invite-role').value;
-    var defaults = roleDefaults[role] || [];
+            url.searchParams.delete('page');
+            url.searchParams.delete('invitations_page');
 
-    document.querySelectorAll('.invite-permission-checkbox').forEach(function(checkbox) {
-        checkbox.checked = defaults.includes(checkbox.dataset.permission);
+            window.location.href = url.toString();
+        }
     });
-
-    // Update all category counts
-    updateAllInviteCategoryCounts();
-}
-
-function resetInviteToRoleDefaults() {
-    updateInvitePermissions();
-}
-
-function toggleInviteCategory(category) {
-    var checkboxes = document.querySelectorAll('.invite-permission-checkbox[data-category="' + category + '"]');
-    var allChecked = Array.from(checkboxes).every(function(cb) { return cb.checked; });
-
-    checkboxes.forEach(function(checkbox) {
-        checkbox.checked = !allChecked;
-    });
-
-    updateInviteCategoryCount(category);
-}
-
-function updateInviteCategoryCount(category) {
-    var checkboxes = document.querySelectorAll('.invite-permission-checkbox[data-category="' + category + '"]');
-    var total = checkboxes.length;
-    var checked = Array.from(checkboxes).filter(function(cb) { return cb.checked; }).length;
-    var countEl = document.getElementById('invite-perm-count-' + category);
-    if (countEl) {
-        countEl.textContent = checked + ' of ' + total + ' enabled';
-    }
-}
-
-function updateAllInviteCategoryCounts() {
-    var categories = new Set();
-    document.querySelectorAll('.invite-permission-checkbox').forEach(function(cb) {
-        categories.add(cb.dataset.category);
-    });
-    categories.forEach(function(category) {
-        updateInviteCategoryCount(category);
-    });
-}
-
-// Role Modal
-function openRoleModal(userId, currentRole, userName) {
-    document.getElementById('role-user-name').textContent = userName;
-    document.getElementById('new-role').value = currentRole;
-    document.getElementById('role-form').action = '/settings/team/users/' + userId + '/role';
-
-    var modal = document.getElementById('role-modal');
-    modal.classList.remove('opacity-0', 'pointer-events-none');
-    modal.classList.add('opacity-100', 'pointer-events-auto');
-    modal.querySelector('.card').classList.remove('scale-95');
-    modal.querySelector('.card').classList.add('scale-100');
-}
-
-function closeRoleModal() {
-    var modal = document.getElementById('role-modal');
-    modal.classList.add('opacity-0', 'pointer-events-none');
-    modal.classList.remove('opacity-100', 'pointer-events-auto');
-    modal.querySelector('.card').classList.add('scale-95');
-    modal.querySelector('.card').classList.remove('scale-100');
-}
-
-// Close modals on escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeInviteModal();
-        closeRoleModal();
-    }
-});
-
-// Close modals when clicking backdrop
-document.getElementById('invite-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeInviteModal();
-});
-document.getElementById('role-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeRoleModal();
 });
 </script>
 @endpush
+@endsection

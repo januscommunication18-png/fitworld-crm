@@ -89,6 +89,13 @@ class ClassSessionController extends Controller
         $startTime = $request->getStartTime();
         $endTime = $request->getEndTime();
 
+        // Check for availability warnings that need user acknowledgment
+        if ($request->hasAvailabilityWarnings()) {
+            return back()
+                ->withInput()
+                ->with('availability_warnings', $request->getAvailabilityWarnings());
+        }
+
         // Build recurrence rule if recurring
         $recurrenceRule = null;
         if ($request->boolean('is_recurring') && $request->recurrence_days) {
@@ -195,6 +202,13 @@ class ClassSessionController extends Controller
     public function update(ClassSessionRequest $request, ClassSession $classSession)
     {
         $this->authorizeSession($classSession);
+
+        // Check for availability warnings that need user acknowledgment
+        if ($request->hasAvailabilityWarnings()) {
+            return back()
+                ->withInput()
+                ->with('availability_warnings', $request->getAvailabilityWarnings());
+        }
 
         $startTime = $request->getStartTime();
         $endTime = $request->getEndTime();

@@ -74,6 +74,11 @@ class ClassSessionRequest extends FormRequest
         return $rules;
     }
 
+    /**
+     * Availability warnings (soft validation - stored for controller to handle)
+     */
+    public array $availabilityWarnings = [];
+
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
@@ -85,6 +90,7 @@ class ClassSessionRequest extends FormRequest
             $this->validateBackupInstructors($validator);
             $this->validateConflicts($validator);
             $this->validateRoomCapacity($validator);
+            $this->collectAvailabilityWarnings();
         });
     }
 
@@ -179,6 +185,50 @@ class ClassSessionRequest extends FormRequest
                 "Capacity exceeds room capacity ({$roomCapacity})."
             );
         }
+    }
+
+    /**
+     * Collect availability warnings (soft validation)
+     * These are stored for the controller to handle, not added as errors
+     */
+    protected function collectAvailabilityWarnings(): void
+    {
+        // Skip if user has already acknowledged the warnings
+        if ($this->boolean('override_availability_warnings')) {
+            return;
+        }
+
+        $hostId = auth()->user()->host_id;
+        $sessionId = $this->route('class_session')?->id;
+
+        $startTime = $this->getStartTime();
+        $endTime = $this->getEndTime();
+
+        $conflictChecker = app(ConflictChecker::class);
+
+        $this->availabilityWarnings = $conflictChecker->checkInstructorAvailability(
+            $this->primary_instructor_id,
+            $startTime,
+            $endTime,
+            $hostId,
+            $sessionId
+        );
+    }
+
+    /**
+     * Check if there are availability warnings that need user acknowledgment
+     */
+    public function hasAvailabilityWarnings(): bool
+    {
+        return !empty($this->availabilityWarnings) && !$this->boolean('override_availability_warnings');
+    }
+
+    /**
+     * Get availability warnings
+     */
+    public function getAvailabilityWarnings(): array
+    {
+        return $this->availabilityWarnings;
     }
 
     public function messages(): array
