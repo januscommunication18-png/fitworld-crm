@@ -69,18 +69,18 @@ class SettingsController extends Controller
         $host = auth()->user()->host;
 
         // Delete old logo if exists
-        if ($host->logo_path && \Storage::disk('public')->exists($host->logo_path)) {
-            \Storage::disk('public')->delete($host->logo_path);
+        if ($host->logo_path && \Storage::disk(config('filesystems.uploads'))->exists($host->logo_path)) {
+            \Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
         }
 
         // Store new logo
-        $path = $request->file('logo')->store('logos/' . $host->id, 'public');
+        $path = $request->file('logo')->store('logos/' . $host->id, config('filesystems.uploads'));
         $host->update(['logo_path' => $path]);
 
         return response()->json([
             'success' => true,
             'message' => 'Logo uploaded successfully',
-            'logo_url' => \Storage::url($path),
+            'logo_url' => \Storage::disk(config('filesystems.uploads'))->url($path),
         ]);
     }
 
@@ -93,18 +93,18 @@ class SettingsController extends Controller
         $host = auth()->user()->host;
 
         // Delete old cover if exists
-        if ($host->cover_image_path && \Storage::disk('public')->exists($host->cover_image_path)) {
-            \Storage::disk('public')->delete($host->cover_image_path);
+        if ($host->cover_image_path && \Storage::disk(config('filesystems.uploads'))->exists($host->cover_image_path)) {
+            \Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
         }
 
         // Store new cover
-        $path = $request->file('cover')->store('covers/' . $host->id, 'public');
+        $path = $request->file('cover')->store('covers/' . $host->id, config('filesystems.uploads'));
         $host->update(['cover_image_path' => $path]);
 
         return response()->json([
             'success' => true,
             'message' => 'Cover image uploaded successfully',
-            'cover_url' => \Storage::url($path),
+            'cover_url' => \Storage::disk(config('filesystems.uploads'))->url($path),
         ]);
     }
 
@@ -168,24 +168,15 @@ class SettingsController extends Controller
         $host = auth()->user()->host;
 
         $validated = $request->validate([
-            'currency' => 'required|string|size:3',
-            'confirmed' => 'sometimes|boolean',
+            'currencies' => 'nullable|array',
+            'currencies.*' => 'string|size:3',
         ]);
 
-        // Check if studio has financial data and confirmation is required
-        if ($host->hasFinancialData() && !($request->confirmed ?? false)) {
-            return response()->json([
-                'success' => false,
-                'requires_confirmation' => true,
-                'message' => 'Currency change requires confirmation due to existing financial data.',
-            ]);
-        }
-
-        $host->update(['currency' => $validated['currency']]);
+        $host->update(['currencies' => $validated['currencies'] ?? []]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Currency updated successfully',
+            'message' => 'Currencies updated successfully',
         ]);
     }
 
@@ -233,7 +224,28 @@ class SettingsController extends Controller
 
     public function paymentSettings()
     {
-        return view('host.settings.payments.settings');
+        $host = auth()->user()->host;
+        return view('host.settings.payments.settings', compact('host'));
+    }
+
+    public function updatePaymentSettings(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'accept_cards' => 'boolean',
+            'accept_cash' => 'boolean',
+            'currency' => 'nullable|string|size:3',
+            'send_receipts' => 'boolean',
+            'receipt_footer' => 'nullable|string|max:500',
+        ]);
+
+        $host->update(['payment_settings' => $validated]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment settings updated successfully',
+        ]);
     }
 
     public function taxSettings()

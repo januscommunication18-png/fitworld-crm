@@ -59,8 +59,29 @@ Route::middleware('auth')->group(function () {
         return view('auth.verify-email');
     })->name('verification.notice');
 
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
+    Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
+        $user = \App\Models\User::findOrFail($id);
+
+        // Check if the hash matches
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            abort(403, 'Invalid verification link.');
+        }
+
+        // Mark as verified if not already
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+            event(new \Illuminate\Auth\Events\Verified($user));
+        }
+
+        // Log the user in
+        \Illuminate\Support\Facades\Auth::login($user);
+
+        // Check if user is in onboarding (host exists but onboarding not complete)
+        $host = $user->host;
+        if ($host && !$host->onboarding_completed_at) {
+            return redirect('/signup?verified=1');
+        }
+
         return redirect('/dashboard')->with('verified', true);
     })->middleware('signed')->name('verification.verify');
 
@@ -207,6 +228,7 @@ Route::middleware('auth')->group(function () {
 
     // Settings - Payments
     Route::get('/settings/payments/settings', [SettingsController::class, 'paymentSettings'])->name('settings.payments.settings');
+    Route::put('/settings/payments/settings', [SettingsController::class, 'updatePaymentSettings'])->name('settings.payments.settings.update');
     Route::get('/settings/payments/tax', [SettingsController::class, 'taxSettings'])->name('settings.payments.tax');
     Route::get('/settings/payments/payouts', [SettingsController::class, 'payoutPreferences'])->name('settings.payments.payouts');
 

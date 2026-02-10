@@ -55,7 +55,7 @@ class ClassPlanController extends Controller
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('class-plans', 'public');
+            $data['image_path'] = $request->file('image')->store('class-plans', config('filesystems.uploads'));
         }
 
         // Set default sort order
@@ -110,9 +110,9 @@ class ClassPlanController extends Controller
         if ($request->hasFile('image')) {
             // Delete old image
             if ($classPlan->image_path) {
-                Storage::disk('public')->delete($classPlan->image_path);
+                Storage::disk(config('filesystems.uploads'))->delete($classPlan->image_path);
             }
-            $data['image_path'] = $request->file('image')->store('class-plans', 'public');
+            $data['image_path'] = $request->file('image')->store('class-plans', config('filesystems.uploads'));
         }
 
         // Handle checkbox for is_active and is_visible
@@ -136,7 +136,7 @@ class ClassPlanController extends Controller
 
         // Delete image
         if ($classPlan->image_path) {
-            Storage::disk('public')->delete($classPlan->image_path);
+            Storage::disk(config('filesystems.uploads'))->delete($classPlan->image_path);
         }
 
         $classPlan->delete();

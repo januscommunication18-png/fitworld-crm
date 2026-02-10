@@ -496,16 +496,16 @@ class TeamController extends Controller
         ]);
 
         // Delete old photo
-        if ($instructor->photo_path && Storage::disk('public')->exists($instructor->photo_path)) {
-            Storage::disk('public')->delete($instructor->photo_path);
+        if ($instructor->photo_path && Storage::disk(config('filesystems.uploads'))->exists($instructor->photo_path)) {
+            Storage::disk(config('filesystems.uploads'))->delete($instructor->photo_path);
         }
 
-        $path = $request->file('photo')->store('instructors/' . $instructor->id, 'public');
+        $path = $request->file('photo')->store('instructors/' . $instructor->id, config('filesystems.uploads'));
         $instructor->update(['photo_path' => $path]);
 
         return response()->json([
             'success' => true,
-            'path' => Storage::url($path),
+            'path' => Storage::disk(config('filesystems.uploads'))->url($path),
         ]);
     }
 
@@ -516,8 +516,8 @@ class TeamController extends Controller
     {
         $this->authorizeInstructor($instructor);
 
-        if ($instructor->photo_path && Storage::disk('public')->exists($instructor->photo_path)) {
-            Storage::disk('public')->delete($instructor->photo_path);
+        if ($instructor->photo_path && Storage::disk(config('filesystems.uploads'))->exists($instructor->photo_path)) {
+            Storage::disk(config('filesystems.uploads'))->delete($instructor->photo_path);
         }
 
         $instructor->update(['photo_path' => null]);
@@ -578,8 +578,8 @@ class TeamController extends Controller
         }
 
         // Delete photo if exists
-        if ($instructor->photo_path && Storage::disk('public')->exists($instructor->photo_path)) {
-            Storage::disk('public')->delete($instructor->photo_path);
+        if ($instructor->photo_path && Storage::disk(config('filesystems.uploads'))->exists($instructor->photo_path)) {
+            Storage::disk(config('filesystems.uploads'))->delete($instructor->photo_path);
         }
 
         // Unlink user if linked

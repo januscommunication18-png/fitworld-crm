@@ -95,17 +95,17 @@ class BookingPageController extends Controller
         $host = auth()->user()->host;
 
         // Delete old logo if exists
-        if ($host->logo_path && Storage::disk('public')->exists($host->logo_path)) {
-            Storage::disk('public')->delete($host->logo_path);
+        if ($host->logo_path && Storage::disk(config('filesystems.uploads'))->exists($host->logo_path)) {
+            Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
         }
 
-        $path = $request->file('logo')->store('hosts/' . $host->id . '/branding', 'public');
+        $path = $request->file('logo')->store('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
         $host->logo_path = $path;
         $host->save();
 
         return response()->json([
             'success' => true,
-            'path' => Storage::url($path),
+            'path' => Storage::disk(config('filesystems.uploads'))->url($path),
         ]);
     }
 
@@ -121,17 +121,17 @@ class BookingPageController extends Controller
         $host = auth()->user()->host;
 
         // Delete old cover if exists
-        if ($host->cover_image_path && Storage::disk('public')->exists($host->cover_image_path)) {
-            Storage::disk('public')->delete($host->cover_image_path);
+        if ($host->cover_image_path && Storage::disk(config('filesystems.uploads'))->exists($host->cover_image_path)) {
+            Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
         }
 
-        $path = $request->file('cover')->store('hosts/' . $host->id . '/branding', 'public');
+        $path = $request->file('cover')->store('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
         $host->cover_image_path = $path;
         $host->save();
 
         return response()->json([
             'success' => true,
-            'path' => Storage::url($path),
+            'path' => Storage::disk(config('filesystems.uploads'))->url($path),
         ]);
     }
 
@@ -142,8 +142,8 @@ class BookingPageController extends Controller
     {
         $host = auth()->user()->host;
 
-        if ($host->logo_path && Storage::disk('public')->exists($host->logo_path)) {
-            Storage::disk('public')->delete($host->logo_path);
+        if ($host->logo_path && Storage::disk(config('filesystems.uploads'))->exists($host->logo_path)) {
+            Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
         }
 
         $host->logo_path = null;
@@ -159,8 +159,8 @@ class BookingPageController extends Controller
     {
         $host = auth()->user()->host;
 
-        if ($host->cover_image_path && Storage::disk('public')->exists($host->cover_image_path)) {
-            Storage::disk('public')->delete($host->cover_image_path);
+        if ($host->cover_image_path && Storage::disk(config('filesystems.uploads'))->exists($host->cover_image_path)) {
+            Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
         }
 
         $host->cover_image_path = null;

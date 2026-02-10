@@ -28,6 +28,7 @@
                     :smarty-key="smartyKey"
                     :loading="loading"
                     :errors="errors"
+                    :email-verified="isEmailVerified"
                     @next="nextStep"
                     @prev="prevStep"
                     @update="updateFormData"
@@ -59,7 +60,10 @@ const props = defineProps({
     csrfToken: { type: String, default: '' },
     smartyKey: { type: String, default: '' },
     authenticated: { type: Boolean, default: false },
+    emailVerified: { type: Boolean, default: false },
 })
+
+const isEmailVerified = ref(false)
 
 const currentStep = ref(1)
 const loading = ref(false)
@@ -121,6 +125,29 @@ const stepComponent = computed(() => steps[currentStep.value])
  * Load saved progress on mount if user is authenticated.
  */
 onMounted(async () => {
+    // Handle email verification redirect
+    if (props.emailVerified && props.authenticated) {
+        isEmailVerified.value = true
+        currentStep.value = 3
+        toast.success('Email verified successfully!')
+        // Clean up the URL query param
+        window.history.replaceState({}, '', '/signup')
+
+        // Load the rest of the progress
+        initialLoading.value = true
+        try {
+            await ensureCsrf()
+            const res = await api.get('/signup/progress')
+            const { form_data } = res.data.data
+            Object.assign(formData.value, form_data)
+        } catch (err) {
+            // Ignore errors, just show step 3
+        } finally {
+            initialLoading.value = false
+        }
+        return
+    }
+
     if (!props.authenticated) return
 
     initialLoading.value = true

@@ -53,7 +53,7 @@ class ServicePlanController extends Controller
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->store('service-plans', 'public');
+            $data['image_path'] = $request->file('image')->store('service-plans', config('filesystems.uploads'));
         }
 
         // Set default sort order
@@ -112,9 +112,9 @@ class ServicePlanController extends Controller
         if ($request->hasFile('image')) {
             // Delete old image
             if ($servicePlan->image_path) {
-                Storage::disk('public')->delete($servicePlan->image_path);
+                Storage::disk(config('filesystems.uploads'))->delete($servicePlan->image_path);
             }
-            $data['image_path'] = $request->file('image')->store('service-plans', 'public');
+            $data['image_path'] = $request->file('image')->store('service-plans', config('filesystems.uploads'));
         }
 
         // Handle checkboxes
@@ -145,7 +145,7 @@ class ServicePlanController extends Controller
 
         // Delete image
         if ($servicePlan->image_path) {
-            Storage::disk('public')->delete($servicePlan->image_path);
+            Storage::disk(config('filesystems.uploads'))->delete($servicePlan->image_path);
         }
 
         $servicePlan->delete();

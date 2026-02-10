@@ -93,7 +93,7 @@ class ServicePlan extends Model
     public function getImageUrlAttribute(): ?string
     {
         if ($this->image_path) {
-            return Storage::url($this->image_path);
+            return Storage::disk(config('filesystems.uploads'))->url($this->image_path);
         }
         return null;
     }

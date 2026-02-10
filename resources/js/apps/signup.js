@@ -8,5 +8,6 @@ if (el) {
         csrfToken: el.dataset.csrfToken || '',
         smartyKey: el.dataset.smartyKey || '',
         authenticated: el.dataset.authenticated === 'true',
+        emailVerified: el.dataset.emailVerified === 'true',
     }).mount('#signup-app')
 }

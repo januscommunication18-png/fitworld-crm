@@ -121,7 +121,7 @@ class Instructor extends Model
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo_path) {
-            return Storage::url($this->photo_path);
+            return Storage::disk(config('filesystems.uploads'))->url($this->photo_path);
         }
         return null;
     }

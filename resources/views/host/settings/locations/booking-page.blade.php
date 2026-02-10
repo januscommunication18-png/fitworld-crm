@@ -59,7 +59,7 @@
                         <div class="flex items-center gap-4">
                             <div id="logo-preview" class="flex items-center justify-center size-20 bg-base-200 rounded-lg border-2 border-dashed border-base-content/20 overflow-hidden">
                                 @if($host->logo_path)
-                                <img src="{{ Storage::url($host->logo_path) }}" alt="Logo" class="w-full h-full object-contain" />
+                                <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->logo_path) }}" alt="Logo" class="w-full h-full object-contain" />
                                 @else
                                 <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
                                 @endif
@@ -84,7 +84,7 @@
                         <label class="label-text mb-2 block">Cover Image</label>
                         <div id="cover-preview" class="relative w-full h-40 bg-base-200 rounded-lg border-2 border-dashed border-base-content/20 overflow-hidden flex items-center justify-center">
                             @if($host->cover_image_path)
-                            <img src="{{ Storage::url($host->cover_image_path) }}" alt="Cover" class="w-full h-full object-cover" />
+                            <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->cover_image_path) }}" alt="Cover" class="w-full h-full object-cover" />
                             <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                 <button type="button" onclick="document.getElementById('cover-input').click()" class="btn btn-sm btn-ghost text-white">
                                     <span class="icon-[tabler--edit] size-4"></span> Change

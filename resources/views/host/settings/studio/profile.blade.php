@@ -2,6 +2,15 @@
 
 @section('title', 'Studio Profile — Settings')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('vendor/quill/quill.snow.css') }}" />
+<style>
+#about-editor .ql-container { font-size: 0.875rem; min-height: 150px; }
+#about-editor .ql-toolbar { border-radius: 0.5rem 0.5rem 0 0; border-color: hsl(var(--bc) / 0.2); }
+#about-editor .ql-container { border-radius: 0 0 0.5rem 0.5rem; border-color: hsl(var(--bc) / 0.2); }
+</style>
+@endpush
+
 @section('breadcrumbs')
     <ol>
         <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
@@ -19,6 +28,7 @@ $currencies = [
     'GBP' => ['symbol' => '£', 'name' => 'Pound Sterling'],
     'EUR' => ['symbol' => '€', 'name' => 'Euro'],
     'AUD' => ['symbol' => 'A$', 'name' => 'Australian Dollar'],
+    'INR' => ['symbol' => '₹', 'name' => 'Indian Rupee'],
 ];
 
 $amenitiesList = [
@@ -100,7 +110,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <div class="flex items-center gap-4">
                         <div id="logo-preview" class="w-20 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
                             @if($host->logo_path)
-                                <img src="{{ Storage::url($host->logo_path) }}" alt="Studio Logo" class="w-full h-full object-cover" />
+                                <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->logo_path) }}" alt="Studio Logo" class="w-full h-full object-cover" />
                             @else
                                 <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
                             @endif
@@ -120,7 +130,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <div class="flex items-center gap-4">
                         <div id="cover-preview" class="w-32 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
                             @if($host->cover_image_path)
-                                <img src="{{ Storage::url($host->cover_image_path) }}" alt="Cover Image" class="w-full h-full object-cover" />
+                                <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->cover_image_path) }}" alt="Cover Image" class="w-full h-full object-cover" />
                             @else
                                 <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
                             @endif
@@ -137,21 +147,42 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
-    {{-- About Card --}}
+    {{-- About Card with Inline Edit --}}
     <div class="card bg-base-100">
         <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center justify-between mb-4">
                 <div>
                     <h2 class="text-lg font-semibold">About Your Studio</h2>
                     <p class="text-base-content/60 text-sm">Description shown on your public booking page</p>
                 </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-about-drawer')">
+                <button type="button" class="btn btn-soft btn-sm" id="about-edit-btn" onclick="toggleAboutEdit()">
                     <span class="icon-[tabler--edit] size-4"></span> Edit
                 </button>
             </div>
-            <p id="about-text" class="text-sm text-base-content/80">
-                {{ $host->about ?? 'No description set. Click Edit to add a description.' }}
-            </p>
+
+            {{-- Display Mode --}}
+            <div id="about-display" class="prose prose-sm max-w-none text-base-content/80">
+                @if($host->about)
+                    {!! $host->about !!}
+                @else
+                    <p class="text-base-content/50 italic">No description set. Click Edit to add a description.</p>
+                @endif
+            </div>
+
+            {{-- Edit Mode --}}
+            <div id="about-edit-container" class="hidden">
+                <div id="about-editor" class="bg-base-100 border border-base-content/20 rounded-lg min-h-[200px]"></div>
+                <p class="text-xs text-base-content/50 mt-2">This appears on your public booking page</p>
+                <div class="flex items-center gap-2 mt-4">
+                    <button type="button" class="btn btn-primary btn-sm" id="save-about-inline-btn" onclick="saveAbout()">
+                        <span class="loading loading-spinner loading-xs hidden" id="about-inline-spinner"></span>
+                        Save
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="cancelAboutEdit()">
+                        Cancel
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -253,22 +284,28 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Business Currency</h2>
-                    <p class="text-base-content/60 text-sm">Currency used for pricing and transactions</p>
+                    <h2 class="text-lg font-semibold">Business Currencies</h2>
+                    <p class="text-base-content/60 text-sm">Currencies accepted for pricing and transactions</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-currency-drawer')">
                     <span class="icon-[tabler--edit] size-4"></span> Edit
                 </button>
             </div>
 
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center size-12 rounded-full bg-primary/10">
-                    <span class="text-xl font-bold text-primary" id="display-currency-symbol">{{ $currencies[$host->currency ?? 'USD']['symbol'] }}</span>
-                </div>
-                <div>
-                    <p class="font-medium" id="display-currency-name">{{ ($host->currency ?? 'USD') }} — {{ $currencies[$host->currency ?? 'USD']['name'] }}</p>
-                    <p class="text-xs text-base-content/50">All prices will be displayed in this currency</p>
-                </div>
+            <div class="flex flex-wrap gap-2" id="display-currencies">
+                @if($host->currencies && count($host->currencies) > 0)
+                    @foreach($host->currencies as $code)
+                        @if(isset($currencies[$code]))
+                            <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">
+                                <span class="text-lg font-bold text-primary">{{ $currencies[$code]['symbol'] }}</span>
+                                <span class="text-sm font-medium">{{ $code }}</span>
+                                <span class="text-xs text-base-content/60">{{ $currencies[$code]['name'] }}</span>
+                            </div>
+                        @endif
+                    @endforeach
+                @else
+                    <span class="text-base-content/50 text-sm">No currencies selected</span>
+                @endif
             </div>
         </div>
     </div>
@@ -427,32 +464,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     </form>
 </div>
 
-{{-- Edit About Drawer --}}
-<div id="edit-about-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
-    <div class="flex items-center justify-between p-4 border-b border-base-200">
-        <h3 class="text-lg font-semibold">Edit Studio Description</h3>
-        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-about-drawer')">
-            <span class="icon-[tabler--x] size-5"></span>
-        </button>
-    </div>
-    <form id="edit-about-form" class="flex flex-col flex-1 overflow-hidden">
-        <div class="flex-1 overflow-y-auto p-4">
-            <div>
-                <label class="label-text" for="about">About Your Studio</label>
-                <textarea id="about" class="textarea w-full" rows="8" placeholder="Tell students about your studio...">{{ $host->about ?? '' }}</textarea>
-                <p class="text-xs text-base-content/50 mt-1">This appears on your public booking page</p>
-            </div>
-        </div>
-        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="submit" class="btn btn-primary" id="save-about-btn">
-                <span class="loading loading-spinner loading-xs hidden" id="about-spinner"></span>
-                Save Changes
-            </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-about-drawer')">Cancel</button>
-        </div>
-    </form>
-</div>
-
 {{-- Edit Contact Drawer --}}
 <div id="edit-contact-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
@@ -579,29 +590,28 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 {{-- Edit Currency Drawer --}}
 <div id="edit-currency-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
-        <h3 class="text-lg font-semibold">Business Currency</h3>
+        <h3 class="text-lg font-semibold">Business Currencies</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-currency-drawer')">
             <span class="icon-[tabler--x] size-5"></span>
         </button>
     </div>
     <form id="edit-currency-form" class="flex flex-col flex-1 overflow-hidden">
         <div class="flex-1 overflow-y-auto p-4">
-            <div class="space-y-4">
-                <div>
-                    <label class="label-text" for="currency">Select Currency</label>
-                    <select id="currency" class="select w-full">
-                        @foreach($currencies as $code => $info)
-                        <option value="{{ $code }}" {{ ($host->currency ?? 'USD') == $code ? 'selected' : '' }}>
-                            {{ $code }} ({{ $info['symbol'] }}) — {{ $info['name'] }}
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="alert alert-soft alert-warning">
-                    <span class="icon-[tabler--alert-triangle] size-5"></span>
-                    <div class="text-sm">
-                        <strong>Important:</strong> This currency will be used for all pricing on your booking page.
-                    </div>
+            <p class="text-sm text-base-content/60 mb-4">Select all currencies you accept for payments</p>
+            <div class="space-y-2">
+                @foreach($currencies as $code => $info)
+                <label class="custom-option flex flex-row items-center gap-3 px-3 py-2 cursor-pointer">
+                    <input type="checkbox" class="checkbox checkbox-primary checkbox-sm currency-checkbox" value="{{ $code }}" {{ in_array($code, $host->currencies ?? []) ? 'checked' : '' }} />
+                    <span class="text-lg font-bold text-primary w-6">{{ $info['symbol'] }}</span>
+                    <span class="label-text text-sm font-medium">{{ $code }}</span>
+                    <span class="label-text text-sm text-base-content/60">{{ $info['name'] }}</span>
+                </label>
+                @endforeach
+            </div>
+            <div class="alert alert-soft alert-info mt-4">
+                <span class="icon-[tabler--info-circle] size-5"></span>
+                <div class="text-sm">
+                    Selected currencies will be available for pricing on your booking page.
                 </div>
             </div>
         </div>
@@ -614,38 +624,15 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </form>
 </div>
-
-{{-- Currency Change Confirmation Modal --}}
-<div id="currency-confirm-modal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200">
-    <div class="card bg-base-100 w-full max-w-md mx-4 transform scale-95 transition-transform duration-200">
-        <div class="card-body">
-            <div class="flex items-start gap-4">
-                <div class="flex items-center justify-center size-12 rounded-full bg-warning/20 shrink-0">
-                    <span class="icon-[tabler--alert-triangle] size-6 text-warning"></span>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold">Change Currency?</h3>
-                    <p class="text-sm text-base-content/70 mt-2">
-                        Changing your currency will <strong>not</strong> convert existing prices or transactions. This will only apply to new bookings and payments.
-                    </p>
-                </div>
-            </div>
-            <div class="flex justify-end gap-2 mt-6">
-                <button type="button" class="btn btn-ghost" onclick="closeCurrencyModal()">Cancel</button>
-                <button type="button" class="btn btn-warning" id="confirm-currency-btn">Confirm Change</button>
-            </div>
-        </div>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
+<script src="{{ asset('vendor/quill/quill.js') }}"></script>
 <script>
 var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 var selectedTypes = {!! json_encode($host->studio_types ?? []) !!};
 var typesDropdownOpen = false;
 var currencies = @json($currencies);
-var pendingCurrency = null;
 
 // Toast function
 function showToast(message, type) {
@@ -687,7 +674,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-about-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -760,24 +747,6 @@ document.addEventListener('click', function(e) {
     }
 });
 
-// Currency modal
-function openCurrencyModal() {
-    var modal = document.getElementById('currency-confirm-modal');
-    modal.classList.remove('opacity-0', 'pointer-events-none');
-    modal.classList.add('opacity-100', 'pointer-events-auto');
-    modal.querySelector('.card').classList.remove('scale-95');
-    modal.querySelector('.card').classList.add('scale-100');
-}
-
-function closeCurrencyModal() {
-    var modal = document.getElementById('currency-confirm-modal');
-    modal.classList.add('opacity-0', 'pointer-events-none');
-    modal.classList.remove('opacity-100', 'pointer-events-auto');
-    modal.querySelector('.card').classList.add('scale-95');
-    modal.querySelector('.card').classList.remove('scale-100');
-    pendingCurrency = null;
-}
-
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     updateTypesDisplay();
@@ -843,29 +812,6 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
             document.getElementById('display-types').innerHTML = typesHtml;
             closeDrawer('edit-basic-drawer');
             setTimeout(function() { showToast('Basic information updated!'); }, 350);
-        } else { showToast(result.message || 'Failed to update', 'error'); }
-    })
-    .catch(function() { showToast('An error occurred', 'error'); })
-    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
-});
-
-document.getElementById('edit-about-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    var btn = document.getElementById('save-about-btn');
-    var spinner = document.getElementById('about-spinner');
-    btn.disabled = true; spinner.classList.remove('hidden');
-
-    fetch('{{ route("settings.studio.about.update") }}', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-        body: JSON.stringify({ about: document.getElementById('about').value })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(result) {
-        if (result.success) {
-            document.getElementById('about-text').textContent = document.getElementById('about').value || 'No description set. Click Edit to add a description.';
-            closeDrawer('edit-about-drawer');
-            setTimeout(function() { showToast('Description updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })
@@ -965,39 +911,42 @@ document.getElementById('edit-amenities-form').addEventListener('submit', functi
 
 document.getElementById('edit-currency-form').addEventListener('submit', function(e) {
     e.preventDefault();
-    pendingCurrency = document.getElementById('currency').value;
-    saveCurrency(false);
-});
-
-function saveCurrency(confirmed) {
     var btn = document.getElementById('save-currency-btn');
     var spinner = document.getElementById('currency-spinner');
     btn.disabled = true; spinner.classList.remove('hidden');
 
+    var selectedCurrencies = [];
+    document.querySelectorAll('.currency-checkbox:checked').forEach(function(cb) { selectedCurrencies.push(cb.value); });
+
     fetch('{{ route("settings.studio.currency.update") }}', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-        body: JSON.stringify({ currency: pendingCurrency, confirmed: confirmed })
+        body: JSON.stringify({ currencies: selectedCurrencies })
     })
     .then(function(r) { return r.json(); })
     .then(function(result) {
-        if (result.requires_confirmation) {
-            openCurrencyModal();
-        } else if (result.success) {
-            var info = currencies[pendingCurrency];
-            document.getElementById('display-currency-symbol').textContent = info.symbol;
-            document.getElementById('display-currency-name').textContent = pendingCurrency + ' — ' + info.name;
+        if (result.success) {
+            // Update display
+            var currenciesHtml = '';
+            if (selectedCurrencies.length > 0) {
+                currenciesHtml = selectedCurrencies.map(function(code) {
+                    var info = currencies[code];
+                    return '<div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">' +
+                        '<span class="text-lg font-bold text-primary">' + info.symbol + '</span>' +
+                        '<span class="text-sm font-medium">' + code + '</span>' +
+                        '<span class="text-xs text-base-content/60">' + info.name + '</span>' +
+                    '</div>';
+                }).join('');
+            } else {
+                currenciesHtml = '<span class="text-base-content/50 text-sm">No currencies selected</span>';
+            }
+            document.getElementById('display-currencies').innerHTML = currenciesHtml;
             closeDrawer('edit-currency-drawer');
-            closeCurrencyModal();
-            setTimeout(function() { showToast('Currency updated!'); }, 350);
+            setTimeout(function() { showToast('Currencies updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })
     .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
-}
-
-document.getElementById('confirm-currency-btn').addEventListener('click', function() {
-    saveCurrency(true);
 });
 
 // Image upload forms
@@ -1052,5 +1001,109 @@ document.getElementById('upload-cover-form').addEventListener('submit', function
     .catch(function() { showToast('An error occurred', 'error'); })
     .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
 });
+
+// About inline edit with Quill
+var aboutQuill = null;
+var originalAboutContent = '';
+
+function toggleAboutEdit() {
+    var display = document.getElementById('about-display');
+    var editContainer = document.getElementById('about-edit-container');
+    var editBtn = document.getElementById('about-edit-btn');
+
+    display.classList.add('hidden');
+    editContainer.classList.remove('hidden');
+    editBtn.classList.add('hidden');
+
+    // Initialize Quill if not already done
+    if (!aboutQuill) {
+        aboutQuill = new Quill('#about-editor', {
+            theme: 'snow',
+            placeholder: 'Tell students about your studio...',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline'],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link'],
+                    ['clean']
+                ]
+            }
+        });
+    }
+
+    // Store original content and set editor content
+    originalAboutContent = display.innerHTML;
+    var content = display.querySelector('p.italic') ? '' : display.innerHTML;
+    aboutQuill.root.innerHTML = content;
+}
+
+function cancelAboutEdit() {
+    var display = document.getElementById('about-display');
+    var editContainer = document.getElementById('about-edit-container');
+    var editBtn = document.getElementById('about-edit-btn');
+
+    editContainer.classList.add('hidden');
+    display.classList.remove('hidden');
+    editBtn.classList.remove('hidden');
+
+    // Restore original content
+    if (aboutQuill) {
+        aboutQuill.root.innerHTML = originalAboutContent;
+    }
+}
+
+function saveAbout() {
+    var btn = document.getElementById('save-about-inline-btn');
+    var spinner = document.getElementById('about-inline-spinner');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    var content = aboutQuill.root.innerHTML;
+    // Check if content is empty or just whitespace
+    if (content === '<p><br></p>' || content.trim() === '') {
+        content = '';
+    }
+
+    fetch('{{ route("settings.studio.about.update") }}', {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ about: content })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var display = document.getElementById('about-display');
+            var editContainer = document.getElementById('about-edit-container');
+            var editBtn = document.getElementById('about-edit-btn');
+
+            // Update display
+            if (content) {
+                display.innerHTML = content;
+            } else {
+                display.innerHTML = '<p class="text-base-content/50 italic">No description set. Click Edit to add a description.</p>';
+            }
+
+            // Hide edit mode
+            editContainer.classList.add('hidden');
+            display.classList.remove('hidden');
+            editBtn.classList.remove('hidden');
+
+            showToast('Description updated!');
+        } else {
+            showToast(result.message || 'Failed to update', 'error');
+        }
+    })
+    .catch(function() {
+        showToast('An error occurred', 'error');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+    });
+}
 </script>
 @endpush
