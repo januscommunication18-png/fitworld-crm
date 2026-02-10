@@ -68,6 +68,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Booking Page Domain
+    |--------------------------------------------------------------------------
+    |
+    | This is the base domain for tenant booking pages. Each tenant's booking
+    | page will be available at: {subdomain}.{booking_domain}
+    | Example: mystudio.projectfit.com
+    |
+    */
+
+    'booking_domain' => env('BOOKING_DOMAIN', 'projectfit.com'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

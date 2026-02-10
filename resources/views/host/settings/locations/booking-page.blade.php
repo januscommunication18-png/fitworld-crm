@@ -27,16 +27,20 @@
         @endif
 
         {{-- Header --}}
+        @php
+            $bookingDomain = config('app.booking_domain', 'projectfit.com');
+            $bookingUrl = "https://{$host->subdomain}.{$bookingDomain}";
+        @endphp
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-xl font-semibold">Booking Page</h1>
                 <p class="text-base-content/60 text-sm">Customize your public booking page for customers</p>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ url('/' . $host->subdomain) }}" class="btn btn-ghost btn-sm" target="_blank">
+                <a href="{{ $bookingUrl }}" class="btn btn-ghost btn-sm gap-1" target="_blank">
                     <span class="icon-[tabler--external-link] size-4"></span> Preview
                 </a>
-                <button type="submit" class="btn btn-primary btn-sm">
+                <button type="submit" class="btn btn-primary btn-sm gap-1">
                     <span class="icon-[tabler--check] size-4"></span> Save Changes
                 </button>
             </div>
@@ -358,13 +362,35 @@
                 <h2 class="text-lg font-semibold mb-1">Your Booking Page</h2>
                 <p class="text-base-content/60 text-sm mb-4">Share this link with your customers</p>
 
+                @php
+                    $bookingDomain = config('app.booking_domain', 'projectfit.com');
+                    $bookingUrl = "https://{$host->subdomain}.{$bookingDomain}";
+                @endphp
+
                 <div class="flex items-center gap-2">
-                    <div class="flex-1 p-3 bg-base-200 rounded-lg font-mono text-sm">
-                        {{ config('app.url') }}/{{ $host->subdomain }}
+                    <div class="flex-1 p-3 bg-base-200 rounded-lg font-mono text-sm flex items-center gap-2">
+                        <span class="icon-[tabler--world] size-4 text-base-content/50"></span>
+                        <span id="booking-url">{{ $bookingUrl }}</span>
                     </div>
-                    <button type="button" onclick="copyBookingUrl()" class="btn btn-soft btn-sm">
+                    <button type="button" onclick="copyBookingUrl()" class="btn btn-soft btn-sm gap-1">
                         <span class="icon-[tabler--copy] size-4"></span> Copy
                     </button>
+                    <a href="{{ $bookingUrl }}" target="_blank" class="btn btn-ghost btn-sm gap-1">
+                        <span class="icon-[tabler--external-link] size-4"></span> Open
+                    </a>
+                </div>
+
+                <div class="mt-4 p-4 bg-base-200/50 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="icon-[tabler--info-circle] size-5 text-info mt-0.5"></span>
+                        <div>
+                            <p class="text-sm font-medium">Your subdomain</p>
+                            <p class="text-sm text-base-content/60 mt-1">
+                                Your booking page subdomain <span class="font-mono font-semibold text-primary">{{ $host->subdomain }}</span> was set during onboarding.
+                                Contact support if you need to change it.
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -477,7 +503,7 @@ function removeCover() {
 
 // Copy booking URL
 function copyBookingUrl() {
-    var url = '{{ config("app.url") }}/{{ $host->subdomain }}';
+    var url = document.getElementById('booking-url').textContent;
     navigator.clipboard.writeText(url).then(function() {
         showToast('URL copied to clipboard');
     });
