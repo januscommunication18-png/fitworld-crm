@@ -29,7 +29,9 @@
         {{-- Header --}}
         @php
             $bookingDomain = config('app.booking_domain', 'projectfit.com');
-            $bookingUrl = "https://{$host->subdomain}.{$bookingDomain}";
+            $bookingScheme = app()->environment('local') ? 'http' : 'https';
+            $bookingPort = app()->environment('local') ? ':8888' : '';
+            $bookingUrl = "{$bookingScheme}://{$host->subdomain}.{$bookingDomain}{$bookingPort}";
         @endphp
         <div class="flex items-center justify-between">
             <div>
@@ -45,6 +47,43 @@
                 </button>
             </div>
         </div>
+
+        {{-- Section: Publish Status --}}
+        <div class="card bg-base-100 border-2 {{ ($host->booking_page_status ?? 'draft') === 'published' ? 'border-success' : 'border-warning' }}">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        @if(($host->booking_page_status ?? 'draft') === 'published')
+                            <div class="size-10 rounded-full bg-success/10 flex items-center justify-center">
+                                <span class="icon-[tabler--world] size-5 text-success"></span>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-success">Page Published</h2>
+                                <p class="text-base-content/60 text-sm">Your booking page is live and visible to the public</p>
+                            </div>
+                        @else
+                            <div class="size-10 rounded-full bg-warning/10 flex items-center justify-center">
+                                <span class="icon-[tabler--eye-off] size-5 text-warning"></span>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-warning">Page Draft</h2>
+                                <p class="text-base-content/60 text-sm">Your booking page is not visible to the public</p>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-base-content/60">Draft</span>
+                        <label class="switch switch-success">
+                            <input type="checkbox" id="booking_page_status_toggle"
+                                {{ ($host->booking_page_status ?? 'draft') === 'published' ? 'checked' : '' }} />
+                            <span class="switch-indicator"></span>
+                        </label>
+                        <span class="text-sm text-base-content/60">Published</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="booking_page_status" id="booking_page_status" value="{{ $host->booking_page_status ?? 'draft' }}" />
 
         {{-- Section A: Branding & Layout --}}
         <div class="card bg-base-100">
@@ -195,6 +234,24 @@
 
                     {{-- Toggle Options --}}
                     <div class="space-y-4">
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="show_address" value="1" class="checkbox checkbox-primary mt-1"
+                                {{ old('show_address', $host->show_address ?? true) ? 'checked' : '' }} />
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Show Address</span>
+                                <span class="text-base-content/70 block">Display studio address in the hero section</span>
+                            </span>
+                        </label>
+
+                        <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
+                            <input type="checkbox" name="show_social_links" value="1" class="checkbox checkbox-primary mt-1"
+                                {{ old('show_social_links', $host->show_social_links ?? true) ? 'checked' : '' }} />
+                            <span class="label-text w-full text-start">
+                                <span class="text-base font-medium">Show Social Links</span>
+                                <span class="text-base-content/70 block">Display social media icons in the hero section</span>
+                            </span>
+                        </label>
+
                         <label class="custom-option flex flex-row items-start gap-3 cursor-pointer">
                             <input type="checkbox" name="show_instructors" value="1" class="checkbox checkbox-primary mt-1"
                                 {{ old('show_instructors', $settings['show_instructors'] ?? true) ? 'checked' : '' }} />
@@ -362,11 +419,6 @@
                 <h2 class="text-lg font-semibold mb-1">Your Booking Page</h2>
                 <p class="text-base-content/60 text-sm mb-4">Share this link with your customers</p>
 
-                @php
-                    $bookingDomain = config('app.booking_domain', 'projectfit.com');
-                    $bookingUrl = "https://{$host->subdomain}.{$bookingDomain}";
-                @endphp
-
                 <div class="flex items-center gap-2">
                     <div class="flex-1 p-3 bg-base-200 rounded-lg font-mono text-sm flex items-center gap-2">
                         <span class="icon-[tabler--world] size-4 text-base-content/50"></span>
@@ -408,6 +460,38 @@
 @push('scripts')
 <script>
 var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+// Handle publish status toggle
+document.getElementById('booking_page_status_toggle').addEventListener('change', function(e) {
+    var hiddenInput = document.getElementById('booking_page_status');
+    hiddenInput.value = this.checked ? 'published' : 'draft';
+
+    // Update the visual status card
+    var card = this.closest('.card');
+    var iconDiv = card.querySelector('.size-10');
+    var heading = card.querySelector('h2');
+    var description = card.querySelector('p');
+
+    if (this.checked) {
+        card.classList.remove('border-warning');
+        card.classList.add('border-success');
+        iconDiv.classList.remove('bg-warning/10');
+        iconDiv.classList.add('bg-success/10');
+        iconDiv.innerHTML = '<span class="icon-[tabler--world] size-5 text-success"></span>';
+        heading.className = 'text-lg font-semibold text-success';
+        heading.textContent = 'Page Published';
+        description.textContent = 'Your booking page is live and visible to the public';
+    } else {
+        card.classList.remove('border-success');
+        card.classList.add('border-warning');
+        iconDiv.classList.remove('bg-success/10');
+        iconDiv.classList.add('bg-warning/10');
+        iconDiv.innerHTML = '<span class="icon-[tabler--eye-off] size-5 text-warning"></span>';
+        heading.className = 'text-lg font-semibold text-warning';
+        heading.textContent = 'Page Draft';
+        description.textContent = 'Your booking page is not visible to the public';
+    }
+});
 
 function showToast(message, type) {
     type = type || 'success';

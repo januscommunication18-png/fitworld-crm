@@ -36,7 +36,7 @@ Route::post('/security-code', [SecurityCodeController::class, 'verify'])->name('
 // Public
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('welcome');
 
 // Guest-only (redirect to dashboard if already logged in)
 Route::middleware('guest')->group(function () {
@@ -137,6 +137,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/clients/{id}/convert-to-member', [ClientController::class, 'convertToMember'])->name('clients.convert-to-member')->where('id', '[0-9]+');
     Route::post('/clients/{id}/clear-at-risk', [ClientController::class, 'clearAtRisk'])->name('clients.clear-at-risk')->where('id', '[0-9]+');
     Route::put('/clients/{id}/tags', [ClientController::class, 'updateTags'])->name('clients.tags.update')->where('id', '[0-9]+');
+
+    // Help Desk
+    Route::get('/helpdesk', [\App\Http\Controllers\Host\HelpdeskController::class, 'index'])->name('helpdesk.index');
+    Route::get('/helpdesk/create', [\App\Http\Controllers\Host\HelpdeskController::class, 'create'])->name('helpdesk.create');
+    Route::post('/helpdesk', [\App\Http\Controllers\Host\HelpdeskController::class, 'store'])->name('helpdesk.store');
+    Route::get('/helpdesk/tags', [\App\Http\Controllers\Host\HelpdeskController::class, 'tags'])->name('helpdesk.tags');
+    Route::post('/helpdesk/tags', [\App\Http\Controllers\Host\HelpdeskController::class, 'storeTag'])->name('helpdesk.tags.store');
+    Route::delete('/helpdesk/tags/{tag}', [\App\Http\Controllers\Host\HelpdeskController::class, 'destroyTag'])->name('helpdesk.tags.destroy');
+    Route::get('/helpdesk/{ticket}', [\App\Http\Controllers\Host\HelpdeskController::class, 'show'])->name('helpdesk.show');
+    Route::put('/helpdesk/{ticket}', [\App\Http\Controllers\Host\HelpdeskController::class, 'update'])->name('helpdesk.update');
+    Route::post('/helpdesk/{ticket}/reply', [\App\Http\Controllers\Host\HelpdeskController::class, 'reply'])->name('helpdesk.reply');
+    Route::post('/helpdesk/{ticket}/convert', [\App\Http\Controllers\Host\HelpdeskController::class, 'convertToClient'])->name('helpdesk.convert');
+    Route::delete('/helpdesk/{ticket}', [\App\Http\Controllers\Host\HelpdeskController::class, 'destroy'])->name('helpdesk.destroy');
 
     // Instructors
     Route::get('/instructors', [InstructorController::class, 'index'])->name('instructors.index');

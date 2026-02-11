@@ -23,6 +23,10 @@ class Host extends Model
     const SUBSCRIPTION_PAST_DUE = 'past_due';
     const SUBSCRIPTION_CANCELED = 'canceled';
 
+    // Booking page status constants
+    const BOOKING_PAGE_DRAFT = 'draft';
+    const BOOKING_PAGE_PUBLISHED = 'published';
+
     protected $fillable = [
         'studio_name',
         'subdomain',
@@ -58,6 +62,9 @@ class Host extends Model
         'subscription_status',
         'trial_ends_at',
         'subscription_ends_at',
+        'booking_page_status',
+        'show_address',
+        'show_social_links',
     ];
 
     protected function casts(): array
@@ -73,11 +80,35 @@ class Host extends Model
             'client_settings' => 'array',
             'policies' => 'array',
             'is_live' => 'boolean',
+            'show_address' => 'boolean',
+            'show_social_links' => 'boolean',
             'onboarding_completed_at' => 'datetime',
             'verified_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'subscription_ends_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the logo URL (relative path for subdomain compatibility)
+     */
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (!$this->logo_path) {
+            return null;
+        }
+        return '/storage/' . $this->logo_path;
+    }
+
+    /**
+     * Get the cover image URL (relative path for subdomain compatibility)
+     */
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        if (!$this->cover_image_path) {
+            return null;
+        }
+        return '/storage/' . $this->cover_image_path;
     }
 
     /**
@@ -229,6 +260,16 @@ class Host extends Model
         return $this->hasMany(ClassRequest::class);
     }
 
+    public function helpdeskTickets(): HasMany
+    {
+        return $this->hasMany(HelpdeskTicket::class);
+    }
+
+    public function helpdeskTags(): HasMany
+    {
+        return $this->hasMany(HelpdeskTag::class);
+    }
+
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class);
@@ -293,6 +334,14 @@ class Host extends Model
     public function isSuspended(): bool
     {
         return $this->status === self::STATUS_SUSPENDED;
+    }
+
+    /**
+     * Check if booking page is published
+     */
+    public function isBookingPagePublished(): bool
+    {
+        return $this->booking_page_status === self::BOOKING_PAGE_PUBLISHED;
     }
 
     /**
@@ -363,6 +412,17 @@ class Host extends Model
             self::SUBSCRIPTION_ACTIVE => 'Active',
             self::SUBSCRIPTION_PAST_DUE => 'Past Due',
             self::SUBSCRIPTION_CANCELED => 'Canceled',
+        ];
+    }
+
+    /**
+     * Get available booking page statuses
+     */
+    public static function getBookingPageStatuses(): array
+    {
+        return [
+            self::BOOKING_PAGE_DRAFT => 'Draft',
+            self::BOOKING_PAGE_PUBLISHED => 'Published',
         ];
     }
 }

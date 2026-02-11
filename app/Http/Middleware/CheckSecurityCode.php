@@ -29,6 +29,13 @@ class CheckSecurityCode
     ];
 
     /**
+     * Route name prefixes that should be exempt from security code check.
+     */
+    protected array $exemptRoutePrefixes = [
+        'subdomain.',  // All public booking page routes
+    ];
+
+    /**
      * URI patterns that should be exempt from security code check.
      */
     protected array $exemptPatterns = [
@@ -69,8 +76,17 @@ class CheckSecurityCode
     {
         // Check if route name is exempt
         $routeName = $request->route()?->getName();
-        if ($routeName && in_array($routeName, $this->exemptRoutes)) {
-            return true;
+        if ($routeName) {
+            if (in_array($routeName, $this->exemptRoutes)) {
+                return true;
+            }
+
+            // Check if route name matches any exempt prefix
+            foreach ($this->exemptRoutePrefixes as $prefix) {
+                if (str_starts_with($routeName, $prefix)) {
+                    return true;
+                }
+            }
         }
 
         // Check if URI matches exempt patterns

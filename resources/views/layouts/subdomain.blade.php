@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,35 +7,63 @@
 
     <title>@yield('title', $host->studio_name ?? config('app.name', 'FitCRM'))</title>
 
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        /* Smooth scrolling */
+        html { scroll-behavior: smooth; }
+
+        /* Fixed width container - 1140px */
+        .container-fixed {
+            width: 1140px;
+            max-width: 100%;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        /* Custom gradient for hero */
+        .hero-gradient {
+            background: linear-gradient(135deg, oklch(var(--p)) 0%, oklch(var(--s)) 100%);
+        }
+
+        /* Card hover effect */
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Fade in animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+    </style>
 </head>
-<body class="bg-base-200 min-h-screen flex flex-col">
-
-    {{-- Header with Studio Branding --}}
-    <header class="py-8">
-        <div class="flex flex-col items-center justify-center gap-2">
-            @if($host->logo_url ?? false)
-                <img src="{{ $host->logo_url }}" alt="{{ $host->studio_name }}" class="h-12 w-auto object-contain">
-            @else
-                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <span class="icon-[tabler--building-community] size-6 text-primary"></span>
-                </div>
-            @endif
-            <h1 class="text-xl font-bold text-base-content">{{ $host->studio_name }}</h1>
-            @if($host->city ?? false)
-                <p class="text-sm text-base-content/60">{{ $host->city }}</p>
-            @endif
-        </div>
-    </header>
-
+<body class="bg-base-100 min-h-screen flex flex-col antialiased">
     {{-- Main Content --}}
-    <main class="flex-1 flex items-start justify-center px-4 pb-8">
+    <main class="flex-1">
         @yield('content')
     </main>
 
     {{-- Footer --}}
-    <footer class="py-4 text-center text-sm text-base-content/40">
-        Powered by <a href="{{ config('app.url') }}" class="link link-primary no-underline">FitCRM</a>
+    <footer class="py-6 text-center border-t border-base-200">
+        <p class="text-sm text-base-content/50">
+            Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary hover:underline">FitCRM</a>
+        </p>
     </footer>
 
     @stack('scripts')

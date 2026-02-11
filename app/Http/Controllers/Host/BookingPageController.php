@@ -37,6 +37,11 @@ class BookingPageController extends Controller
         $host = auth()->user()->host;
 
         $validated = $request->validate([
+            // Page Status
+            'booking_page_status' => 'required|in:draft,published',
+            'show_address' => 'boolean',
+            'show_social_links' => 'boolean',
+
             // Branding
             'display_name' => 'nullable|string|max:255',
             'primary_color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
@@ -62,7 +67,12 @@ class BookingPageController extends Controller
             'filter_location' => 'boolean',
         ]);
 
-        // Convert checkbox values to booleans
+        // Update host-level fields
+        $host->booking_page_status = $validated['booking_page_status'];
+        $host->show_address = $request->boolean('show_address');
+        $host->show_social_links = $request->boolean('show_social_links');
+
+        // Convert checkbox values to booleans for booking_settings
         $booleanFields = [
             'show_instructors', 'show_amenities',
             'show_class_descriptions', 'show_instructor_photos',
@@ -70,13 +80,24 @@ class BookingPageController extends Controller
             'filter_class_type', 'filter_instructor', 'filter_location',
         ];
 
+        // Prepare booking_settings array (exclude host-level fields)
+        $bookingSettings = [
+            'display_name' => $validated['display_name'],
+            'primary_color' => $validated['primary_color'],
+            'theme' => $validated['theme'],
+            'font' => $validated['font'],
+            'about_text' => $validated['about_text'],
+            'location_display' => $validated['location_display'],
+            'default_view' => $validated['default_view'],
+        ];
+
         foreach ($booleanFields as $field) {
-            $validated[$field] = $request->boolean($field);
+            $bookingSettings[$field] = $request->boolean($field);
         }
 
         // Merge with existing settings
         $currentSettings = $host->booking_settings ?? [];
-        $host->booking_settings = array_merge($currentSettings, $validated);
+        $host->booking_settings = array_merge($currentSettings, $bookingSettings);
         $host->save();
 
         return redirect()->route('settings.locations.booking-page')

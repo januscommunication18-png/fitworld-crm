@@ -14,17 +14,21 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
-        then: function () {
+        using: function () {
+            // IMPORTANT: Load subdomain routes FIRST (more specific domain pattern)
+            // This must come before web.php so subdomain routes take precedence
+            require base_path('routes/subdomain.php');
+
+            // Then load web routes
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+
             // Register backoffice routes
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/backoffice.php'));
-
-            // Register subdomain routes for public booking pages
-            require base_path('routes/subdomain.php');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

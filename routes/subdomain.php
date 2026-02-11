@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\SubdomainSetupController;
 use App\Http\Controllers\Subdomain\BookingController;
+use App\Http\Controllers\Subdomain\ServiceRequestController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,6 +30,9 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.app'))
         // Instructor profiles
         Route::get('/instructors', [BookingController::class, 'instructors'])->name('subdomain.instructors');
         Route::get('/instructor/{instructor}', [BookingController::class, 'instructorProfile'])->name('subdomain.instructor');
+
+        // Service request
+        Route::post('/request-service', [ServiceRequestController::class, 'store'])->name('subdomain.request-service');
 
         // Team invitation setup (branded experience)
         Route::get('/setup/invite/{token}', [SubdomainSetupController::class, 'showInvite'])->name('subdomain.invite.show');

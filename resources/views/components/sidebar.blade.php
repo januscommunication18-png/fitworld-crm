@@ -164,6 +164,22 @@
             </li>
             @endif
 
+            {{-- Help Desk - Requires students.view permission (same as clients) --}}
+            @if($canViewClients)
+            @php
+                $openTicketCount = auth()->user()?->host?->helpdeskTickets()->unresolved()->count() ?? 0;
+            @endphp
+            <li class="nav-item {{ request()->is('helpdesk*') ? 'active' : '' }}" data-nav="helpdesk">
+                <a href="{{ url('/helpdesk') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
+                    <span class="icon-[tabler--help] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Help Desk</span>
+                    @if($openTicketCount > 0)
+                        <span class="badge badge-xs badge-primary">{{ $openTicketCount }}</span>
+                    @endif
+                </a>
+            </li>
+            @endif
+
             {{-- Instructors - Requires team.view or team.instructors --}}
             @if($canViewTeam)
             <li class="nav-item {{ request()->is('instructors*') ? 'active' : '' }}" data-nav="instructors">

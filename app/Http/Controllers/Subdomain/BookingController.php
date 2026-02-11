@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClassSession;
 use App\Models\Host;
 use App\Models\Instructor;
+use App\Models\ServicePlan;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -25,20 +26,33 @@ class BookingController extends Controller
     {
         $host = $this->getHost($request);
 
+        // Check if booking page is published
+        if (!$host->isBookingPagePublished()) {
+            return view('subdomain.not-available', [
+                'host' => $host,
+            ]);
+        }
+
         // Get upcoming published class sessions
         $upcomingSessions = ClassSession::where('host_id', $host->id)
             ->where('status', 'published')
-            ->where('starts_at', '>=', now())
-            ->orderBy('starts_at')
-            ->with(['classPlan', 'instructor', 'room.location'])
+            ->where('start_time', '>=', now())
+            ->orderBy('start_time')
+            ->with(['classPlan', 'primaryInstructor', 'room.location'])
             ->take(10)
             ->get();
 
         // Get active instructors
         $instructors = Instructor::where('host_id', $host->id)
             ->where('is_active', true)
-            ->orderBy('display_order')
-            ->orderBy('first_name')
+            ->orderBy('name')
+            ->get();
+
+        // Get active service plans
+        $servicePlans = ServicePlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
             ->get();
 
         // Get booking settings
@@ -47,11 +61,17 @@ class BookingController extends Controller
             $host->booking_settings ?? []
         );
 
+        // Check if member portal is enabled
+        $clientSettings = $host->client_settings ?? [];
+        $memberPortalEnabled = $clientSettings['enable_member_portal'] ?? false;
+
         return view('subdomain.home', [
             'host' => $host,
             'upcomingSessions' => $upcomingSessions,
             'instructors' => $instructors,
+            'servicePlans' => $servicePlans,
             'bookingSettings' => $bookingSettings,
+            'memberPortalEnabled' => $memberPortalEnabled,
         ]);
     }
 
@@ -65,12 +85,12 @@ class BookingController extends Controller
         // Get class sessions for the next 30 days
         $sessions = ClassSession::where('host_id', $host->id)
             ->where('status', 'published')
-            ->where('starts_at', '>=', now())
-            ->where('starts_at', '<=', now()->addDays(30))
-            ->orderBy('starts_at')
-            ->with(['classPlan', 'instructor', 'room.location'])
+            ->where('start_time', '>=', now())
+            ->where('start_time', '<=', now()->addDays(30))
+            ->orderBy('start_time')
+            ->with(['classPlan', 'primaryInstructor', 'room.location'])
             ->get()
-            ->groupBy(fn($session) => $session->starts_at->format('Y-m-d'));
+            ->groupBy(fn($session) => $session->start_time->format('Y-m-d'));
 
         // Get booking settings
         $bookingSettings = array_merge(
@@ -97,7 +117,7 @@ class BookingController extends Controller
             abort(404);
         }
 
-        $classSession->load(['classPlan', 'instructor', 'room.location']);
+        $classSession->load(['classPlan', 'primaryInstructor', 'room.location']);
 
         return view('subdomain.class-details', [
             'host' => $host,
@@ -114,8 +134,7 @@ class BookingController extends Controller
 
         $instructors = Instructor::where('host_id', $host->id)
             ->where('is_active', true)
-            ->orderBy('display_order')
-            ->orderBy('first_name')
+            ->orderBy('name')
             ->get();
 
         return view('subdomain.instructors', [
@@ -138,10 +157,10 @@ class BookingController extends Controller
 
         // Get instructor's upcoming classes
         $upcomingSessions = ClassSession::where('host_id', $host->id)
-            ->where('instructor_id', $instructor->id)
+            ->where('primary_instructor_id', $instructor->id)
             ->where('status', 'published')
-            ->where('starts_at', '>=', now())
-            ->orderBy('starts_at')
+            ->where('start_time', '>=', now())
+            ->orderBy('start_time')
             ->with(['classPlan', 'room.location'])
             ->take(10)
             ->get();
