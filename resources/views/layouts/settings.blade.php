@@ -1,6 +1,21 @@
 @extends('layouts.dashboard')
 
 @section('content')
+@php
+    $user = auth()->user();
+    $canEditStudio = $user->hasPermission('studio.profile');
+    $canManageLocations = $user->hasPermission('studio.locations');
+    $canManageBookingPage = $user->hasPermission('studio.booking_page');
+    $canManagePolicies = $user->hasPermission('studio.policies');
+    $canViewTeam = $user->hasPermission('team.view');
+    $canManageTeam = $user->hasPermission('team.manage');
+    $canManageInstructors = $user->hasPermission('team.instructors');
+    $canChangePermissions = $user->hasPermission('team.permissions');
+    $canManagePaymentSettings = $user->hasPermission('payments.stripe');
+    $canManageBilling = $user->hasPermission('billing.plan');
+    $canViewInvoices = $user->hasPermission('billing.invoices');
+    $canUpdatePaymentMethod = $user->hasPermission('billing.payment');
+@endphp
 <div class="space-y-6">
     <div class="flex items-center gap-3">
         <span class="icon-[tabler--settings] size-6"></span>
@@ -12,7 +27,18 @@
         <div class="lg:w-64 shrink-0">
             <div class="bg-base-100 rounded-box p-3 space-y-4 sticky top-6">
 
-                {{-- Studio --}}
+                {{-- My Profile - Always visible to all users --}}
+                <div>
+                    <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Account</div>
+                    <ul class="menu menu-sm p-0">
+                        <li><a href="{{ route('settings.profile') }}" class="{{ request()->routeIs('settings.profile') ? 'active' : '' }}">
+                            <span class="icon-[tabler--user-circle] size-4"></span> My Profile
+                        </a></li>
+                    </ul>
+                </div>
+
+                {{-- Studio - Requires studio.profile --}}
+                @if($canEditStudio)
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Studio</div>
                     <ul class="menu menu-sm p-0">
@@ -21,43 +47,61 @@
                         </a></li>
                     </ul>
                 </div>
+                @endif
 
-                {{-- Locations --}}
+                {{-- Locations - Requires studio.locations or related --}}
+                @if($canManageLocations || $canManageBookingPage || $canManagePolicies)
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Locations</div>
                     <ul class="menu menu-sm p-0">
+                        @if($canManageLocations)
                         <li><a href="{{ route('settings.locations.index') }}" class="{{ request()->routeIs('settings.locations.index') ? 'active' : '' }}">
                             <span class="icon-[tabler--map-pin] size-4"></span> Locations
                         </a></li>
                         <li><a href="{{ route('settings.locations.rooms') }}" class="{{ request()->routeIs('settings.locations.rooms') ? 'active' : '' }}">
                             <span class="icon-[tabler--door] size-4"></span> Rooms
                         </a></li>
+                        @endif
+                        @if($canManageBookingPage)
                         <li><a href="{{ route('settings.locations.booking-page') }}" class="{{ request()->routeIs('settings.locations.booking-page') ? 'active' : '' }}">
                             <span class="icon-[tabler--calendar-event] size-4"></span> Booking Page
                         </a></li>
+                        @endif
+                        @if($canManagePolicies)
                         <li><a href="{{ route('settings.locations.policies') }}" class="{{ request()->routeIs('settings.locations.policies') ? 'active' : '' }}">
                             <span class="icon-[tabler--file-text] size-4"></span> Policies
                         </a></li>
+                        @endif
                     </ul>
                 </div>
+                @endif
 
-                {{-- Team --}}
+                {{-- Team - Requires team.view or team.manage or team.instructors --}}
+                @if($canViewTeam || $canManageTeam || $canManageInstructors || $canChangePermissions)
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Team</div>
                     <ul class="menu menu-sm p-0">
+                        @if($canViewTeam || $canManageTeam)
                         <li><a href="{{ route('settings.team.users') }}" class="{{ request()->routeIs('settings.team.users') ? 'active' : '' }}">
                             <span class="icon-[tabler--users] size-4"></span> Users & Roles
                         </a></li>
+                        @endif
+                        @if($canManageInstructors)
                         <li><a href="{{ route('settings.team.instructors') }}" class="{{ request()->routeIs('settings.team.instructors') ? 'active' : '' }}">
                             <span class="icon-[tabler--user-star] size-4"></span> Instructors
                         </a></li>
+                        @endif
+                        @if($canChangePermissions)
                         <li><a href="{{ route('settings.team.permissions') }}" class="{{ request()->routeIs('settings.team.permissions') ? 'active' : '' }}">
                             <span class="icon-[tabler--lock] size-4"></span> Permissions
                         </a></li>
+                        @endif
                     </ul>
                 </div>
+                @endif
 
-                {{-- Payments --}}
+                {{-- Payments - Requires payments.stripe --}}
+                @if($canManagePaymentSettings)
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Payments</div>
                     <ul class="menu menu-sm p-0">
@@ -114,24 +158,32 @@
                         </a></li>
                     </ul>
                 </div>
+                @endif
 
-                {{-- Plans & Billing --}}
+                {{-- Plans & Billing - Requires billing permissions --}}
+                @if($canManageBilling || $canViewInvoices || $canUpdatePaymentMethod)
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Plans & Billing</div>
                     <ul class="menu menu-sm p-0">
+                        @if($canManageBilling)
                         <li><a href="{{ route('settings.billing.plan') }}" class="{{ request()->routeIs('settings.billing.plan') ? 'active' : '' }}">
                             <span class="icon-[tabler--package] size-4"></span> Current Plan
                         </a></li>
                         <li><a href="{{ route('settings.billing.usage') }}" class="{{ request()->routeIs('settings.billing.usage') ? 'active' : '' }}">
                             <span class="icon-[tabler--chart-bar] size-4"></span> Usage
                         </a></li>
+                        @endif
+                        @if($canViewInvoices)
                         <li><a href="{{ route('settings.billing.invoices') }}" class="{{ request()->routeIs('settings.billing.invoices') ? 'active' : '' }}">
                             <span class="icon-[tabler--file-invoice] size-4"></span> Invoices
                         </a></li>
+                        @endif
                     </ul>
                 </div>
+                @endif
 
-                {{-- Advanced --}}
+                {{-- Advanced - Owner only --}}
+                @if($user->isOwner())
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Advanced</div>
                     <ul class="menu menu-sm p-0">
@@ -146,6 +198,7 @@
                         </a></li>
                     </ul>
                 </div>
+                @endif
 
                 {{-- Developer Tools (local only) --}}
                 @if(app()->environment('local'))

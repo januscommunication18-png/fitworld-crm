@@ -40,11 +40,23 @@ class TeamInvitationMail extends Mailable
                 'invitation' => $this->invitation,
                 'studioName' => $this->studioName,
                 'inviterName' => $this->inviterName,
-                'acceptUrl' => url("/invite/accept/{$this->invitation->token}"),
+                'acceptUrl' => $this->getAcceptUrl(),
                 'role' => ucfirst($this->invitation->role),
                 'expiresAt' => $this->invitation->expires_at->format('F j, Y'),
             ],
         );
+    }
+
+    /**
+     * Generate the subdomain-based accept URL
+     */
+    protected function getAcceptUrl(): string
+    {
+        $subdomain = $this->invitation->host->subdomain;
+        $bookingDomain = config('app.booking_domain');
+        $scheme = app()->environment('production') ? 'https' : 'http';
+
+        return "{$scheme}://{$subdomain}.{$bookingDomain}/setup/invite/{$this->invitation->token}";
     }
 
     /**

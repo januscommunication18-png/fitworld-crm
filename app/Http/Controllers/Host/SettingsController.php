@@ -7,10 +7,176 @@ use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
-    // Redirect /settings to studio profile
+    // Redirect /settings to first accessible settings page based on permissions
     public function index()
     {
-        return redirect()->route('settings.studio.profile');
+        $user = auth()->user();
+
+        // Check permissions in priority order and redirect to first accessible page
+        if ($user->hasPermission('studio.profile')) {
+            return redirect()->route('settings.studio.profile');
+        }
+
+        if ($user->hasPermission('studio.locations')) {
+            return redirect()->route('settings.locations.index');
+        }
+
+        if ($user->hasPermission('team.view') || $user->hasPermission('team.manage')) {
+            return redirect()->route('settings.team.users');
+        }
+
+        if ($user->hasPermission('team.instructors')) {
+            return redirect()->route('settings.team.instructors');
+        }
+
+        if ($user->hasPermission('team.permissions')) {
+            return redirect()->route('settings.team.permissions');
+        }
+
+        if ($user->hasPermission('payments.stripe')) {
+            return redirect()->route('settings.payments.settings');
+        }
+
+        if ($user->hasPermission('billing.plan')) {
+            return redirect()->route('settings.billing.plan');
+        }
+
+        if ($user->hasPermission('billing.invoices')) {
+            return redirect()->route('settings.billing.invoices');
+        }
+
+        // Everyone can access their own profile
+        return redirect()->route('settings.profile');
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // My Profile (accessible to all authenticated users)
+    // ─────────────────────────────────────────────────────────────
+
+    public function myProfile()
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Get instructor profile if user is linked to one
+        $instructor = null;
+        if ($user->instructor_id) {
+            $instructor = $user->instructor;
+        }
+
+        // Get the user's role and permissions for current host
+        $membership = $user->hosts()->where('hosts.id', $host->id)->first();
+        $role = $membership?->pivot?->role ?? $user->role;
+        $permissions = $membership?->pivot?->permissions ?? $user->permissions;
+
+        return view('host.settings.profile.index', compact('user', 'host', 'instructor', 'role', 'permissions'));
+    }
+
+    public function updateMyProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255|regex:/^[^\d]*$/',
+            'last_name' => 'required|string|max:255|regex:/^[^\d]*$/',
+            'email' => 'required|email|max:255|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string|max:50',
+        ], [
+            'first_name.regex' => 'First name cannot contain numbers.',
+            'last_name.regex' => 'Last name cannot contain numbers.',
+        ]);
+
+        $user->update($validated);
+
+        // If user has linked instructor profile, update that too
+        if ($user->instructor_id && $user->instructor) {
+            $user->instructor->update([
+                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? $user->instructor->phone,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully.',
+            'data' => $user->fresh(),
+        ]);
+    }
+
+    public function updateMyPassword(Request $request)
+    {
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'current_password' => 'required|current_password',
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'current_password.current_password' => 'The current password is incorrect.',
+        ]);
+
+        $user->update([
+            'password' => bcrypt($validated['password']),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password updated successfully.',
+        ]);
+    }
+
+    public function uploadMyPhoto(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        $user = auth()->user();
+
+        // Store the file
+        $path = $request->file('photo')->store('profile-photos', 'public');
+
+        // Delete old photo if exists
+        if ($user->profile_photo && \Storage::disk('public')->exists($user->profile_photo)) {
+            \Storage::disk('public')->delete($user->profile_photo);
+        }
+
+        $user->update(['profile_photo' => $path]);
+
+        // Also update instructor photo if linked
+        if ($user->instructor_id && $user->instructor) {
+            if ($user->instructor->profile_photo && \Storage::disk('public')->exists($user->instructor->profile_photo)) {
+                \Storage::disk('public')->delete($user->instructor->profile_photo);
+            }
+            $user->instructor->update(['profile_photo' => $path]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Photo uploaded successfully.',
+            'photo_url' => asset('storage/' . $path),
+        ]);
+    }
+
+    public function removeMyPhoto()
+    {
+        $user = auth()->user();
+
+        if ($user->profile_photo && \Storage::disk('public')->exists($user->profile_photo)) {
+            \Storage::disk('public')->delete($user->profile_photo);
+        }
+
+        $user->update(['profile_photo' => null]);
+
+        // Also remove instructor photo if linked
+        if ($user->instructor_id && $user->instructor) {
+            $user->instructor->update(['profile_photo' => null]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Photo removed successfully.',
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -336,16 +502,34 @@ class SettingsController extends Controller
 
     public function dataExport()
     {
+        // Owner only
+        if (!auth()->user()->isOwner()) {
+            return redirect()->route('settings.index')
+                ->with('error', 'Only the studio owner can access this page.');
+        }
+
         return view('host.settings.advanced.export');
     }
 
     public function auditLogs()
     {
+        // Owner only
+        if (!auth()->user()->isOwner()) {
+            return redirect()->route('settings.index')
+                ->with('error', 'Only the studio owner can access this page.');
+        }
+
         return view('host.settings.advanced.audit');
     }
 
     public function dangerZone()
     {
+        // Owner only
+        if (!auth()->user()->isOwner()) {
+            return redirect()->route('settings.index')
+                ->with('error', 'Only the studio owner can access this page.');
+        }
+
         return view('host.settings.advanced.danger');
     }
 

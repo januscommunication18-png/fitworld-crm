@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Session;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -38,6 +40,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_login_at',
         'permissions',
         'instructor_id',
+        'profile_photo',
+        'phone',
     ];
 
     protected $hidden = [
@@ -56,9 +60,85 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
+    /**
+     * Legacy single-host relationship (for backwards compatibility)
+     */
     public function host(): BelongsTo
     {
         return $this->belongsTo(Host::class);
+    }
+
+    /**
+     * Multi-studio relationship through pivot table
+     */
+    public function hosts(): BelongsToMany
+    {
+        return $this->belongsToMany(Host::class, 'host_user')
+            ->withPivot(['role', 'permissions', 'instructor_id', 'is_primary', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the current host from session or return primary host
+     */
+    public function currentHost(): ?Host
+    {
+        $currentHostId = Session::get('current_host_id');
+
+        if ($currentHostId) {
+            $host = $this->hosts()->where('hosts.id', $currentHostId)->first();
+            if ($host) {
+                return $host;
+            }
+        }
+
+        return $this->getPrimaryHost();
+    }
+
+    /**
+     * Get the user's primary host
+     */
+    public function getPrimaryHost(): ?Host
+    {
+        return $this->hosts()->wherePivot('is_primary', true)->first()
+            ?? $this->hosts()->first();
+    }
+
+    /**
+     * Check if user belongs to multiple studios
+     */
+    public function hasMultipleHosts(): bool
+    {
+        return $this->hosts()->count() > 1;
+    }
+
+    /**
+     * Get user's role for a specific host
+     */
+    public function getRoleForHost(Host $host): ?string
+    {
+        $membership = $this->hosts()->where('hosts.id', $host->id)->first();
+        return $membership?->pivot?->role;
+    }
+
+    /**
+     * Get user's permissions for a specific host
+     */
+    public function getPermissionsForHost(Host $host): ?array
+    {
+        $membership = $this->hosts()->where('hosts.id', $host->id)->first();
+        $permissions = $membership?->pivot?->permissions;
+        return is_string($permissions) ? json_decode($permissions, true) : $permissions;
+    }
+
+    /**
+     * Set the current host in session
+     */
+    public function setCurrentHost(Host $host): void
+    {
+        if ($this->hosts()->where('hosts.id', $host->id)->exists()) {
+            Session::put('current_host_id', $host->id);
+        }
     }
 
     public function instructor(): BelongsTo
@@ -72,70 +152,98 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Check if user is the owner
+     * Get the current role (context-aware for multi-studio)
      */
-    public function isOwner(): bool
+    public function getCurrentRole(): string
     {
-        return $this->role === self::ROLE_OWNER;
+        $currentHost = $this->currentHost();
+        if ($currentHost) {
+            return $this->getRoleForHost($currentHost) ?? $this->role;
+        }
+        return $this->role;
     }
 
     /**
-     * Check if user is an admin
+     * Check if user is the owner (context-aware)
      */
-    public function isAdmin(): bool
+    public function isOwner(?Host $host = null): bool
     {
-        return $this->role === self::ROLE_ADMIN;
+        if ($host) {
+            return $this->getRoleForHost($host) === self::ROLE_OWNER;
+        }
+        return $this->getCurrentRole() === self::ROLE_OWNER;
     }
 
     /**
-     * Check if user is staff
+     * Check if user is an admin (context-aware)
      */
-    public function isStaff(): bool
+    public function isAdmin(?Host $host = null): bool
     {
-        return $this->role === self::ROLE_STAFF;
+        if ($host) {
+            return $this->getRoleForHost($host) === self::ROLE_ADMIN;
+        }
+        return $this->getCurrentRole() === self::ROLE_ADMIN;
     }
 
     /**
-     * Check if user has instructor role
+     * Check if user is staff (context-aware)
      */
-    public function hasInstructorRole(): bool
+    public function isStaff(?Host $host = null): bool
     {
-        return $this->role === self::ROLE_INSTRUCTOR;
+        if ($host) {
+            return $this->getRoleForHost($host) === self::ROLE_STAFF;
+        }
+        return $this->getCurrentRole() === self::ROLE_STAFF;
     }
 
     /**
-     * Check if user can manage team
+     * Check if user has instructor role (context-aware)
      */
-    public function canManageTeam(): bool
+    public function hasInstructorRole(?Host $host = null): bool
     {
-        return $this->isOwner() || ($this->isAdmin() && $this->hasPermission('team.manage'));
+        if ($host) {
+            return $this->getRoleForHost($host) === self::ROLE_INSTRUCTOR;
+        }
+        return $this->getCurrentRole() === self::ROLE_INSTRUCTOR;
     }
 
     /**
-     * Check if user has a specific permission
+     * Check if user can manage team (context-aware)
      */
-    public function hasPermission(string $permission): bool
+    public function canManageTeam(?Host $host = null): bool
     {
+        return $this->isOwner($host) || ($this->isAdmin($host) && $this->hasPermission('team.manage', $host));
+    }
+
+    /**
+     * Check if user has a specific permission (context-aware)
+     */
+    public function hasPermission(string $permission, ?Host $host = null): bool
+    {
+        $currentHost = $host ?? $this->currentHost();
+        $role = $currentHost ? $this->getRoleForHost($currentHost) : $this->role;
+
         // Owner has all permissions
-        if ($this->isOwner()) {
+        if ($role === self::ROLE_OWNER) {
             return true;
         }
 
         // Check custom permissions override
-        if (is_array($this->permissions) && isset($this->permissions[$permission])) {
-            return (bool) $this->permissions[$permission];
+        $permissions = $currentHost ? $this->getPermissionsForHost($currentHost) : $this->permissions;
+        if (is_array($permissions) && isset($permissions[$permission])) {
+            return (bool) $permissions[$permission];
         }
 
         // Fall back to role-based default permissions
-        return $this->hasDefaultPermission($permission);
+        return $this->hasDefaultPermissionForRole($permission, $role);
     }
 
     /**
-     * Get default permission based on role
+     * Check default permission for a specific role
      */
-    protected function hasDefaultPermission(string $permission): bool
+    protected function hasDefaultPermissionForRole(string $permission, string $role): bool
     {
-        $rolePermissions = self::getDefaultPermissionsForRole($this->role);
+        $rolePermissions = self::getDefaultPermissionsForRole($role);
         return in_array($permission, $rolePermissions);
     }
 

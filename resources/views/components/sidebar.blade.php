@@ -1,4 +1,16 @@
-<aside id="main-sidebar" class="sticky top-0 h-screen bg-base-100 border-e border-base-content/10 flex flex-col overflow-hidden">
+@php
+    $user = auth()->user();
+    $canViewSchedule = $user->hasPermission('schedule.view') || $user->hasPermission('schedule.view_own');
+    $canManageSchedule = $user->hasPermission('schedule.create') || $user->hasPermission('schedule.edit');
+    $canViewBookings = $user->hasPermission('bookings.view') || $user->hasPermission('bookings.view_own');
+    $canViewStudents = $user->hasPermission('students.view');
+    $canViewTeam = $user->hasPermission('team.view') || $user->hasPermission('team.instructors');
+    $canViewOffers = $user->hasPermission('offers.intro') || $user->hasPermission('offers.packs') || $user->hasPermission('offers.memberships') || $user->hasPermission('offers.promos');
+    $canViewInsights = $user->hasPermission('insights.attendance') || $user->hasPermission('insights.revenue');
+    $canViewPayments = $user->hasPermission('payments.view');
+    $canAccessSettings = $user->hasPermission('studio.profile') || $user->hasPermission('team.view') || $user->hasPermission('billing.plan');
+@endphp
+<aside id="main-sidebar" class="sticky top-0 h-screen bg-base-100 border-e border-base-content/10 flex flex-col">
 
     {{-- Sidebar header: Logo + Collapse toggle --}}
     <div class="flex items-center gap-2 px-4 h-16 border-b border-base-content/10 shrink-0">
@@ -20,7 +32,7 @@
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Main</span>
             </li>
 
-            {{-- Dashboard --}}
+            {{-- Dashboard - Everyone can see --}}
             <li class="nav-item {{ request()->is('dashboard*') ? 'active' : '' }}" data-nav="dashboard">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--home] size-5 shrink-0"></span>
@@ -31,27 +43,34 @@
                     <li><a href="{{ url('/dashboard') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--layout-dashboard] size-4 mr-2"></span>Overview
                     </a></li>
+                    @if($canViewSchedule)
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>Today's Classes
                     </a></li>
+                    @endif
+                    @if($canViewBookings)
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--book] size-4 mr-2"></span>Upcoming Bookings
                     </a></li>
+                    @endif
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--bell] size-4 mr-2"></span>Alerts &amp; Reminders
                     </a></li>
                 </ul>
             </li>
 
-            {{-- Catalog --}}
+            {{-- Catalog - Requires schedule permissions --}}
+            @if($canManageSchedule)
             <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }}" data-nav="catalog">
                 <a href="{{ url('/catalog') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
                     <span class="icon-[tabler--layout-grid] size-5 shrink-0"></span>
                     <span class="sidebar-label">Catalog</span>
                 </a>
             </li>
+            @endif
 
-            {{-- Schedule --}}
+            {{-- Schedule - Requires schedule.view or schedule.view_own --}}
+            @if($canViewSchedule)
             <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('class-requests*') ? 'active' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
@@ -65,6 +84,7 @@
                     <li><a href="{{ url('/class-sessions') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-sessions*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>Class Sessions
                     </a></li>
+                    @if($user->hasPermission('schedule.view'))
                     <li><a href="{{ url('/service-slots') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('service-slots*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clock] size-4 mr-2"></span>Service Slots
                     </a></li>
@@ -75,13 +95,18 @@
                         <span class="badge badge-xs badge-warning ml-1">{{ $pendingRequests }}</span>
                         @endif
                     </a></li>
+                    @endif
+                    @if($user->hasPermission('bookings.waitlist'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--hourglass] size-4 mr-2"></span>Waitlist
                     </a></li>
+                    @endif
                 </ul>
             </li>
+            @endif
 
-            {{-- Bookings --}}
+            {{-- Bookings - Requires bookings.view or bookings.view_own --}}
+            @if($canViewBookings)
             <li class="nav-item {{ request()->is('bookings*') ? 'active' : '' }}" data-nav="bookings">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--book] size-5 shrink-0"></span>
@@ -90,21 +115,25 @@
                 </button>
                 <ul class="sidebar-submenu {{ request()->is('bookings*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--clipboard-list] size-4 mr-2"></span>All Bookings
+                        <span class="icon-[tabler--clipboard-list] size-4 mr-2"></span>{{ $user->hasPermission('bookings.view') ? 'All Bookings' : 'My Class Bookings' }}
                     </a></li>
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--clock] size-4 mr-2"></span>Upcoming
                     </a></li>
+                    @if($user->hasPermission('bookings.view'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--circle-x] size-4 mr-2"></span>Cancellations
                     </a></li>
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--user-x] size-4 mr-2"></span>No-Shows
                     </a></li>
+                    @endif
                 </ul>
             </li>
+            @endif
 
-            {{-- Students --}}
+            {{-- Students - Requires students.view --}}
+            @if($canViewStudents)
             <li class="nav-item {{ request()->is('students*') ? 'active' : '' }}" data-nav="students">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--users] size-5 shrink-0"></span>
@@ -129,8 +158,10 @@
                     </a></li>
                 </ul>
             </li>
+            @endif
 
-            {{-- Instructors --}}
+            {{-- Instructors - Requires team.view or team.instructors --}}
+            @if($canViewTeam)
             <li class="nav-item {{ request()->is('instructors*') ? 'active' : '' }}" data-nav="instructors">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--user-star] size-5 shrink-0"></span>
@@ -152,13 +183,16 @@
                     </a></li>
                 </ul>
             </li>
+            @endif
 
-            {{-- Section: Commerce --}}
+            {{-- Section: Commerce - Only show if user has any commerce permissions --}}
+            @if($canViewOffers || $canViewInsights || $canViewPayments)
             <li class="menu-title sidebar-section-label pt-4">
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Commerce</span>
             </li>
 
-            {{-- Offers --}}
+            {{-- Offers - Requires any offer permission --}}
+            @if($canViewOffers)
             <li class="nav-item {{ request()->is('offers*') ? 'active' : '' }}" data-nav="offers">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--gift] size-5 shrink-0"></span>
@@ -166,22 +200,32 @@
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
                 <ul class="sidebar-submenu {{ request()->is('offers*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    @if($user->hasPermission('offers.intro'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--star] size-4 mr-2"></span>Intro Offers
                     </a></li>
+                    @endif
+                    @if($user->hasPermission('offers.packs'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--package] size-4 mr-2"></span>Class Packs
                     </a></li>
+                    @endif
+                    @if($user->hasPermission('offers.memberships'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--id-badge] size-4 mr-2"></span>Memberships
                     </a></li>
+                    @endif
+                    @if($user->hasPermission('offers.promos'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--percentage] size-4 mr-2"></span>Promo Codes
                     </a></li>
+                    @endif
                 </ul>
             </li>
+            @endif
 
-            {{-- Insights --}}
+            {{-- Insights - Requires insights permissions --}}
+            @if($canViewInsights)
             <li class="nav-item {{ request()->is('insights*') || request()->is('reports*') ? 'active' : '' }}" data-nav="insights">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--chart-bar] size-5 shrink-0"></span>
@@ -189,12 +233,16 @@
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
                 <ul class="sidebar-submenu {{ request()->is('insights*') || request()->is('reports*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    @if($user->hasPermission('insights.attendance'))
                     <li><a href="{{ url('/reports') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--checks] size-4 mr-2"></span>Attendance
                     </a></li>
+                    @endif
+                    @if($user->hasPermission('insights.revenue'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--coin] size-4 mr-2"></span>Revenue
                     </a></li>
+                    @endif
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--trophy] size-4 mr-2"></span>Class Performance
                     </a></li>
@@ -203,8 +251,10 @@
                     </a></li>
                 </ul>
             </li>
+            @endif
 
-            {{-- Payments --}}
+            {{-- Payments - Requires payments.view --}}
+            @if($canViewPayments)
             <li class="nav-item {{ request()->is('payments*') ? 'active' : '' }}" data-nav="payments">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--credit-card] size-5 shrink-0"></span>
@@ -218,21 +268,27 @@
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--repeat] size-4 mr-2"></span>Subscriptions
                     </a></li>
+                    @if($user->hasPermission('payments.payouts'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--wallet] size-4 mr-2"></span>Payouts
                     </a></li>
+                    @endif
+                    @if($user->hasPermission('payments.refunds'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--arrow-back-up] size-4 mr-2"></span>Refunds
                     </a></li>
+                    @endif
                 </ul>
             </li>
+            @endif
+            @endif
 
-            {{-- Section: System --}}
+            {{-- Section: System - Always visible (My Profile is accessible to all) --}}
             <li class="menu-title sidebar-section-label pt-4">
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">System</span>
             </li>
 
-            {{-- Settings --}}
+            {{-- Settings - Always visible since My Profile is accessible to all --}}
             <li class="nav-item {{ request()->is('settings*') ? 'active' : '' }}" data-nav="settings">
                 <a href="{{ url('/settings') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
                     <span class="icon-[tabler--settings] size-5 shrink-0"></span>
@@ -244,16 +300,26 @@
 
     {{-- Sidebar footer --}}
     <div class="border-t border-base-content/10 p-3 space-y-2">
+        @php
+            $currentHost = Auth::user()->currentHost() ?? Auth::user()->host;
+            $hasMultipleHosts = Auth::user()->hosts()->count() > 1;
+        @endphp
+
         <div class="flex items-center gap-3 px-2">
             <div class="avatar avatar-placeholder">
                 <div class="bg-primary text-primary-content size-9 rounded-full text-sm font-bold">
-                    {{ strtoupper(substr(Auth::user()->first_name ?? 'F', 0, 1) . substr(Auth::user()->last_name ?? 'C', 0, 1)) }}
+                    {{ strtoupper(substr($currentHost->studio_name ?? 'S', 0, 1)) }}
                 </div>
             </div>
             <div class="sidebar-footer-detail flex-1 min-w-0">
-                <div class="text-sm font-semibold truncate">{{ Auth::user()->host->studio_name ?? 'My Studio' }}</div>
-                <div class="text-xs text-base-content/50 truncate">{{ Auth::user()->host->subdomain ?? 'my-studio' }}.fitcrm.app</div>
+                <div class="text-sm font-semibold truncate">{{ $currentHost->studio_name ?? 'My Studio' }}</div>
+                <div class="text-xs text-base-content/50 truncate">{{ $currentHost->subdomain ?? 'my-studio' }}.fitcrm.app</div>
             </div>
+            @if($hasMultipleHosts)
+                <a href="{{ route('select-studio') }}" class="btn btn-ghost btn-sm btn-square" title="Switch Studio">
+                    <span class="icon-[tabler--switch-horizontal] size-5"></span>
+                </a>
+            @endif
         </div>
         <form method="POST" action="{{ route('logout') }}">
             @csrf
