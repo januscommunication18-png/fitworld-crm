@@ -123,6 +123,84 @@
   - After setup, redirect to main app (not subdomain)
   - Error pages for wrong subdomain, expired token, etc.
 
+### ADR-012: Client Lifecycle Model (Rename Students → Clients)
+
+- **Status:** Accepted
+- **Context:** Need a unified client management system that supports different lifecycle stages (Lead, Client, Member, At-Risk) without creating separate tables for each type.
+- **Decision:** Single `clients` table (renamed from `students`) with status-based lifecycle. Clients move through stages: Lead → Client → Member → At-Risk. Status is a field, not a separate entity.
+- **Reasoning:**
+  - Simpler data model than separate tables per type
+  - Single client record maintains full history
+  - Status changes are logged, not data migrations
+  - Allows flexible filtering and reporting across all stages
+  - "At-Risk" is computed from rules, not manually assigned
+- **Consequences:**
+  - All "Student" references renamed to "Client" in UI and code
+  - `clients` table has `status` enum: lead, client, member, at_risk
+  - Lead source metadata stored in dedicated columns
+  - Membership status tracked separately from client status
+  - At-Risk flagging requires background job or query-time calculation
+
+### ADR-013: Client Custom Fields System
+
+- **Status:** Accepted
+- **Context:** Each studio has unique data requirements for their clients (emergency contacts, injuries, fitness goals, etc.). Need extensible field system.
+- **Decision:** Schema-driven custom fields with:
+  - `client_field_sections` table for grouping fields
+  - `client_field_definitions` table for field schema (type, label, validation)
+  - `client_field_values` table for storing actual values per client
+- **Reasoning:**
+  - Flexible: studios define their own fields
+  - Type-safe: field definitions include type and validation
+  - Non-destructive: hiding a field preserves historical data
+  - Performant: values stored in dedicated table, not JSON blob
+- **Consequences:**
+  - Add/Edit Client forms dynamically render custom fields
+  - Field types supported: text, textarea, number, date, dropdown, checkbox, yes_no
+  - Default system fields cannot be deleted, only hidden
+  - Drag-and-drop ordering in settings UI
+
+### ADR-014: Member Portal with Passwordless Auth
+
+- **Status:** Accepted
+- **Context:** Studio clients (members) need self-service access to view bookings, membership status, etc. Must be simple and secure without password management.
+- **Decision:** Passwordless email OTP authentication for member portal:
+  - Member enters email → system checks eligibility (active membership/class pack)
+  - If eligible, send 6-digit OTP to email
+  - Member enters OTP → verified → access portal
+- **Reasoning:**
+  - No password to remember = higher engagement
+  - Email verification proves identity
+  - Eligibility check prevents unauthorized access
+  - Simple UX for non-technical users
+- **Consequences:**
+  - Portal URL: `{subdomain}.domain.com/members`
+  - OTP expires in 10 minutes, one-time use
+  - Rate limiting: max 5 attempts per email per hour
+  - Must check for active membership/class pack before granting access
+  - Portal features are "Coming Soon" initially
+
+### ADR-015: Lead Magnet (Web Forms)
+
+- **Status:** Accepted
+- **Context:** Studios need to capture leads from their website without building custom integrations. Need simple embeddable forms.
+- **Decision:** Built-in form builder (Phase 1 - basic):
+  - Create simple forms with predefined field types
+  - Hosted URL: `{subdomain}.domain.com/forms/{form-slug}`
+  - Form submissions create Lead records with source metadata
+  - Capture UTM parameters automatically
+- **Reasoning:**
+  - Lower barrier to lead capture than API integration
+  - Branded experience on studio subdomain
+  - Source tracking enables marketing attribution
+  - Phase 1 keeps it simple (no conditional logic)
+- **Consequences:**
+  - `lead_forms` table for form definitions
+  - `lead_form_fields` table for form field configuration
+  - Form submissions route to `LeadFormController`
+  - Auto-create Lead (Client with status=lead)
+  - Store UTM params in lead record
+
 ### ADR-007: Manual Auth (Not Laravel Breeze)
 
 - **Status:** Accepted
@@ -335,6 +413,392 @@
 | Instructor-specific fields | Phone and profile photo fields for instructor role invites |
 | Login prefill after setup | Redirect to login with email/studio prefilled (current flow auto-logs in, which is better UX) |
 
+### FEAT-006: Clients Module (Rename Students → Clients)
+
+- **Status:** Planned
+- **Priority:** P1 (high)
+- **Description:** Complete client management system with lifecycle stages (Lead, Client, Member, At-Risk), custom fields, tags, lead magnet forms, and member portal.
+- **User Story:** As a studio owner, I want to manage all my clients in one place with lifecycle tracking so that I can nurture leads, retain members, and identify at-risk clients.
+- **Affected Areas:**
+  - Navigation: Sidebar rename "Students" → "Clients"
+  - Routes: `/clients/*` (replace `/students/*`)
+  - Controllers: `ClientController`, `LeadController`, `TagController`, `LeadFormController`, `MemberPortalController`
+  - Models: `Client` (rename Student), `ClientTag`, `Tag`, `LeadForm`, `LeadFormField`, `ClientFieldSection`, `ClientFieldDefinition`, `ClientFieldValue`
+  - Views: `resources/views/host/clients/*`, `resources/views/member-portal/*`, `resources/views/lead-forms/*`
+  - Settings: New "Members / Client Settings" section
+- **Dependencies:** Multi-studio support (ADR-010), Subdomain routing (ADR-011)
+
+---
+
+#### 6.1 Navigation Structure
+
+```
+Clients (sidebar)
+├── All Clients
+├── Leads
+├── Members
+├── At-Risk
+├── Tags
+└── Lead Magnet (Coming Soon badge)
+```
+
+---
+
+#### 6.2 Client Data Model
+
+**Client Lifecycle (Single Record, Status-Driven)**
+
+| Status | Description | Source |
+|--------|-------------|--------|
+| `lead` | Captured prospect, not yet converted | Website, marketing, FitNearYou, Lead Magnet |
+| `client` | Known person with profile data | Manual entry, converted lead |
+| `member` | Client with active membership/subscription | Membership purchase |
+| `at_risk` | Flagged for inactivity or payment issues | Rule-based (configurable) |
+
+**Note:** Status is mutable. A client can move: lead → client → member → at_risk → member (if re-engaged).
+
+---
+
+#### 6.3 Features - Client Listing (All Clients)
+
+**List Columns**
+- Name (first + last)
+- Email
+- Phone (optional)
+- Status badges: Lead / Member / At-Risk
+- Last Visit (date)
+- Next Booking (date)
+- Source (FitNearYou, Website, Manual, Lead Magnet)
+- Tags (pill badges)
+- Created Date
+
+**Filters**
+- Status: Lead / Member / At-Risk / All
+- Source: FitNearYou, Website, Manual, Lead Magnet
+- Tags (multi-select)
+- Date added (range)
+- Location (optional, for multi-location)
+
+**Actions**
+- View Profile
+- Edit
+- Add Booking (shortcut)
+- Add Note
+- Tag (add/remove)
+- Archive (soft delete)
+
+---
+
+#### 6.4 Features - Add/Edit Client
+
+**Default System Fields (Always Present)**
+| Field | Required | Hideable |
+|-------|----------|----------|
+| First Name | Yes | No |
+| Last Name | Yes | No |
+| Email | Yes (unique per studio) | No |
+| Phone | No | Yes |
+| Address | No | Yes |
+| Notes | No | Yes |
+| Tags | No | No |
+| Source | No | Yes |
+
+**Custom Fields**
+- Rendered below default fields
+- Grouped by sections
+- Controlled via Settings → Client Custom Fields
+
+---
+
+#### 6.5 Features - Leads
+
+**Definition:** Clients with `status = lead` OR `source IN (marketing, website, lead_magnet, fitnearyou)`
+
+**Lead Listing View**
+- Same columns as All Clients, filtered to leads
+- Lead-specific metadata visible: source, UTM params, referral info
+
+**Lead Actions**
+- Convert to Client (manual button)
+- Convert to Member (if purchasing membership)
+- Add Note
+- Add Booking
+
+**Lead Metadata Fields**
+| Field | Description |
+|-------|-------------|
+| `lead_source` | Enum: marketing, website, lead_magnet, fitnearyou, manual |
+| `source_url` | URL where lead was captured |
+| `utm_source` | UTM source parameter |
+| `utm_medium` | UTM medium parameter |
+| `utm_campaign` | UTM campaign parameter |
+| `referral_id` | FitNearYou referral tracking ID |
+
+---
+
+#### 6.6 Features - Members
+
+**Definition:** Clients with active membership subscription (`membership_status = active`)
+
+**Members Listing View**
+- Same columns as All Clients + membership-specific columns:
+  - Membership Plan Name
+  - Membership Status: active / paused / cancelled
+  - Renewal Date
+  - Payment Status (if available)
+
+**Member Conversion**
+- Automatic: When client purchases active membership
+- Manual: Admin can flag as member (optional)
+
+---
+
+#### 6.7 Features - At-Risk
+
+**Definition:** Clients flagged based on inactivity rules (studio-configurable)
+
+**Default Rules (MVP)**
+| Rule | Default | Configurable |
+|------|---------|--------------|
+| No visit in last X days | 14 days | Yes |
+| No upcoming bookings | — | Yes |
+| Payment failed | — | Future |
+
+**At-Risk Listing View**
+- Same columns as All Clients + reason column
+- Reason tag: "Inactive 14 days", "No upcoming bookings"
+
+**At-Risk Actions**
+- Send re-engagement email (future)
+- Add booking
+- Add note
+- Clear at-risk flag (manual override)
+
+---
+
+#### 6.8 Features - Tags
+
+**Tag Management (Settings → Tags)**
+- Create tag (name, color)
+- Edit tag
+- Delete tag (with confirmation)
+- View usage count
+
+**Tag Assignment**
+- Assign tags from client profile
+- Assign tags from client listing (bulk action)
+- Filter by tags in all client views
+
+---
+
+#### 6.9 Lead Magnet (Phase 1 - Coming Soon)
+
+**Goal:** Simple web forms to capture leads into FitCRM
+
+**Form Builder (Phase 1 - MVP)**
+- Form name
+- Form slug (auto-generated, editable)
+- Available fields:
+  - First Name (text)
+  - Last Name (text)
+  - Email (required)
+  - Phone (text)
+  - Preferred class type (dropdown)
+  - Message (textarea)
+- Hidden fields (auto-captured):
+  - Source name
+  - Source URL
+  - UTM parameters
+
+**Form Output**
+- Hosted URL: `{subdomain}.domain.com/forms/{form-slug}`
+- Future: Embed code (iframe/script)
+
+**Form Submission Flow**
+1. User fills form → POST to `/forms/{slug}/submit`
+2. Validate fields
+3. Create Client record with `status = lead`, `lead_source = lead_magnet`
+4. Store UTM params
+5. Optional: auto-assign tag
+6. Redirect to thank-you page
+
+---
+
+#### 6.10 Settings - Members / Client Settings
+
+**New Settings Section Location:** Settings → Members / Client Settings
+
+**Subsections:**
+
+**1. Member Portal**
+- Enable Member Portal: Yes/No (default No)
+- Portal URL (read-only): `{subdomain}.domain.com/members`
+
+**2. Client Custom Fields**
+- Section management (add/edit/delete/reorder)
+- Field management per section:
+  - Add field (type, label, required, help text)
+  - Edit field
+  - Delete field (with warning about data loss)
+  - Reorder fields (drag-and-drop)
+- Default field visibility toggle (hide/show)
+
+**3. At-Risk Rules**
+- Inactivity threshold (days): Default 14
+- Enable/disable specific rules
+
+---
+
+#### 6.11 Member Portal
+
+**URL:** `{subdomain}.domain.com/members`
+
+**Authentication Flow (Passwordless OTP)**
+1. Member enters email address
+2. System checks eligibility:
+   - Has active membership? OR
+   - Has active class pack? OR
+   - Has any subscription entitlement?
+3. If eligible:
+   - Generate 6-digit OTP
+   - Send to email
+   - Show OTP entry screen
+4. Member enters OTP
+5. If valid:
+   - Create session
+   - Redirect to portal dashboard
+6. If not eligible:
+   - Show message: "No active membership found for this email. Please contact {studio_name}."
+
+**Security Requirements**
+| Rule | Value |
+|------|-------|
+| OTP expiry | 10 minutes |
+| Max attempts | 5 per code |
+| Rate limit | 5 requests per email per hour |
+| Code reuse | One-time only |
+
+**Portal Branding**
+- Studio logo
+- Studio name
+- Studio contact info / support link
+
+**Portal Features (Coming Soon)**
+- Upcoming bookings list
+- Membership status
+- Book a class link
+- Profile view/edit (limited)
+
+---
+
+#### 6.12 Client Custom Fields
+
+**Field Set Structure**
+```
+Section Header (e.g., "Health & Goals")
+├── Field 1 (Short Text)
+├── Field 2 (Dropdown)
+└── Field 3 (Yes/No)
+
+Section Header (e.g., "Emergency Contact")
+├── Field 4 (Short Text)
+└── Field 5 (Short Text)
+```
+
+**Supported Field Types (Phase 1)**
+| Type | Input | Storage |
+|------|-------|---------|
+| `text` | Single-line text | VARCHAR |
+| `textarea` | Multi-line text | TEXT |
+| `number` | Numeric input | DECIMAL |
+| `date` | Date picker | DATE |
+| `dropdown` | Single select | VARCHAR (stores key) |
+| `checkbox` | Multi select | JSON array |
+| `yes_no` | Toggle | BOOLEAN |
+
+**Field Properties**
+| Property | Required | Description |
+|----------|----------|-------------|
+| Label | Yes | Display name |
+| Key/Slug | Auto | Unique identifier (auto-generated) |
+| Type | Yes | Field type |
+| Required | No | Validation rule |
+| Help Text | No | Shown below field |
+| Default Value | No | Pre-filled value |
+| Options | For dropdown/checkbox | Array of choices |
+| Visible on Add | Yes | Show on Add Client form |
+| Visible on Edit | Yes | Show on Edit Client form |
+
+**Default Fields Behavior**
+- Cannot be deleted
+- Can be hidden (toggle visibility)
+- Always stored in client record
+- Hiding doesn't delete historical values
+
+**Storage Model**
+- Values stored per client, per studio
+- Changing field definition preserves historical values
+- Disabled/hidden fields retain data but don't display
+
+---
+
+#### 6.13 Client Profile Page
+
+**Sections:**
+1. **Header:** Name, photo, status badges, quick actions
+2. **Overview:** Contact info, next booking, membership summary
+3. **Custom Fields:** Rendered from schema
+4. **Notes & Tags:** Activity log, tags
+5. **Bookings History:** Past classes
+6. **Membership:** Plan details, renewal, payment history (if member)
+
+---
+
+#### 6.14 Permissions
+
+| Action | Owner | Admin | Staff | Instructor |
+|--------|-------|-------|-------|------------|
+| View all clients | ✓ | ✓ | ✓ (if permitted) | ✗ |
+| View roster clients | ✓ | ✓ | ✓ | ✓ |
+| Add/Edit clients | ✓ | ✓ | ✓ (if permitted) | ✗ |
+| Delete/Archive clients | ✓ | ✓ | ✗ | ✗ |
+| Manage tags | ✓ | ✓ | ✗ | ✗ |
+| Manage custom fields | ✓ | ✓ | ✗ | ✗ |
+| Access settings | ✓ | ✓ | ✗ | ✗ |
+
+---
+
+#### 6.15 Acceptance Criteria (MVP)
+
+- [ ] "Students" renamed to "Clients" everywhere in UI
+- [ ] Navigation: All Clients, Leads, Members, At-Risk, Tags views exist
+- [ ] Leads can be captured with source metadata
+- [ ] At-Risk computed from configurable inactivity rule
+- [ ] Tags CRUD and assignment works
+- [ ] Settings → Members / Client Settings section exists
+- [ ] Member Portal toggle in settings
+- [ ] Passwordless email OTP login for member portal
+- [ ] Portal shows "Coming Soon" after login
+- [ ] Custom field builder supports sections + fields
+- [ ] Add Client screen shows default + custom fields
+- [ ] Default fields can be hidden but not removed
+- [ ] Lead Magnet shows "Coming Soon" with description
+
+---
+
+#### 6.16 Coming Soon / Phase 2
+
+| Feature | Description |
+|---------|-------------|
+| Lead Magnet form builder | Full form creation and hosted forms |
+| Member Portal dashboard | Actual booking/membership views |
+| At-Risk email automation | Auto-send re-engagement emails |
+| Lead Magnet embed code | iframe/script embed for external sites |
+| Conditional form logic | Show/hide fields based on answers |
+| Custom field import/export | Bulk data management |
+| Client merge | Merge duplicate client records |
+| Client export | CSV/Excel export |
+
 <!-- Add feature plans below this line -->
 
 ---
@@ -388,12 +852,64 @@ Tables (implemented):
            invited_by FK (users), status (pending/accepted/expired/revoked),
            expires_at, accepted_at, accepted_by_user_id FK (nullable)
 
+- clients                  — unified client records (renamed from students)
+  Columns: id, host_id FK, first_name, last_name, email, phone, address (json),
+           status (enum: lead, client, member, at_risk), membership_status (enum: none, active, paused, cancelled),
+           lead_source (enum: manual, marketing, website, lead_magnet, fitnearyou, referral),
+           source_url, utm_source, utm_medium, utm_campaign, referral_id,
+           last_visit_at, next_booking_at, membership_id FK (nullable), membership_expires_at,
+           notes (text), archived_at (soft delete), timestamps
+  Indexes: [host_id, status], [host_id, email], [host_id, membership_status]
+
+- tags                     — tag definitions per host
+  Columns: id, host_id FK, name, slug, color, usage_count (default 0), timestamps
+  Constraints: unique [host_id, slug]
+
+- client_tag               — pivot table for client-tag relationships
+  Columns: id, client_id FK, tag_id FK, timestamps
+  Constraints: unique [client_id, tag_id]
+
+- client_field_sections    — custom field section headers per host
+  Columns: id, host_id FK, name, sort_order, is_active (default true), timestamps
+
+- client_field_definitions — custom field schema per host
+  Columns: id, host_id FK, section_id FK (nullable), field_key (slug), field_label,
+           field_type (enum: text, textarea, number, date, dropdown, checkbox, yes_no),
+           options (json, for dropdown/checkbox), is_required (default false),
+           help_text, default_value, show_on_add (default true), show_on_edit (default true),
+           sort_order, is_active (default true), timestamps
+  Constraints: unique [host_id, field_key]
+
+- client_field_values      — custom field values per client
+  Columns: id, client_id FK, field_definition_id FK, value (text), timestamps
+  Constraints: unique [client_id, field_definition_id]
+
+- lead_forms               — lead magnet form definitions per host
+  Columns: id, host_id FK, name, slug, description, thank_you_message,
+           redirect_url (nullable), auto_tag_id FK (nullable),
+           is_active (default true), submissions_count (default 0), timestamps
+  Constraints: unique [host_id, slug]
+
+- lead_form_fields         — fields configured for each lead form
+  Columns: id, lead_form_id FK, field_type (enum: text, email, phone, dropdown, textarea),
+           field_label, field_key, is_required (default false), options (json),
+           sort_order, timestamps
+
+- member_portal_sessions   — portal login sessions
+  Columns: id, host_id FK, client_id FK, email, otp_code (hashed),
+           otp_expires_at, attempts (default 0), verified_at (nullable),
+           ip_address, user_agent, created_at
+  Indexes: [host_id, email], [otp_expires_at]
+
+- client_notes             — notes/activity log per client
+  Columns: id, client_id FK, user_id FK (author), note_type (enum: note, call, email, booking, system),
+           content (text), timestamps
+
 Tables (planned):
 - class_sessions           — individual class sessions (date/time instances)
 - bookings                 — class bookings (scoped by host_id)
-- students                 — student records (scoped by host_id)
-- leads                    — prospect/lead records (scoped by host_id)
 - memberships              — membership plans (scoped by host_id)
+- client_memberships       — client membership subscriptions
 - payments                 — payment records (scoped by host_id)
 - attendance               — attendance logs (scoped by host_id)
 - reminders                — scheduled reminders (scoped by host_id)
@@ -412,6 +928,15 @@ Tables (planned):
 | `StudioClass` | `classes` | belongsTo Host, belongsTo Instructor (nullable) | Named `StudioClass` to avoid PHP reserved word `class`. Uses `$table = 'classes'`. |
 | `StudioType` | `studio_types` | — | Admin lookup. `scopeActive` query scope. |
 | `TeamInvitation` | `team_invitations` | belongsTo Host, belongsTo User (inviter), belongsTo User (accepter) | Status: pending/accepted/expired/revoked. Methods: `isExpired()`, `isPending()`, `markAsAccepted()`, `revoke()`, `regenerate()`. |
+| `Client` | `clients` | belongsTo Host, belongsToMany Tag, hasMany ClientFieldValue, hasMany ClientNote, belongsTo Membership (nullable) | Renamed from Student. Scopes: `leads()`, `members()`, `atRisk()`, `active()`. Status enum. |
+| `Tag` | `tags` | belongsTo Host, belongsToMany Client | Simple tag model with color support. |
+| `ClientFieldSection` | `client_field_sections` | belongsTo Host, hasMany ClientFieldDefinition | Groups custom fields. Sortable. |
+| `ClientFieldDefinition` | `client_field_definitions` | belongsTo Host, belongsTo ClientFieldSection, hasMany ClientFieldValue | Field schema with type, validation, options. |
+| `ClientFieldValue` | `client_field_values` | belongsTo Client, belongsTo ClientFieldDefinition | Stores actual custom field values. |
+| `LeadForm` | `lead_forms` | belongsTo Host, hasMany LeadFormField, belongsTo Tag (auto-tag) | Form definition for lead capture. |
+| `LeadFormField` | `lead_form_fields` | belongsTo LeadForm | Field config for lead form. |
+| `MemberPortalSession` | `member_portal_sessions` | belongsTo Host, belongsTo Client | OTP-based auth session for member portal. |
+| `ClientNote` | `client_notes` | belongsTo Client, belongsTo User (author) | Activity log and notes. |
 
 ---
 
@@ -533,6 +1058,15 @@ Log every decision with date and reasoning. Most recent first.
 
 | Date | Decision | Context | Outcome |
 |---|---|---|---|
+| 2026-02-11 | Clients Module replaces Students (ADR-012) | Need unified client management with lifecycle stages | Single `clients` table with status-driven lifecycle: lead → client → member → at_risk |
+| 2026-02-11 | Client Custom Fields system (ADR-013) | Studios need flexible extra fields for clients | Schema-driven: sections, definitions, values tables; supports 7 field types; default fields hideable not deletable |
+| 2026-02-11 | Member Portal with passwordless OTP (ADR-014) | Members need self-service access without password management | Email OTP auth; 6-digit code; 10min expiry; eligibility check (active membership/class pack) |
+| 2026-02-11 | Lead Magnet web forms (ADR-015) | Studios need simple lead capture forms | Phase 1: basic forms on subdomain URLs; auto-create leads with UTM tracking; embed code in Phase 2 |
+| 2026-02-11 | At-Risk computed from rules | At-Risk status should be automatic, not manual | Rule-based: no visit in X days (default 14), no upcoming bookings; configurable per studio |
+| 2026-02-11 | Tags as separate entity | Need flexible client segmentation | `tags` + `client_tag` pivot; tags are studio-scoped; filter by tags in all views |
+| 2026-02-11 | Lead source tracking | Need marketing attribution for leads | `lead_source` enum + UTM fields + referral_id; supports FitNearYou, website, marketing, lead_magnet sources |
+| 2026-02-11 | Member Portal URL structure | Members need branded portal access | Portal at `{subdomain}.domain.com/members`; leverages existing subdomain routing |
+| 2026-02-11 | Settings → Members / Client Settings | Need central location for client-related settings | New settings section with: Member Portal toggle, Custom Fields builder, At-Risk rules config |
 | 2026-02-11 | My Profile page for all users | Team members need to view/edit their own profile regardless of role | `/settings/profile` always accessible; shows personal info, photo upload, password change, role/permissions (read-only); linked instructor profile if applicable |
 | 2026-02-11 | Role-based permission enforcement | Permissions page showed same content for all roles; need to enforce permissions across the app | Created `CheckPermission` middleware; updated sidebars with `@if($user->hasPermission())` checks; grouped routes by permission; owner sees everything, other roles restricted |
 | 2026-02-11 | CheckPermission middleware for routes | Need to protect routes based on user permissions | Middleware accepts multiple permissions (any match grants access); owner bypasses all checks; redirects to dashboard with error on denial |

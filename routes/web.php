@@ -16,7 +16,8 @@ use App\Http\Controllers\Host\ScheduleController;
 use App\Http\Controllers\Host\SettingsController;
 use App\Http\Controllers\Host\SignupController;
 use App\Http\Controllers\Host\TeamController;
-use App\Http\Controllers\Host\StudentController;
+use App\Http\Controllers\Host\ClientController;
+use App\Http\Controllers\Host\TagController;
 use App\Http\Controllers\Host\CatalogController;
 use App\Http\Controllers\Host\ClassPlanController;
 use App\Http\Controllers\Host\ClassSessionController;
@@ -49,6 +50,9 @@ Route::get('/signup', [SignupController::class, 'index'])->name('signup');
 // Team Invitation - accessible by guests
 Route::get('/invite/accept/{token}', [InvitationController::class, 'show'])->name('invitation.show');
 Route::post('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
+// Alias for subdomain-style URLs (used in email links)
+Route::get('/setup/invite/{token}', [InvitationController::class, 'show'])->name('invitation.setup.show');
+Route::post('/setup/invite/{token}', [InvitationController::class, 'accept'])->name('invitation.setup.accept');
 
 // Auth-required routes
 Route::middleware('auth')->group(function () {
@@ -90,6 +94,10 @@ Route::middleware('auth')->group(function () {
         return back()->with('message', 'Verification link sent!');
     })->middleware('throttle:6,1')->name('verification.send');
 
+    // Studio Selection (for multi-studio users)
+    Route::get('/select-studio', [AuthController::class, 'selectStudio'])->name('select-studio');
+    Route::post('/switch-studio', [AuthController::class, 'switchStudio'])->name('switch-studio');
+
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -98,8 +106,37 @@ Route::middleware('auth')->group(function () {
     Route::get('/schedule/appointments', [ScheduleController::class, 'appointments'])->name('schedule.appointments');
     Route::get('/schedule/calendar', [ScheduleController::class, 'calendar'])->name('schedule.calendar');
 
-    // Students
-    Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+    // Clients (renamed from Students)
+    // Static routes must come before wildcard routes
+    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+    Route::get('/clients/leads', [ClientController::class, 'leads'])->name('clients.leads');
+    Route::get('/clients/members', [ClientController::class, 'members'])->name('clients.members');
+    Route::get('/clients/at-risk', [ClientController::class, 'atRisk'])->name('clients.at-risk');
+    Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+
+    // Client Tags (before wildcard)
+    Route::get('/clients/tags', [TagController::class, 'index'])->name('clients.tags');
+    Route::post('/clients/tags', [TagController::class, 'store'])->name('clients.tags.store');
+    Route::put('/clients/tags/{tag}', [TagController::class, 'update'])->name('clients.tags.update-tag');
+    Route::delete('/clients/tags/{tag}', [TagController::class, 'destroy'])->name('clients.tags.destroy');
+
+    // Lead Magnet (Coming Soon - before wildcard)
+    Route::get('/clients/lead-magnet', function () {
+        return view('host.clients.lead-magnet');
+    })->name('clients.lead-magnet');
+
+    // Client detail routes (wildcard - must come after static routes)
+    Route::get('/clients/{id}', [ClientController::class, 'show'])->name('clients.show')->where('id', '[0-9]+');
+    Route::get('/clients/{id}/edit', [ClientController::class, 'edit'])->name('clients.edit')->where('id', '[0-9]+');
+    Route::put('/clients/{id}', [ClientController::class, 'update'])->name('clients.update')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/archive', [ClientController::class, 'archive'])->name('clients.archive')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/restore', [ClientController::class, 'restore'])->name('clients.restore')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/note', [ClientController::class, 'addNote'])->name('clients.note')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/convert-to-client', [ClientController::class, 'convertToClient'])->name('clients.convert-to-client')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/convert-to-member', [ClientController::class, 'convertToMember'])->name('clients.convert-to-member')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/clear-at-risk', [ClientController::class, 'clearAtRisk'])->name('clients.clear-at-risk')->where('id', '[0-9]+');
+    Route::put('/clients/{id}/tags', [ClientController::class, 'updateTags'])->name('clients.tags.update')->where('id', '[0-9]+');
 
     // Instructors
     Route::get('/instructors', [InstructorController::class, 'index'])->name('instructors.index');
@@ -153,6 +190,13 @@ Route::middleware('auth')->group(function () {
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+
+    // Settings - My Profile (accessible to all authenticated users)
+    Route::get('/settings/profile', [SettingsController::class, 'myProfile'])->name('settings.profile');
+    Route::put('/settings/profile', [SettingsController::class, 'updateMyProfile'])->name('settings.profile.update');
+    Route::put('/settings/profile/password', [SettingsController::class, 'updateMyPassword'])->name('settings.profile.password');
+    Route::post('/settings/profile/photo', [SettingsController::class, 'uploadMyPhoto'])->name('settings.profile.photo');
+    Route::delete('/settings/profile/photo', [SettingsController::class, 'removeMyPhoto'])->name('settings.profile.photo.remove');
 
     // Settings - Studio
     Route::get('/settings/studio/profile', [SettingsController::class, 'studioProfile'])->name('settings.studio.profile');
@@ -225,6 +269,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/team/permissions', [TeamController::class, 'permissions'])->name('settings.team.permissions');
     Route::get('/settings/team/permissions/{user}/edit', [TeamController::class, 'editPermissions'])->name('settings.team.permissions.edit');
     Route::put('/settings/team/permissions/{user}', [TeamController::class, 'updatePermissions'])->name('settings.team.permissions.update');
+
+    // Settings - Clients
+    Route::get('/settings/clients', [SettingsController::class, 'clientSettings'])->name('settings.clients');
+    Route::put('/settings/clients', [SettingsController::class, 'updateClientSettings'])->name('settings.clients.update');
 
     // Settings - Payments
     Route::get('/settings/payments/settings', [SettingsController::class, 'paymentSettings'])->name('settings.payments.settings');

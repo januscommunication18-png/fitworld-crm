@@ -385,6 +385,52 @@ class SettingsController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────
+    // Clients
+    // ─────────────────────────────────────────────────────────────
+
+    public function clientSettings()
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        // Get current client settings or defaults
+        $settings = $host->client_settings ?? [
+            'default_status' => 'lead',
+            'auto_archive_days' => null,
+            'require_phone' => false,
+            'require_address' => false,
+            'enable_member_portal' => false,
+            'member_portal_features' => [],
+            'at_risk_days' => 30,
+            'enable_lead_scoring' => false,
+        ];
+
+        return view('host.settings.clients.index', compact('host', 'settings'));
+    }
+
+    public function updateClientSettings(\Illuminate\Http\Request $request)
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        $validated = $request->validate([
+            'default_status' => 'required|in:lead,client',
+            'auto_archive_days' => 'nullable|integer|min:30|max:365',
+            'require_phone' => 'boolean',
+            'require_address' => 'boolean',
+            'enable_member_portal' => 'boolean',
+            'member_portal_features' => 'nullable|array',
+            'at_risk_days' => 'required|integer|min:7|max:90',
+            'enable_lead_scoring' => 'boolean',
+        ]);
+
+        $host->update(['client_settings' => $validated]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Client settings updated successfully.',
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // Payments
     // ─────────────────────────────────────────────────────────────
 

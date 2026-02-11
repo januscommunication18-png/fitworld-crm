@@ -75,7 +75,9 @@
                                 <div class="flex items-center gap-3">
                                     <div class="avatar placeholder">
                                         @php
-                                            $bgColor = match($user->role) {
+                                            // Use pivot role for multi-studio support, fallback to user role
+                                            $userRole = $user->pivot->role ?? $user->role;
+                                            $bgColor = match($userRole) {
                                                 'owner' => 'bg-primary text-primary-content',
                                                 'admin' => 'bg-secondary text-secondary-content',
                                                 'staff' => 'bg-info text-info-content',
@@ -95,7 +97,8 @@
                             </td>
                             <td>
                                 @php
-                                    $roleBadge = match($user->role) {
+                                    $userRole = $user->pivot->role ?? $user->role;
+                                    $roleBadge = match($userRole) {
                                         'owner' => 'badge-primary',
                                         'admin' => 'badge-secondary',
                                         'staff' => 'badge-info',
@@ -103,7 +106,7 @@
                                         default => ''
                                     };
                                 @endphp
-                                <span class="badge {{ $roleBadge }} badge-soft badge-sm">{{ ucfirst($user->role) }}</span>
+                                <span class="badge {{ $roleBadge }} badge-soft badge-sm">{{ ucfirst($userRole) }}</span>
                             </td>
                             <td>
                                 @php
@@ -125,9 +128,10 @@
                                 @endif
                             </td>
                             <td>
+                                @php $userRole = $user->pivot->role ?? $user->role; @endphp
                                 @if($user->id === auth()->id())
                                     <span class="text-base-content/40 text-sm">You</span>
-                                @elseif(!$user->isOwner())
+                                @elseif($userRole !== 'owner')
                                     <div class="relative">
                                         <details class="dropdown dropdown-bottom dropdown-end">
                                             <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">

@@ -20,12 +20,13 @@ class TeamController extends Controller
      */
     public function users(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
         $search = $request->get('search');
 
-        $usersQuery = $host->users()
+        // Use teamMembers() to get users from pivot table (supports multi-studio)
+        $usersQuery = $host->teamMembers()
             ->withTrashed()
-            ->orderByRaw("FIELD(role, 'owner', 'admin', 'staff', 'instructor')")
+            ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'staff', 'instructor')")
             ->orderBy('first_name');
 
         if ($search) {
@@ -49,10 +50,10 @@ class TeamController extends Controller
 
         $invitations = $invitationsQuery->paginate(10, ['*'], 'invitations_page')->withQueryString();
 
-        // Get role counts (unaffected by search/pagination)
-        $roleCounts = $host->users()
-            ->selectRaw('role, count(*) as count')
-            ->groupBy('role')
+        // Get role counts from pivot table (unaffected by search/pagination)
+        $roleCounts = $host->teamMembers()
+            ->selectRaw('host_user.role, count(*) as count')
+            ->groupBy('host_user.role')
             ->pluck('count', 'role')
             ->toArray();
 
@@ -126,7 +127,7 @@ class TeamController extends Controller
      */
     public function invite(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
 
         $validated = $request->validate([
             'email' => [
@@ -181,7 +182,7 @@ class TeamController extends Controller
         $invitation->regenerate();
 
         // Send invitation email
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
         Mail::to($invitation->email)->send(new TeamInvitationMail(
             $invitation,
             $host->studio_name ?? 'Our Studio',
@@ -297,7 +298,7 @@ class TeamController extends Controller
      */
     public function instructors(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
         $search = $request->get('search');
 
         $instructorsQuery = $host->instructors()
@@ -379,7 +380,7 @@ class TeamController extends Controller
      */
     public function storeInstructor(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -556,7 +557,7 @@ class TeamController extends Controller
         ]);
 
         // Send invitation email
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
         Mail::to($invitation->email)->send(new TeamInvitationMail(
             $invitation,
             $host->studio_name ?? 'Our Studio',
@@ -597,14 +598,15 @@ class TeamController extends Controller
      */
     public function permissions(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
 
         // Include all users with login accounts (including soft-deleted)
         // No pagination - real-time client-side search
-        $users = $host->users()
+        // Use teamMembers() to get users from pivot table (supports multi-studio)
+        $users = $host->teamMembers()
             ->withTrashed()
-            ->where('role', '!=', User::ROLE_OWNER)
-            ->orderByRaw("FIELD(role, 'admin', 'staff', 'instructor')")
+            ->where('host_user.role', '!=', User::ROLE_OWNER)
+            ->orderByRaw("FIELD(host_user.role, 'admin', 'staff', 'instructor')")
             ->orderBy('first_name')
             ->get();
 
@@ -619,8 +621,8 @@ class TeamController extends Controller
             }
         }
 
-        // Get role counts
-        $roleCounts = $users->groupBy('role')->map->count()->toArray();
+        // Get role counts from pivot
+        $roleCounts = $users->groupBy(fn($user) => $user->pivot->role)->map->count()->toArray();
 
         return view('host.settings.team.permissions.index', [
             'users' => $users,
@@ -681,17 +683,29 @@ class TeamController extends Controller
      */
     private function authorizeInvitation(TeamInvitation $invitation): void
     {
-        if ($invitation->host_id !== auth()->user()->host_id) {
+        $currentHost = auth()->user()->currentHost();
+        if (!$currentHost || $invitation->host_id !== $currentHost->id) {
             abort(403);
         }
     }
 
     /**
-     * Authorize user belongs to host
+     * Authorize user belongs to host (checks pivot table for multi-studio support)
      */
     private function authorizeUser(User $user): void
     {
-        if ($user->host_id !== auth()->user()->host_id) {
+        $currentHost = auth()->user()->currentHost();
+        if (!$currentHost) {
+            abort(403);
+        }
+
+        // Check if user belongs to the current host via pivot table
+        $belongsToHost = \DB::table('host_user')
+            ->where('user_id', $user->id)
+            ->where('host_id', $currentHost->id)
+            ->exists();
+
+        if (!$belongsToHost) {
             abort(403);
         }
     }
@@ -701,7 +715,8 @@ class TeamController extends Controller
      */
     private function authorizeInstructor(Instructor $instructor): void
     {
-        if ($instructor->host_id !== auth()->user()->host_id) {
+        $currentHost = auth()->user()->currentHost();
+        if (!$currentHost || $instructor->host_id !== $currentHost->id) {
             abort(403);
         }
     }

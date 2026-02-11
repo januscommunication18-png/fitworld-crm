@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // Register backoffice routes
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/backoffice.php'));
+
+            // Register subdomain routes for public booking pages
+            require base_path('routes/subdomain.php');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {

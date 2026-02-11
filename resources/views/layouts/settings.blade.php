@@ -11,6 +11,7 @@
     $canManageTeam = $user->hasPermission('team.manage');
     $canManageInstructors = $user->hasPermission('team.instructors');
     $canChangePermissions = $user->hasPermission('team.permissions');
+    $canManageClients = $user->hasPermission('students.edit'); // Uses students.edit for backward compatibility
     $canManagePaymentSettings = $user->hasPermission('payments.stripe');
     $canManageBilling = $user->hasPermission('billing.plan');
     $canViewInvoices = $user->hasPermission('billing.invoices');
@@ -96,6 +97,18 @@
                             <span class="icon-[tabler--lock] size-4"></span> Permissions
                         </a></li>
                         @endif
+                    </ul>
+                </div>
+                @endif
+
+                {{-- Clients - Requires students.edit --}}
+                @if($canManageClients)
+                <div>
+                    <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Clients</div>
+                    <ul class="menu menu-sm p-0">
+                        <li><a href="{{ route('settings.clients') }}" class="{{ request()->routeIs('settings.clients') ? 'active' : '' }}">
+                            <span class="icon-[tabler--users-cog] size-4"></span> Client Settings
+                        </a></li>
                     </ul>
                 </div>
                 @endif

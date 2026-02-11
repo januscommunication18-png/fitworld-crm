@@ -56,7 +56,10 @@ class TeamInvitationMail extends Mailable
         $bookingDomain = config('app.booking_domain');
         $scheme = app()->environment('production') ? 'https' : 'http';
 
-        return "{$scheme}://{$subdomain}.{$bookingDomain}/setup/invite/{$this->invitation->token}";
+        // Add port for local development
+        $port = app()->environment('local') ? ':8888' : '';
+
+        return "{$scheme}://{$subdomain}.{$bookingDomain}{$port}/setup/invite/{$this->invitation->token}";
     }
 
     /**

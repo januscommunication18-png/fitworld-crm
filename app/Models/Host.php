@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -49,6 +50,7 @@ class Host extends Model
         'onboarding_completed_at',
         'booking_settings',
         'payment_settings',
+        'client_settings',
         'policies',
         'status',
         'verified_at',
@@ -68,6 +70,7 @@ class Host extends Model
             'social_links' => 'array',
             'booking_settings' => 'array',
             'payment_settings' => 'array',
+            'client_settings' => 'array',
             'policies' => 'array',
             'is_live' => 'boolean',
             'onboarding_completed_at' => 'datetime',
@@ -172,9 +175,23 @@ class Host extends Model
         return false;
     }
 
+    /**
+     * Legacy single-host relationship (for backwards compatibility)
+     */
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    /**
+     * Multi-studio relationship through pivot table
+     * Use this for team management to include users from multiple studios
+     */
+    public function teamMembers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'host_user')
+            ->withPivot(['role', 'permissions', 'instructor_id', 'is_primary', 'joined_at'])
+            ->withTimestamps();
     }
 
     public function instructors(): HasMany

@@ -3,7 +3,7 @@
     $canViewSchedule = $user->hasPermission('schedule.view') || $user->hasPermission('schedule.view_own');
     $canManageSchedule = $user->hasPermission('schedule.create') || $user->hasPermission('schedule.edit');
     $canViewBookings = $user->hasPermission('bookings.view') || $user->hasPermission('bookings.view_own');
-    $canViewStudents = $user->hasPermission('students.view');
+    $canViewClients = $user->hasPermission('students.view'); // Permission key kept as students.view for backward compatibility
     $canViewTeam = $user->hasPermission('team.view') || $user->hasPermission('team.instructors');
     $canViewOffers = $user->hasPermission('offers.intro') || $user->hasPermission('offers.packs') || $user->hasPermission('offers.memberships') || $user->hasPermission('offers.promos');
     $canViewInsights = $user->hasPermission('insights.attendance') || $user->hasPermission('insights.revenue');
@@ -132,29 +132,33 @@
             </li>
             @endif
 
-            {{-- Students - Requires students.view --}}
-            @if($canViewStudents)
-            <li class="nav-item {{ request()->is('students*') ? 'active' : '' }}" data-nav="students">
+            {{-- Clients - Requires students.view (renamed from Students) --}}
+            @if($canViewClients)
+            <li class="nav-item {{ request()->is('clients*') ? 'active' : '' }}" data-nav="clients">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--users] size-5 shrink-0"></span>
-                    <span class="sidebar-label flex-1 text-left">Students</span>
+                    <span class="sidebar-label flex-1 text-left">Clients</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('students*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    <li><a href="{{ url('/students') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--users] size-4 mr-2"></span>All Students
+                <ul class="sidebar-submenu {{ request()->is('clients*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/clients') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('clients') && !request()->is('clients/*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--users] size-4 mr-2"></span>All Clients
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ url('/clients/leads') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('clients/leads*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--target] size-4 mr-2"></span>Leads
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--user-check] size-4 mr-2"></span>Active Members
+                    <li><a href="{{ url('/clients/members') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('clients/members*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--user-check] size-4 mr-2"></span>Members
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ url('/clients/at-risk') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('clients/at-risk*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--alert-triangle] size-4 mr-2"></span>At-Risk
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ url('/clients/tags') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('clients/tags*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--tags] size-4 mr-2"></span>Tags
+                    </a></li>
+                    <li><a href="{{ url('/clients/lead-magnet') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('clients/lead-magnet*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--magnet] size-4 mr-2"></span>Lead Magnet
+                        <span class="badge badge-xs badge-soft badge-neutral ml-1">Soon</span>
                     </a></li>
                 </ul>
             </li>

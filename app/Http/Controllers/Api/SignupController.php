@@ -98,6 +98,19 @@ class SignupController extends Controller
                 'is_instructor' => false,
             ]);
 
+            // Add to host_user pivot table for multi-studio support
+            DB::table('host_user')->insert([
+                'user_id' => $user->id,
+                'host_id' => $host->id,
+                'role' => 'owner',
+                'permissions' => null,
+                'instructor_id' => null,
+                'is_primary' => true,
+                'joined_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
             // Create Sanctum token for subsequent API calls
             $token = $user->createToken('signup')->plainTextToken;
 

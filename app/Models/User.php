@@ -100,8 +100,16 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function getPrimaryHost(): ?Host
     {
-        return $this->hosts()->wherePivot('is_primary', true)->first()
+        // Try pivot table first
+        $host = $this->hosts()->wherePivot('is_primary', true)->first()
             ?? $this->hosts()->first();
+
+        // Fallback to legacy host_id relationship
+        if (!$host && $this->host_id) {
+            $host = $this->host;
+        }
+
+        return $host;
     }
 
     /**
@@ -169,7 +177,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isOwner(?Host $host = null): bool
     {
         if ($host) {
-            return $this->getRoleForHost($host) === self::ROLE_OWNER;
+            $role = $this->getRoleForHost($host);
+            // Fallback: if user owns this host directly but not in pivot
+            if ($role === null && $this->host_id === $host->id) {
+                $role = $this->role;
+            }
+            return $role === self::ROLE_OWNER;
         }
         return $this->getCurrentRole() === self::ROLE_OWNER;
     }
@@ -180,7 +193,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isAdmin(?Host $host = null): bool
     {
         if ($host) {
-            return $this->getRoleForHost($host) === self::ROLE_ADMIN;
+            $role = $this->getRoleForHost($host);
+            // Fallback: if user belongs to this host directly but not in pivot
+            if ($role === null && $this->host_id === $host->id) {
+                $role = $this->role;
+            }
+            return $role === self::ROLE_ADMIN;
         }
         return $this->getCurrentRole() === self::ROLE_ADMIN;
     }
@@ -221,7 +239,19 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasPermission(string $permission, ?Host $host = null): bool
     {
         $currentHost = $host ?? $this->currentHost();
+
+        // Get role from pivot table, fall back to user's role if not in pivot
         $role = $currentHost ? $this->getRoleForHost($currentHost) : $this->role;
+
+        // If no role in pivot, check if user owns this host (backwards compatibility)
+        if ($role === null && $currentHost && $this->host_id === $currentHost->id) {
+            $role = $this->role;
+        }
+
+        // If still no role found, user has no permissions for this context
+        if ($role === null) {
+            return false;
+        }
 
         // Owner has all permissions
         if ($role === self::ROLE_OWNER) {
