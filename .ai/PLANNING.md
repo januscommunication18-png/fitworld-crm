@@ -89,6 +89,40 @@
 - **Reference:** See `test-components.html` for implementation pattern using `advance-select` component
 - **Consequences:** All select elements with many options should use the searchable dropdown pattern from FlyonUI.
 
+### ADR-010: Multi-Studio User Support
+
+- **Status:** Accepted
+- **Context:** Users (instructors, staff) may work at multiple studios. Need to support many-to-many relationship between users and hosts while maintaining backward compatibility.
+- **Decision:** Introduce `host_user` pivot table with role, permissions, and metadata. Keep legacy `users.host_id` for backward compatibility but use pivot for authoritative multi-studio data.
+- **Reasoning:**
+  - Instructors commonly teach at multiple studios
+  - Staff may manage multiple locations
+  - Single user account with multiple studio memberships is better UX than separate accounts
+  - Pivot table allows per-studio roles and permissions
+- **Consequences:**
+  - `User::hosts()` returns belongsToMany relationship
+  - `User::currentHost()` returns session-based or primary host
+  - `User::host()` (legacy) still works for backward compatibility
+  - All permission checks must be context-aware (which studio?)
+  - Studio switching UI required in navigation
+
+### ADR-011: Subdomain-Based Onboarding
+
+- **Status:** Accepted
+- **Context:** When inviting team members or instructors, the setup experience should be branded with the inviting studio's identity.
+- **Decision:** Serve invite acceptance pages on studio subdomains (`{studio}.domain.com/setup/invite/{token}`). Main app login remains on primary domain.
+- **Reasoning:**
+  - Clear studio context during onboarding
+  - Professional, branded experience
+  - Prevents confusion about which studio is inviting
+  - Token validation includes subdomain verification for security
+- **Consequences:**
+  - Subdomain routing middleware required (`ResolveSubdomainHost`)
+  - Separate Blade layout for subdomain pages (`layouts/subdomain.blade.php`)
+  - Invite emails must generate subdomain URLs
+  - After setup, redirect to main app (not subdomain)
+  - Error pages for wrong subdomain, expired token, etc.
+
 ### ADR-007: Manual Auth (Not Laravel Breeze)
 
 - **Status:** Accepted
@@ -192,6 +226,115 @@
   - Settings page displays real `Auth::user()->host` data
   - Dashboard page shows dynamic counts (classes, instructors), personalized welcome, onboarding prompt
 
+### FEAT-005: Subdomain-Based Account Setup for Invites
+
+- **Status:** Completed
+- **Priority:** P1 (high)
+- **Description:** Studio-branded onboarding flow for team member and instructor invites via subdomain URLs
+- **User Story:** As an invited team member/instructor, I want to complete my account setup on a branded page so I know which studio invited me and feel confident joining.
+- **Affected Areas:**
+  - Routes: `routes/web.php` (subdomain group)
+  - Controllers: `SubdomainSetupController`, `Host/InvitationController`, `Host/AuthController`
+  - Middleware: `ResolveSubdomainHost`, `SetCurrentHost`
+  - Views: `layouts/subdomain.blade.php`, `subdomain/invite-setup.blade.php`, error pages
+  - Models: `User` (multi-host methods), `TeamInvitation`, `Host`
+  - Mail: `TeamInvitationMail`
+  - Migration: `create_host_user_table`
+- **Dependencies:** Team invitation system, Host model with subdomain field
+
+#### Core Flow
+
+1. **Admin sends invite** → `TeamInvitationMail` generates subdomain URL
+2. **Invitee clicks link** → `{studio}.domain.com/setup/invite/{token}`
+3. **Middleware resolves studio** → `ResolveSubdomainHost` finds Host by subdomain
+4. **Setup page renders** → Branded layout with studio logo/name
+5. **Form submission** → Creates user (or verifies existing), adds `host_user` record
+6. **Redirect** → Main app dashboard (auto-logged in)
+
+#### URL Structure
+
+| Route | URL Pattern | Controller Method |
+|-------|-------------|-------------------|
+| Show invite | `{subdomain}.{domain}/setup/invite/{token}` | `SubdomainSetupController@showInvite` |
+| Accept invite | `{subdomain}.{domain}/setup/invite/{token}` (POST) | `SubdomainSetupController@acceptInvite` |
+
+#### Validation Rules
+
+| Check | Error Response |
+|-------|----------------|
+| Token doesn't exist | `subdomain/invalid.blade.php` |
+| Token already used | `subdomain/invalid.blade.php` |
+| Token revoked | `subdomain/invalid.blade.php` |
+| Token expired | `subdomain/expired.blade.php` |
+| Wrong subdomain | `subdomain/wrong-studio.blade.php` (with correct link) |
+| Already a member | `subdomain/already-member.blade.php` |
+| Studio not found | `subdomain/studio-not-found.blade.php` |
+
+#### Setup Form Fields
+
+**New Users:**
+- First name (required, no digits)
+- Last name (required, no digits)
+- Password (min 8 chars, with strength indicator)
+- Password confirmation
+
+**Existing Users:**
+- Password verification only
+- Shows "You already have an account" message
+
+#### Post-Setup Actions
+
+1. Create user if new (email auto-verified since they received invite)
+2. Add `host_user` pivot record with role/permissions from invitation
+3. Set `is_primary = true` if first studio membership
+4. Mark invitation as accepted (`accepted_at`, status = accepted)
+5. Log user in via `Auth::login()`
+6. Set current host in session
+7. Redirect to main app dashboard
+
+#### Multi-Studio Support
+
+- **Single studio:** Login → direct to dashboard
+- **Multiple studios:** Login → studio selector page
+- **Switching:** Sidebar footer shows "Switch Studio" button
+- **Session:** Current host stored in `session('current_host_id')`
+
+#### Email Template
+
+- **Subject:** "You're invited to join {studio_name}"
+- **Content:** Inviter name, studio name, role, accept button
+- **CTA URL:** `{scheme}://{subdomain}.{domain}/setup/invite/{token}`
+- **Expiry note:** Link expires in 7 days
+
+#### Files Implemented
+
+| File | Purpose |
+|------|---------|
+| `app/Http/Controllers/SubdomainSetupController.php` | Handles invite display and acceptance |
+| `app/Http/Middleware/ResolveSubdomainHost.php` | Resolves subdomain to Host model |
+| `app/Http/Middleware/SetCurrentHost.php` | Sets current host context for auth users |
+| `app/Mail/TeamInvitationMail.php` | Generates invite email with subdomain URL |
+| `resources/views/layouts/subdomain.blade.php` | Branded layout for subdomain pages |
+| `resources/views/subdomain/invite-setup.blade.php` | Invite acceptance form |
+| `resources/views/subdomain/wrong-studio.blade.php` | Token belongs to different studio |
+| `resources/views/subdomain/invalid.blade.php` | Invalid/used/revoked token |
+| `resources/views/subdomain/expired.blade.php` | Expired invitation |
+| `resources/views/subdomain/already-member.blade.php` | User already member of studio |
+| `resources/views/subdomain/studio-not-found.blade.php` | Subdomain doesn't match any studio |
+| `resources/views/auth/select-studio.blade.php` | Multi-studio selection page |
+| `database/migrations/2026_02_11_120001_create_host_user_table.php` | Pivot table for user-host memberships |
+
+#### Coming Soon
+
+| Feature | Description |
+|---------|-------------|
+| Studio logo in invite email | Email template currently uses basic markdown; add studio logo image |
+| "Request new invite" on expired page | Allow user to request admin sends a new invite when token expires |
+| "Contact studio" link on error pages | Add studio contact info or link on error pages |
+| Accept terms checkbox | Optional terms acceptance checkbox on setup form |
+| Instructor-specific fields | Phone and profile photo fields for instructor role invites |
+| Login prefill after setup | Redirect to login with email/studio prefilled (current flow auto-logs in, which is better UX) |
+
 <!-- Add feature plans below this line -->
 
 ---
@@ -233,6 +376,18 @@ Tables (implemented):
   Columns: id, host_id FK, instructor_id FK (nullable), name, type, duration_minutes,
            capacity, price (8,2 nullable), is_active (default true)
 
+- host_user                — pivot table for multi-studio user memberships
+  Columns: id, user_id FK, host_id FK, role (owner/admin/staff/instructor),
+           permissions (json, nullable), instructor_id FK (nullable),
+           is_primary (boolean, default false), joined_at (timestamp)
+  Constraints: unique [user_id, host_id], indexes on both FKs
+  Note: Migration includes data transfer from legacy users.host_id to pivot
+
+- team_invitations         — invitation records for team/instructor invites
+  Columns: id, host_id FK, email, role, permissions (json), token (unique),
+           invited_by FK (users), status (pending/accepted/expired/revoked),
+           expires_at, accepted_at, accepted_by_user_id FK (nullable)
+
 Tables (planned):
 - class_sessions           — individual class sessions (date/time instances)
 - bookings                 — class bookings (scoped by host_id)
@@ -251,11 +406,12 @@ Tables (planned):
 
 | Model | Table | Key Relationships | Notes |
 |-------|-------|-------------------|-------|
-| `Host` | `hosts` | hasMany users, instructors, studioClasses | Tenant root. Casts json columns as arrays. |
-| `User` | `users` | belongsTo Host | Modified default model. `getFullNameAttribute` accessor. Implements `MustVerifyEmail`. |
+| `Host` | `hosts` | hasMany users, instructors, studioClasses; belongsToMany users (via host_user) | Tenant root. Casts json columns as arrays. |
+| `User` | `users` | belongsTo Host (legacy), belongsToMany hosts (via host_user) | Multi-studio support. `currentHost()`, `getPrimaryHost()`, `hasMultipleHosts()`, `setCurrentHost()`. Context-aware role/permission methods. |
 | `Instructor` | `instructors` | belongsTo Host, belongsTo User (nullable), hasMany StudioClass | `user_id` null until instructor creates an account. |
 | `StudioClass` | `classes` | belongsTo Host, belongsTo Instructor (nullable) | Named `StudioClass` to avoid PHP reserved word `class`. Uses `$table = 'classes'`. |
 | `StudioType` | `studio_types` | — | Admin lookup. `scopeActive` query scope. |
+| `TeamInvitation` | `team_invitations` | belongsTo Host, belongsTo User (inviter), belongsTo User (accepter) | Status: pending/accepted/expired/revoked. Methods: `isExpired()`, `isPending()`, `markAsAccepted()`, `revoke()`, `regenerate()`. |
 
 ---
 
@@ -366,7 +522,7 @@ Tables (planned):
 | Q2 | Swoole or RoadRunner for Octane? | RoadRunner installed as default, benchmark later | Resolved (RoadRunner for now) |
 | Q3 | Email provider? | SendGrid vs Mailgun vs Amazon SES | Open |
 | Q4 | Studio types: DB-managed or hardcoded? | Step 4 currently hardcodes list in Vue; `studio_types` migration exists | Open — need admin seeder |
-| Q5 | Tenant scoping middleware? | All queries need `host_id` filtering — global scope vs middleware | Open |
+| Q5 | Tenant scoping middleware? | All queries need `host_id` filtering — global scope vs middleware | Resolved — `SetCurrentHost` middleware sets context; queries use `User::currentHost()` |
 | Q6 | Signup API: save per-step or all at end? | Current frontend stores all data client-side | Resolved — per-step save (ADR-008) |
 
 ---
@@ -377,6 +533,19 @@ Log every decision with date and reasoning. Most recent first.
 
 | Date | Decision | Context | Outcome |
 |---|---|---|---|
+| 2026-02-11 | My Profile page for all users | Team members need to view/edit their own profile regardless of role | `/settings/profile` always accessible; shows personal info, photo upload, password change, role/permissions (read-only); linked instructor profile if applicable |
+| 2026-02-11 | Role-based permission enforcement | Permissions page showed same content for all roles; need to enforce permissions across the app | Created `CheckPermission` middleware; updated sidebars with `@if($user->hasPermission())` checks; grouped routes by permission; owner sees everything, other roles restricted |
+| 2026-02-11 | CheckPermission middleware for routes | Need to protect routes based on user permissions | Middleware accepts multiple permissions (any match grants access); owner bypasses all checks; redirects to dashboard with error on denial |
+| 2026-02-11 | Settings index smart redirect | `/settings` should redirect to first accessible page based on permissions | `SettingsController@index` checks permissions in priority order and redirects accordingly |
+| 2026-02-11 | Advanced settings owner-only | Data export, audit logs, danger zone should be owner-only | Controller methods check `isOwner()` and redirect with error if not owner |
+| 2026-02-11 | Subdomain-based invite onboarding (ADR-011) | Invitees need branded studio context during setup | Setup pages served on `{studio}.domain.com/setup/invite/{token}`; branded layout with logo/name; error pages for edge cases |
+| 2026-02-11 | Multi-studio user support via pivot table (ADR-010) | Users may belong to multiple studios with different roles | `host_user` pivot table with role, permissions, is_primary; legacy `users.host_id` kept for backward compatibility |
+| 2026-02-11 | Session-based current host context | Need to track which studio user is currently working in | `session('current_host_id')` set on login/switch; `SetCurrentHost` middleware shares with views |
+| 2026-02-11 | Studio selector for multi-studio users | Users with multiple memberships need to choose studio | `select-studio.blade.php` shown after login if `hasMultipleHosts() > 1`; sidebar "Switch Studio" button |
+| 2026-02-11 | Auto-login after invite acceptance | Better UX than requiring separate login step | `Auth::login()` called after successful setup; redirects directly to dashboard |
+| 2026-02-11 | Token validation includes subdomain check | Security: prevent token use on wrong studio subdomain | `SubdomainSetupController` compares token's `host_id` with resolved subdomain host; redirects with correct URL if mismatch |
+| 2026-02-11 | Existing user detection during invite setup | Same email shouldn't create duplicate accounts | If user exists, show password-only form; add membership without creating new account |
+| 2026-02-11 | ResolveSubdomainHost middleware | Need to resolve subdomain to Host model for subdomain routes | Middleware extracts subdomain, queries Host, sets on request attributes; returns 404 if not found |
 | 2026-02-10 | Instructor Employment & Availability | Instructors need employment details, workload limits, and availability windows | Added 10 new fields to instructors table; multi-step modal UI; soft warnings during class scheduling |
 | 2026-02-06 | Dropdowns with search (ADR-009) | Select inputs with many options need searchable UI | Use FlyonUI `advance-select` pattern for all long dropdowns (timezone, country, currency, etc.) |
 | 2026-02-05 | Progressive per-step signup save (ADR-008) | Need to decide save strategy for 9-step wizard | Account at Step 2, updates per-step, prevents data loss |
