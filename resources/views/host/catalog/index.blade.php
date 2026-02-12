@@ -31,6 +31,11 @@
                 <span class="icon-[tabler--user] size-4 mr-2"></span>
                 Service Plans
             </a>
+            <a href="{{ route('catalog.index', ['tab' => 'memberships', 'view' => request('view', 'list')]) }}"
+               class="tab {{ $tab === 'memberships' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>
+                Memberships
+            </a>
         </div>
 
         <div class="flex items-center gap-2">
@@ -51,10 +56,15 @@
                 <span class="icon-[tabler--plus] size-5"></span>
                 Add Class Plan
             </a>
-            @else
+            @elseif($tab === 'services')
             <a href="{{ route('service-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 Add Service Plan
+            </a>
+            @else
+            <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
+                <span class="icon-[tabler--plus] size-5"></span>
+                Add Membership
             </a>
             @endif
         </div>
@@ -122,17 +132,16 @@
 
                     {{-- Actions --}}
                     <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
+                        <a href="{{ route('class-plans.show', $classPlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                        </a>
                         <a href="{{ route('class-plans.edit', $classPlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
                             <span class="icon-[tabler--edit] size-4"></span>
                             Edit
                         </a>
-                        <form action="{{ route('class-plans.destroy', $classPlan) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this class plan?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-soft btn-error">
-                                <span class="icon-[tabler--trash] size-4"></span>
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', 'class plan')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -184,17 +193,17 @@
 
                     {{-- Actions --}}
                     <div class="card-actions justify-end mt-2">
+                        <a href="{{ route('class-plans.show', $classPlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            View
+                        </a>
                         <a href="{{ route('class-plans.edit', $classPlan) }}" class="btn btn-sm btn-soft btn-primary">
                             <span class="icon-[tabler--edit] size-4"></span>
                             Edit
                         </a>
-                        <form action="{{ route('class-plans.destroy', $classPlan) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this class plan?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-soft btn-error">
-                                <span class="icon-[tabler--trash] size-4"></span>
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', 'class plan')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -202,7 +211,7 @@
         </div>
         @endif
         @endif
-    @else
+    @elseif($tab === 'services')
         @if($servicePlans->isEmpty())
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
@@ -263,20 +272,19 @@
 
                     {{-- Actions --}}
                     <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
+                        <a href="{{ route('service-plans.show', $servicePlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                        </a>
                         <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
                             <span class="icon-[tabler--edit] size-4"></span>
                             Edit
                         </a>
-                        <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                        <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-info">
                             <span class="icon-[tabler--users] size-4"></span>
                         </a>
-                        <form action="{{ route('service-plans.destroy', $servicePlan) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this service plan?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-soft btn-error">
-                                <span class="icon-[tabler--trash] size-4"></span>
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', 'service plan')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -328,21 +336,149 @@
 
                     {{-- Actions --}}
                     <div class="card-actions justify-end mt-2">
+                        <a href="{{ route('service-plans.show', $servicePlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            View
+                        </a>
                         <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary">
                             <span class="icon-[tabler--edit] size-4"></span>
                             Edit
                         </a>
-                        <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                        <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-info">
                             <span class="icon-[tabler--users] size-4"></span>
                             Instructors
                         </a>
-                        <form action="{{ route('service-plans.destroy', $servicePlan) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this service plan?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-soft btn-error">
-                                <span class="icon-[tabler--trash] size-4"></span>
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', 'service plan')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+        @endif
+    @else
+        {{-- Memberships Tab --}}
+        @if($membershipPlans->isEmpty())
+        <div class="card bg-base-100">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--id-badge-2] size-16 text-base-content/20 mx-auto mb-4"></span>
+                <h3 class="text-lg font-semibold mb-2">No Membership Plans Yet</h3>
+                <p class="text-base-content/60 mb-4">Create membership plans to offer recurring access to your classes.</p>
+                <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Create First Membership
+                </a>
+            </div>
+        </div>
+        @else
+        @if(request('view') === 'grid')
+        {{-- Grid View --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            @foreach($membershipPlans as $membershipPlan)
+            <div class="card bg-base-100 {{ $membershipPlan->status !== 'active' ? 'opacity-60' : '' }}">
+                <div class="h-32 flex items-center justify-center" style="background-color: {{ $membershipPlan->color }}20;">
+                    <span class="icon-[tabler--id-badge-2] size-12" style="color: {{ $membershipPlan->color }};"></span>
+                </div>
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title">{{ $membershipPlan->name }}</h3>
+                            <p class="text-sm text-base-content/60">{{ $membershipPlan->formatted_type }} &bull; {{ ucfirst($membershipPlan->interval) }}</p>
+                        </div>
+                        <span class="badge badge-soft {{ $membershipPlan->status_badge_class }} badge-sm">{{ ucfirst($membershipPlan->status) }}</span>
+                    </div>
+
+                    @if($membershipPlan->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $membershipPlan->description }}</p>
+                    @endif
+
+                    <div class="mt-4 flex items-center gap-4 text-sm">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $membershipPlan->formatted_price_with_interval }}</span>
+                        </div>
+                        @if($membershipPlan->isCredits())
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
+                            <span>{{ $membershipPlan->credits_per_cycle }} credits</span>
+                        </div>
+                        @endif
+                        <span class="badge {{ $membershipPlan->type_badge_class }} badge-soft badge-sm">{{ $membershipPlan->formatted_type }}</span>
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
+                        <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                        </a>
+                        <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            Edit
+                        </a>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', 'membership plan')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @else
+        {{-- List View --}}
+        <div class="space-y-4">
+            @foreach($membershipPlans as $membershipPlan)
+            <div class="card bg-base-100 card-side {{ $membershipPlan->status !== 'active' ? 'opacity-60' : '' }}">
+                <div class="w-32 shrink-0 flex items-center justify-center" style="background-color: {{ $membershipPlan->color }}20;">
+                    <span class="icon-[tabler--id-badge-2] size-10" style="color: {{ $membershipPlan->color }};"></span>
+                </div>
+                <div class="card-body py-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title text-base">{{ $membershipPlan->name }}</h3>
+                            <p class="text-sm text-base-content/60">{{ $membershipPlan->formatted_type }} &bull; {{ ucfirst($membershipPlan->interval) }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="badge badge-soft {{ $membershipPlan->status_badge_class }} badge-sm">{{ ucfirst($membershipPlan->status) }}</span>
+                            <span class="badge {{ $membershipPlan->type_badge_class }} badge-soft badge-sm">{{ $membershipPlan->formatted_type }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6 text-sm mt-2">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $membershipPlan->formatted_price_with_interval }}</span>
+                        </div>
+                        @if($membershipPlan->isCredits())
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
+                            <span>{{ $membershipPlan->credits_per_cycle }} credits/cycle</span>
+                        </div>
+                        @endif
+                        @if($membershipPlan->coversAllClasses())
+                        <span class="text-base-content/60">All Classes</span>
+                        @else
+                        <span class="text-base-content/60">{{ $membershipPlan->class_plans_count }} class plan(s)</span>
+                        @endif
+                        @if($membershipPlan->description)
+                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $membershipPlan->description }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions justify-end mt-2">
+                        <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            View
+                        </a>
+                        <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-sm btn-soft btn-primary">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            Edit
+                        </a>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', 'membership plan')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -352,4 +488,47 @@
         @endif
     @endif
 </div>
+
+{{-- Delete Confirmation Modal --}}
+<dialog id="deleteModal" class="modal">
+    <div class="modal-box">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
+                <span class="icon-[tabler--trash] size-6 text-error"></span>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg">Delete <span id="deleteItemType"></span></h3>
+                <p class="text-base-content/60 text-sm">This action cannot be undone.</p>
+            </div>
+        </div>
+        <p class="py-2">Are you sure you want to delete <strong id="deleteItemName"></strong>?</p>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">Cancel</button>
+            </form>
+            <form id="deleteForm" method="POST">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-error">
+                    <span class="icon-[tabler--trash] size-4"></span>
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
 @endsection
+
+@push('scripts')
+<script>
+    function openDeleteModal(action, name, type) {
+        document.getElementById('deleteForm').action = action;
+        document.getElementById('deleteItemName').textContent = name;
+        document.getElementById('deleteItemType').textContent = type;
+        document.getElementById('deleteModal').showModal();
+    }
+</script>
+@endpush

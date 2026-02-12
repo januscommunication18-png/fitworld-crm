@@ -1,32 +1,32 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Create Service Slot')
+@section('title', 'Create Membership Plan')
 
 @section('breadcrumbs')
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('service-slots.index') }}"><span class="icon-[tabler--calendar-event] me-1 size-4"></span> Service Slots</a></li>
+        <li><a href="{{ route('catalog.index', ['tab' => 'memberships']) }}"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> Catalog</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Create Slot</li>
+        <li aria-current="page">Create Membership</li>
     </ol>
 @endsection
 
 @section('content')
 <div class="space-y-6">
     <div class="flex items-center gap-4">
-        <a href="{{ route('service-slots.index') }}" class="btn btn-ghost btn-sm btn-circle">
+        <a href="{{ route('catalog.index', ['tab' => 'memberships']) }}" class="btn btn-ghost btn-sm btn-circle">
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
-            <h1 class="text-2xl font-bold">Create Service Slot</h1>
-            <p class="text-base-content/60 mt-1">Add a new available time slot for a service.</p>
+            <h1 class="text-2xl font-bold">Create Membership Plan</h1>
+            <p class="text-base-content/60 mt-1">Define a recurring subscription plan for your members.</p>
         </div>
     </div>
 
-    <form action="{{ route('service-slots.store') }}" method="POST">
+    <form action="{{ route('membership-plans.store') }}" method="POST">
         @csrf
-        @include('host.service-slots._form')
+        @include('host.membership-plans._form')
     </form>
 </div>
 @endsection

@@ -16,12 +16,17 @@
 
 @section('content')
 <div class="max-w-4xl mx-auto">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold flex items-center gap-2">
-            <span class="icon-[tabler--user-edit] size-7"></span>
-            Edit Client
-        </h1>
-        <p class="text-base-content/60 text-sm mt-1">Update {{ $client->full_name }}'s information</p>
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-sm btn-circle">
+            <span class="icon-[tabler--arrow-left] size-5"></span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <span class="icon-[tabler--user-edit] size-7"></span>
+                Edit Client
+            </h1>
+            <p class="text-base-content/60 text-sm mt-1">Update {{ $client->full_name }}'s information</p>
+        </div>
     </div>
 
     <form method="POST" action="{{ route('clients.update', $client) }}" class="space-y-6">

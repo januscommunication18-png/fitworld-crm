@@ -24,6 +24,7 @@ use App\Http\Controllers\Host\ClassSessionController;
 use App\Http\Controllers\Host\ClassRequestController;
 use App\Http\Controllers\Host\ServicePlanController;
 use App\Http\Controllers\Host\ServiceSlotController;
+use App\Http\Controllers\Host\MembershipPlanController;
 use App\Http\Controllers\SecurityCodeController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -167,6 +168,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/service-plans/{servicePlan}/toggle-active', [ServicePlanController::class, 'toggleActive'])->name('service-plans.toggle-active');
     Route::get('/service-plans/{servicePlan}/instructors', [ServicePlanController::class, 'manageInstructors'])->name('service-plans.instructors');
     Route::post('/service-plans/{servicePlan}/instructors', [ServicePlanController::class, 'updateInstructors'])->name('service-plans.instructors.update');
+
+    // Membership Plans
+    Route::resource('membership-plans', MembershipPlanController::class)->names('membership-plans');
+    Route::patch('/membership-plans/{membershipPlan}/toggle-status', [MembershipPlanController::class, 'toggleStatus'])->name('membership-plans.toggle-status');
+    Route::patch('/membership-plans/{membershipPlan}/archive', [MembershipPlanController::class, 'archive'])->name('membership-plans.archive');
 
     // Service Slots
     Route::resource('service-slots', ServiceSlotController::class)->names('service-slots');

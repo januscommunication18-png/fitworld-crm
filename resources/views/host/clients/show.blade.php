@@ -17,6 +17,9 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-start gap-4 relative z-50">
         <div class="flex items-start gap-4 flex-1">
+            <a href="{{ route('clients.index') }}" class="btn btn-ghost btn-sm btn-circle mt-1">
+                <span class="icon-[tabler--arrow-left] size-5"></span>
+            </a>
             <div class="avatar placeholder">
                 <div class="bg-primary/10 text-primary w-16 h-16 rounded-full">
                     <span class="text-xl font-bold">{{ $client->initials }}</span>

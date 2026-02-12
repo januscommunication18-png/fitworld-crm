@@ -14,9 +14,14 @@
 
 @section('content')
 <div class="space-y-6">
-    <div>
-        <h1 class="text-2xl font-bold">Create Service Plan</h1>
-        <p class="text-base-content/60 mt-1">Define a template for 1-on-1 services or small group sessions.</p>
+    <div class="flex items-center gap-4">
+        <a href="{{ route('catalog.index', ['tab' => 'services']) }}" class="btn btn-ghost btn-sm btn-circle">
+            <span class="icon-[tabler--arrow-left] size-5"></span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold">Create Service Plan</h1>
+            <p class="text-base-content/60 mt-1">Define a template for 1-on-1 services or small group sessions.</p>
+        </div>
     </div>
 
     <form action="{{ route('service-plans.store') }}" method="POST" enctype="multipart/form-data">

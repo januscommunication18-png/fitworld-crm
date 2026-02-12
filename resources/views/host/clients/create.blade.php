@@ -15,15 +15,14 @@
 @section('content')
 <div class="max-w-2xl mx-auto">
     {{-- Page Header --}}
-    <div class="flex items-start justify-between mb-6">
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{{ route('clients.index') }}" class="btn btn-ghost btn-sm btn-circle">
+            <span class="icon-[tabler--arrow-left] size-5"></span>
+        </a>
         <div>
             <h1 class="text-2xl font-bold">Add New Client</h1>
             <p class="text-base-content/60 text-sm mt-1">Create a new client profile for your studio</p>
         </div>
-        <a href="{{ route('clients.index') }}" class="btn btn-soft btn-secondary">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-            Back
-        </a>
     </div>
 
     <form method="POST" action="{{ route('clients.store') }}" class="space-y-6">

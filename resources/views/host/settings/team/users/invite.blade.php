@@ -15,6 +15,7 @@
 @endsection
 
 @section('settings-content')
+<<<<<<< Updated upstream
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     {{-- Main Form Column --}}
     <div class="lg:col-span-2 space-y-6">
@@ -23,6 +24,61 @@
         <div class="alert alert-soft alert-error">
             <span class="icon-[tabler--alert-circle] size-5"></span>
             <span>{{ session('error') }}</span>
+=======
+<div class="space-y-6">
+    {{-- Header --}}
+    <div class="flex items-center gap-4 mb-4">
+        <a href="{{ route('settings.team.users') }}" class="btn btn-ghost btn-sm btn-circle">
+            <span class="icon-[tabler--arrow-left] size-5"></span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold">Add Team Member</h1>
+            <p class="text-base-content/60 mt-1">Invite a new team member or add an existing user.</p>
+        </div>
+    </div>
+
+    {{-- Flash Messages --}}
+    @if(session('error'))
+    <div class="alert alert-soft alert-error">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <span>{{ session('error') }}</span>
+    </div>
+    @endif
+
+    <form action="{{ route('settings.team.invite') }}" method="POST">
+        @csrf
+
+        {{-- Step Tab Navigation --}}
+        <div class="card bg-base-100 shadow-sm">
+            <div class="card-body p-0">
+                <nav class="flex overflow-x-auto border-b border-base-content/10" id="step-tabs">
+                    <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-primary text-primary" data-step="1" onclick="goToStep(1)">
+                        <span class="icon-[tabler--user] size-5 mr-2 inline-block align-middle"></span>
+                        <span class="hidden sm:inline">1.</span> Profile
+                    </button>
+                    <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="2" onclick="goToStep(2)">
+                        <span class="icon-[tabler--briefcase] size-5 mr-2 inline-block align-middle"></span>
+                        <span class="hidden sm:inline">2.</span> Employment
+                    </button>
+                    <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="3" onclick="goToStep(3)">
+                        <span class="icon-[tabler--chart-bar] size-5 mr-2 inline-block align-middle"></span>
+                        <span class="hidden sm:inline">3.</span> Workload
+                    </button>
+                    <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="4" onclick="goToStep(4)">
+                        <span class="icon-[tabler--calendar-week] size-5 mr-2 inline-block align-middle"></span>
+                        <span class="hidden sm:inline">4.</span> Days
+                    </button>
+                    <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="5" onclick="goToStep(5)">
+                        <span class="icon-[tabler--clock] size-5 mr-2 inline-block align-middle"></span>
+                        <span class="hidden sm:inline">5.</span> Hours
+                    </button>
+                    <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="6" onclick="goToStep(6)">
+                        <span class="icon-[tabler--shield-cog] size-5 mr-2 inline-block align-middle"></span>
+                        <span class="hidden sm:inline">6.</span> Permissions
+                    </button>
+                </nav>
+            </div>
+>>>>>>> Stashed changes
         </div>
         @endif
 
