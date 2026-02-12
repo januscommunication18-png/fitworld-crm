@@ -73,11 +73,13 @@ return [
     |
     | This is the base domain for tenant booking pages. Each tenant's booking
     | page will be available at: {subdomain}.{booking_domain}
-    | Example: mystudio.projectfit.com
+    |
+    | Local:      BOOKING_DOMAIN=projectfit.local:8888
+    | Production: BOOKING_DOMAIN=fitcrm.biz
     |
     */
 
-    'booking_domain' => env('BOOKING_DOMAIN', 'projectfit.com'),
+    'booking_domain' => env('BOOKING_DOMAIN', 'fitcrm.biz'),
 
     /*
     |--------------------------------------------------------------------------

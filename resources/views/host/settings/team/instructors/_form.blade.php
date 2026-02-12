@@ -3,7 +3,7 @@
 @endphp
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
 <style>
     .flatpickr-calendar {
         z-index: 9999 !important;
@@ -397,7 +397,7 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
 <script>
 // Multi-step form navigation
 let currentStep = 1;

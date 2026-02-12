@@ -11,11 +11,18 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | These routes handle the public-facing booking pages for each studio.
-| They are accessible via {subdomain}.fitcrm.app
+| They are accessible via {subdomain}.{BOOKING_DOMAIN}
+|
+| Local:      faizans-studio.projectfit.local:8888
+| Production: faizans-studio.fitcrm.biz
+|
+| Set BOOKING_DOMAIN in .env:
+|   Local:      BOOKING_DOMAIN=projectfit.local:8888
+|   Production: BOOKING_DOMAIN=fitcrm.biz
 |
 */
 
-Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.app'))
+Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
     ->middleware(['web', 'subdomain.host'])
     ->group(function () {
         // Public booking page - landing/home
