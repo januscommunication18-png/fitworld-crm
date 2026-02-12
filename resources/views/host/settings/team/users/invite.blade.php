@@ -789,6 +789,7 @@
                     altInputClass: 'input input-sm input-bordered w-full',
                     appendTo: document.body,
                     static: false
+                    
                 };
 
                 flatpickr('.flatpickr-time', timePickerConfig);
