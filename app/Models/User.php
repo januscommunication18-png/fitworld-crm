@@ -160,6 +160,17 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get profile photo URL (works with both local and cloud storage)
+     */
+    public function getProfilePhotoUrlAttribute(): ?string
+    {
+        if (!$this->profile_photo) {
+            return null;
+        }
+        return \Storage::disk(config('filesystems.uploads'))->url($this->profile_photo);
+    }
+
+    /**
      * Get the current role (context-aware for multi-studio)
      */
     public function getCurrentRole(): string

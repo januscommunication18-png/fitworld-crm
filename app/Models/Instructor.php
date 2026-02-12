@@ -116,12 +116,12 @@ class Instructor extends Model
     }
 
     /**
-     * Get photo URL
+     * Get photo URL (works with both local and cloud storage)
      */
     public function getPhotoUrlAttribute(): ?string
     {
         if ($this->photo_path) {
-            return '/storage/' . $this->photo_path;
+            return \Storage::disk(config('filesystems.uploads'))->url($this->photo_path);
         }
         return null;
     }

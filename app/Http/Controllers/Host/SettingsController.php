@@ -132,38 +132,40 @@ class SettingsController extends Controller
         ]);
 
         $user = auth()->user();
-
-        // Store the file
-        $path = $request->file('photo')->store('profile-photos', 'public');
+        $disk = config('filesystems.uploads');
 
         // Delete old photo if exists
-        if ($user->profile_photo && \Storage::disk('public')->exists($user->profile_photo)) {
-            \Storage::disk('public')->delete($user->profile_photo);
+        if ($user->profile_photo && \Storage::disk($disk)->exists($user->profile_photo)) {
+            \Storage::disk($disk)->delete($user->profile_photo);
         }
+
+        // Store the file
+        $path = $request->file('photo')->store('profile-photos', $disk);
 
         $user->update(['profile_photo' => $path]);
 
         // Also update instructor photo if linked
         if ($user->instructor_id && $user->instructor) {
-            if ($user->instructor->profile_photo && \Storage::disk('public')->exists($user->instructor->profile_photo)) {
-                \Storage::disk('public')->delete($user->instructor->profile_photo);
+            if ($user->instructor->photo_path && \Storage::disk($disk)->exists($user->instructor->photo_path)) {
+                \Storage::disk($disk)->delete($user->instructor->photo_path);
             }
-            $user->instructor->update(['profile_photo' => $path]);
+            $user->instructor->update(['photo_path' => $path]);
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Photo uploaded successfully.',
-            'photo_url' => asset('storage/' . $path),
+            'photo_url' => \Storage::disk($disk)->url($path),
         ]);
     }
 
     public function removeMyPhoto()
     {
         $user = auth()->user();
+        $disk = config('filesystems.uploads');
 
-        if ($user->profile_photo && \Storage::disk('public')->exists($user->profile_photo)) {
-            \Storage::disk('public')->delete($user->profile_photo);
+        if ($user->profile_photo && \Storage::disk($disk)->exists($user->profile_photo)) {
+            \Storage::disk($disk)->delete($user->profile_photo);
         }
 
         $user->update(['profile_photo' => null]);

@@ -90,25 +90,25 @@ class Host extends Model
     }
 
     /**
-     * Get the logo URL (relative path for subdomain compatibility)
+     * Get the logo URL (works with both local and cloud storage)
      */
     public function getLogoUrlAttribute(): ?string
     {
         if (!$this->logo_path) {
             return null;
         }
-        return '/storage/' . $this->logo_path;
+        return \Storage::disk(config('filesystems.uploads'))->url($this->logo_path);
     }
 
     /**
-     * Get the cover image URL (relative path for subdomain compatibility)
+     * Get the cover image URL (works with both local and cloud storage)
      */
     public function getCoverImageUrlAttribute(): ?string
     {
         if (!$this->cover_image_path) {
             return null;
         }
-        return '/storage/' . $this->cover_image_path;
+        return \Storage::disk(config('filesystems.uploads'))->url($this->cover_image_path);
     }
 
     /**
