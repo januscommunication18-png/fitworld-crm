@@ -496,12 +496,16 @@ class TeamController extends Controller
             'photo' => 'required|image|mimes:jpeg,png,webp|max:2048',
         ]);
 
-        // Delete old photo
-        if ($instructor->photo_path && Storage::disk(config('filesystems.uploads'))->exists($instructor->photo_path)) {
-            Storage::disk(config('filesystems.uploads'))->delete($instructor->photo_path);
+        // Delete old photo (try-catch for cloud storage compatibility)
+        if ($instructor->photo_path) {
+            try {
+                Storage::disk(config('filesystems.uploads'))->delete($instructor->photo_path);
+            } catch (\Exception $e) {
+                // Ignore deletion errors (file may not exist or be on different storage)
+            }
         }
 
-        $path = $request->file('photo')->store('instructors/' . $instructor->id, config('filesystems.uploads'));
+        $path = $request->file('photo')->storePublicly('instructors/' . $instructor->id, config('filesystems.uploads'));
         $instructor->update(['photo_path' => $path]);
 
         return response()->json([

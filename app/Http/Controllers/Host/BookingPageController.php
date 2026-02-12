@@ -115,12 +115,16 @@ class BookingPageController extends Controller
 
         $host = auth()->user()->host;
 
-        // Delete old logo if exists
-        if ($host->logo_path && Storage::disk(config('filesystems.uploads'))->exists($host->logo_path)) {
-            Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
+        // Delete old logo if exists (try-catch for cloud storage compatibility)
+        if ($host->logo_path) {
+            try {
+                Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
+            } catch (\Exception $e) {
+                // Ignore deletion errors (file may not exist or be on different storage)
+            }
         }
 
-        $path = $request->file('logo')->store('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
+        $path = $request->file('logo')->storePublicly('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
         $host->logo_path = $path;
         $host->save();
 
@@ -141,12 +145,16 @@ class BookingPageController extends Controller
 
         $host = auth()->user()->host;
 
-        // Delete old cover if exists
-        if ($host->cover_image_path && Storage::disk(config('filesystems.uploads'))->exists($host->cover_image_path)) {
-            Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
+        // Delete old cover if exists (try-catch for cloud storage compatibility)
+        if ($host->cover_image_path) {
+            try {
+                Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
+            } catch (\Exception $e) {
+                // Ignore deletion errors (file may not exist or be on different storage)
+            }
         }
 
-        $path = $request->file('cover')->store('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
+        $path = $request->file('cover')->storePublicly('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
         $host->cover_image_path = $path;
         $host->save();
 

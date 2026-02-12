@@ -81,7 +81,8 @@ return [
             'endpoint' => env('DO_SPACES_ENDPOINT'),
             'url' => env('DO_SPACES_CDN_ENDPOINT'),
             'use_path_style_endpoint' => false,
-            'throw' => false,
+            'visibility' => 'public',
+            'throw' => true,
             'report' => false,
         ],
 

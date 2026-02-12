@@ -134,20 +134,28 @@ class SettingsController extends Controller
         $user = auth()->user();
         $disk = config('filesystems.uploads');
 
-        // Delete old photo if exists
-        if ($user->profile_photo && \Storage::disk($disk)->exists($user->profile_photo)) {
-            \Storage::disk($disk)->delete($user->profile_photo);
+        // Delete old photo if exists (try-catch for cloud storage compatibility)
+        if ($user->profile_photo) {
+            try {
+                \Storage::disk($disk)->delete($user->profile_photo);
+            } catch (\Exception $e) {
+                // Ignore deletion errors (file may not exist or be on different storage)
+            }
         }
 
-        // Store the file
-        $path = $request->file('photo')->store('profile-photos', $disk);
+        // Store the file with public visibility
+        $path = $request->file('photo')->storePublicly('profile-photos', $disk);
 
         $user->update(['profile_photo' => $path]);
 
         // Also update instructor photo if linked
         if ($user->instructor_id && $user->instructor) {
-            if ($user->instructor->photo_path && \Storage::disk($disk)->exists($user->instructor->photo_path)) {
-                \Storage::disk($disk)->delete($user->instructor->photo_path);
+            if ($user->instructor->photo_path) {
+                try {
+                    \Storage::disk($disk)->delete($user->instructor->photo_path);
+                } catch (\Exception $e) {
+                    // Ignore deletion errors
+                }
             }
             $user->instructor->update(['photo_path' => $path]);
         }
@@ -236,13 +244,17 @@ class SettingsController extends Controller
 
         $host = auth()->user()->host;
 
-        // Delete old logo if exists
-        if ($host->logo_path && \Storage::disk(config('filesystems.uploads'))->exists($host->logo_path)) {
-            \Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
+        // Delete old logo if exists (try-catch for cloud storage compatibility)
+        if ($host->logo_path) {
+            try {
+                \Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
+            } catch (\Exception $e) {
+                // Ignore deletion errors (file may not exist or be on different storage)
+            }
         }
 
         // Store new logo
-        $path = $request->file('logo')->store('logos/' . $host->id, config('filesystems.uploads'));
+        $path = $request->file('logo')->storePublicly('logos/' . $host->id, config('filesystems.uploads'));
         $host->update(['logo_path' => $path]);
 
         return response()->json([
@@ -260,13 +272,17 @@ class SettingsController extends Controller
 
         $host = auth()->user()->host;
 
-        // Delete old cover if exists
-        if ($host->cover_image_path && \Storage::disk(config('filesystems.uploads'))->exists($host->cover_image_path)) {
-            \Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
+        // Delete old cover if exists (try-catch for cloud storage compatibility)
+        if ($host->cover_image_path) {
+            try {
+                \Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
+            } catch (\Exception $e) {
+                // Ignore deletion errors (file may not exist or be on different storage)
+            }
         }
 
         // Store new cover
-        $path = $request->file('cover')->store('covers/' . $host->id, config('filesystems.uploads'));
+        $path = $request->file('cover')->storePublicly('covers/' . $host->id, config('filesystems.uploads'));
         $host->update(['cover_image_path' => $path]);
 
         return response()->json([
