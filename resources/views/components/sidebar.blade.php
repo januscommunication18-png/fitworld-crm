@@ -78,15 +78,22 @@
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
                 <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('class-requests*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>Calendar View
+                    <li><a href="{{ url('/schedule/today') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/today') || request()->is('schedule') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-time] size-4 mr-2"></span>Today
                     </a></li>
+                    <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>Calendar
+                    </a></li>
+                    <li><a href="{{ url('/schedule/list') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/list') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--list] size-4 mr-2"></span>List View
+                    </a></li>
+                    <li class="border-t border-base-content/10 my-1 pt-1"></li>
                     <li><a href="{{ url('/class-sessions') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-sessions*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>Class Sessions
+                        <span class="icon-[tabler--yoga] size-4 mr-2"></span>Class Sessions
                     </a></li>
                     @if($user->hasPermission('schedule.view'))
                     <li><a href="{{ url('/service-slots') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('service-slots*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--clock] size-4 mr-2"></span>Service Slots
+                        <span class="icon-[tabler--massage] size-4 mr-2"></span>Service Slots
                     </a></li>
                     <li><a href="{{ url('/class-requests') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-requests*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--message-circle-question] size-4 mr-2"></span>Requests
@@ -97,8 +104,9 @@
                     </a></li>
                     @endif
                     @if($user->hasPermission('bookings.waitlist'))
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content opacity-50">
                         <span class="icon-[tabler--hourglass] size-4 mr-2"></span>Waitlist
+                        <span class="badge badge-xs badge-soft badge-neutral ml-1">Soon</span>
                     </a></li>
                     @endif
                 </ul>

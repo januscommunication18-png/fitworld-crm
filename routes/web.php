@@ -103,9 +103,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Schedule
+    Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
+    Route::get('/schedule/today', [ScheduleController::class, 'today'])->name('schedule.today');
+    Route::get('/schedule/calendar', [ScheduleController::class, 'calendar'])->name('schedule.calendar');
+    Route::get('/schedule/list', [ScheduleController::class, 'list'])->name('schedule.list');
+    // Schedule API (for Vue calendar component)
+    Route::get('/schedule/api/events', [\App\Http\Controllers\Api\ScheduleApiController::class, 'events'])->name('schedule.api.events');
+    Route::get('/schedule/api/stats', [\App\Http\Controllers\Api\ScheduleApiController::class, 'stats'])->name('schedule.api.stats');
+    // Legacy redirects
     Route::get('/schedule/classes', [ScheduleController::class, 'classes'])->name('schedule.classes');
     Route::get('/schedule/appointments', [ScheduleController::class, 'appointments'])->name('schedule.appointments');
-    Route::get('/schedule/calendar', [ScheduleController::class, 'calendar'])->name('schedule.calendar');
 
     // Clients (renamed from Students)
     // Static routes must come before wildcard routes

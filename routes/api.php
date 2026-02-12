@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\SignupController;
+use App\Http\Controllers\Api\ScheduleApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -19,5 +20,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/signup/classes', [SignupController::class, 'saveClass']);
         Route::post('/signup/payments', [SignupController::class, 'savePayments']);
         Route::post('/signup/complete', [SignupController::class, 'complete']);
+    });
+
+    // Schedule API endpoints (authenticated via web session or sanctum)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/schedule/events', [ScheduleApiController::class, 'events'])->name('api.schedule.events');
+        Route::get('/schedule/stats', [ScheduleApiController::class, 'stats'])->name('api.schedule.stats');
+        Route::get('/schedule/upcoming', [ScheduleApiController::class, 'upcoming'])->name('api.schedule.upcoming');
     });
 });

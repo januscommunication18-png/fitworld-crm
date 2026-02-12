@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/layout.js',
                 'resources/js/apps/signup.js',
+                'resources/js/apps/schedule.js',
             ],
             refresh: true,
         }),
