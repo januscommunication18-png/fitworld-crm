@@ -115,6 +115,48 @@ class Instructor extends Model
             ->orWhere('backup_instructor_id', $this->id);
     }
 
+    public function notes(): HasMany
+    {
+        return $this->hasMany(InstructorNote::class)->orderBy('created_at', 'desc');
+    }
+
+    public function actionLogs(): HasMany
+    {
+        return $this->hasMany(InstructorActionLog::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Log an action for this instructor
+     */
+    public function logAction(string $action, ?string $oldValue = null, ?string $newValue = null, ?string $reason = null): InstructorActionLog
+    {
+        return InstructorActionLog::log($this->id, $action, $oldValue, $newValue, auth()->id(), $reason);
+    }
+
+    /**
+     * Get initials for avatar display
+     */
+    public function getInitialsAttribute(): string
+    {
+        $parts = explode(' ', trim($this->name));
+        if (count($parts) >= 2) {
+            return strtoupper(substr($parts[0], 0, 1) . substr(end($parts), 0, 1));
+        }
+        return strtoupper(substr($this->name, 0, 2));
+    }
+
+    /**
+     * Get next scheduled session
+     */
+    public function getNextSessionAttribute(): ?ClassSession
+    {
+        return $this->primarySessions()
+            ->where('start_time', '>', now())
+            ->where('status', '!=', ClassSession::STATUS_CANCELLED)
+            ->orderBy('start_time')
+            ->first();
+    }
+
     /**
      * Get photo URL (works with both local and cloud storage)
      */
@@ -332,5 +374,66 @@ class Instructor extends Model
 
         $types = self::getEmploymentTypes();
         return $types[$this->employment_type] ?? $this->employment_type;
+    }
+
+    /**
+     * Check if instructor profile is complete (has required employment details)
+     * Required: employment_type, rate_type, rate_amount, working_days, availability hours
+     */
+    public function isProfileComplete(): bool
+    {
+        // Must have employment type
+        if (empty($this->employment_type)) {
+            return false;
+        }
+
+        // Must have rate information
+        if (empty($this->rate_type) || empty($this->rate_amount)) {
+            return false;
+        }
+
+        // Must have working days defined
+        if (empty($this->working_days)) {
+            return false;
+        }
+
+        // Must have availability hours (either default or by day)
+        $hasAvailability = (!empty($this->availability_default_from) && !empty($this->availability_default_to))
+            || !empty($this->availability_by_day);
+
+        if (!$hasAvailability) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get list of missing profile fields
+     */
+    public function getMissingProfileFields(): array
+    {
+        $missing = [];
+
+        if (empty($this->employment_type)) {
+            $missing[] = 'Employment Type';
+        }
+
+        if (empty($this->rate_type) || empty($this->rate_amount)) {
+            $missing[] = 'Rate Information';
+        }
+
+        if (empty($this->working_days)) {
+            $missing[] = 'Working Days';
+        }
+
+        $hasAvailability = (!empty($this->availability_default_from) && !empty($this->availability_default_to))
+            || !empty($this->availability_by_day);
+
+        if (!$hasAvailability) {
+            $missing[] = 'Availability Hours';
+        }
+
+        return $missing;
     }
 }

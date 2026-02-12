@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Models\Instructor;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -68,6 +69,9 @@ class InvitationController extends Controller
         // Check if user exists with this email
         $existingUser = User::where('email', $invitation->email)->first();
 
+        // Determine instructor_id (auto-create if needed for instructor role)
+        $instructorId = $invitation->instructor_id;
+
         if ($existingUser) {
             // Existing user - verify password and link to host
             $request->validate([
@@ -78,13 +82,22 @@ class InvitationController extends Controller
                 return back()->withErrors(['password' => 'The password is incorrect.']);
             }
 
+            // Auto-create instructor record if role is instructor and no instructor_id
+            if ($invitation->role === 'instructor' && !$instructorId) {
+                $instructorId = $this->ensureInstructorRecord(
+                    $invitation->host_id,
+                    $existingUser->full_name,
+                    $invitation->email
+                );
+            }
+
             // Update user to be linked to this host (for backwards compatibility)
             $existingUser->update([
                 'host_id' => $invitation->host_id,
                 'role' => $invitation->role,
                 'permissions' => $invitation->permissions,
                 'status' => User::STATUS_ACTIVE,
-                'instructor_id' => $invitation->instructor_id,
+                'instructor_id' => $instructorId,
                 'is_instructor' => $invitation->role === 'instructor',
                 'last_login_at' => now(),
             ]);
@@ -98,6 +111,16 @@ class InvitationController extends Controller
                 'password' => ['required', 'string', 'min:8', 'confirmed'],
             ]);
 
+            // Auto-create instructor record if role is instructor and no instructor_id
+            if ($invitation->role === 'instructor' && !$instructorId) {
+                $fullName = trim($request->first_name . ' ' . $request->last_name);
+                $instructorId = $this->ensureInstructorRecord(
+                    $invitation->host_id,
+                    $fullName,
+                    $invitation->email
+                );
+            }
+
             $user = User::create([
                 'host_id' => $invitation->host_id,
                 'first_name' => $request->first_name,
@@ -107,11 +130,26 @@ class InvitationController extends Controller
                 'role' => $invitation->role,
                 'permissions' => $invitation->permissions,
                 'status' => User::STATUS_ACTIVE,
-                'instructor_id' => $invitation->instructor_id,
+                'instructor_id' => $instructorId,
                 'is_instructor' => $invitation->role === 'instructor',
                 'email_verified_at' => now(), // Auto-verify since they received the email
                 'last_login_at' => now(),
             ]);
+        }
+
+        // Link the instructor record to the user (bidirectional)
+        if ($instructorId) {
+            $instructor = Instructor::find($instructorId);
+            $updateData = [
+                'user_id' => $user->id,
+                'name' => $user->full_name, // Update name from user's actual name
+            ];
+            // Only set to active if profile is complete (has required employment details)
+            if ($instructor && $instructor->isProfileComplete()) {
+                $updateData['status'] = Instructor::STATUS_ACTIVE;
+                $updateData['is_active'] = true;
+            }
+            Instructor::where('id', $instructorId)->update($updateData);
         }
 
         // Add to host_user pivot table for multi-studio support
@@ -130,12 +168,23 @@ class InvitationController extends Controller
                 'host_id' => $invitation->host_id,
                 'role' => $invitation->role,
                 'permissions' => json_encode($invitation->permissions),
-                'instructor_id' => $invitation->instructor_id,
+                'instructor_id' => $instructorId,
                 'is_primary' => !$hasOtherHosts,
                 'joined_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+        } else {
+            // Update existing membership with instructor_id if needed
+            if ($instructorId) {
+                DB::table('host_user')
+                    ->where('user_id', $user->id)
+                    ->where('host_id', $invitation->host_id)
+                    ->update([
+                        'instructor_id' => $instructorId,
+                        'updated_at' => now(),
+                    ]);
+            }
         }
 
         // Mark invitation as accepted
@@ -149,5 +198,33 @@ class InvitationController extends Controller
 
         return redirect()->route('dashboard')
             ->with('success', "Welcome to {$invitation->host->studio_name}!");
+    }
+
+    /**
+     * Ensure an instructor record exists for the given host/email
+     * Returns the instructor_id
+     */
+    private function ensureInstructorRecord(int $hostId, string $name, string $email): int
+    {
+        // Check if instructor already exists with this email
+        $existingInstructor = Instructor::where('host_id', $hostId)
+            ->where('email', $email)
+            ->first();
+
+        if ($existingInstructor) {
+            return $existingInstructor->id;
+        }
+
+        // Create new instructor record - inactive until employment details are filled
+        $instructor = Instructor::create([
+            'host_id' => $hostId,
+            'name' => $name,
+            'email' => $email,
+            'is_active' => false, // Inactive until employment details are filled
+            'is_visible' => false,
+            'status' => Instructor::STATUS_PENDING,
+        ]);
+
+        return $instructor->id;
     }
 }

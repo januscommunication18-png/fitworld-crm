@@ -151,8 +151,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/helpdesk/{ticket}/convert', [\App\Http\Controllers\Host\HelpdeskController::class, 'convertToClient'])->name('helpdesk.convert');
     Route::delete('/helpdesk/{ticket}', [\App\Http\Controllers\Host\HelpdeskController::class, 'destroy'])->name('helpdesk.destroy');
 
-    // Instructors
+    // Instructors (main module - all CRUD operations here)
     Route::get('/instructors', [InstructorController::class, 'index'])->name('instructors.index');
+    Route::get('/instructors/create', [InstructorController::class, 'create'])->name('instructors.create');
+    Route::post('/instructors', [InstructorController::class, 'store'])->name('instructors.store');
+    Route::get('/instructors/{instructor}', [InstructorController::class, 'show'])->name('instructors.show');
+    Route::get('/instructors/{instructor}/edit', [InstructorController::class, 'edit'])->name('instructors.edit');
+    Route::put('/instructors/{instructor}', [InstructorController::class, 'update'])->name('instructors.update');
+    Route::delete('/instructors/{instructor}', [InstructorController::class, 'destroy'])->name('instructors.destroy');
+    Route::post('/instructors/{instructor}/toggle-status', [InstructorController::class, 'toggleStatus'])->name('instructors.toggle-status');
+    Route::post('/instructors/{instructor}/reset-password', [InstructorController::class, 'resetPassword'])->name('instructors.reset-password');
+    Route::post('/instructors/{instructor}/photo', [InstructorController::class, 'uploadPhoto'])->name('instructors.photo');
+    Route::delete('/instructors/{instructor}/photo', [InstructorController::class, 'removePhoto'])->name('instructors.photo.remove');
+    Route::post('/instructors/{instructor}/invite', [InstructorController::class, 'sendInvite'])->name('instructors.invite');
+    Route::post('/instructors/{instructor}/notes', [InstructorController::class, 'storeNote'])->name('instructors.notes.store');
+    Route::put('/instructor-notes/{note}', [InstructorController::class, 'updateNote'])->name('instructors.notes.update');
+    Route::delete('/instructor-notes/{note}', [InstructorController::class, 'deleteNote'])->name('instructors.notes.delete');
 
     // Catalog (Classes & Services)
     Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog.index');
@@ -269,15 +283,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/team/users/{user}/suspend', [TeamController::class, 'suspend'])->name('settings.team.users.suspend');
     Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
 
-    Route::get('/settings/team/instructors', [TeamController::class, 'instructors'])->name('settings.team.instructors');
-    Route::get('/settings/team/instructors/create', [TeamController::class, 'createInstructor'])->name('settings.team.instructors.create');
-    Route::post('/settings/team/instructors', [TeamController::class, 'storeInstructor'])->name('settings.team.instructors.store');
-    Route::get('/settings/team/instructors/{instructor}/edit', [TeamController::class, 'editInstructor'])->name('settings.team.instructors.edit');
-    Route::put('/settings/team/instructors/{instructor}', [TeamController::class, 'updateInstructor'])->name('settings.team.instructors.update');
-    Route::post('/settings/team/instructors/{instructor}/photo', [TeamController::class, 'uploadInstructorPhoto'])->name('settings.team.instructors.photo');
-    Route::delete('/settings/team/instructors/{instructor}/photo', [TeamController::class, 'removeInstructorPhoto'])->name('settings.team.instructors.photo.remove');
-    Route::post('/settings/team/instructors/{instructor}/invite', [TeamController::class, 'inviteInstructor'])->name('settings.team.instructors.invite');
-    Route::delete('/settings/team/instructors/{instructor}', [TeamController::class, 'deleteInstructor'])->name('settings.team.instructors.delete');
+    // Redirect old settings instructor routes to main instructors module
+    Route::get('/settings/team/instructors', fn() => redirect()->route('instructors.index'))->name('settings.team.instructors');
+    Route::get('/settings/team/instructors/create', fn() => redirect()->route('instructors.create'))->name('settings.team.instructors.create');
+    Route::get('/settings/team/instructors/{instructor}/edit', fn($instructor) => redirect()->route('instructors.edit', $instructor))->name('settings.team.instructors.edit');
 
     Route::get('/settings/team/permissions', [TeamController::class, 'permissions'])->name('settings.team.permissions');
     Route::get('/settings/team/permissions/{user}/edit', [TeamController::class, 'editPermissions'])->name('settings.team.permissions.edit');

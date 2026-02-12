@@ -77,19 +77,14 @@
                 </div>
                 @endif
 
-                {{-- Team - Requires team.view or team.manage or team.instructors --}}
-                @if($canViewTeam || $canManageTeam || $canManageInstructors || $canChangePermissions)
+                {{-- Team - Requires team.view or team.manage --}}
+                @if($canViewTeam || $canManageTeam || $canChangePermissions)
                 <div>
                     <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Team</div>
                     <ul class="menu menu-sm p-0">
                         @if($canViewTeam || $canManageTeam)
                         <li><a href="{{ route('settings.team.users') }}" class="{{ request()->routeIs('settings.team.users') ? 'active' : '' }}">
                             <span class="icon-[tabler--users] size-4"></span> Users & Roles
-                        </a></li>
-                        @endif
-                        @if($canManageInstructors)
-                        <li><a href="{{ route('settings.team.instructors') }}" class="{{ request()->routeIs('settings.team.instructors') ? 'active' : '' }}">
-                            <span class="icon-[tabler--user-star] size-4"></span> Instructors
                         </a></li>
                         @endif
                         @if($canChangePermissions)

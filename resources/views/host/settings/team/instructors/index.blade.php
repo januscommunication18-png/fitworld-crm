@@ -110,10 +110,14 @@
                             </td>
                             <td>
                                 <div class="flex flex-col gap-1">
-                                    @if($instructor->is_active)
+                                    @if($instructor->status === 'pending' || !$instructor->isProfileComplete())
+                                        <span class="badge badge-warning badge-soft badge-sm" title="Profile incomplete - cannot be assigned to classes">
+                                            <span class="icon-[tabler--alert-triangle] size-3 mr-1"></span> Pending Setup
+                                        </span>
+                                    @elseif($instructor->is_active)
                                         <span class="badge badge-success badge-soft badge-sm">Active</span>
                                     @else
-                                        <span class="badge badge-warning badge-soft badge-sm">Inactive</span>
+                                        <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
                                     @endif
                                     @if(!$instructor->is_visible)
                                         <span class="badge badge-neutral badge-soft badge-xs">Hidden</span>

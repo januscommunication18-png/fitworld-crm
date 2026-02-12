@@ -1,20 +1,20 @@
-@extends('layouts.settings')
+@extends('layouts.dashboard')
 
-@section('title', 'Edit Instructor — Settings')
+@section('title', 'Edit ' . $instructor->name . ' — Instructor')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('settings.index') }}"><span class="icon-[tabler--settings] me-1 size-4"></span> Settings</a></li>
+        <li><a href="{{ route('instructors.index') }}">Instructors</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('settings.team.instructors') }}">Instructors</a></li>
+        <li><a href="{{ route('instructors.show', $instructor) }}">{{ $instructor->name }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Edit {{ $instructor->name }}</li>
+        <li aria-current="page">Edit</li>
     </ol>
 @endsection
 
-@section('settings-content')
+@section('content')
 <div class="space-y-6">
     {{-- Incomplete Profile Warning --}}
     @if(!empty($missingFields))
@@ -42,10 +42,10 @@
     </div>
     @endif
 
-    <form action="{{ route('settings.team.instructors.update', $instructor) }}" method="POST">
+    <form action="{{ route('instructors.update', $instructor) }}" method="POST">
         @csrf
         @method('PUT')
-        @include('host.settings.team.instructors._form')
+        @include('host.instructors._form')
     </form>
 </div>
 @endsection

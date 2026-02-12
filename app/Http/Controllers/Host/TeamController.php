@@ -108,18 +108,69 @@ class TeamController extends Controller
             return back()->with('error', 'Cannot modify the owner.');
         }
 
+        $host = auth()->user()->currentHost();
+
         $validated = $request->validate([
             'role' => 'required|in:admin,staff,instructor',
             'permissions' => 'nullable|array',
         ]);
 
+        $instructorId = $user->instructor_id;
+        $wasInstructor = $user->role === User::ROLE_INSTRUCTOR || $user->is_instructor;
+        $isNowInstructor = $validated['role'] === User::ROLE_INSTRUCTOR;
+
+        // Auto-create instructor record when role changes to instructor
+        if ($isNowInstructor && !$instructorId) {
+            // Check if instructor already exists with this email
+            $existingInstructor = Instructor::where('host_id', $host->id)
+                ->where('email', $user->email)
+                ->first();
+
+            if ($existingInstructor) {
+                $instructorId = $existingInstructor->id;
+                // Link user to instructor
+                $existingInstructor->update(['user_id' => $user->id]);
+            } else {
+                // Create new instructor record - inactive until employment details are filled
+                $instructor = Instructor::create([
+                    'host_id' => $host->id,
+                    'user_id' => $user->id,
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'is_active' => false, // Inactive until employment details are filled
+                    'is_visible' => false,
+                    'status' => Instructor::STATUS_PENDING,
+                ]);
+                $instructorId = $instructor->id;
+            }
+        }
+
+        // Update user
         $user->update([
             'role' => $validated['role'],
             'permissions' => $validated['permissions'] ?? null,
+            'instructor_id' => $instructorId,
+            'is_instructor' => $isNowInstructor,
         ]);
 
+        // Update host_user pivot table
+        \DB::table('host_user')
+            ->where('user_id', $user->id)
+            ->where('host_id', $host->id)
+            ->update([
+                'role' => $validated['role'],
+                'permissions' => json_encode($validated['permissions'] ?? null),
+                'instructor_id' => $instructorId,
+                'updated_at' => now(),
+            ]);
+
+        $successMessage = 'User updated successfully.';
+        if ($isNowInstructor && !$wasInstructor) {
+            $successMessage .= ' Instructor profile needs to be completed before they can be assigned to classes.';
+        }
+
         return redirect()->route('settings.team.users')
-            ->with('success', 'User updated successfully.');
+            ->with('success', $successMessage);
     }
 
     /**
@@ -145,12 +196,37 @@ class TeamController extends Controller
             'email.unique' => 'This email is already registered or has a pending invitation.',
         ]);
 
+        $instructorId = $validated['instructor_id'] ?? null;
+
+        // Auto-create instructor record when inviting with instructor role
+        if ($validated['role'] === User::ROLE_INSTRUCTOR && !$instructorId) {
+            // Check if instructor already exists with this email
+            $existingInstructor = Instructor::where('host_id', $host->id)
+                ->where('email', $validated['email'])
+                ->first();
+
+            if ($existingInstructor) {
+                $instructorId = $existingInstructor->id;
+            } else {
+                // Create a basic instructor record - inactive until profile is completed
+                $instructor = Instructor::create([
+                    'host_id' => $host->id,
+                    'name' => $validated['email'], // Use email as placeholder name
+                    'email' => $validated['email'],
+                    'is_active' => false, // Inactive until employment details are filled
+                    'is_visible' => false,
+                    'status' => Instructor::STATUS_PENDING,
+                ]);
+                $instructorId = $instructor->id;
+            }
+        }
+
         $invitation = TeamInvitation::create([
             'host_id' => $host->id,
             'email' => $validated['email'],
             'role' => $validated['role'],
             'permissions' => $validated['permissions'] ?? null,
-            'instructor_id' => $validated['instructor_id'] ?? null,
+            'instructor_id' => $instructorId,
             'token' => TeamInvitation::generateToken(),
             'status' => TeamInvitation::STATUS_PENDING,
             'expires_at' => now()->addDays(7),
@@ -216,13 +292,64 @@ class TeamController extends Controller
             return back()->with('error', 'Cannot change the owner\'s role.');
         }
 
+        $host = auth()->user()->currentHost();
+
         $validated = $request->validate([
             'role' => 'required|in:admin,staff,instructor',
         ]);
 
-        $user->update(['role' => $validated['role']]);
+        $instructorId = $user->instructor_id;
+        $isNowInstructor = $validated['role'] === User::ROLE_INSTRUCTOR;
 
-        return back()->with('success', 'Role updated for ' . $user->full_name);
+        // Auto-create instructor record when role changes to instructor
+        if ($isNowInstructor && !$instructorId) {
+            // Check if instructor already exists with this email
+            $existingInstructor = Instructor::where('host_id', $host->id)
+                ->where('email', $user->email)
+                ->first();
+
+            if ($existingInstructor) {
+                $instructorId = $existingInstructor->id;
+                // Link user to instructor
+                $existingInstructor->update(['user_id' => $user->id]);
+            } else {
+                // Create new instructor record - inactive until employment details are filled
+                $instructor = Instructor::create([
+                    'host_id' => $host->id,
+                    'user_id' => $user->id,
+                    'name' => $user->full_name,
+                    'email' => $user->email,
+                    'is_active' => false, // Inactive until employment details are filled
+                    'is_visible' => false,
+                    'status' => Instructor::STATUS_PENDING,
+                ]);
+                $instructorId = $instructor->id;
+            }
+        }
+
+        // Update user
+        $user->update([
+            'role' => $validated['role'],
+            'instructor_id' => $instructorId,
+            'is_instructor' => $isNowInstructor,
+        ]);
+
+        // Update host_user pivot table
+        \DB::table('host_user')
+            ->where('user_id', $user->id)
+            ->where('host_id', $host->id)
+            ->update([
+                'role' => $validated['role'],
+                'instructor_id' => $instructorId,
+                'updated_at' => now(),
+            ]);
+
+        $successMessage = 'Role updated for ' . $user->full_name;
+        if ($isNowInstructor && !$instructorId) {
+            $successMessage .= '. Instructor profile needs to be completed.';
+        }
+
+        return back()->with('success', $successMessage);
     }
 
     /**
@@ -366,12 +493,15 @@ class TeamController extends Controller
     {
         $this->authorizeInstructor($instructor);
 
+        $missingFields = $instructor->isProfileComplete() ? [] : $instructor->getMissingProfileFields();
+
         return view('host.settings.team.instructors.edit', [
             'instructor' => $instructor,
             'specialties' => Instructor::getCommonSpecialties(),
             'employmentTypes' => Instructor::getEmploymentTypes(),
             'rateTypes' => Instructor::getRateTypes(),
             'dayOptions' => Instructor::getDayOptions(),
+            'missingFields' => $missingFields,
         ]);
     }
 
@@ -413,12 +543,43 @@ class TeamController extends Controller
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['status'] = Instructor::STATUS_ACTIVE;
 
+        // Check if a user already exists with this email (auto-link)
+        $existingUser = null;
+        if (!empty($validated['email'])) {
+            $existingUser = $host->teamMembers()
+                ->where('email', $validated['email'])
+                ->first();
+
+            if ($existingUser) {
+                $validated['user_id'] = $existingUser->id;
+            }
+        }
+
         $instructor = Instructor::create($validated);
 
         $successMessage = 'Instructor added successfully.';
 
-        // Auto-send invitation if email is provided
-        if (!empty($validated['email'])) {
+        // If user was auto-linked, update user's instructor_id and role
+        if ($existingUser) {
+            $existingUser->update([
+                'instructor_id' => $instructor->id,
+                'role' => User::ROLE_INSTRUCTOR,
+                'is_instructor' => true,
+            ]);
+
+            // Update host_user pivot table
+            \DB::table('host_user')
+                ->where('user_id', $existingUser->id)
+                ->where('host_id', $host->id)
+                ->update([
+                    'role' => User::ROLE_INSTRUCTOR,
+                    'instructor_id' => $instructor->id,
+                    'updated_at' => now(),
+                ]);
+
+            $successMessage = 'Instructor added and linked to existing user ' . $existingUser->full_name . '.';
+        } elseif (!empty($validated['email'])) {
+            // Auto-send invitation if email is provided and no existing user
             $invitation = TeamInvitation::create([
                 'host_id' => $host->id,
                 'email' => $validated['email'],
@@ -451,6 +612,9 @@ class TeamController extends Controller
     {
         $this->authorizeInstructor($instructor);
 
+        $wasPending = $instructor->status === Instructor::STATUS_PENDING;
+        $wasInactive = !$instructor->is_active;
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -482,7 +646,28 @@ class TeamController extends Controller
 
         $instructor->update($validated);
 
-        return back()->with('success', 'Instructor updated successfully.');
+        // Refresh the model to check profile completeness with updated values
+        $instructor->refresh();
+
+        // Auto-activate if profile is now complete and was pending
+        $successMessage = 'Instructor updated successfully.';
+        if ($instructor->isProfileComplete()) {
+            if ($wasPending || ($wasInactive && $instructor->status === Instructor::STATUS_PENDING)) {
+                $instructor->update([
+                    'status' => Instructor::STATUS_ACTIVE,
+                    'is_active' => true,
+                ]);
+                $successMessage = 'Instructor profile completed and activated successfully.';
+            }
+        } else {
+            // Profile incomplete - show what's missing
+            $missing = $instructor->getMissingProfileFields();
+            if (!empty($missing) && $instructor->status === Instructor::STATUS_PENDING) {
+                $successMessage = 'Instructor updated. To activate, please complete: ' . implode(', ', $missing) . '.';
+            }
+        }
+
+        return back()->with('success', $successMessage);
     }
 
     /**
