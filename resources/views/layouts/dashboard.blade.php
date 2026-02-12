@@ -49,6 +49,9 @@
     @include('components.alerts-drawer')
     @include('components.app-modal')
 
+    {{-- Global Confirmation Modals --}}
+    @include('partials.modals.confirmation-modals')
+
     {{-- Page-specific modals (pushed from child views) --}}
     @stack('modals')
 

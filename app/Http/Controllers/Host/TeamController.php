@@ -7,9 +7,11 @@ use App\Mail\TeamInvitationMail;
 use App\Models\Instructor;
 use App\Models\TeamInvitation;
 use App\Models\User;
+use App\Models\UserNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -39,16 +41,35 @@ class TeamController extends Controller
 
         $users = $usersQuery->paginate(10)->withQueryString();
 
+        // Get instructors without login (no user_id)
+        $instructorsWithoutLoginQuery = $host->instructors()
+            ->whereNull('user_id')
+            ->orderBy('name');
+
+        if ($search) {
+            $instructorsWithoutLoginQuery->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $instructorsWithoutLogin = $instructorsWithoutLoginQuery->get();
+
+        // Get pending invitations (shown inline with users)
         $invitationsQuery = TeamInvitation::where('host_id', $host->id)
             ->whereIn('status', [TeamInvitation::STATUS_PENDING, TeamInvitation::STATUS_EXPIRED])
             ->with('invitedBy')
             ->orderBy('created_at', 'desc');
 
         if ($search) {
-            $invitationsQuery->where('email', 'like', "%{$search}%");
+            $invitationsQuery->where(function ($query) use ($search) {
+                $query->where('email', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('last_name', 'like', "%{$search}%");
+            });
         }
 
-        $invitations = $invitationsQuery->paginate(10, ['*'], 'invitations_page')->withQueryString();
+        $invitations = $invitationsQuery->get();
 
         // Get role counts from pivot table (unaffected by search/pagination)
         $roleCounts = $host->teamMembers()
@@ -57,13 +78,18 @@ class TeamController extends Controller
             ->pluck('count', 'role')
             ->toArray();
 
+        // Add instructors without login to the instructor count
+        $instructorsWithoutLoginCount = $host->instructors()->whereNull('user_id')->count();
+
         return view('host.settings.team.users.index', [
             'users' => $users,
+            'instructorsWithoutLogin' => $instructorsWithoutLogin,
             'invitations' => $invitations,
             'roles' => User::getRoles(),
             'statuses' => User::getStatuses(),
             'search' => $search,
             'roleCounts' => $roleCounts,
+            'instructorsWithoutLoginCount' => $instructorsWithoutLoginCount,
         ]);
     }
 
@@ -75,7 +101,120 @@ class TeamController extends Controller
         return view('host.settings.team.users.invite', [
             'roles' => User::getRoles(),
             'groupedPermissions' => User::getAllPermissions(),
+            'specialties' => Instructor::getCommonSpecialties(),
+            'employmentTypes' => Instructor::getEmploymentTypes(),
+            'rateTypes' => Instructor::getRateTypes(),
+            'dayOptions' => Instructor::getDayOptions(),
         ]);
+    }
+
+    /**
+     * Show user profile
+     */
+    public function showUser(Request $request, User $user)
+    {
+        $this->authorizeUser($user);
+
+        $host = auth()->user()->currentHost();
+
+        // Reload user through host relationship to get pivot data
+        $userWithPivot = $host->teamMembers()
+            ->withTrashed()
+            ->where('users.id', $user->id)
+            ->first();
+
+        if ($userWithPivot) {
+            $user = $userWithPivot;
+        }
+
+        // Eager load notes with author
+        $user->load(['notes' => function ($query) use ($host) {
+            $query->where('host_id', $host->id)->with('author')->orderBy('created_at', 'desc');
+        }]);
+
+        // Get permissions labels
+        $allPermissions = [];
+        foreach (User::getAllPermissions() as $category => $permissions) {
+            foreach ($permissions as $key => $label) {
+                $allPermissions[$key] = $label;
+            }
+        }
+
+        // Get user's role from pivot or user model
+        $userRole = $user->pivot->role ?? $user->role;
+
+        // Get user's permissions from pivot or user model
+        $userPermissions = $user->getPermissionsForHost($host) ?? $user->permissions;
+
+        // Get linked instructor if this is an instructor role
+        $instructor = null;
+        if ($userRole === User::ROLE_INSTRUCTOR) {
+            $instructor = $user->instructor ?? Instructor::where('host_id', $host->id)
+                ->where('user_id', $user->id)
+                ->first();
+        }
+
+        // Get tab from query string
+        $tab = $request->get('tab', 'overview');
+        if (!in_array($tab, ['overview', 'notes', 'billing'])) {
+            $tab = 'overview';
+        }
+
+        return view('host.settings.team.users.show', [
+            'user' => $user,
+            'userPermissions' => $userPermissions,
+            'allPermissions' => $allPermissions,
+            'instructor' => $instructor,
+            'tab' => $tab,
+            'noteTypes' => UserNote::getNoteTypes(),
+        ]);
+    }
+
+    /**
+     * Store a note for a user
+     */
+    public function storeUserNote(Request $request, User $user)
+    {
+        $this->authorizeUser($user);
+
+        $validated = $request->validate([
+            'note_type' => 'required|in:note,performance,hr,incident,system',
+            'content' => 'required|string|max:5000',
+            'is_visible_to_user' => 'boolean',
+        ]);
+
+        $host = auth()->user()->currentHost();
+
+        $note = UserNote::create([
+            'subject_user_id' => $user->id,
+            'host_id' => $host->id,
+            'author_id' => auth()->id(),
+            'note_type' => $validated['note_type'],
+            'content' => $validated['content'],
+            'is_visible_to_user' => $validated['is_visible_to_user'] ?? false,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'note' => $note->load('author'),
+        ]);
+    }
+
+    /**
+     * Delete a user note
+     */
+    public function deleteUserNote(UserNote $note)
+    {
+        $host = auth()->user()->currentHost();
+
+        // Verify the note belongs to this host
+        if ($note->host_id !== $host->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $note->delete();
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -179,51 +318,90 @@ class TeamController extends Controller
     public function invite(Request $request)
     {
         $host = auth()->user()->currentHost();
+        $sendInvite = $request->boolean('send_invite');
 
-        $validated = $request->validate([
-            'email' => [
+        // Build validation rules based on whether we're sending invite or not
+        $rules = [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'role' => 'required|in:admin,staff,instructor',
+            'permissions' => 'nullable|array',
+            'send_invite' => 'boolean',
+            // Profile fields
+            'phone' => 'nullable|string|max:50',
+            'bio' => 'nullable|string|max:2000',
+            'specialties' => 'nullable|array',
+            'certifications' => 'nullable|string|max:1000',
+            // Employment Details
+            'employment_type' => ['nullable', Rule::in(array_keys(Instructor::getEmploymentTypes()))],
+            'rate_type' => ['nullable', Rule::in(array_keys(Instructor::getRateTypes()))],
+            'rate_amount' => 'nullable|numeric|min:0|max:99999.99',
+            'compensation_notes' => 'nullable|string|max:1000',
+            // Workload
+            'hours_per_week' => 'nullable|numeric|min:0|max:168',
+            'max_classes_per_week' => 'nullable|integer|min:0|max:100',
+            // Working Days
+            'working_days' => 'nullable|array',
+            'working_days.*' => 'integer|between:0,6',
+            // Availability
+            'availability_default_from' => 'nullable|date_format:H:i',
+            'availability_default_to' => 'nullable|date_format:H:i',
+            'availability_by_day' => 'nullable|array',
+        ];
+
+        if ($sendInvite) {
+            $rules['email'] = [
                 'required',
                 'email',
-                Rule::unique('users', 'email')->where('host_id', $host->id),
+                Rule::unique('users', 'email'),
                 Rule::unique('team_invitations', 'email')
                     ->where('host_id', $host->id)
                     ->where('status', TeamInvitation::STATUS_PENDING),
-            ],
-            'role' => 'required|in:admin,staff,instructor',
-            'permissions' => 'nullable|array',
-            'instructor_id' => 'nullable|exists:instructors,id',
-        ], [
+            ];
+        } else {
+            $rules['email'] = 'nullable|email';
+        }
+
+        $validated = $request->validate($rules, [
             'email.unique' => 'This email is already registered or has a pending invitation.',
         ]);
 
-        $instructorId = $validated['instructor_id'] ?? null;
+        $fullName = trim($validated['first_name'] . ' ' . $validated['last_name']);
+        $email = $validated['email'] ?? null;
+
+        // If NOT sending invite, create team member directly without login capability
+        if (!$sendInvite) {
+            return $this->createTeamMemberWithoutLogin($host, $validated, $fullName, $email, $request);
+        }
+
+        // Otherwise, send invitation (existing flow)
+        $instructorId = null;
 
         // Auto-create instructor record when inviting with instructor role
-        if ($validated['role'] === User::ROLE_INSTRUCTOR && !$instructorId) {
+        if ($validated['role'] === User::ROLE_INSTRUCTOR) {
             // Check if instructor already exists with this email
             $existingInstructor = Instructor::where('host_id', $host->id)
-                ->where('email', $validated['email'])
+                ->where('email', $email)
                 ->first();
 
             if ($existingInstructor) {
                 $instructorId = $existingInstructor->id;
+                // Update existing instructor with new details
+                $existingInstructor->update($this->extractInstructorData($validated, $fullName, $email));
             } else {
-                // Create a basic instructor record - inactive until profile is completed
-                $instructor = Instructor::create([
-                    'host_id' => $host->id,
-                    'name' => $validated['email'], // Use email as placeholder name
-                    'email' => $validated['email'],
-                    'is_active' => false, // Inactive until employment details are filled
-                    'is_visible' => false,
-                    'status' => Instructor::STATUS_PENDING,
-                ]);
+                // Create a full instructor record with all details
+                $instructorData = $this->extractInstructorData($validated, $fullName, $email);
+                $instructorData['host_id'] = $host->id;
+                $instructor = Instructor::create($instructorData);
                 $instructorId = $instructor->id;
             }
         }
 
         $invitation = TeamInvitation::create([
             'host_id' => $host->id,
-            'email' => $validated['email'],
+            'email' => $email,
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
             'role' => $validated['role'],
             'permissions' => $validated['permissions'] ?? null,
             'instructor_id' => $instructorId,
@@ -241,7 +419,108 @@ class TeamController extends Controller
         ));
 
         return redirect()->route('settings.team.users')
-            ->with('success', 'Invitation sent to ' . $validated['email']);
+            ->with('success', 'Invitation sent to ' . $email);
+    }
+
+    /**
+     * Extract instructor-specific data from validated form data
+     */
+    protected function extractInstructorData(array $validated, string $fullName, ?string $email): array
+    {
+        $profileComplete = !empty($validated['employment_type']) && !empty($validated['rate_type']);
+
+        return [
+            'name' => $fullName,
+            'email' => $email,
+            'phone' => $validated['phone'] ?? null,
+            'bio' => $validated['bio'] ?? null,
+            'specialties' => $validated['specialties'] ?? null,
+            'certifications' => $validated['certifications'] ?? null,
+            'employment_type' => $validated['employment_type'] ?? null,
+            'rate_type' => $validated['rate_type'] ?? null,
+            'rate_amount' => $validated['rate_amount'] ?? null,
+            'compensation_notes' => $validated['compensation_notes'] ?? null,
+            'hours_per_week' => $validated['hours_per_week'] ?? null,
+            'max_classes_per_week' => $validated['max_classes_per_week'] ?? null,
+            'working_days' => $validated['working_days'] ?? null,
+            'availability_default_from' => $validated['availability_default_from'] ?? null,
+            'availability_default_to' => $validated['availability_default_to'] ?? null,
+            'availability_by_day' => $validated['availability_by_day'] ?? null,
+            'is_active' => $profileComplete,
+            'is_visible' => false,
+            'status' => $profileComplete ? Instructor::STATUS_ACTIVE : Instructor::STATUS_PENDING,
+        ];
+    }
+
+    /**
+     * Create a team member without login capability
+     */
+    protected function createTeamMemberWithoutLogin($host, array $validated, string $fullName, ?string $email, Request $request)
+    {
+        // For instructor role, create instructor record with all details
+        if ($validated['role'] === User::ROLE_INSTRUCTOR) {
+            // Check if instructor already exists with this email (if provided)
+            $existingInstructor = null;
+            if ($email) {
+                $existingInstructor = Instructor::where('host_id', $host->id)
+                    ->where('email', $email)
+                    ->first();
+            }
+
+            if ($existingInstructor) {
+                // Update existing instructor with new details
+                $existingInstructor->update($this->extractInstructorData($validated, $fullName, $email));
+                return redirect()->route('instructors.show', $existingInstructor)
+                    ->with('success', 'Instructor "' . $fullName . '" updated.');
+            }
+
+            // Create instructor record without user link, with all details
+            $instructorData = $this->extractInstructorData($validated, $fullName, $email);
+            $instructorData['host_id'] = $host->id;
+            $instructor = Instructor::create($instructorData);
+
+            $message = $instructor->isProfileComplete()
+                ? 'Instructor "' . $fullName . '" added and activated.'
+                : 'Instructor "' . $fullName . '" added. Complete employment details to activate.';
+
+            return redirect()->route('instructors.show', $instructor)
+                ->with('success', $message);
+        }
+
+        // For admin/staff without login - create user without password
+        // Use a placeholder email if none provided (ensures unique constraint is met)
+        $userEmail = $email ?? $this->generatePlaceholderEmail($host, $fullName);
+
+        $user = User::create([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $userEmail,
+            'password' => null, // No password = cannot login
+            'host_id' => $host->id,
+            'role' => $validated['role'],
+            'permissions' => $validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role']),
+            'email_verified_at' => null,
+        ]);
+
+        // Attach to host via pivot table
+        $host->teamMembers()->attach($user->id, [
+            'role' => $validated['role'],
+            'permissions' => json_encode($validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role'])),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->route('settings.team.users')
+            ->with('success', 'Team member "' . $fullName . '" added without login access.');
+    }
+
+    /**
+     * Generate a placeholder email for users without email
+     */
+    protected function generatePlaceholderEmail($host, string $name): string
+    {
+        $slug = \Illuminate\Support\Str::slug($name);
+        return $slug . '-' . $host->id . '-' . time() . '@nologin.local';
     }
 
     /**
@@ -418,6 +697,85 @@ class TeamController extends Controller
         $user->delete();
 
         return back()->with('success', $user->full_name . ' has been removed from the team.');
+    }
+
+    /**
+     * Send password reset email to user
+     */
+    public function resetUserPassword(User $user)
+    {
+        $this->authorizeUser($user);
+
+        if ($user->isOwner()) {
+            return response()->json(['message' => 'Cannot reset owner password.'], 403);
+        }
+
+        if (!$user->password) {
+            return response()->json(['message' => 'User does not have login access.'], 400);
+        }
+
+        // Send password reset email
+        $status = Password::sendResetLink(['email' => $user->email]);
+
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json(['message' => 'Password reset email sent to ' . $user->email]);
+        }
+
+        return response()->json(['message' => 'Failed to send password reset email.'], 500);
+    }
+
+    /**
+     * Send login invitation to existing team member without login
+     */
+    public function sendUserInvite(User $user)
+    {
+        $this->authorizeUser($user);
+        $host = auth()->user()->currentHost();
+
+        if ($user->password) {
+            return back()->with('error', 'User already has login access.');
+        }
+
+        if (!$user->email || str_contains($user->email, '@nologin.local')) {
+            return back()->with('error', 'User does not have a valid email address.');
+        }
+
+        // Check for existing pending invitation
+        $existingInvite = TeamInvitation::where('host_id', $host->id)
+            ->where('email', $user->email)
+            ->where('status', TeamInvitation::STATUS_PENDING)
+            ->first();
+
+        if ($existingInvite) {
+            return back()->with('error', 'An invitation is already pending for this email.');
+        }
+
+        // Get user's role from pivot
+        $userRole = $user->pivot->role ?? $user->role;
+
+        // Create invitation
+        $invitation = TeamInvitation::create([
+            'host_id' => $host->id,
+            'email' => $user->email,
+            'first_name' => $user->first_name,
+            'last_name' => $user->last_name,
+            'role' => $userRole,
+            'permissions' => $user->permissions,
+            'instructor_id' => $user->instructor_id,
+            'token' => TeamInvitation::generateToken(),
+            'status' => TeamInvitation::STATUS_PENDING,
+            'expires_at' => now()->addDays(7),
+            'invited_by' => auth()->id(),
+        ]);
+
+        // Send invitation email
+        Mail::to($invitation->email)->send(new TeamInvitationMail(
+            $invitation,
+            $host->studio_name ?? 'Our Studio',
+            auth()->user()->full_name
+        ));
+
+        return back()->with('success', 'Login invitation sent to ' . $user->email);
     }
 
     /**
@@ -690,7 +1048,8 @@ class TeamController extends Controller
             }
         }
 
-        $path = $request->file('photo')->storePublicly('instructors/' . $instructor->id, config('filesystems.uploads'));
+        $host = auth()->user()->currentHost();
+        $path = $request->file('photo')->storePublicly($host->getStoragePath('instructors'), config('filesystems.uploads'));
         $instructor->update(['photo_path' => $path]);
 
         return response()->json([

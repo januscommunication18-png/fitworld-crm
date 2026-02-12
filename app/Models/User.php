@@ -154,6 +154,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Instructor::class);
     }
 
+    /**
+     * Notes about this user (as subject)
+     */
+    public function notes()
+    {
+        return $this->hasMany(UserNote::class, 'subject_user_id')->orderBy('created_at', 'desc');
+    }
+
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";

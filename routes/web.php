@@ -275,12 +275,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/team/invite', [TeamController::class, 'invite'])->name('settings.team.invite');
     Route::post('/settings/team/invitations/{invitation}/resend', [TeamController::class, 'resendInvite'])->name('settings.team.invite.resend');
     Route::delete('/settings/team/invitations/{invitation}', [TeamController::class, 'revokeInvite'])->name('settings.team.invite.revoke');
+    Route::get('/settings/team/users/{user}', [TeamController::class, 'showUser'])->name('settings.team.users.show')->where('user', '[0-9]+');
     Route::get('/settings/team/users/{user}/edit', [TeamController::class, 'editUser'])->name('settings.team.users.edit');
     Route::put('/settings/team/users/{user}', [TeamController::class, 'updateUser'])->name('settings.team.users.update');
     Route::put('/settings/team/users/{user}/role', [TeamController::class, 'updateRole'])->name('settings.team.users.role');
     Route::post('/settings/team/users/{user}/deactivate', [TeamController::class, 'deactivate'])->name('settings.team.users.deactivate');
     Route::post('/settings/team/users/{user}/reactivate', [TeamController::class, 'reactivate'])->name('settings.team.users.reactivate');
     Route::post('/settings/team/users/{user}/suspend', [TeamController::class, 'suspend'])->name('settings.team.users.suspend');
+    Route::post('/settings/team/users/{user}/reset-password', [TeamController::class, 'resetUserPassword'])->name('settings.team.users.reset-password');
+    Route::post('/settings/team/users/{user}/send-invite', [TeamController::class, 'sendUserInvite'])->name('settings.team.users.send-invite');
+    Route::post('/settings/team/users/{user}/notes', [TeamController::class, 'storeUserNote'])->name('settings.team.users.notes.store');
+    Route::delete('/settings/team/user-notes/{note}', [TeamController::class, 'deleteUserNote'])->name('settings.team.user-notes.delete');
     Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
 
     // Redirect old settings instructor routes to main instructors module

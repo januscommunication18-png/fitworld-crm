@@ -30,6 +30,35 @@ class InstructorController extends Controller
     }
 
     /**
+     * Auto-link instructors to users with matching email (fix data inconsistencies)
+     */
+    private function autoLinkInstructorsToUsers($host): void
+    {
+        // Get instructors without user_id but with email
+        $unlinkedInstructors = $host->instructors()
+            ->whereNull('user_id')
+            ->whereNotNull('email')
+            ->get();
+
+        foreach ($unlinkedInstructors as $instructor) {
+            // Find user with matching email that has a password (has login)
+            $user = User::where('email', $instructor->email)
+                ->whereNotNull('password')
+                ->first();
+
+            if ($user) {
+                // Link the instructor to the user
+                $instructor->update(['user_id' => $user->id]);
+
+                // Also update user's instructor_id if not set
+                if (!$user->instructor_id) {
+                    $user->update(['instructor_id' => $instructor->id]);
+                }
+            }
+        }
+    }
+
+    /**
      * Authorize that the note belongs to the current host
      */
     private function authorizeNote(InstructorNote $note): void
@@ -46,6 +75,9 @@ class InstructorController extends Controller
     {
         $host = auth()->user()->host;
         $view = $request->get('view', 'list');
+
+        // Auto-fix: Link any unlinked instructors to existing users with matching email
+        $this->autoLinkInstructorsToUsers($host);
 
         $query = $host->instructors()->with(['user', 'invitation']);
 
@@ -83,12 +115,8 @@ class InstructorController extends Controller
             'total' => $host->instructors()->count(),
             'active' => $host->instructors()->where('is_active', true)->count(),
             'inactive' => $host->instructors()->where('is_active', false)->count(),
-            'with_account' => $host->instructors()->whereNotNull('user_id')->count(),
-            'pending_invite' => $host->instructors()
-                ->whereHas('invitation', function ($q) {
-                    $q->where('status', 'pending')->where('expires_at', '>', now());
-                })
-                ->count(),
+            'with_login' => $host->instructors()->whereNotNull('user_id')->count(),
+            'no_login' => $host->instructors()->whereNull('user_id')->count(),
         ];
 
         return view('host.instructors.index', [
@@ -368,7 +396,8 @@ class InstructorController extends Controller
             }
         }
 
-        $path = $request->file('photo')->storePublicly('instructors/' . $instructor->id, config('filesystems.uploads'));
+        $host = auth()->user()->currentHost();
+        $path = $request->file('photo')->storePublicly($host->getStoragePath('instructors'), config('filesystems.uploads'));
         $instructor->update(['photo_path' => $path]);
 
         return response()->json([

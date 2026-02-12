@@ -90,6 +90,28 @@ class Host extends Model
     }
 
     /**
+     * Get the storage folder path for this host
+     * Format: studioname_hostid (sanitized, lowercase, no special chars)
+     */
+    public function getStoragePath(string $subfolder = ''): string
+    {
+        // Sanitize studio name: lowercase, replace spaces with hyphens, remove special chars
+        $sanitizedName = strtolower($this->studio_name ?? 'studio');
+        $sanitizedName = preg_replace('/[^a-z0-9]+/', '-', $sanitizedName);
+        $sanitizedName = trim($sanitizedName, '-');
+
+        // Build folder path: studioname_hostid
+        $basePath = $sanitizedName . '_' . $this->id;
+
+        // Append subfolder if provided
+        if ($subfolder) {
+            return $basePath . '/' . trim($subfolder, '/');
+        }
+
+        return $basePath;
+    }
+
+    /**
      * Get the logo URL (works with both local and cloud storage)
      */
     public function getLogoUrlAttribute(): ?string

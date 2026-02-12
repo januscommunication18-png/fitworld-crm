@@ -343,16 +343,13 @@ class ClassSessionController extends Controller
     }
 
     /**
-     * Get instructors who are team members with owner or instructor roles
-     * These are the users who can teach classes
+     * Get all active instructors who can teach classes
+     * Includes both instructors with login accounts and those without
      */
     protected function getTeachingInstructors(Host $host)
     {
         return $host->instructors()
             ->active()
-            ->whereHas('user', function ($query) {
-                $query->whereIn('role', [User::ROLE_OWNER, User::ROLE_INSTRUCTOR]);
-            })
             ->orderBy('name')
             ->get();
     }

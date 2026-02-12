@@ -30,8 +30,8 @@
     @endif
 
     {{-- Team Members --}}
-    <div class="card bg-base-100 overflow-visible">
-        <div class="card-body overflow-visible">
+    <div class="card bg-base-100">
+        <div class="card-body">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h2 class="text-lg font-semibold">Team Members</h2>
@@ -52,31 +52,37 @@
                         @endif
                     </div>
                     <a href="{{ route('settings.team.users.invite') }}" class="btn btn-primary btn-sm">
-                        <span class="icon-[tabler--plus] size-4"></span> Invite User
+                        <span class="icon-[tabler--plus] size-4"></span> Add Team Member
                     </a>
                 </div>
             </div>
 
-            <div class="overflow-visible">
+            <div class="overflow-x-auto">
                 <table class="table">
                     <thead>
                         <tr>
                             <th>User</th>
                             <th>Role</th>
                             <th>Status</th>
+                            <th>Access Level</th>
                             <th>Last Active</th>
                             <th class="w-20"></th>
                         </tr>
                     </thead>
                     <tbody>
+                        {{-- Existing Users --}}
                         @foreach($users as $user)
+                        @php
+                            $userRole = $user->pivot->role ?? $user->role;
+                            $hasLogin = !is_null($user->password);
+                            $isPending = $hasLogin && $user->status === 'invited';
+                            $isActive = !$user->trashed() && !in_array($user->status, ['suspended', 'deactivated']);
+                        @endphp
                         <tr class="{{ $user->trashed() ? 'opacity-50' : '' }}">
                             <td>
                                 <div class="flex items-center gap-3">
                                     <div class="avatar placeholder">
                                         @php
-                                            // Use pivot role for multi-studio support, fallback to user role
-                                            $userRole = $user->pivot->role ?? $user->role;
                                             $bgColor = match($userRole) {
                                                 'owner' => 'bg-primary text-primary-content',
                                                 'admin' => 'bg-secondary text-secondary-content',
@@ -90,14 +96,13 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="font-medium">{{ $user->full_name }}</div>
+                                        <a href="{{ route('settings.team.users.show', $user) }}" class="font-medium hover:text-primary">{{ $user->full_name }}</a>
                                         <div class="text-sm text-base-content/60">{{ $user->email }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td>
                                 @php
-                                    $userRole = $user->pivot->role ?? $user->role;
                                     $roleBadge = match($userRole) {
                                         'owner' => 'badge-primary',
                                         'admin' => 'badge-secondary',
@@ -109,16 +114,25 @@
                                 <span class="badge {{ $roleBadge }} badge-soft badge-sm">{{ ucfirst($userRole) }}</span>
                             </td>
                             <td>
-                                @php
-                                    $statusBadge = match($user->status) {
-                                        'active' => 'badge-success',
-                                        'invited' => 'badge-warning',
-                                        'suspended' => 'badge-error',
-                                        'deactivated' => 'badge-neutral',
-                                        default => ''
-                                    };
-                                @endphp
-                                <span class="badge {{ $statusBadge }} badge-soft badge-sm">{{ ucfirst($user->status) }}</span>
+                                @if($user->trashed())
+                                    <span class="badge badge-neutral badge-soft badge-sm">Removed</span>
+                                @elseif($user->status === 'suspended')
+                                    <span class="badge badge-error badge-soft badge-sm">Suspended</span>
+                                @elseif($user->status === 'deactivated')
+                                    <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
+                                @else
+                                    <span class="badge badge-success badge-soft badge-sm">Active</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($hasLogin)
+                                    <span class="badge badge-success badge-soft badge-sm">Granted</span>
+                                    @if($isPending)
+                                        <span class="badge badge-warning badge-soft badge-xs ml-1">Pending</span>
+                                    @endif
+                                @else
+                                    <span class="badge badge-neutral badge-soft badge-sm">No Access</span>
+                                @endif
                             </td>
                             <td class="text-sm text-base-content/60">
                                 @if($user->last_login_at)
@@ -128,67 +142,143 @@
                                 @endif
                             </td>
                             <td>
-                                @php $userRole = $user->pivot->role ?? $user->role; @endphp
                                 @if($user->id === auth()->id())
-                                    <span class="text-base-content/40 text-sm">You</span>
-                                @elseif($userRole !== 'owner')
-                                    <div class="relative">
-                                        <details class="dropdown dropdown-bottom dropdown-end">
-                                            <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
-                                                <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                            </summary>
-                                            <ul class="dropdown-content menu bg-base-100 rounded-box w-44 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
-                                                <li>
-                                                    <a href="{{ route('settings.team.users.edit', $user) }}">
-                                                        <span class="icon-[tabler--edit] size-4"></span> Edit User
-                                                    </a>
-                                                </li>
-                                                @if($user->status === 'active')
-                                                <li>
-                                                    <form action="{{ route('settings.team.users.suspend', $user) }}" method="POST" class="m-0">
-                                                        @csrf
-                                                        <button type="submit" class="w-full text-left flex items-center gap-2 text-warning">
-                                                            <span class="icon-[tabler--ban] size-4"></span> Suspend
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                <li>
-                                                    <form action="{{ route('settings.team.users.deactivate', $user) }}" method="POST" class="m-0">
-                                                        @csrf
-                                                        <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                            <span class="icon-[tabler--user-off] size-4"></span> Deactivate
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @elseif($user->status === 'suspended' || $user->status === 'deactivated')
-                                                <li>
-                                                    <form action="{{ route('settings.team.users.reactivate', $user) }}" method="POST" class="m-0">
-                                                        @csrf
-                                                        <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
-                                                            <span class="icon-[tabler--user-check] size-4"></span> Reactivate
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @endif
-                                                <li>
-                                                    <form action="{{ route('settings.team.users.remove', $user) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to remove {{ $user->full_name }}?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                            <span class="icon-[tabler--trash] size-4"></span> Remove
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            </ul>
-                                        </details>
-                                    </div>
+                                    <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                @elseif($userRole === 'owner')
+                                    <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                @else
+                                    <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
                                 @endif
                             </td>
                         </tr>
                         @endforeach
-                        @if($users->isEmpty())
+
+                        {{-- Pending Invitations (shown as team members) --}}
+                        @foreach($invitations as $invitation)
                         <tr>
-                            <td colspan="5" class="text-center py-8">
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar placeholder">
+                                        @php
+                                            $bgColor = match($invitation->role) {
+                                                'owner' => 'bg-primary text-primary-content',
+                                                'admin' => 'bg-secondary text-secondary-content',
+                                                'staff' => 'bg-info text-info-content',
+                                                'instructor' => 'bg-accent text-accent-content',
+                                                default => 'bg-base-300 text-base-content'
+                                            };
+                                            $initials = strtoupper(
+                                                substr($invitation->first_name ?? $invitation->email, 0, 1) .
+                                                substr($invitation->last_name ?? '', 0, 1)
+                                            );
+                                            if (strlen($initials) < 2) {
+                                                $initials = strtoupper(substr($invitation->email, 0, 2));
+                                            }
+                                        @endphp
+                                        <div class="{{ $bgColor }} w-10 rounded-full opacity-60">
+                                            <span>{{ $initials }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-base-content/70">
+                                            @if($invitation->first_name)
+                                                {{ $invitation->first_name }} {{ $invitation->last_name }}
+                                            @else
+                                                {{ $invitation->email }}
+                                            @endif
+                                        </div>
+                                        <div class="text-sm text-base-content/60">{{ $invitation->email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @php
+                                    $roleBadge = match($invitation->role) {
+                                        'owner' => 'badge-primary',
+                                        'admin' => 'badge-secondary',
+                                        'staff' => 'badge-info',
+                                        'instructor' => 'badge-accent',
+                                        default => ''
+                                    };
+                                @endphp
+                                <span class="badge {{ $roleBadge }} badge-soft badge-sm">{{ ucfirst($invitation->role) }}</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-success badge-soft badge-sm">Active</span>
+                            </td>
+                            <td>
+                                <span class="badge badge-success badge-soft badge-sm">Granted</span>
+                                <span class="badge badge-warning badge-soft badge-xs ml-1">Pending</span>
+                                @if($invitation->isExpired())
+                                    <span class="badge badge-error badge-soft badge-xs ml-1">Expired</span>
+                                @endif
+                            </td>
+                            <td class="text-sm text-base-content/60">
+                                Invited {{ $invitation->created_at->diffForHumans() }}
+                            </td>
+                            <td>
+                                @if($invitation->instructor_id && $invitation->instructor)
+                                    <a href="{{ route('instructors.show', $invitation->instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Instructor Profile">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                @else
+                                    <span class="btn btn-ghost btn-xs btn-square opacity-30" title="Profile not available until invitation is accepted">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+
+                        {{-- Instructors without login --}}
+                        @foreach($instructorsWithoutLogin as $instructor)
+                        <tr>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar placeholder">
+                                        <div class="bg-accent text-accent-content w-10 rounded-full">
+                                            <span>{{ $instructor->initials }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <a href="{{ route('instructors.show', $instructor) }}" class="font-medium hover:text-primary">{{ $instructor->name }}</a>
+                                        <div class="text-sm text-base-content/60">{{ $instructor->email ?? 'No email' }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-accent badge-soft badge-sm">Instructor</span>
+                            </td>
+                            <td>
+                                @if($instructor->is_active)
+                                    <span class="badge badge-success badge-soft badge-sm">Active</span>
+                                @else
+                                    <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge badge-neutral badge-soft badge-sm">No Access</span>
+                            </td>
+                            <td class="text-sm text-base-content/60">
+                                —
+                            </td>
+                            <td>
+                                <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                    <span class="icon-[tabler--eye] size-4"></span>
+                                </a>
+                            </td>
+                        </tr>
+                        @endforeach
+
+                        @if($users->isEmpty() && $invitations->isEmpty() && $instructorsWithoutLogin->isEmpty())
+                        <tr>
+                            <td colspan="6" class="text-center py-8">
                                 <div class="text-base-content/50">
                                     <span class="icon-[tabler--search] size-8 mb-2 block mx-auto"></span>
                                     @if($search)
@@ -205,103 +295,22 @@
             </div>
 
             {{-- Pagination / Results Info --}}
-            @if($users->total() > 0)
+            @php
+                $totalCount = $users->total() + $invitations->count() + $instructorsWithoutLogin->count();
+            @endphp
+            @if($totalCount > 0)
             <div class="mt-4 pt-4 border-t border-base-content/10">
                 @if($users->hasPages())
                     {{ $users->links() }}
                 @else
                     <div class="text-sm text-base-content/60 text-center">
-                        Showing <span class="font-medium text-base-content">{{ $users->total() }}</span> {{ Str::plural('result', $users->total()) }}
+                        Showing <span class="font-medium text-base-content">{{ $totalCount }}</span> {{ Str::plural('member', $totalCount) }}
                     </div>
                 @endif
             </div>
             @endif
         </div>
     </div>
-
-    {{-- Pending Invitations --}}
-    @if($invitations->total() > 0)
-    <div class="card bg-base-100 overflow-visible">
-        <div class="card-body overflow-visible">
-            <h2 class="text-lg font-semibold mb-4">Pending Invitations</h2>
-            <div class="overflow-visible">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th>Sent</th>
-                            <th class="w-20"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($invitations as $invitation)
-                        <tr>
-                            <td class="font-medium">{{ $invitation->email }}</td>
-                            <td><span class="badge badge-soft badge-sm">{{ ucfirst($invitation->role) }}</span></td>
-                            <td>
-                                @if($invitation->isExpired())
-                                    <span class="badge badge-error badge-soft badge-sm">Expired</span>
-                                @else
-                                    <span class="badge badge-warning badge-soft badge-sm">Pending</span>
-                                @endif
-                            </td>
-                            <td class="text-sm text-base-content/60">
-                                {{ $invitation->created_at->diffForHumans() }}
-                                @if($invitation->invitedBy)
-                                    by {{ $invitation->invitedBy->first_name }}
-                                @endif
-                            </td>
-                            <td>
-                                <div class="relative">
-                                    <details class="dropdown dropdown-bottom dropdown-end">
-                                        <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
-                                            <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                        </summary>
-                                        <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
-                                            <li>
-                                                <form action="{{ route('settings.team.invite.resend', $invitation) }}" method="POST" class="m-0">
-                                                    @csrf
-                                                    <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                        <span class="icon-[tabler--send] size-4"></span> Resend
-                                                    </button>
-                                                </form>
-                                            </li>
-                                            <li>
-                                                <form action="{{ route('settings.team.invite.revoke', $invitation) }}" method="POST" class="m-0">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                        <span class="icon-[tabler--x] size-4"></span> Revoke
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        </ul>
-                                    </details>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            {{-- Pagination / Results Info --}}
-            @if($invitations->total() > 0)
-            <div class="mt-4 pt-4 border-t border-base-content/10">
-                @if($invitations->hasPages())
-                    {{ $invitations->links() }}
-                @else
-                    <div class="text-sm text-base-content/60 text-center">
-                        Showing <span class="font-medium text-base-content">{{ $invitations->total() }}</span> pending {{ Str::plural('invitation', $invitations->total()) }}
-                    </div>
-                @endif
-            </div>
-            @endif
-        </div>
-    </div>
-    @endif
 
     {{-- Available Roles --}}
     <div class="card bg-base-100">
@@ -353,7 +362,12 @@
                             </div>
                             <div class="text-sm text-base-content/60">Can view own schedule and mark attendance for their classes</div>
                         </div>
-                        <span class="badge badge-soft badge-sm">{{ $roleCounts['instructor'] ?? 0 }} users</span>
+                        <div class="flex items-center gap-2">
+                            <span class="badge badge-soft badge-sm">{{ ($roleCounts['instructor'] ?? 0) + $instructorsWithoutLoginCount }} total</span>
+                            @if($instructorsWithoutLoginCount > 0)
+                                <span class="badge badge-neutral badge-soft badge-sm">{{ $instructorsWithoutLoginCount }} no access</span>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -382,7 +396,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Reset to first page when searching
             url.searchParams.delete('page');
-            url.searchParams.delete('invitations_page');
 
             window.location.href = url.toString();
         }, 400);
@@ -402,7 +415,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             url.searchParams.delete('page');
-            url.searchParams.delete('invitations_page');
 
             window.location.href = url.toString();
         }

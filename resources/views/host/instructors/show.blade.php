@@ -74,7 +74,7 @@
         {{-- Quick Actions --}}
         <div class="flex items-center gap-2">
             @if($instructor->hasAccount())
-                <button type="button" onclick="resetPassword()" class="btn btn-soft btn-sm">
+                <button type="button" onclick="showResetPasswordModal()" class="btn btn-soft btn-sm">
                     <span class="icon-[tabler--key] size-4"></span>
                     Reset Password
                 </button>
@@ -90,15 +90,17 @@
                 Edit
             </a>
 
-            <button type="button" onclick="toggleStatus()" class="btn {{ $instructor->is_active ? 'btn-warning' : 'btn-success' }} btn-sm">
-                @if($instructor->is_active)
+            @if($instructor->is_active)
+                <button type="button" onclick="showMakeInactiveModal()" class="btn btn-warning btn-sm">
                     <span class="icon-[tabler--user-off] size-4"></span>
                     Make Inactive
-                @else
+                </button>
+            @else
+                <button type="button" onclick="showActivateModal()" class="btn btn-success btn-sm">
                     <span class="icon-[tabler--user-check] size-4"></span>
                     Activate
-                @endif
-            </button>
+                </button>
+            @endif
         </div>
     </div>
 
@@ -588,6 +590,9 @@
 @push('scripts')
 <script>
 const instructorId = {{ $instructor->id }};
+const instructorName = '{{ addslashes($instructor->name) }}';
+const instructorEmail = '{{ addslashes($instructor->email ?? "") }}';
+const isActive = {{ $instructor->is_active ? 'true' : 'false' }};
 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
 // Tab switching
@@ -621,15 +626,46 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Toggle Status
-function toggleStatus() {
-    const isActive = {{ $instructor->is_active ? 'true' : 'false' }};
-    const confirmMsg = isActive
-        ? 'Are you sure you want to make this instructor inactive?'
-        : 'Are you sure you want to activate this instructor?';
+// Show Reset Password Modal
+function showResetPasswordModal() {
+    ConfirmModals.resetPassword({
+        title: 'Reset Password',
+        message: `Send a password reset email to ${instructorName}?`,
+        email: instructorEmail,
+        action: `/instructors/${instructorId}/reset-password`
+    });
+}
 
-    if (!confirm(confirmMsg)) return;
+// Show Make Inactive Modal
+function showMakeInactiveModal() {
+    showConfirmModal({
+        title: 'Make Instructor Inactive',
+        message: `Are you sure you want to make "${instructorName}" inactive? They will not be assigned to new classes or services.`,
+        type: 'warning',
+        btnText: 'Make Inactive',
+        btnIcon: 'icon-[tabler--user-off]',
+        onConfirm: function() {
+            toggleStatusRequest(false);
+        }
+    });
+}
 
+// Show Activate Modal
+function showActivateModal() {
+    showConfirmModal({
+        title: 'Activate Instructor',
+        message: `Are you sure you want to activate "${instructorName}"?`,
+        type: 'success',
+        btnText: 'Activate',
+        btnIcon: 'icon-[tabler--user-check]',
+        onConfirm: function() {
+            toggleStatusRequest();
+        }
+    });
+}
+
+// Toggle Status Request (called after confirmation)
+function toggleStatusRequest(forceConfirm = false) {
     fetch(`/instructors/${instructorId}/toggle-status`, {
         method: 'POST',
         headers: {
@@ -637,58 +673,37 @@ function toggleStatus() {
             'X-CSRF-TOKEN': csrfToken,
             'Accept': 'application/json'
         },
-        body: JSON.stringify({ confirm: true })
+        body: JSON.stringify({ confirm: forceConfirm })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            window.location.reload();
+            showToast(data.message || 'Status updated successfully.', 'success');
+            setTimeout(() => window.location.reload(), 1000);
         } else if (data.warning) {
-            if (confirm(data.message + '\n\nClick OK to proceed anyway.')) {
-                fetch(`/instructors/${instructorId}/toggle-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ confirm: true })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) window.location.reload();
-                    else alert(data.message || 'An error occurred');
+            // Show warning toast first
+            showToast(data.message, 'warning');
+
+            // Then show confirmation modal to proceed
+            setTimeout(() => {
+                showConfirmModal({
+                    title: 'Proceed Anyway?',
+                    message: `This instructor has ${data.future_sessions} upcoming session(s). Do you still want to make them inactive?`,
+                    type: 'warning',
+                    btnText: 'Yes, Make Inactive',
+                    btnIcon: 'icon-[tabler--user-off]',
+                    onConfirm: function() {
+                        toggleStatusRequest(true);
+                    }
                 });
-            }
+            }, 500);
         } else {
-            alert(data.message || 'An error occurred');
+            showToast(data.message || 'An error occurred', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    });
-}
-
-// Reset Password
-function resetPassword() {
-    if (!confirm('Send password reset email to {{ $instructor->email }}?')) return;
-
-    fetch(`/instructors/${instructorId}/reset-password`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+        showToast('An error occurred. Please try again.', 'error');
     });
 }
 
@@ -732,33 +747,41 @@ document.getElementById('addNoteForm')?.addEventListener('submit', function(e) {
 
 // Delete Note
 function deleteNote(noteId) {
-    if (!confirm('Are you sure you want to delete this note?')) return;
-
-    fetch(`/instructor-notes/${noteId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json'
+    showConfirmModal({
+        title: 'Delete Note',
+        message: 'Are you sure you want to delete this note? This action cannot be undone.',
+        type: 'danger',
+        btnText: 'Delete',
+        btnIcon: 'icon-[tabler--trash]',
+        onConfirm: function() {
+            fetch(`/instructor-notes/${noteId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.querySelector(`[data-note-id="${noteId}"]`)?.remove();
+                    showToast('Note deleted successfully.', 'success');
+                } else {
+                    showToast(data.message || 'An error occurred', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            });
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            document.querySelector(`[data-note-id="${noteId}"]`)?.remove();
-        } else {
-            alert(data.message || 'An error occurred');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
     });
 }
 
 // Edit Note (placeholder - would need a modal for full implementation)
 function editNote(noteId) {
-    alert('Edit functionality coming soon. For now, please delete and re-add the note.');
+    showToast('Edit functionality coming soon. For now, please delete and re-add the note.', 'info');
 }
 </script>
 @endpush

@@ -124,7 +124,7 @@ class BookingPageController extends Controller
             }
         }
 
-        $path = $request->file('logo')->storePublicly('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
+        $path = $request->file('logo')->storePublicly($host->getStoragePath('branding'), config('filesystems.uploads'));
         $host->logo_path = $path;
         $host->save();
 
@@ -154,7 +154,7 @@ class BookingPageController extends Controller
             }
         }
 
-        $path = $request->file('cover')->storePublicly('hosts/' . $host->id . '/branding', config('filesystems.uploads'));
+        $path = $request->file('cover')->storePublicly($host->getStoragePath('branding'), config('filesystems.uploads'));
         $host->cover_image_path = $path;
         $host->save();
 

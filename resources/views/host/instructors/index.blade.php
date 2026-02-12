@@ -49,12 +49,12 @@
         <div class="card bg-base-100">
             <div class="card-body p-4">
                 <div class="flex items-center gap-3">
-                    <div class="bg-info/10 rounded-lg p-2">
-                        <span class="icon-[tabler--key] size-6 text-info"></span>
+                    <div class="bg-success/10 rounded-lg p-2">
+                        <span class="icon-[tabler--key] size-6 text-success"></span>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold">{{ $stats['with_account'] }}</p>
-                        <p class="text-xs text-base-content/60">With Login</p>
+                        <p class="text-2xl font-bold">{{ $stats['with_login'] }}</p>
+                        <p class="text-xs text-base-content/60">Access Granted</p>
                     </div>
                 </div>
             </div>
@@ -62,12 +62,12 @@
         <div class="card bg-base-100">
             <div class="card-body p-4">
                 <div class="flex items-center gap-3">
-                    <div class="bg-warning/10 rounded-lg p-2">
-                        <span class="icon-[tabler--mail] size-6 text-warning"></span>
+                    <div class="bg-neutral/10 rounded-lg p-2">
+                        <span class="icon-[tabler--key-off] size-6 text-neutral"></span>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold">{{ $stats['pending_invite'] }}</p>
-                        <p class="text-xs text-base-content/60">Pending Invites</p>
+                        <p class="text-2xl font-bold">{{ $stats['no_login'] }}</p>
+                        <p class="text-xs text-base-content/60">No Access</p>
                     </div>
                 </div>
             </div>
@@ -89,11 +89,6 @@
                     <span class="icon-[tabler--layout-grid] size-4"></span>
                 </a>
             </div>
-
-            <a href="{{ route('instructors.create') }}" class="btn btn-primary">
-                <span class="icon-[tabler--plus] size-5"></span>
-                Add Instructor
-            </a>
         </div>
     </div>
 
@@ -236,43 +231,10 @@
                                 @endif
                             </div>
 
-                            {{-- Actions Dropdown --}}
-                            <details class="dropdown dropdown-end">
-                                <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
-                                    <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                </summary>
-                                <ul class="dropdown-content menu bg-base-100 rounded-box w-44 p-2 shadow-lg border border-base-300 z-50">
-                                    <li>
-                                        <a href="{{ route('instructors.show', $instructor) }}">
-                                            <span class="icon-[tabler--eye] size-4"></span> View Profile
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('instructors.edit', $instructor) }}">
-                                            <span class="icon-[tabler--edit] size-4"></span> Edit
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <button type="button" onclick="toggleInstructorStatus({{ $instructor->id }}, {{ $instructor->is_active ? 'true' : 'false' }})">
-                                            @if($instructor->is_active)
-                                                <span class="icon-[tabler--user-off] size-4"></span> Make Inactive
-                                            @else
-                                                <span class="icon-[tabler--user-check] size-4"></span> Activate
-                                            @endif
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <form action="{{ route('instructors.destroy', $instructor) }}" method="POST"
-                                              onsubmit="return confirm('Are you sure you want to delete this instructor?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-error w-full text-left">
-                                                <span class="icon-[tabler--trash] size-4"></span> Delete
-                                            </button>
-                                        </form>
-                                    </li>
-                                </ul>
-                            </details>
+                            {{-- Actions --}}
+                            <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                <span class="icon-[tabler--eye] size-4"></span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -292,7 +254,7 @@
                                 <th>Status</th>
                                 <th>Employment</th>
                                 <th>Rate</th>
-                                <th>Account</th>
+                                <th>Access Level</th>
                                 <th class="w-20">Actions</th>
                             </tr>
                         </thead>
@@ -332,51 +294,31 @@
                                     <td class="text-base-content/70">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</td>
                                     <td class="text-success font-medium">{{ $instructor->getFormattedRate() ?? '-' }}</td>
                                     <td>
-                                        @if($instructor->hasAccount())
-                                            <span class="badge badge-soft badge-info badge-xs">Has Login</span>
-                                        @elseif($instructor->hasPendingInvitation())
-                                            <span class="badge badge-soft badge-warning badge-xs">Invite Pending</span>
+                                        @php
+                                            $hasAccount = $instructor->hasAccount();
+                                            $linkedUser = $instructor->user;
+
+                                            // If no direct link, check if user exists with same email
+                                            if (!$hasAccount && $instructor->email) {
+                                                $linkedUser = \App\Models\User::where('email', $instructor->email)
+                                                    ->whereNotNull('password')
+                                                    ->first();
+                                                $hasAccount = $linkedUser !== null;
+                                            }
+                                        @endphp
+                                        @if($hasAccount)
+                                            <span class="badge badge-soft badge-success badge-sm">Granted</span>
+                                            @if($linkedUser && $linkedUser->status === 'invited')
+                                                <span class="badge badge-soft badge-warning badge-xs ml-1">Invite Pending</span>
+                                            @endif
                                         @else
-                                            <span class="badge badge-soft badge-neutral badge-xs">No Account</span>
+                                            <span class="badge badge-soft badge-neutral badge-sm">No Access</span>
                                         @endif
                                     </td>
                                     <td>
-                                        <details class="dropdown dropdown-end">
-                                            <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
-                                                <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                            </summary>
-                                            <ul class="dropdown-content menu bg-base-100 rounded-box w-44 p-2 shadow-lg border border-base-300 z-50">
-                                                <li>
-                                                    <a href="{{ route('instructors.show', $instructor) }}">
-                                                        <span class="icon-[tabler--eye] size-4"></span> View Profile
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a href="{{ route('instructors.edit', $instructor) }}">
-                                                        <span class="icon-[tabler--edit] size-4"></span> Edit
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <button type="button" onclick="toggleInstructorStatus({{ $instructor->id }}, {{ $instructor->is_active ? 'true' : 'false' }})">
-                                                        @if($instructor->is_active)
-                                                            <span class="icon-[tabler--user-off] size-4"></span> Make Inactive
-                                                        @else
-                                                            <span class="icon-[tabler--user-check] size-4"></span> Activate
-                                                        @endif
-                                                    </button>
-                                                </li>
-                                                <li>
-                                                    <form action="{{ route('instructors.destroy', $instructor) }}" method="POST"
-                                                          onsubmit="return confirm('Are you sure you want to delete this instructor?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="text-error w-full text-left">
-                                                            <span class="icon-[tabler--trash] size-4"></span> Delete
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                            </ul>
-                                        </details>
+                                        <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
                                     </td>
                                 </tr>
                             @endforeach
@@ -395,58 +337,4 @@
     @endif
 </div>
 
-@push('scripts')
-<script>
-function toggleInstructorStatus(instructorId, isCurrentlyActive) {
-    const action = isCurrentlyActive ? 'deactivate' : 'activate';
-    const confirmMsg = isCurrentlyActive
-        ? 'Are you sure you want to make this instructor inactive?'
-        : 'Are you sure you want to activate this instructor?';
-
-    if (!confirm(confirmMsg)) return;
-
-    fetch(`/instructors/${instructorId}/toggle-status`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            'Accept': 'application/json'
-        },
-        body: JSON.stringify({ confirm: true })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.location.reload();
-        } else if (data.warning) {
-            if (confirm(data.message + '\n\nClick OK to proceed anyway.')) {
-                fetch(`/instructors/${instructorId}/toggle-status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ confirm: true })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        window.location.reload();
-                    } else {
-                        alert(data.message || 'An error occurred');
-                    }
-                });
-            }
-        } else {
-            alert(data.message || 'An error occurred');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-    });
-}
-</script>
-@endpush
 @endsection

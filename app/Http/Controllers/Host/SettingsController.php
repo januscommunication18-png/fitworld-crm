@@ -144,7 +144,8 @@ class SettingsController extends Controller
         }
 
         // Store the file with public visibility
-        $path = $request->file('photo')->storePublicly('profile-photos', $disk);
+        $host = auth()->user()->currentHost();
+        $path = $request->file('photo')->storePublicly($host->getStoragePath('profile-photos'), $disk);
 
         $user->update(['profile_photo' => $path]);
 
@@ -254,7 +255,7 @@ class SettingsController extends Controller
         }
 
         // Store new logo
-        $path = $request->file('logo')->storePublicly('logos/' . $host->id, config('filesystems.uploads'));
+        $path = $request->file('logo')->storePublicly($host->getStoragePath('branding'), config('filesystems.uploads'));
         $host->update(['logo_path' => $path]);
 
         return response()->json([
@@ -282,7 +283,7 @@ class SettingsController extends Controller
         }
 
         // Store new cover
-        $path = $request->file('cover')->storePublicly('covers/' . $host->id, config('filesystems.uploads'));
+        $path = $request->file('cover')->storePublicly($host->getStoragePath('branding'), config('filesystems.uploads'));
         $host->update(['cover_image_path' => $path]);
 
         return response()->json([

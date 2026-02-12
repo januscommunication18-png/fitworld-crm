@@ -53,7 +53,7 @@ class ServicePlanController extends Controller
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            $data['image_path'] = $request->file('image')->storePublicly('service-plans', config('filesystems.uploads'));
+            $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('service-plans'), config('filesystems.uploads'));
         }
 
         // Set default sort order
@@ -118,7 +118,8 @@ class ServicePlanController extends Controller
                     // Ignore deletion errors
                 }
             }
-            $data['image_path'] = $request->file('image')->storePublicly('service-plans', config('filesystems.uploads'));
+            $uploadHost = $host ?? auth()->user()->host;
+            $data['image_path'] = $request->file('image')->storePublicly($uploadHost->getStoragePath('service-plans'), config('filesystems.uploads'));
         }
 
         // Handle checkboxes
