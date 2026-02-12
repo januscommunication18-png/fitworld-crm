@@ -15,9 +15,14 @@
 @section('content')
 <div class="max-w-4xl mx-auto">
     {{-- Header --}}
-    <div class="mb-8">
-        <h1 class="text-2xl font-bold mb-2">Add New Instructor</h1>
-        <p class="text-base-content/60">Create a new instructor profile or link an existing team member.</p>
+    <div class="mb-8 flex items-center gap-4">
+        <a href="{{ route('instructors.index') }}" class="btn btn-ghost btn-sm btn-circle">
+            <span class="icon-[tabler--arrow-left] size-5"></span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold mb-2">Add New Instructor</h1>
+            <p class="text-base-content/60">Create a new instructor profile or link an existing team member.</p>
+        </div>
     </div>
 
     {{-- Flash Messages --}}

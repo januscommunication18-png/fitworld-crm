@@ -17,6 +17,9 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-start gap-4">
         <div class="flex items-start gap-4 flex-1">
+            <a href="{{ route('catalog.index', ['tab' => 'classes']) }}" class="btn btn-ghost btn-sm btn-circle mt-1">
+                <span class="icon-[tabler--arrow-left] size-5"></span>
+            </a>
             @if($classPlan->image_url)
                 <img src="{{ $classPlan->image_url }}" alt="{{ $classPlan->name }}"
                      class="w-24 h-24 rounded-lg object-cover">

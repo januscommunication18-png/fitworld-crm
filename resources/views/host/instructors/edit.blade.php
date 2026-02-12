@@ -16,6 +16,17 @@
 
 @section('content')
 <div class="space-y-6">
+    {{-- Back Button --}}
+    <div class="flex items-center gap-4">
+        <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-sm btn-circle">
+            <span class="icon-[tabler--arrow-left] size-5"></span>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold">Edit Instructor</h1>
+            <p class="text-base-content/60">Update {{ $instructor->name }}'s profile.</p>
+        </div>
+    </div>
+
     {{-- Incomplete Profile Warning --}}
     @if(!empty($missingFields))
     <div class="alert alert-soft alert-warning">

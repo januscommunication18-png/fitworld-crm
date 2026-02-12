@@ -31,6 +31,9 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-start gap-4 relative z-50">
         <div class="flex items-start gap-4 flex-1">
+            <a href="{{ route('instructors.index') }}" class="btn btn-ghost btn-sm btn-circle mt-1">
+                <span class="icon-[tabler--arrow-left] size-5"></span>
+            </a>
             @if($instructor->photo_url)
                 <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
                      class="w-20 h-20 rounded-full object-cover">

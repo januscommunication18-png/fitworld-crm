@@ -17,6 +17,9 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-start gap-4">
         <div class="flex items-start gap-4 flex-1">
+            <a href="{{ route('catalog.index', ['tab' => 'services']) }}" class="btn btn-ghost btn-sm btn-circle mt-1">
+                <span class="icon-[tabler--arrow-left] size-5"></span>
+            </a>
             @if($servicePlan->image_url)
                 <img src="{{ $servicePlan->image_url }}" alt="{{ $servicePlan->name }}"
                      class="w-24 h-24 rounded-lg object-cover">

@@ -272,6 +272,16 @@ class Host extends Model
         return $this->hasMany(ServiceSlot::class);
     }
 
+    public function membershipPlans(): HasMany
+    {
+        return $this->hasMany(MembershipPlan::class);
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
     public function classSessions(): HasMany
     {
         return $this->hasMany(ClassSession::class);

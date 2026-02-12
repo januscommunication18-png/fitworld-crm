@@ -18,6 +18,9 @@
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
             <div class="flex items-center gap-3 mb-2">
+                <a href="{{ route('class-sessions.index') }}" class="btn btn-ghost btn-sm btn-circle">
+                    <span class="icon-[tabler--arrow-left] size-5"></span>
+                </a>
                 <div class="w-4 h-4 rounded-full" style="background-color: {{ $classSession->classPlan->color }};"></div>
                 <h1 class="text-2xl font-bold">{{ $classSession->display_title }}</h1>
                 <span class="badge {{ $classSession->getStatusBadgeClass() }} badge-soft capitalize">{{ $classSession->status }}</span>
