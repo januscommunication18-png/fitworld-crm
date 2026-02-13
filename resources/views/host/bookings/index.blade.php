@@ -21,6 +21,10 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 class="text-2xl font-bold">{{ $title }}</h1>
+        <a href="{{ route('walk-in.select') }}" class="btn btn-primary">
+            <span class="icon-[tabler--plus] size-5"></span>
+            Booking
+        </a>
     </div>
 
     {{-- Filter Tabs --}}

@@ -33,6 +33,95 @@ class WalkInController extends Controller
     }
 
     /**
+     * Show session selection page for walk-in booking
+     */
+    public function selectSession(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $date = $request->get('date', now()->format('Y-m-d'));
+
+        // Get active class plans from catalog
+        $classPlans = \App\Models\ClassPlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'color', 'default_price']);
+
+        return view('host.walk-in.select-session', [
+            'selectedDate' => $date,
+            'classPlans' => $classPlans,
+        ]);
+    }
+
+    /**
+     * Get sessions by date (AJAX)
+     */
+    public function getSessionsByDate(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $date = $request->get('date', now()->format('Y-m-d'));
+        $classPlanId = $request->get('class_plan_id');
+
+        $query = ClassSession::where('host_id', $host->id)
+            ->whereDate('start_time', $date)
+            ->where('status', ClassSession::STATUS_PUBLISHED);
+
+        if ($classPlanId) {
+            $query->where('class_plan_id', $classPlanId);
+        }
+
+        $sessions = $query->with(['classPlan', 'primaryInstructor', 'location'])
+            ->orderBy('start_time')
+            ->get()
+            ->map(function ($session) {
+                $bookedCount = $session->bookings()
+                    ->where('status', '!=', Booking::STATUS_CANCELLED)
+                    ->count();
+
+                return [
+                    'id' => $session->id,
+                    'title' => $session->display_title,
+                    'time' => $session->start_time->format('g:i A') . ' - ' . $session->end_time->format('g:i A'),
+                    'instructor' => $session->primaryInstructor?->name ?? 'TBD',
+                    'location' => $session->location?->name ?? null,
+                    'capacity' => $session->capacity,
+                    'booked' => $bookedCount,
+                    'spots_remaining' => $session->capacity - $bookedCount,
+                    'color' => $session->classPlan->color ?? '#6366f1',
+                    'price' => $session->price ?? $session->classPlan->default_price ?? 0,
+                ];
+            });
+
+        // If no sessions found, get next available dates
+        $nextAvailable = [];
+        if ($sessions->isEmpty() && $classPlanId) {
+            $nextSessions = ClassSession::where('host_id', $host->id)
+                ->where('class_plan_id', $classPlanId)
+                ->where('status', ClassSession::STATUS_PUBLISHED)
+                ->where('start_time', '>', $date)
+                ->orderBy('start_time')
+                ->limit(5)
+                ->get()
+                ->groupBy(function ($session) {
+                    return $session->start_time->format('Y-m-d');
+                })
+                ->take(3);
+
+            foreach ($nextSessions as $sessionDate => $dateSessions) {
+                $nextAvailable[] = [
+                    'date' => $sessionDate,
+                    'formatted_date' => \Carbon\Carbon::parse($sessionDate)->format('D, M j'),
+                    'session_count' => $dateSessions->count(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'sessions' => $sessions,
+            'next_available' => $nextAvailable,
+        ]);
+    }
+
+    /**
      * Show walk-in booking page for a class session
      */
     public function classSession(ClassSession $classSession)

@@ -241,6 +241,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/class-sessions/{class_session}/duplicate', [ClassSessionController::class, 'duplicate'])->name('class-sessions.duplicate');
 
     // Walk-In Booking
+    Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');
+    Route::get('/walk-in/sessions', [WalkInController::class, 'getSessionsByDate'])->name('walk-in.sessions');
     Route::get('/walk-in/class/{class_session}', [WalkInController::class, 'classSession'])->name('walk-in.class');
     Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
     Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');
