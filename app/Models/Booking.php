@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Booking extends Model
@@ -23,6 +24,18 @@ class Booking extends Model
     const PAYMENT_PACK = 'pack';
     const PAYMENT_MANUAL = 'manual';
     const PAYMENT_CASH = 'cash';
+    const PAYMENT_COMP = 'comp';
+
+    // Booking source constants
+    const SOURCE_ONLINE = 'online';
+    const SOURCE_INTERNAL_WALKIN = 'internal_walkin';
+    const SOURCE_API = 'api';
+
+    // Intake status constants
+    const INTAKE_NOT_REQUIRED = 'not_required';
+    const INTAKE_PENDING = 'pending';
+    const INTAKE_COMPLETED = 'completed';
+    const INTAKE_WAIVED = 'waived';
 
     protected $fillable = [
         'host_id',
@@ -30,8 +43,17 @@ class Booking extends Model
         'bookable_type',
         'bookable_id',
         'status',
+        'booking_source',
+        'intake_status',
+        'intake_waived_by',
+        'intake_waived_reason',
+        'capacity_override',
+        'capacity_override_reason',
+        'created_by_user_id',
         'payment_method',
         'membership_id',
+        'customer_membership_id',
+        'class_pack_purchase_id',
         'price_paid',
         'credits_used',
         'booked_at',
@@ -43,6 +65,7 @@ class Booking extends Model
     {
         return [
             'price_paid' => 'decimal:2',
+            'capacity_override' => 'boolean',
             'booked_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'checked_in_at' => 'datetime',
@@ -65,6 +88,31 @@ class Booking extends Model
     public function bookable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function customerMembership(): BelongsTo
+    {
+        return $this->belongsTo(CustomerMembership::class);
+    }
+
+    public function classPackPurchase(): BelongsTo
+    {
+        return $this->belongsTo(ClassPackPurchase::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function intakeWaivedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'intake_waived_by');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
     }
 
     /**
@@ -148,6 +196,73 @@ class Booking extends Model
     }
 
     /**
+     * Check if booking is a walk-in
+     */
+    public function isWalkIn(): bool
+    {
+        return $this->booking_source === self::SOURCE_INTERNAL_WALKIN;
+    }
+
+    /**
+     * Check if booking is from online
+     */
+    public function isOnline(): bool
+    {
+        return $this->booking_source === self::SOURCE_ONLINE;
+    }
+
+    /**
+     * Check if intake is required and pending
+     */
+    public function isIntakePending(): bool
+    {
+        return $this->intake_status === self::INTAKE_PENDING;
+    }
+
+    /**
+     * Check if intake was waived
+     */
+    public function isIntakeWaived(): bool
+    {
+        return $this->intake_status === self::INTAKE_WAIVED;
+    }
+
+    /**
+     * Check if capacity was overridden
+     */
+    public function hasCapacityOverride(): bool
+    {
+        return $this->capacity_override === true;
+    }
+
+    /**
+     * Get booking source badge class
+     */
+    public function getSourceBadgeClassAttribute(): string
+    {
+        return match ($this->booking_source) {
+            self::SOURCE_ONLINE => 'badge-primary',
+            self::SOURCE_INTERNAL_WALKIN => 'badge-secondary',
+            self::SOURCE_API => 'badge-accent',
+            default => 'badge-neutral',
+        };
+    }
+
+    /**
+     * Get intake status badge class
+     */
+    public function getIntakeStatusBadgeClassAttribute(): string
+    {
+        return match ($this->intake_status) {
+            self::INTAKE_COMPLETED => 'badge-success',
+            self::INTAKE_PENDING => 'badge-warning',
+            self::INTAKE_WAIVED => 'badge-info',
+            self::INTAKE_NOT_REQUIRED => 'badge-neutral',
+            default => 'badge-neutral',
+        };
+    }
+
+    /**
      * Scope for host
      */
     public function scopeForHost($query, $hostId)
@@ -227,6 +342,48 @@ class Booking extends Model
             self::PAYMENT_PACK => 'Class Pack',
             self::PAYMENT_MANUAL => 'Manual',
             self::PAYMENT_CASH => 'Cash',
+            self::PAYMENT_COMP => 'Complimentary',
         ];
+    }
+
+    /**
+     * Get available booking sources
+     */
+    public static function getBookingSources(): array
+    {
+        return [
+            self::SOURCE_ONLINE => 'Online',
+            self::SOURCE_INTERNAL_WALKIN => 'Walk-In',
+            self::SOURCE_API => 'API',
+        ];
+    }
+
+    /**
+     * Get available intake statuses
+     */
+    public static function getIntakeStatuses(): array
+    {
+        return [
+            self::INTAKE_NOT_REQUIRED => 'Not Required',
+            self::INTAKE_PENDING => 'Pending',
+            self::INTAKE_COMPLETED => 'Completed',
+            self::INTAKE_WAIVED => 'Waived',
+        ];
+    }
+
+    /**
+     * Scope for walk-in bookings
+     */
+    public function scopeWalkIn($query)
+    {
+        return $query->where('booking_source', self::SOURCE_INTERNAL_WALKIN);
+    }
+
+    /**
+     * Scope for online bookings
+     */
+    public function scopeOnline($query)
+    {
+        return $query->where('booking_source', self::SOURCE_ONLINE);
     }
 }

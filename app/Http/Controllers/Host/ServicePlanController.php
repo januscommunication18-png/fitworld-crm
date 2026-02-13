@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Http\Requests\Host\ServicePlanRequest;
 use App\Models\ServicePlan;
 use App\Models\Instructor;
@@ -12,6 +13,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ServicePlanController extends Controller
 {
+    use SyncsQuestionnaireAttachments;
+
     public function index(Request $request)
     {
         $host = auth()->user()->host;
@@ -35,8 +38,9 @@ class ServicePlanController extends Controller
         $categories = ServicePlan::getCategories();
         $locationTypes = ServicePlan::getLocationTypes();
         $instructors = $host->instructors()->active()->get();
+        $questionnaires = $this->getPublishedQuestionnaires();
 
-        return view('host.service-plans.create', compact('categories', 'locationTypes', 'instructors'));
+        return view('host.service-plans.create', compact('categories', 'locationTypes', 'instructors', 'questionnaires'));
     }
 
     public function store(ServicePlanRequest $request)
@@ -66,6 +70,9 @@ class ServicePlanController extends Controller
             $servicePlan->instructors()->attach($request->input('instructor_ids'));
         }
 
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($servicePlan, $request);
+
         return redirect()->route('catalog.index', ['tab' => 'services'])
             ->with('success', 'Service plan created successfully.');
     }
@@ -88,8 +95,10 @@ class ServicePlanController extends Controller
         $locationTypes = ServicePlan::getLocationTypes();
         $instructors = $host->instructors()->active()->get();
         $assignedInstructorIds = $servicePlan->instructors->pluck('id')->toArray();
+        $questionnaires = $this->getPublishedQuestionnaires();
+        $servicePlan->load('questionnaireAttachments');
 
-        return view('host.service-plans.edit', compact('servicePlan', 'categories', 'locationTypes', 'instructors', 'assignedInstructorIds'));
+        return view('host.service-plans.edit', compact('servicePlan', 'categories', 'locationTypes', 'instructors', 'assignedInstructorIds', 'questionnaires'));
     }
 
     public function update(ServicePlanRequest $request, ServicePlan $servicePlan)
@@ -134,6 +143,9 @@ class ServicePlanController extends Controller
         } else {
             $servicePlan->instructors()->detach();
         }
+
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($servicePlan, $request);
 
         return redirect()->route('catalog.index', ['tab' => 'services'])
             ->with('success', 'Service plan updated successfully.');

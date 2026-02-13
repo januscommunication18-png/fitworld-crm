@@ -28,6 +28,12 @@
             <p class="text-base-content/60">{{ $classSession->formatted_date }} &bull; {{ $classSession->formatted_time_range }}</p>
         </div>
         <div class="flex items-center gap-2">
+            @if($classSession->isPublished() && !$classSession->isPast())
+            <a href="{{ route('walk-in.class', $classSession) }}" class="btn btn-success">
+                <span class="icon-[tabler--walk] size-5"></span>
+                Walk-in
+            </a>
+            @endif
             @if($classSession->isDraft())
             <form action="{{ route('class-sessions.publish', $classSession) }}" method="POST" class="inline">
                 @csrf

@@ -193,6 +193,13 @@
                             </td>
                             <td>
                                 <div class="flex items-center gap-1">
+                                    @if($session->isPublished() && !$session->isPast())
+                                    <a href="{{ route('walk-in.class', $session) }}"
+                                       class="btn btn-ghost btn-xs btn-square text-primary"
+                                       title="Walk-in Booking">
+                                        <span class="icon-[tabler--walk] size-4"></span>
+                                    </a>
+                                    @endif
                                     <a href="{{ route('class-sessions.show', $session) }}" class="btn btn-ghost btn-xs btn-square" title="View">
                                         <span class="icon-[tabler--eye] size-4"></span>
                                     </a>

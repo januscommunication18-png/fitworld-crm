@@ -111,6 +111,16 @@
             <span class="icon-[tabler--user] size-4 mr-2"></span>
             Client Info
         </button>
+        <button class="tab" data-tab="questionnaires" role="tab">
+            <span class="icon-[tabler--forms] size-4 mr-2"></span>
+            Questionnaires
+            @php
+                $questionnaireResponseCount = $client->questionnaireResponses()->count();
+            @endphp
+            @if($questionnaireResponseCount > 0)
+                <span class="badge badge-sm badge-primary ml-2">{{ $questionnaireResponseCount }}</span>
+            @endif
+        </button>
         <button class="tab" data-tab="notes" role="tab">
             <span class="icon-[tabler--notes] size-4 mr-2"></span>
             Notes
@@ -456,6 +466,85 @@
             </div>
         </div>
 
+        {{-- Questionnaires Tab --}}
+        <div class="tab-content hidden" data-content="questionnaires">
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="card-title text-lg">Questionnaire Responses</h2>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('send-questionnaire-modal').showModal()">
+                            <span class="icon-[tabler--send] size-4"></span>
+                            Send Questionnaire
+                        </button>
+                    </div>
+
+                    @php
+                        $responses = $client->questionnaireResponses()
+                            ->with(['version.questionnaire'])
+                            ->latest()
+                            ->get();
+                    @endphp
+
+                    @if($responses->isEmpty())
+                        <div class="text-center py-12">
+                            <span class="icon-[tabler--forms] size-12 text-base-content/20 mx-auto"></span>
+                            <p class="text-base-content/50 mt-4">No questionnaires sent yet</p>
+                            <p class="text-sm text-base-content/40">Send a questionnaire to collect intake information.</p>
+                        </div>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Questionnaire</th>
+                                        <th>Status</th>
+                                        <th>Sent</th>
+                                        <th>Completed</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($responses as $response)
+                                        <tr class="hover">
+                                            <td class="font-medium">
+                                                {{ $response->version?->questionnaire?->name ?? 'Unknown' }}
+                                            </td>
+                                            <td>
+                                                <span class="badge {{ \App\Models\QuestionnaireResponse::getStatusBadgeClass($response->status) }}">
+                                                    {{ \App\Models\QuestionnaireResponse::getStatuses()[$response->status] ?? $response->status }}
+                                                </span>
+                                            </td>
+                                            <td class="text-sm">{{ $response->created_at->format('M j, Y') }}</td>
+                                            <td class="text-sm">
+                                                @if($response->completed_at)
+                                                    {{ $response->completed_at->format('M j, Y') }}
+                                                @else
+                                                    <span class="text-base-content/40">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($response->isCompleted())
+                                                    <a href="{{ route('questionnaires.responses.show', [$response->version->questionnaire, $response]) }}" class="btn btn-ghost btn-xs">
+                                                        <span class="icon-[tabler--eye] size-4"></span>
+                                                        View
+                                                    </a>
+                                                @else
+                                                    <button type="button" class="btn btn-ghost btn-xs" onclick="copyLink('{{ $response->getResponseUrl() }}')">
+                                                        <span class="icon-[tabler--link] size-4"></span>
+                                                        Copy Link
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
         {{-- Notes Tab --}}
         <div class="tab-content hidden" data-content="notes">
             <div class="card bg-base-100">
@@ -582,8 +671,91 @@
     </div>
 </div>
 
+{{-- Send Questionnaire Modal --}}
+<dialog id="send-questionnaire-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Send Questionnaire</h3>
+
+        @php
+            $host = auth()->user()->currentHost() ?? auth()->user()->host;
+            $availableQuestionnaires = $host->questionnaires()->active()->get();
+        @endphp
+
+        @if($availableQuestionnaires->isEmpty())
+            <div class="text-center py-4">
+                <p class="text-base-content/60">No published questionnaires available.</p>
+                <a href="{{ route('questionnaires.create') }}" class="btn btn-primary btn-sm mt-4">Create Questionnaire</a>
+            </div>
+            <div class="modal-action">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('send-questionnaire-modal').close()">Close</button>
+            </div>
+        @else
+            <form id="send-questionnaire-form">
+                @csrf
+                <input type="hidden" name="client_id" value="{{ $client->id }}">
+                <div class="form-control">
+                    <label class="label" for="questionnaire_select">
+                        <span class="label-text">Select Questionnaire</span>
+                    </label>
+                    <select name="questionnaire_id" id="questionnaire_select" class="select select-bordered" required>
+                        <option value="">Choose a questionnaire...</option>
+                        @foreach($availableQuestionnaires as $q)
+                            <option value="{{ $q->id }}">{{ $q->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="modal-action">
+                    <button type="button" class="btn btn-ghost" onclick="document.getElementById('send-questionnaire-modal').close()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="icon-[tabler--link] size-4"></span>
+                        Generate Link
+                    </button>
+                </div>
+            </form>
+        @endif
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
 @push('scripts')
 <script>
+function copyLink(url) {
+    navigator.clipboard.writeText(url).then(() => {
+        alert('Link copied to clipboard!');
+    });
+}
+
+// Handle send questionnaire form
+document.getElementById('send-questionnaire-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const questionnaireId = formData.get('questionnaire_id');
+    const clientId = formData.get('client_id');
+
+    try {
+        const response = await fetch(`/questionnaires/${questionnaireId}/responses/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ client_id: clientId })
+        });
+
+        if (response.redirected) {
+            window.location.reload();
+        } else {
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    }
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     const tabs = document.querySelectorAll('.tabs .tab');
     const contents = document.querySelectorAll('.tab-content');
@@ -612,7 +784,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check URL for tab parameter on page load
     const urlParams = new URLSearchParams(window.location.search);
     const activeTab = urlParams.get('tab');
-    if (activeTab && ['info', 'notes', 'activity'].includes(activeTab)) {
+    if (activeTab && ['info', 'questionnaires', 'notes', 'activity'].includes(activeTab)) {
         switchToTab(activeTab);
     }
 

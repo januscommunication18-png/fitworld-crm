@@ -10,6 +10,7 @@
     @vite(['resources/css/app.css', 'resources/js/layout.js'])
     <link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
     @stack('styles')
+    @stack('head')
 </head>
 <body class="bg-base-200 min-h-screen">
 

@@ -40,6 +40,7 @@ class Client extends Model
         'last_name',
         'email',
         'phone',
+        'stripe_customer_id',
         'secondary_phone',
         'date_of_birth',
         'gender',
@@ -155,6 +156,45 @@ class Client extends Model
         return $this->hasMany(ClientNote::class)->orderByDesc('created_at');
     }
 
+    public function questionnaireResponses(): HasMany
+    {
+        return $this->hasMany(QuestionnaireResponse::class);
+    }
+
+    public function bookings(): HasMany
+    {
+        return $this->hasMany(Booking::class);
+    }
+
+    public function customerMemberships(): HasMany
+    {
+        return $this->hasMany(CustomerMembership::class);
+    }
+
+    public function activeCustomerMembership()
+    {
+        return $this->customerMemberships()
+            ->where('status', CustomerMembership::STATUS_ACTIVE)
+            ->notExpired()
+            ->latest()
+            ->first();
+    }
+
+    public function classPackPurchases(): HasMany
+    {
+        return $this->hasMany(ClassPackPurchase::class);
+    }
+
+    public function usableClassPackPurchases()
+    {
+        return $this->classPackPurchases()->usable();
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     // Accessors
 
     public function getFullNameAttribute(): string
@@ -185,6 +225,26 @@ class Client extends Model
     public function getIsArchivedAttribute(): bool
     {
         return !is_null($this->archived_at);
+    }
+
+    public function getHasAvatarAttribute(): bool
+    {
+        return !empty($this->profile_photo);
+    }
+
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if (!$this->has_avatar) {
+            return null;
+        }
+
+        // If it's already a full URL, return as-is
+        if (str_starts_with($this->profile_photo, 'http')) {
+            return $this->profile_photo;
+        }
+
+        // Otherwise, assume it's a storage path
+        return asset('storage/' . $this->profile_photo);
     }
 
     // Scopes

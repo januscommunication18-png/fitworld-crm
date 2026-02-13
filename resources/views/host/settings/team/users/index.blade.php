@@ -91,7 +91,7 @@
                                                 default => 'bg-base-300 text-base-content'
                                             };
                                         @endphp
-                                        <div class="{{ $bgColor }} w-10 rounded-full">
+                                        <div class="{{ $bgColor }} size-10 rounded-full">
                                             <span>{{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}</span>
                                         </div>
                                     </div>
@@ -181,7 +181,7 @@
                                                 $initials = strtoupper(substr($invitation->email, 0, 2));
                                             }
                                         @endphp
-                                        <div class="{{ $bgColor }} w-10 rounded-full opacity-60">
+                                        <div class="{{ $bgColor }} size-10 rounded-full opacity-60">
                                             <span>{{ $initials }}</span>
                                         </div>
                                     </div>
@@ -242,7 +242,7 @@
                             <td>
                                 <div class="flex items-center gap-3">
                                     <div class="avatar placeholder">
-                                        <div class="bg-accent text-accent-content w-10 rounded-full">
+                                        <div class="bg-accent text-accent-content size-10 rounded-full">
                                             <span>{{ $instructor->initials }}</span>
                                         </div>
                                     </div>

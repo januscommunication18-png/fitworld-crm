@@ -12,6 +12,7 @@
     $canManageInstructors = $user->hasPermission('team.instructors');
     $canChangePermissions = $user->hasPermission('team.permissions');
     $canManageClients = $user->hasPermission('students.edit'); // Uses students.edit for backward compatibility
+    $canManageQuestionnaires = $user->hasPermission('schedule.create') || $user->hasPermission('schedule.edit');
     $canManagePaymentSettings = $user->hasPermission('payments.stripe');
     $canManageBilling = $user->hasPermission('billing.plan');
     $canViewInvoices = $user->hasPermission('billing.invoices');
@@ -66,6 +67,11 @@
                         @if($canManageBookingPage)
                         <li><a href="{{ route('settings.locations.booking-page') }}" class="{{ request()->routeIs('settings.locations.booking-page') ? 'active' : '' }}">
                             <span class="icon-[tabler--calendar-event] size-4"></span> Booking Page
+                        </a></li>
+                        @endif
+                        @if($canManageQuestionnaires)
+                        <li><a href="{{ route('questionnaires.index') }}" class="{{ request()->is('questionnaires*') ? 'active' : '' }}">
+                            <span class="icon-[tabler--forms] size-4"></span> Questionnaires
                         </a></li>
                         @endif
                         @if($canManagePolicies)

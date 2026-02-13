@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Carbon\Carbon;
 
 class ServiceSlot extends Model
@@ -78,6 +79,11 @@ class ServiceSlot extends Model
     public function recurrenceChildren(): HasMany
     {
         return $this->hasMany(ServiceSlot::class, 'recurrence_parent_id');
+    }
+
+    public function bookings(): MorphMany
+    {
+        return $this->morphMany(Booking::class, 'bookable');
     }
 
     /**

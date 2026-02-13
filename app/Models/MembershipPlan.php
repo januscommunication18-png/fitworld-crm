@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Str;
 
 class MembershipPlan extends Model
@@ -84,6 +86,21 @@ class MembershipPlan extends Model
     public function classPlans(): BelongsToMany
     {
         return $this->belongsToMany(ClassPlan::class, 'membership_plan_class_plan');
+    }
+
+    public function questionnaireAttachments(): MorphMany
+    {
+        return $this->morphMany(QuestionnaireAttachment::class, 'attachable');
+    }
+
+    public function customerMemberships(): HasMany
+    {
+        return $this->hasMany(CustomerMembership::class);
+    }
+
+    public function activeCustomerMemberships(): HasMany
+    {
+        return $this->customerMemberships()->where('status', 'active');
     }
 
     /**

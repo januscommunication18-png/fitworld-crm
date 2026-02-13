@@ -203,6 +203,14 @@
                 @endif
             </div>
         </div>
+
+        {{-- Questionnaire Attachments --}}
+        @if(isset($questionnaires) && $questionnaires->count() > 0)
+            @include('host.partials._questionnaire-attachments', [
+                'questionnaires' => $questionnaires,
+                'attachments' => $servicePlan?->questionnaireAttachments ?? collect()
+            ])
+        @endif
     </div>
 
     {{-- Sidebar --}}

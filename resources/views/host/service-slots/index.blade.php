@@ -158,6 +158,13 @@
                             </td>
                             <td>
                                 <div class="flex items-center gap-1">
+                                    @if($slot->isAvailable())
+                                    <a href="{{ route('walk-in.service', $slot) }}"
+                                       class="btn btn-ghost btn-xs btn-square text-primary"
+                                       title="Walk-in Booking">
+                                        <span class="icon-[tabler--walk] size-4"></span>
+                                    </a>
+                                    @endif
                                     <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
                                         <span class="icon-[tabler--edit] size-4"></span>
                                     </a>

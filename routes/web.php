@@ -25,6 +25,10 @@ use App\Http\Controllers\Host\ClassRequestController;
 use App\Http\Controllers\Host\ServicePlanController;
 use App\Http\Controllers\Host\ServiceSlotController;
 use App\Http\Controllers\Host\MembershipPlanController;
+use App\Http\Controllers\Host\QuestionnaireController;
+use App\Http\Controllers\Host\WalkInController;
+use App\Http\Controllers\Api\QuestionnaireBuilderController;
+use App\Http\Controllers\QuestionnaireResponseController;
 use App\Http\Controllers\SecurityCodeController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
@@ -38,6 +42,14 @@ Route::post('/security-code', [SecurityCodeController::class, 'verify'])->name('
 Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
+
+// Public Questionnaire Response Routes (no auth required)
+Route::prefix('q')->name('questionnaire.')->group(function () {
+    Route::get('/{token}', [QuestionnaireResponseController::class, 'show'])->name('show');
+    Route::post('/{token}', [QuestionnaireResponseController::class, 'store'])->name('store');
+    Route::post('/{token}/step', [QuestionnaireResponseController::class, 'saveStep'])->name('saveStep');
+    Route::post('/{token}/complete', [QuestionnaireResponseController::class, 'completeWizard'])->name('complete');
+});
 
 // Guest-only (redirect to dashboard if already logged in)
 Route::middleware('guest')->group(function () {
@@ -188,6 +200,34 @@ Route::middleware('auth')->group(function () {
     Route::patch('/membership-plans/{membershipPlan}/toggle-status', [MembershipPlanController::class, 'toggleStatus'])->name('membership-plans.toggle-status');
     Route::patch('/membership-plans/{membershipPlan}/archive', [MembershipPlanController::class, 'archive'])->name('membership-plans.archive');
 
+    // Questionnaires
+    Route::resource('questionnaires', QuestionnaireController::class)->names('questionnaires');
+    Route::get('/questionnaires/{questionnaire}/builder', [QuestionnaireController::class, 'builder'])->name('questionnaires.builder');
+    Route::get('/questionnaires/{questionnaire}/preview', [QuestionnaireController::class, 'preview'])->name('questionnaires.preview');
+    Route::post('/questionnaires/{questionnaire}/publish', [QuestionnaireController::class, 'publish'])->name('questionnaires.publish');
+    Route::post('/questionnaires/{questionnaire}/unpublish', [QuestionnaireController::class, 'unpublish'])->name('questionnaires.unpublish');
+    Route::post('/questionnaires/{questionnaire}/duplicate', [QuestionnaireController::class, 'duplicate'])->name('questionnaires.duplicate');
+
+    // Questionnaire Responses
+    Route::get('/questionnaires/{questionnaire}/responses', [QuestionnaireController::class, 'responses'])->name('questionnaires.responses');
+    Route::get('/questionnaires/{questionnaire}/responses/{response}', [QuestionnaireController::class, 'showResponse'])->name('questionnaires.responses.show');
+    Route::post('/questionnaires/{questionnaire}/responses/create', [QuestionnaireController::class, 'createResponse'])->name('questionnaires.responses.create');
+    Route::post('/questionnaires/{questionnaire}/responses/{response}/resend', [QuestionnaireController::class, 'resendResponse'])->name('questionnaires.responses.resend');
+
+    // Questionnaire Builder API (JSON endpoints for AJAX calls)
+    Route::prefix('api/v1/questionnaires/{questionnaire}')->group(function () {
+        Route::post('/steps', [QuestionnaireBuilderController::class, 'storeStep'])->name('api.questionnaires.steps.store');
+        Route::put('/steps/{step}', [QuestionnaireBuilderController::class, 'updateStep'])->name('api.questionnaires.steps.update');
+        Route::delete('/steps/{step}', [QuestionnaireBuilderController::class, 'destroyStep'])->name('api.questionnaires.steps.destroy');
+        Route::post('/blocks', [QuestionnaireBuilderController::class, 'storeBlock'])->name('api.questionnaires.blocks.store');
+        Route::put('/blocks/{block}', [QuestionnaireBuilderController::class, 'updateBlock'])->name('api.questionnaires.blocks.update');
+        Route::delete('/blocks/{block}', [QuestionnaireBuilderController::class, 'destroyBlock'])->name('api.questionnaires.blocks.destroy');
+        Route::post('/questions', [QuestionnaireBuilderController::class, 'storeQuestion'])->name('api.questionnaires.questions.store');
+        Route::put('/questions/{question}', [QuestionnaireBuilderController::class, 'updateQuestion'])->name('api.questionnaires.questions.update');
+        Route::delete('/questions/{question}', [QuestionnaireBuilderController::class, 'destroyQuestion'])->name('api.questionnaires.questions.destroy');
+        Route::put('/reorder', [QuestionnaireBuilderController::class, 'reorder'])->name('api.questionnaires.reorder');
+    });
+
     // Service Slots
     Route::resource('service-slots', ServiceSlotController::class)->names('service-slots');
     Route::post('/service-slots/bulk', [ServiceSlotController::class, 'bulkCreate'])->name('service-slots.bulk');
@@ -199,6 +239,15 @@ Route::middleware('auth')->group(function () {
     Route::patch('/class-sessions/{class_session}/cancel', [ClassSessionController::class, 'cancel'])->name('class-sessions.cancel');
     Route::patch('/class-sessions/{class_session}/promote-backup', [ClassSessionController::class, 'promoteBackup'])->name('class-sessions.promote-backup');
     Route::post('/class-sessions/{class_session}/duplicate', [ClassSessionController::class, 'duplicate'])->name('class-sessions.duplicate');
+
+    // Walk-In Booking
+    Route::get('/walk-in/class/{class_session}', [WalkInController::class, 'classSession'])->name('walk-in.class');
+    Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
+    Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');
+    Route::post('/walk-in/service/{service_slot}', [WalkInController::class, 'bookService'])->name('walk-in.service.book');
+    Route::get('/walk-in/payment-methods/{client}', [WalkInController::class, 'getPaymentMethods'])->name('walk-in.payment-methods');
+    Route::post('/walk-in/clients/quick-add', [WalkInController::class, 'quickAddClient'])->name('walk-in.clients.quick-add');
+    Route::get('/walk-in/clients/search', [WalkInController::class, 'searchClients'])->name('walk-in.clients.search');
 
     // Class Requests
     Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');
@@ -214,6 +263,10 @@ Route::middleware('auth')->group(function () {
 
     // Bookings
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/upcoming', [BookingController::class, 'upcoming'])->name('bookings.upcoming');
+    Route::get('/bookings/cancellations', [BookingController::class, 'cancelled'])->name('bookings.cancelled');
+    Route::get('/bookings/no-shows', [BookingController::class, 'noShows'])->name('bookings.no-shows');
+    Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
 
     // Offers
     Route::get('/offers', [OfferController::class, 'index'])->name('offers.index');

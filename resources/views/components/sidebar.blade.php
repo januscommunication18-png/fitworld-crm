@@ -114,17 +114,17 @@
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
                 <ul class="sidebar-submenu {{ request()->is('bookings*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('bookings.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('bookings') && !request()->is('bookings/*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clipboard-list] size-4 mr-2"></span>{{ $user->hasPermission('bookings.view') ? 'All Bookings' : 'My Class Bookings' }}
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('bookings.upcoming') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('bookings/upcoming*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clock] size-4 mr-2"></span>Upcoming
                     </a></li>
                     @if($user->hasPermission('bookings.view'))
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('bookings.cancelled') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('bookings/cancellations*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--circle-x] size-4 mr-2"></span>Cancellations
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('bookings.no-shows') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('bookings/no-shows*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--user-x] size-4 mr-2"></span>No-Shows
                     </a></li>
                     @endif

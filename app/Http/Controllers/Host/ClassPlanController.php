@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Http\Requests\Host\ClassPlanRequest;
 use App\Models\ClassPlan;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ClassPlanController extends Controller
 {
+    use SyncsQuestionnaireAttachments;
+
     public function index(Request $request)
     {
         $host = auth()->user()->host;
@@ -32,8 +35,9 @@ class ClassPlanController extends Controller
         $categories = ClassPlan::getCategories();
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
+        $questionnaires = $this->getPublishedQuestionnaires();
 
-        return view('host.class-plans.create', compact('categories', 'types', 'difficultyLevels'));
+        return view('host.class-plans.create', compact('categories', 'types', 'difficultyLevels', 'questionnaires'));
     }
 
     public function store(ClassPlanRequest $request)
@@ -63,6 +67,9 @@ class ClassPlanController extends Controller
 
         $classPlan = $host->classPlans()->create($data);
 
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($classPlan, $request);
+
         return redirect()->route('catalog.index', ['tab' => 'classes'])
             ->with('success', 'Class plan created successfully.');
     }
@@ -81,8 +88,10 @@ class ClassPlanController extends Controller
         $categories = ClassPlan::getCategories();
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
+        $questionnaires = $this->getPublishedQuestionnaires();
+        $classPlan->load('questionnaireAttachments');
 
-        return view('host.class-plans.edit', compact('classPlan', 'categories', 'types', 'difficultyLevels'));
+        return view('host.class-plans.edit', compact('classPlan', 'categories', 'types', 'difficultyLevels', 'questionnaires'));
     }
 
     public function update(ClassPlanRequest $request, ClassPlan $classPlan)
@@ -124,6 +133,9 @@ class ClassPlanController extends Controller
         $data['is_visible_on_booking_page'] = $request->boolean('is_visible_on_booking_page');
 
         $classPlan->update($data);
+
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($classPlan, $request);
 
         return redirect()->route('catalog.index', ['tab' => 'classes'])
             ->with('success', 'Class plan updated successfully.');

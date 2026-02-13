@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Http\Requests\Host\MembershipPlanRequest;
 use App\Models\MembershipPlan;
 use Illuminate\Http\Request;
@@ -10,6 +11,8 @@ use Illuminate\Support\Str;
 
 class MembershipPlanController extends Controller
 {
+    use SyncsQuestionnaireAttachments;
+
     public function index(Request $request)
     {
         $host = auth()->user()->host;
@@ -37,6 +40,7 @@ class MembershipPlanController extends Controller
         $locationScopes = MembershipPlan::getLocationScopes();
         $classPlans = $host->classPlans()->active()->orderBy('name')->get();
         $locations = $host->locations()->orderBy('name')->get();
+        $questionnaires = $this->getPublishedQuestionnaires();
 
         return view('host.membership-plans.create', compact(
             'types',
@@ -45,7 +49,8 @@ class MembershipPlanController extends Controller
             'eligibilityScopes',
             'locationScopes',
             'classPlans',
-            'locations'
+            'locations',
+            'questionnaires'
         ));
     }
 
@@ -79,6 +84,9 @@ class MembershipPlanController extends Controller
             $membershipPlan->classPlans()->attach($request->input('class_plan_ids'));
         }
 
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($membershipPlan, $request);
+
         return redirect()->route('catalog.index', ['tab' => 'memberships'])
             ->with('success', 'Membership plan created successfully.');
     }
@@ -105,6 +113,8 @@ class MembershipPlanController extends Controller
         $locations = $host->locations()->orderBy('name')->get();
         $selectedClassPlanIds = $membershipPlan->classPlans->pluck('id')->toArray();
         $selectedLocationIds = $membershipPlan->location_ids ?? [];
+        $questionnaires = $this->getPublishedQuestionnaires();
+        $membershipPlan->load('questionnaireAttachments');
 
         return view('host.membership-plans.edit', compact(
             'membershipPlan',
@@ -116,7 +126,8 @@ class MembershipPlanController extends Controller
             'classPlans',
             'locations',
             'selectedClassPlanIds',
-            'selectedLocationIds'
+            'selectedLocationIds',
+            'questionnaires'
         ));
     }
 
@@ -152,6 +163,9 @@ class MembershipPlanController extends Controller
         } else {
             $membershipPlan->classPlans()->detach();
         }
+
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($membershipPlan, $request);
 
         return redirect()->route('catalog.index', ['tab' => 'memberships'])
             ->with('success', 'Membership plan updated successfully.');

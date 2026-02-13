@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 
@@ -104,6 +105,17 @@ class ClassSession extends Model
         return $this->hasMany(ClassSession::class, 'recurrence_parent_id');
     }
 
+    public function bookings(): MorphMany
+    {
+        return $this->morphMany(Booking::class, 'bookable');
+    }
+
+    public function confirmedBookings(): MorphMany
+    {
+        return $this->morphMany(Booking::class, 'bookable')
+            ->where('status', Booking::STATUS_CONFIRMED);
+    }
+
     // Scopes
 
     public function scopeDraft(Builder $query): Builder
@@ -189,6 +201,16 @@ class ClassSession extends Model
     public function isCancelled(): bool
     {
         return $this->status === self::STATUS_CANCELLED;
+    }
+
+    public function isPast(): bool
+    {
+        return $this->start_time->isPast();
+    }
+
+    public function isFuture(): bool
+    {
+        return $this->start_time->isFuture();
     }
 
     public function publish(): bool

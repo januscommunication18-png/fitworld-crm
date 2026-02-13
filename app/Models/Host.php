@@ -302,6 +302,46 @@ class Host extends Model
         return $this->hasMany(HelpdeskTag::class);
     }
 
+    public function questionnaires(): HasMany
+    {
+        return $this->hasMany(Questionnaire::class);
+    }
+
+    public function questionnaireResponses(): HasMany
+    {
+        return $this->hasMany(QuestionnaireResponse::class);
+    }
+
+    public function clients(): HasMany
+    {
+        return $this->hasMany(Client::class);
+    }
+
+    public function customerMemberships(): HasMany
+    {
+        return $this->hasMany(CustomerMembership::class);
+    }
+
+    public function classPacks(): HasMany
+    {
+        return $this->hasMany(ClassPack::class);
+    }
+
+    public function classPackPurchases(): HasMany
+    {
+        return $this->hasMany(ClassPackPurchase::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(AuditLog::class);
+    }
+
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class);

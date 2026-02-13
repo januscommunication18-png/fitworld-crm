@@ -201,6 +201,69 @@
   - Auto-create Lead (Client with status=lead)
   - Store UTM params in lead record
 
+### ADR-016: Questionnaire Builder Architecture
+
+- **Status:** Accepted
+- **Context:** Studios need customizable onboarding questionnaires for client intake before classes/services.
+- **Decision:** Build a schema-driven questionnaire system following the Client Custom Fields pattern with: questionnaires → versions → steps → blocks → questions hierarchy. Separate response storage from question definitions.
+- **Reasoning:**
+  - Versioning preserves historical responses when questionnaires are edited
+  - Block/section grouping allows logical question organization
+  - Separation of concerns: definition vs responses
+  - Follows existing custom fields pattern for consistency
+- **Consequences:**
+  - 7 new database tables for questionnaire system
+  - Vue-powered builder UI for drag-and-drop
+  - Token-based public response pages
+  - Version management adds complexity but ensures data integrity
+
+### ADR-017: Questionnaire Versioning Strategy
+
+- **Status:** Accepted
+- **Context:** Questionnaires will be edited over time, but client responses must remain valid and viewable with original questions.
+- **Decision:** Implement explicit versioning: each edit to an active questionnaire creates a new draft version. Publishing makes the draft active. Responses always link to `questionnaire_version_id`, not just `questionnaire_id`.
+- **Reasoning:**
+  - Prevents data corruption when questions change
+  - Allows viewing old responses with their original context
+  - Clear audit trail of changes
+  - Studios can review response trends across versions
+- **Consequences:**
+  - Every response stores `questionnaire_version_id`
+  - Admin must "publish" to activate changes
+  - Builder always works on draft version
+  - Old versions are archived, not deleted
+
+### ADR-018: Questionnaire Attachment Model
+
+- **Status:** Accepted
+- **Context:** Questionnaires need to be optionally required for class plans, service plans, and membership plans with configurable timing.
+- **Decision:** Use polymorphic `questionnaire_attachments` table with `attachable_type` + `attachable_id` pattern. Attachment includes configuration: required flag, collection timing, and applicability scope.
+- **Reasoning:**
+  - Single table handles all attachment types
+  - Configuration per attachment allows flexibility
+  - Booking system can query attachments to determine intake requirements
+  - Supports future attachment to other entities
+- **Consequences:**
+  - Plan edit pages need questionnaire attachment UI
+  - Booking creation checks for required questionnaires
+  - Email automation triggers based on `collection_timing`
+
+### ADR-019: Questionnaire Response Token System
+
+- **Status:** Accepted
+- **Context:** Clients need to complete questionnaires via email link without requiring login.
+- **Decision:** Generate unique, non-guessable tokens per response invitation. Token grants access to specific questionnaire for specific client. Tokens expire on completion or after 30 days.
+- **Reasoning:**
+  - No login required improves completion rates
+  - Token-per-response prevents sharing/reuse
+  - Expiration adds security
+  - Works on mobile without app installation
+- **Consequences:**
+  - Public routes for `/q/{token}` without auth middleware
+  - Token validation in controller
+  - Token stored in `questionnaire_responses.token`
+  - Must rate-limit response creation to prevent abuse
+
 ### ADR-007: Manual Auth (Not Laravel Breeze)
 
 - **Status:** Accepted
@@ -799,6 +862,1088 @@ Section Header (e.g., "Emergency Contact")
 | Client merge | Merge duplicate client records |
 | Client export | CSV/Excel export |
 
+### FEAT-007: Questionnaire Builder
+
+- **Status:** Completed
+- **Priority:** P1 (high)
+- **Description:** Complete questionnaire builder system for client onboarding/intake with single-page and multi-step wizard support, section blocks, and mobile-friendly form completion.
+- **User Story:** As a studio owner, I want to build and send onboarding questionnaires to better understand clients before their first visit so instructors can deliver a safer and more personalized experience.
+- **Affected Areas:**
+  - Navigation: Classes & Services → Questionnaires (new menu item)
+  - Routes: `/questionnaires/*`, `/q/{token}` (public response page)
+  - Controllers: `QuestionnaireController`, `QuestionnaireBuilderController`, `QuestionnaireResponseController`
+  - Models: `Questionnaire`, `QuestionnaireVersion`, `QuestionnaireStep`, `QuestionnaireBlock`, `QuestionnaireQuestion`, `QuestionnaireResponse`, `QuestionnaireAnswer`
+  - Views: `resources/views/host/questionnaires/*`, `resources/views/questionnaire/*` (public)
+  - Vue: `resources/js/apps/questionnaire-builder.js`, `resources/js/apps/questionnaire-response.js`
+- **Dependencies:** Email system (SendGrid/Mailgun), Client management (FEAT-006)
+
+---
+
+#### 7.1 Navigation Structure
+
+```
+Classes & Services (sidebar section)
+├── Catalog
+├── Class Plans
+├── Service Plans
+├── Memberships
+├── Questionnaires      ← NEW
+└── Service Slots
+```
+
+---
+
+#### 7.2 Questionnaire Types
+
+**A) Single Form Questionnaire**
+- All questions displayed on one page
+- Best for quick onboarding (5–12 questions)
+- Submit once at end
+- No progress indicator needed
+
+**B) Multi-Page Questionnaire (Wizard)**
+- Broken into steps (Step 1, Step 2…)
+- Each step contains one or more section blocks
+- Progress indicator (e.g., "Step 2 of 5")
+- Next/Back navigation
+- Auto-save progress after each step
+- Resume link valid until final submit
+
+Admin chooses type per questionnaire during creation.
+
+---
+
+#### 7.3 Questionnaire Structure
+
+```
+Questionnaire
+├── Version (for edit tracking)
+│   ├── Step 1 (wizard only, or implicit single step)
+│   │   ├── Block A (Section Header + Description)
+│   │   │   ├── Question 1
+│   │   │   ├── Question 2
+│   │   │   └── Question 3
+│   │   └── Block B
+│   │       ├── Question 4
+│   │       └── Question 5
+│   └── Step 2 (wizard only)
+│       └── Block C
+│           └── Question 6
+```
+
+**Section Block Properties:**
+| Field | Required | Description |
+|-------|----------|-------------|
+| Block Title | Yes | Header displayed above questions |
+| Block Description | No | Explanatory text below title |
+| Display Style | No | `plain` (default) or `card` (styled container) |
+| Visibility | No | `public` (client sees) or `internal` (admin/instructor only) |
+
+---
+
+#### 7.4 Question Types (MVP)
+
+| Type | Input Control | Storage |
+|------|---------------|---------|
+| `short_text` | Single-line text input | VARCHAR |
+| `long_text` | Multi-line textarea | TEXT |
+| `email` | Email input with validation | VARCHAR |
+| `phone` | Phone input | VARCHAR |
+| `yes_no` | Toggle or radio (Yes/No) | BOOLEAN |
+| `single_select` | Radio buttons | VARCHAR (option key) |
+| `multi_select` | Checkboxes | JSON array |
+| `dropdown` | Select dropdown | VARCHAR (option key) |
+| `date` | Date picker (Flatpickr) | DATE |
+| `number` | Number input | DECIMAL |
+| `acknowledgement` | Single checkbox (e.g., "I confirm…") | BOOLEAN |
+
+**Phase 2 (Future):**
+| Type | Description |
+|------|-------------|
+| `rating` | 1–5 star rating |
+| `file_upload` | Medical notes, waivers (sensitive) |
+
+---
+
+#### 7.5 Question Properties
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| Question Label | Yes | The question text displayed to client |
+| Question Type | Yes | One of the MVP types above |
+| Required | No | Toggle (default: No) |
+| Help Text | No | Explanatory text below question |
+| Placeholder | No | Placeholder text for text inputs |
+| Options | Conditional | For dropdown/single_select/multi_select |
+| Min/Max Length | No | Validation for text inputs |
+| Min/Max Value | No | Validation for number inputs |
+| Visibility | No | `client` (default) or `instructor_only` |
+| Tags | No | For reporting: `injury`, `goals`, `experience` |
+| Sensitive | No | Mark as sensitive (restricted visibility) |
+
+---
+
+#### 7.6 Wizard Mode Requirements
+
+**Step Builder (Admin):**
+- Add Step button
+- Step title (required)
+- Step description (optional)
+- Add one or more blocks into a step
+- Reorder steps via drag-and-drop
+
+**Wizard UX (Client Side):**
+- Progress indicator: "Step X of Y"
+- Next button disabled until required questions complete
+- Back button always available
+- Auto-save responses after each step
+- Resume link valid until final submit
+- Mobile-optimized: sticky Next/Submit button
+
+---
+
+#### 7.7 Attachment Rules
+
+Questionnaires can be attached to:
+- Class Plans
+- Service Plans
+- Membership Plans
+
+**Attachment Configuration:**
+| Setting | Options | Default |
+|---------|---------|---------|
+| Required? | Yes / No | Yes |
+| When to collect | `before_booking` (blocking), `after_booking` (intake pending), `before_first_session` | `before_first_session` |
+| Applies to | `first_time_only`, `every_booking` | `first_time_only` |
+
+**How Attachment Works:**
+1. Class/Service/Membership plan has `questionnaire_id` + attachment settings
+2. On booking creation, system checks if questionnaire required
+3. If `before_booking`: client must complete before booking confirmed
+4. If `after_booking`: booking created, client gets email to complete
+5. If `before_first_session`: reminder sent before first session
+
+---
+
+#### 7.8 Sending Options
+
+**A) Email (MVP)**
+
+Delivery methods:
+- **Automatic triggers:**
+  - After booking created (if `after_booking` mode)
+  - After membership purchase
+  - Before first session (X hours prior)
+- **Manual send:**
+  - From Client profile → "Send Questionnaire"
+  - From Booking details → "Send Questionnaire"
+
+Email contains:
+- Studio name/logo
+- CTA button: "Complete Your Intake"
+- Secure link: `{subdomain}.domain.com/q/{token}`
+- Estimated completion time (optional)
+
+**B) SMS (Coming Soon)**
+- Placeholder UI in send options
+- Architecture supports `channel = email | sms`
+- Future Twilio integration
+
+---
+
+#### 7.9 Client Experience (Mobile-First)
+
+**Layout Requirements:**
+- Single column layout
+- Large tap targets (min 44px)
+- Sticky "Next/Submit" button (wizard mode)
+- Minimal scrolling per step
+
+**UX Requirements:**
+- Clear intro text with studio branding
+- Estimated time to complete (optional)
+- Save + resume for wizard mode
+- Inline validation messages
+- Submit confirmation: "Thanks — your responses were sent to {studio_name}."
+
+**Accessibility:**
+- Proper `<label for="">` on all inputs
+- Keyboard navigation support
+- High contrast support
+- ARIA attributes where needed
+
+---
+
+#### 7.10 Versioning System (Critical)
+
+**Why:** Questionnaires change over time but old responses must remain valid.
+
+**Rules:**
+1. Questionnaire has versions: v1, v2, v3…
+2. Editing an **Active** questionnaire creates a **new draft version**
+3. Publishing draft version makes it the new active version
+4. Past responses always reference `questionnaire_id + version_id`
+5. Old responses remain viewable with their original questions
+
+**Version States:**
+| State | Description |
+|-------|-------------|
+| `draft` | Being edited, not sent to clients |
+| `active` | Currently in use, sent to new clients |
+| `archived` | No longer in use, responses preserved |
+
+---
+
+#### 7.11 Response Data & Privacy
+
+**Response Linked To:**
+- Studio (`host_id`)
+- Client (`client_id`)
+- Booking (`booking_id` - optional but recommended)
+- Questionnaire Version (`questionnaire_version_id`)
+
+**Who Can View Responses:**
+| Role | Access |
+|------|--------|
+| Owner | All responses |
+| Admin | All responses |
+| Staff | View (configurable per studio) |
+| Instructor | Only responses for their assigned sessions |
+| Client | Their own submitted responses (optional toggle) |
+
+**Sensitive Questions:**
+- Questions marked `sensitive = true`
+- Visible only to Owner/Admin + assigned instructor
+- Hidden from Staff (even with view permission)
+
+---
+
+#### 7.12 Admin Reporting (MVP)
+
+**Completion Status per Booking:**
+- Badge: "Intake Pending" / "Intake Complete"
+- Completion timestamp
+- Link to view response
+- Resend questionnaire button
+
+**Locations:**
+- Booking detail page
+- Client profile → Responses tab
+- Questionnaire detail → Responses list
+
+---
+
+#### 7.13 Screens Required
+
+**Admin Screens:**
+| Screen | Route | Description |
+|--------|-------|-------------|
+| Questionnaires List | `/questionnaires` | All questionnaires with status badges |
+| Create Questionnaire | `/questionnaires/create` | Type selection + basic info |
+| Questionnaire Builder | `/questionnaires/{id}/builder` | Vue-powered drag-drop builder |
+| Preview Mode | `/questionnaires/{id}/preview` | Mobile/desktop toggle preview |
+| Responses List | `/questionnaires/{id}/responses` | All submissions for this questionnaire |
+| View Response | `/questionnaires/{id}/responses/{response_id}` | Individual response detail |
+
+**Attachment Screens (within existing pages):**
+- Class Plan edit → Questionnaire attachment section
+- Service Plan edit → Questionnaire attachment section
+- Membership Plan edit → Questionnaire attachment section
+- Booking detail → Intake status + view response + resend
+
+**Client Profile Integration:**
+- Responses history tab
+- Send questionnaire action
+
+**Client-Facing Screens:**
+| Screen | Route | Description |
+|--------|-------|-------------|
+| Questionnaire Page | `/q/{token}` | Single page or wizard form |
+| Resume Page | `/q/{token}/resume` | Continue wizard from last step |
+| Confirmation | `/q/{token}/complete` | Thank you message |
+
+---
+
+#### 7.14 Builder Features (Admin)
+
+**Core Capabilities:**
+- Create questionnaire (starts as Draft)
+- Choose type: Single Page / Wizard
+- Add/Edit/Delete Steps (wizard mode)
+- Add/Edit/Delete Blocks within steps
+- Add/Edit/Delete Questions within blocks
+- Reorder all elements via drag-and-drop
+- Preview in mobile and desktop views
+- Publish / Unpublish
+- Duplicate questionnaire
+- Archive questionnaire
+
+**Builder UI (Vue Component):**
+- Left panel: Steps/Blocks list
+- Center panel: Active block with questions
+- Right panel: Question properties editor
+- Bottom toolbar: Preview, Save Draft, Publish
+
+---
+
+#### 7.15 Database Tables
+
+```
+questionnaires
+├── id, host_id FK, name, description, type (single|wizard)
+├── status (draft|active|archived), estimated_minutes (nullable)
+├── intro_text (nullable), thank_you_message
+├── allow_save_resume (boolean, default true for wizard)
+├── created_by FK (users), timestamps
+
+questionnaire_versions
+├── id, questionnaire_id FK, version_number
+├── status (draft|active|archived), published_at (nullable)
+├── created_by FK (users), timestamps
+
+questionnaire_steps (wizard mode only)
+├── id, questionnaire_version_id FK, title, description (nullable)
+├── sort_order, timestamps
+
+questionnaire_blocks
+├── id, questionnaire_version_id FK, step_id FK (nullable for single)
+├── title, description (nullable)
+├── display_style (plain|card), visibility (public|internal)
+├── sort_order, timestamps
+
+questionnaire_questions
+├── id, questionnaire_block_id FK, question_key (slug)
+├── question_label, question_type (enum)
+├── options (JSON), is_required (boolean)
+├── help_text, placeholder, default_value
+├── validation_rules (JSON: min, max, etc.)
+├── visibility (client|instructor_only), is_sensitive (boolean)
+├── tags (JSON), sort_order, timestamps
+
+questionnaire_attachments
+├── id, questionnaire_id FK, attachable_type, attachable_id
+├── is_required (boolean), collection_timing (enum)
+├── applies_to (first_time_only|every_booking)
+├── timestamps
+
+questionnaire_responses
+├── id, questionnaire_version_id FK, host_id FK
+├── client_id FK, booking_id FK (nullable)
+├── token (unique), status (in_progress|completed)
+├── current_step (integer, for wizard resume)
+├── started_at, completed_at, timestamps
+├── ip_address, user_agent
+
+questionnaire_answers
+├── id, questionnaire_response_id FK, question_id FK
+├── answer (TEXT), timestamps
+```
+
+---
+
+#### 7.16 API Endpoints
+
+**Builder API (Admin, Sanctum auth):**
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/v1/questionnaires` | List all questionnaires |
+| `POST` | `/api/v1/questionnaires` | Create questionnaire |
+| `GET` | `/api/v1/questionnaires/{id}` | Get questionnaire with structure |
+| `PUT` | `/api/v1/questionnaires/{id}` | Update questionnaire metadata |
+| `DELETE` | `/api/v1/questionnaires/{id}` | Delete questionnaire |
+| `POST` | `/api/v1/questionnaires/{id}/publish` | Publish draft version |
+| `POST` | `/api/v1/questionnaires/{id}/duplicate` | Clone questionnaire |
+| `POST` | `/api/v1/questionnaires/{id}/steps` | Add step (wizard) |
+| `PUT` | `/api/v1/questionnaires/{id}/steps/{stepId}` | Update step |
+| `DELETE` | `/api/v1/questionnaires/{id}/steps/{stepId}` | Delete step |
+| `POST` | `/api/v1/questionnaires/{id}/blocks` | Add block |
+| `PUT` | `/api/v1/questionnaires/{id}/blocks/{blockId}` | Update block |
+| `DELETE` | `/api/v1/questionnaires/{id}/blocks/{blockId}` | Delete block |
+| `POST` | `/api/v1/questionnaires/{id}/questions` | Add question |
+| `PUT` | `/api/v1/questionnaires/{id}/questions/{qId}` | Update question |
+| `DELETE` | `/api/v1/questionnaires/{id}/questions/{qId}` | Delete question |
+| `PUT` | `/api/v1/questionnaires/{id}/reorder` | Reorder steps/blocks/questions |
+
+**Response API (Public, token-based):**
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `GET` | `/api/v1/q/{token}` | Get questionnaire structure for client |
+| `POST` | `/api/v1/q/{token}/save` | Save progress (wizard) |
+| `POST` | `/api/v1/q/{token}/submit` | Final submission |
+
+**Send API (Admin):**
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| `POST` | `/api/v1/questionnaires/{id}/send` | Send to client(s) |
+| `POST` | `/api/v1/responses/{id}/resend` | Resend incomplete |
+
+---
+
+#### 7.17 Permissions
+
+| Action | Owner | Admin | Staff | Instructor |
+|--------|-------|-------|-------|------------|
+| View questionnaires | ✓ | ✓ | ✓ (list only) | ✗ |
+| Create/Edit questionnaires | ✓ | ✓ | ✗ | ✗ |
+| Delete questionnaires | ✓ | ✓ | ✗ | ✗ |
+| Send questionnaires | ✓ | ✓ | ✓ (if permitted) | ✗ |
+| View all responses | ✓ | ✓ | ✓ (if permitted) | ✗ |
+| View own session responses | ✓ | ✓ | ✓ | ✓ |
+| Attach to plans | ✓ | ✓ | ✗ | ✗ |
+
+---
+
+#### 7.18 MVP Acceptance Criteria
+
+- [ ] Admin can create questionnaires in draft mode
+- [ ] Supports single page + wizard types
+- [ ] Supports section blocks with title/description + multiple questions
+- [ ] All 11 MVP question types functional
+- [ ] Drag-and-drop reordering works
+- [ ] Preview mode shows mobile/desktop toggle
+- [ ] Can attach questionnaire to class plan, service plan, membership plan
+- [ ] Client receives email link and completes form on mobile
+- [ ] Wizard mode supports save/resume
+- [ ] Responses stored and viewable in booking + client profile
+- [ ] Edits create new version; past responses preserved
+- [ ] Completion status badge shown on bookings
+- [ ] SMS shown as "Coming soon" option (non-functional)
+
+---
+
+#### 7.19 Implementation Phases
+
+**Phase 1: Core Builder (MVP)** ✅ COMPLETED
+1. ✅ Database migrations (8 tables)
+2. ✅ Models with relationships (8 models)
+3. Navigation update (sidebar)
+4. Questionnaire CRUD (list, create, edit, delete)
+5. Basic builder UI (Blade + Vue hybrid)
+6. Single page form type
+7. All 11 question types
+8. Preview mode
+
+**Phase 2: Wizard & Responses** ✅ COMPLETED
+1. ✅ Wizard step management (admin)
+2. ✅ Client-facing response page (single page and wizard views)
+3. ✅ Auto-save for wizard (JavaScript step-by-step saving)
+4. ✅ Response storage (answers saved to questionnaire_answers table)
+5. ✅ Manual sending (generate link from questionnaire show page)
+6. ✅ Admin response viewing (list and detail views)
+
+**Phase 3: Attachments & Automation** ✅ COMPLETED
+> Note: Automatic email triggers deferred until email system is implemented.
+1. ✅ Attachment to plans UI (Class Plans, Service Plans, Membership Plans)
+2. ⏸️ Booking integration (intake status) — DEFERRED until booking system enhancement
+3. ⏸️ Automatic email triggers — DEFERRED until email system is implemented
+4. ✅ Client profile responses tab (questionnaires tab with send functionality)
+5. ✅ Resend functionality (regenerate link)
+
+**Phase 4: Polish & Advanced** ✅ COMPLETED
+1. ✅ Versioning system (version history UI on questionnaire show page)
+2. ✅ Duplicate questionnaire (duplicate method in controller)
+3. ✅ Archive functionality (unpublish/archive in controller)
+4. ✅ Sensitive question privacy (reveal/hide toggle in response detail view)
+5. ⏸️ Reporting enhancements — DEFERRED to future iteration
+6. ✅ SMS placeholder UI (coming soon message in send modal)
+
+---
+
+#### 7.20 Coming Soon / Future
+
+| Feature | Description |
+|---------|-------------|
+| SMS delivery | Send questionnaire via SMS |
+| File upload questions | Medical notes, waivers |
+| Rating questions | 1-5 star ratings |
+| Conditional logic | Show/hide questions based on answers |
+| Branching | Different paths based on responses |
+| Response export | CSV/Excel export |
+| Templates library | Pre-built questionnaire templates |
+| Embed code | Embed on external website |
+
+### FEAT-008: Walk-In Booking Experience (Owner/Staff)
+
+- **Status:** Planned
+- **Priority:** P0 (critical)
+- **Description:** Complete walk-in booking system for owner/staff to book clients in-person in under 60 seconds, with payment handling, membership/pack support, and intake questionnaire integration.
+- **User Story:** As a studio owner/staff, I want to quickly book walk-in clients so that I can serve customers efficiently without losing revenue or tracking accuracy.
+- **Modules Involved:** Schedule, Bookings, Clients, Payments, Memberships, Questionnaires
+- **Affected Areas:**
+  - Routes: `/api/walk-in/*`, booking routes
+  - Controllers: `WalkInBookingController`, `BookingController`, `PaymentController`
+  - Models: `Booking` (update), `CustomerMembership` (new), `ClassPack` (new), `ClassPackPurchase` (new), `Payment` (new), `AuditLog` (new)
+  - Views: Walk-in modal components, schedule integration
+  - Services: `BookingService`, `PaymentService`, `MembershipService`, `StripeService`, `AuditService`
+- **Dependencies:** Existing Booking model, ClassSession model, ServiceSlot model, Client model, MembershipPlan model, Questionnaire system
+
+---
+
+#### 8.1 Walk-In Principles
+
+| Principle | Description |
+|-----------|-------------|
+| **Fast** | Minimal steps, quick-add client, default values prefilled |
+| **Flexible** | Allow overrides (capacity, payment, intake) with audit logs |
+| **Accurate** | Updates roster, capacity, payments, memberships/credits correctly |
+| **Optional Communications** | Do not force customer emails for walk-ins unless desired |
+
+---
+
+#### 8.2 Entry Points
+
+Walk-in booking can be started from:
+
+| Entry Point | Location | Context |
+|-------------|----------|---------|
+| Schedule → Today View | Class row | "Walk-In Booking" button |
+| Schedule → Today View | Service slot row | "Walk-In Booking" button |
+| Schedule → Calendar | Session details popup | "Add Walk-In" button |
+| Global Quick Action | Top navbar | "+ Walk-In" button |
+| Client Profile | Client page | "Book for Client" button |
+
+---
+
+#### 8.3 Walk-In Booking Modes
+
+The walk-in flow supports 3 booking types:
+
+| Mode | Description |
+|------|-------------|
+| **Book a Class Session** | Add client to a class roster |
+| **Book a Service Slot** | Book a 1-on-1 service appointment |
+| **Sell a Membership** | Sell membership + optionally book immediately |
+
+Each mode follows the shared step pattern for speed.
+
+---
+
+#### 8.4 Shared Walk-In Booking Flow
+
+```
+┌─────────────────┐
+│ Step 1: Client  │ ← Search or Quick Add
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│ Step 2: Payment │ ← Membership > Pack > Manual > Stripe > Comp
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│ Step 3: Intake  │ ← Send Link / Mark Complete / Skip
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│ Step 4: Confirm │ ← Review + Submit
+└─────────────────┘
+```
+
+---
+
+#### 8.5 Step 1 — Identify the Client
+
+**Client Selector (Always First)**
+
+- Search existing clients by: name, email, phone
+- Display recent clients for quick selection
+
+**Quick Add (Inline)**
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| First Name | Yes | |
+| Last Name | Yes | |
+| Phone | No | Recommended for walk-ins |
+| Email | No | Optional |
+| Send email confirmations | Toggle | Default OFF for walk-in |
+
+**Rules:**
+- If same email exists → attach booking to existing client
+- If no email provided → allow "phone-only" record
+
+---
+
+#### 8.6 Step 2 — Payment Method Selection
+
+**Payment Methods (Priority Order in UI)**
+
+| Method | Description | When Available |
+|--------|-------------|----------------|
+| Membership | Use active membership credits | If client has active eligible membership |
+| Pack | Use class pack credits | If client has eligible pack with credits |
+| Manual | Cash/Venmo/Zelle/PayPal/etc. | Always |
+| Stripe | Card payment | If Stripe enabled |
+| Comp/Free | No charge | Owner/Admin only |
+
+**Walk-In Defaults:**
+- Default method: Manual payment (Cash) — configurable per studio
+
+**Manual Payment Capture (if selected)**
+
+| Field | Required |
+|-------|----------|
+| Payment method type | Yes (cash/venmo/zelle/paypal/cash app/other) |
+| Amount | Yes |
+| Notes | No |
+| Paid status | Yes (default: Paid) |
+
+**Rules:**
+- If membership selected → verify eligible for this class/service
+- If pack selected → verify credits available
+- If unpaid allowed → booking status shows "Payment Pending"
+
+---
+
+#### 8.7 Step 3 — Intake/Questionnaire (Optional)
+
+**When Shown:**
+- If selected class/service/membership has required questionnaire attached
+
+**Intake Status Display:**
+- Required / Optional / Not required
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| Send intake link by email | Sends questionnaire to client email (if email exists) |
+| Mark as completed (staff override) | Owner/admin marks as done (audit logged) |
+| Skip for now | Proceeds without intake (if not required) |
+
+**Rules:**
+- If "Required before booking" is enabled and this is walk-in, allow owner override with audit reason
+
+---
+
+#### 8.8 Step 4 — Confirmation
+
+**Final Confirmation Screen Shows:**
+- What is being booked/sold
+- Client name
+- Payment method
+- Intake status
+- Total amount
+
+**Buttons:**
+- Confirm & Save
+- Cancel
+
+**After Success:**
+- Show success toast
+- Optionally print/share details (future)
+
+---
+
+#### 8.9 Class Session Walk-In (Detailed)
+
+**Pre-filled from Schedule Context:**
+- Class Plan name
+- Date/time
+- Location/room
+- Primary/backup instructor
+- Capacity + spots left
+
+**Booking Rules:**
+
+| Rule | Behavior |
+|------|----------|
+| Duplicate check | If client already booked → show "Already booked" |
+| Capacity available | Normal booking proceeds |
+| Capacity full | Option A: Add to waitlist (future) |
+| | Option B: Owner override "Add anyway" (requires reason + audit log) |
+
+**Attendance Options:**
+- "Mark as checked-in now" toggle (default OFF)
+
+**Booking Record Output:**
+
+| Field | Value |
+|-------|-------|
+| booking_type | class |
+| class_session_id | Selected session |
+| client_id | Selected/created client |
+| payment_source | membership/pack/manual/stripe/comp |
+| created_by_user_id | Current user |
+| booking_source | internal_walkin |
+| status | confirmed |
+| intake_status | pending/completed/waived |
+
+---
+
+#### 8.10 Service Slot Walk-In (Detailed)
+
+**Slot Selection:**
+- Must be: Available, Not in past
+- If no slot pre-selected, show "Find next available" search:
+  - Choose service plan
+  - Choose instructor (optional)
+  - Pick time from available slots
+
+**Rules:**
+- Slot cannot be double-booked
+- If slot is booked → show alternative slots
+- Buffer times enforced automatically
+
+**Booking Output:**
+
+| Field | Value |
+|-------|-------|
+| booking_type | service |
+| service_slot_id | Selected slot |
+| service_plan_id | From slot |
+| client_id | Selected/created client |
+| payment_source | As selected |
+| created_by_user_id | Current user |
+| booking_source | internal_walkin |
+
+---
+
+#### 8.11 Membership Sales (Detailed)
+
+**Entry Points:**
+- Client Profile → "Sell Membership"
+- Walk-In → "Sell Membership"
+- Booking flow upsell: "Sell membership instead"
+
+**Membership Purchase Flow:**
+
+```
+Step 1: Select client
+Step 2: Select membership plan
+Step 3: Select payment method
+  ├── A) Stripe subscription (recurring)
+  │     └── Requires: user email, Stripe enabled
+  │     └── Creates subscription, status: active/past_due
+  └── B) Manual membership (cash/check)
+        └── Admin sets: start date, cycle, next renewal
+        └── Status: active (manual)
+Step 4: Confirm purchase
+```
+
+**Membership Rules:**
+- Store eligibility scope (all classes/selected plans)
+- If credit-based → grant credits for current period immediately
+
+**Book Immediately After Purchase:**
+After successful membership creation, show:
+- "Book their first class now"
+- "Book a service now"
+- "Done"
+
+---
+
+#### 8.12 Receipts & Communication
+
+**Default Communications Behavior:**
+- Studio setting: "Send confirmation emails for internal bookings" (default OFF)
+
+**If email exists and setting ON:**
+- Send booking confirmation
+- Send receipt (if paid)
+
+**Manual Payments Receipt:**
+- Provide "Mark paid + send receipt" option
+- If no email, store receipt in client profile only
+
+---
+
+#### 8.13 Audit Logging
+
+**Actions to Log:**
+
+| Action | Details |
+|--------|---------|
+| booking.created | With booking_source |
+| booking.cancelled | Who cancelled |
+| booking.checked_in | Timestamp |
+| booking.capacity_overridden | Reason required |
+| booking.intake_waived | Reason required |
+| payment.processed | Method, amount |
+| payment.refunded | Amount, reason |
+| membership.created | Method (stripe/manual) |
+| membership.cancelled | Reason |
+| pack.purchased | Pack details |
+
+**Audit Log Fields:**
+- actor_user_id
+- action_type
+- entity_type, entity_id
+- before_data, after_data (JSON)
+- reason
+- ip_address
+- timestamp
+
+---
+
+#### 8.14 Database Schema (New Tables)
+
+```
+customer_memberships
+├── id, host_id FK, client_id FK, membership_plan_id FK
+├── stripe_subscription_id (nullable), stripe_customer_id (nullable)
+├── status (enum: active, paused, cancelled, expired)
+├── payment_method (enum: stripe, manual)
+├── credits_remaining (nullable), credits_per_period (nullable)
+├── current_period_start, current_period_end
+├── started_at, cancelled_at, expires_at
+├── timestamps
+Indexes: [host_id, client_id], [status]
+
+class_packs
+├── id, host_id FK, name, class_count, price
+├── expires_after_days (nullable)
+├── eligible_class_plan_ids (JSON, nullable)
+├── stripe_product_id (nullable)
+├── status (enum: active, archived)
+├── timestamps
+Index: [host_id, status]
+
+class_pack_purchases
+├── id, host_id FK, client_id FK, class_pack_id FK
+├── classes_remaining, purchased_at, expires_at
+├── payment_id FK (nullable)
+├── timestamps
+Index: [host_id, client_id]
+
+payments
+├── id, host_id FK, client_id FK
+├── booking_id FK (nullable), payable_type, payable_id (polymorphic)
+├── amount, currency (default USD)
+├── payment_method (enum: stripe, membership, pack, manual, cash, comp)
+├── manual_method (nullable: cash, venmo, zelle, paypal, cash_app, other)
+├── status (enum: pending, completed, failed, refunded)
+├── stripe_payment_intent_id (nullable), stripe_charge_id (nullable)
+├── notes, processed_by_user_id FK
+├── timestamps
+Indexes: [host_id, client_id], [booking_id], [status]
+
+audit_logs
+├── id, host_id FK, user_id FK
+├── action (string)
+├── auditable_type, auditable_id (polymorphic)
+├── before_data (JSON), after_data (JSON)
+├── reason (nullable), ip_address
+├── timestamps
+Indexes: [host_id, auditable_type, auditable_id], [action]
+```
+
+**Booking Table Updates:**
+
+| New Column | Type | Description |
+|------------|------|-------------|
+| booking_source | enum | online, internal_walkin, api |
+| intake_status | enum | pending, completed, waived, not_required |
+| intake_waived_by | FK users | Who waived intake |
+| intake_waived_reason | string | Reason for waiving |
+| capacity_override | boolean | Was capacity overridden |
+| capacity_override_reason | string | Reason for override |
+| created_by_user_id | FK users | Staff who created booking |
+
+**Client Table Update:**
+
+| New Column | Type | Description |
+|------------|------|-------------|
+| stripe_customer_id | string | Stripe customer ID |
+
+---
+
+#### 8.15 Service Layer
+
+```
+app/Services/
+├── BookingService.php
+│   ├── createWalkInBooking()
+│   ├── createOnlineBooking()
+│   ├── cancelBooking()
+│   ├── checkIn()
+│   ├── validateCapacity()
+│   └── overrideCapacity()
+│
+├── PaymentService.php
+│   ├── processManualPayment()
+│   ├── processStripePayment()
+│   ├── processMembershipPayment()
+│   ├── processPackPayment()
+│   ├── processCompPayment()
+│   ├── refund()
+│   └── getAvailablePaymentMethods()
+│
+├── MembershipService.php
+│   ├── createManualMembership()
+│   ├── createStripeMembership()
+│   ├── pauseMembership()
+│   ├── cancelMembership()
+│   ├── checkEligibility()
+│   └── deductCredit()
+│
+├── ClassPackService.php
+│   ├── purchasePack()
+│   ├── checkEligibility()
+│   ├── deductCredit()
+│   └── getAvailablePacks()
+│
+├── StripeService.php
+│   ├── createCustomer()
+│   ├── createPaymentIntent()
+│   ├── confirmPayment()
+│   ├── createSubscription()
+│   ├── cancelSubscription()
+│   └── refundCharge()
+│
+└── AuditService.php
+    ├── log()
+    ├── logCapacityOverride()
+    ├── logIntakeWaive()
+    └── logPaymentAction()
+```
+
+---
+
+#### 8.16 API Endpoints
+
+**Walk-In API (Admin, Sanctum auth):**
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/v1/walk-in/class` | Book class walk-in |
+| POST | `/api/v1/walk-in/service` | Book service walk-in |
+| POST | `/api/v1/walk-in/membership` | Sell membership |
+| GET | `/api/v1/walk-in/availability` | Check session availability |
+| GET | `/api/v1/walk-in/payment-methods/{client}` | Get available payment methods for client |
+
+**Client Quick Add API:**
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| POST | `/api/v1/clients/quick-add` | Create client inline |
+| GET | `/api/v1/clients/search` | Search clients |
+
+---
+
+#### 8.17 UI Components
+
+```
+resources/views/components/walk-in/
+├── modal.blade.php              → Main walk-in modal wrapper
+├── client-selector.blade.php    → Search + Quick Add
+├── session-card.blade.php       → Selected class/service display
+├── payment-selector.blade.php   → Payment method options
+├── intake-status.blade.php      → Questionnaire handling
+├── confirmation.blade.php       → Final summary
+└── success.blade.php            → Success message
+```
+
+---
+
+#### 8.18 Permissions
+
+| Action | Owner | Admin | Staff | Instructor |
+|--------|-------|-------|-------|------------|
+| Walk-in booking | ✓ | ✓ | ✓ (if permitted) | ✗ |
+| Override capacity | ✓ | ✓ | ✗ | ✗ |
+| Waive intake | ✓ | ✓ | ✗ | ✗ |
+| Comp/Free payment | ✓ | ✓ | ✗ | ✗ |
+| Sell membership | ✓ | ✓ | ✓ (if permitted) | ✗ |
+| Process refunds | ✓ | ✓ | ✗ | ✗ |
+
+---
+
+#### 8.19 Reporting Requirements
+
+Walk-in bookings must be labeled: `booking_source = internal_walkin`
+
+**Reports Should Show:**
+- Online vs walk-in booking counts
+- Manual vs Stripe revenue breakdown
+- Membership conversion rate from walk-ins (future)
+
+---
+
+#### 8.20 Implementation Phases
+
+**Phase 1: Database Foundation** ✅ COMPLETED
+- [x] Create migrations: customer_memberships, class_packs, class_pack_purchases, payments, audit_logs
+- [x] Update bookings table with new columns
+- [x] Update clients table with stripe_customer_id
+- [x] Create models with relationships
+
+**Phase 2: Service Layer** ✅ COMPLETED
+- [x] BookingService with walk-in logic
+- [x] PaymentService for all payment methods
+- [x] MembershipService for eligibility + credits
+- [x] ClassPackService for pack handling
+- [x] AuditService for logging
+
+**Phase 3: Walk-In API** ✅ COMPLETED
+- [x] API controllers for walk-in booking
+- [x] Client quick-add endpoint
+- [x] Payment method availability endpoint
+- [x] Form request validation
+
+**Phase 4: Walk-In UI** ✅ COMPLETED
+- [x] Walk-in modal component
+- [x] Client selector with search + quick add
+- [x] Payment method selector
+- [x] Intake status component
+- [x] Confirmation screen
+
+**Phase 5: Class Session Walk-In** ✅ COMPLETED
+- [x] Schedule integration (class-sessions index + show pages)
+- [x] Walk-in button on published, future sessions
+- [x] Added isPast()/isFuture() methods to ClassSession model
+- [x] Walk-in modal integrated in dashboard layout
+- [x] walk-in.js bundled via layout.js
+
+**Phase 6: Service Slot Walk-In** ✅ COMPLETED
+- [x] Walk-in button on available service slots
+- [x] Updated walk-in.js to handle service slot data format
+- [x] Session display shows duration for services
+- [ ] "Find next available" search (future enhancement)
+- [ ] Buffer time handling (future enhancement)
+
+**Phase 7: Membership Sales**
+- [ ] Membership plan selection
+- [ ] Manual membership creation
+- [ ] Stripe subscription creation (future)
+- [ ] "Book first class" flow
+
+**Phase 8: Intake Integration**
+- [ ] Link questionnaires to walk-in flow
+- [ ] Send link / waive options
+- [ ] Audit logging for waivers
+
+**Phase 9: Audit & Reporting**
+- [ ] Complete audit logging
+- [ ] Booking source reporting
+- [ ] Revenue breakdown reports
+
+---
+
+#### 8.21 MVP Acceptance Criteria
+
+- [ ] Owner/staff can book a class from Today view in <60 seconds
+- [ ] Owner/staff can book a service slot in <60 seconds
+- [ ] Owner/staff can sell a membership (manual payment)
+- [ ] Payment method selection supports membership/pack/manual/comp
+- [ ] Capacity override with audit logging
+- [ ] Intake required flow supports send link / waive (owner only)
+- [ ] Walk-in bookings tracked separately in reporting
+- [ ] Quick-add client works with phone-only record
+
+---
+
+#### 8.22 Coming Soon / Future
+
+| Feature | Description |
+|---------|-------------|
+| Stripe payments | Full Stripe integration for walk-ins |
+| Stripe subscriptions | Recurring membership via Stripe |
+| Waitlist | Add to waitlist when class is full |
+| Print receipt | Print/share receipt after booking |
+| SMS confirmation | Send booking confirmation via SMS |
+| Webhook handlers | Stripe webhook processing |
+| Refund processing | In-app refund workflow |
+
 <!-- Add feature plans below this line -->
 
 ---
@@ -914,6 +2059,61 @@ Tables (planned):
 - attendance               — attendance logs (scoped by host_id)
 - reminders                — scheduled reminders (scoped by host_id)
 - intro_offers             — trial/intro offer configs (scoped by host_id)
+
+- questionnaires           — questionnaire definitions (scoped by host_id)
+  Columns: id, host_id FK, name, description (nullable), type (enum: single, wizard),
+           status (enum: draft, active, archived), estimated_minutes (nullable),
+           intro_text (nullable), thank_you_message (nullable),
+           allow_save_resume (boolean, default true), created_by FK (users), timestamps
+  Indexes: [host_id, status]
+
+- questionnaire_versions   — version tracking for edits
+  Columns: id, questionnaire_id FK, version_number (integer),
+           status (enum: draft, active, archived), published_at (nullable),
+           created_by FK (users), timestamps
+  Constraints: unique [questionnaire_id, version_number]
+
+- questionnaire_steps      — wizard steps (wizard mode only)
+  Columns: id, questionnaire_version_id FK, title, description (nullable),
+           sort_order (integer), timestamps
+  Indexes: [questionnaire_version_id, sort_order]
+
+- questionnaire_blocks     — section blocks grouping questions
+  Columns: id, questionnaire_version_id FK, step_id FK (nullable, for wizard mode),
+           title, description (nullable), display_style (enum: plain, card),
+           visibility (enum: public, internal), sort_order (integer), timestamps
+  Indexes: [questionnaire_version_id, sort_order], [step_id]
+
+- questionnaire_questions  — individual question definitions
+  Columns: id, questionnaire_block_id FK, question_key (slug),
+           question_label (text), question_type (enum: short_text, long_text, email,
+           phone, yes_no, single_select, multi_select, dropdown, date, number, acknowledgement),
+           options (JSON, for select types), is_required (boolean, default false),
+           help_text (nullable), placeholder (nullable), default_value (nullable),
+           validation_rules (JSON: min, max, pattern), visibility (enum: client, instructor_only),
+           is_sensitive (boolean, default false), tags (JSON), sort_order (integer), timestamps
+  Indexes: [questionnaire_block_id, sort_order]
+
+- questionnaire_attachments — links questionnaires to plans (polymorphic)
+  Columns: id, questionnaire_id FK, attachable_type (string), attachable_id (bigint),
+           is_required (boolean, default true),
+           collection_timing (enum: before_booking, after_booking, before_first_session),
+           applies_to (enum: first_time_only, every_booking), timestamps
+  Indexes: [attachable_type, attachable_id], [questionnaire_id]
+
+- questionnaire_responses  — client response sessions
+  Columns: id, questionnaire_version_id FK, host_id FK, client_id FK,
+           booking_id FK (nullable), token (string, unique),
+           status (enum: pending, in_progress, completed),
+           current_step (integer, nullable, for wizard resume),
+           started_at (nullable), completed_at (nullable),
+           ip_address (nullable), user_agent (nullable), timestamps
+  Indexes: [host_id, client_id], [token], [questionnaire_version_id]
+
+- questionnaire_answers    — individual question answers
+  Columns: id, questionnaire_response_id FK, question_id FK,
+           answer (TEXT), timestamps
+  Constraints: unique [questionnaire_response_id, question_id]
 ```
 
 > Every table except `hosts` and `studio_types` must have a `host_id` foreign key.
@@ -937,6 +2137,14 @@ Tables (planned):
 | `LeadFormField` | `lead_form_fields` | belongsTo LeadForm | Field config for lead form. |
 | `MemberPortalSession` | `member_portal_sessions` | belongsTo Host, belongsTo Client | OTP-based auth session for member portal. |
 | `ClientNote` | `client_notes` | belongsTo Client, belongsTo User (author) | Activity log and notes. |
+| `Questionnaire` | `questionnaires` | belongsTo Host, hasMany QuestionnaireVersion, belongsTo User (creator) | Parent questionnaire definition. Scopes: `active()`, `draft()`. |
+| `QuestionnaireVersion` | `questionnaire_versions` | belongsTo Questionnaire, hasMany QuestionnaireStep, hasMany QuestionnaireBlock | Version tracking. Methods: `publish()`, `archive()`. |
+| `QuestionnaireStep` | `questionnaire_steps` | belongsTo QuestionnaireVersion, hasMany QuestionnaireBlock | Wizard steps only. Sortable. |
+| `QuestionnaireBlock` | `questionnaire_blocks` | belongsTo QuestionnaireVersion, belongsTo QuestionnaireStep (nullable), hasMany QuestionnaireQuestion | Section grouping. Visibility: public/internal. |
+| `QuestionnaireQuestion` | `questionnaire_questions` | belongsTo QuestionnaireBlock, hasMany QuestionnaireAnswer | Question definition with type, options, validation. |
+| `QuestionnaireAttachment` | `questionnaire_attachments` | belongsTo Questionnaire, morphTo attachable | Polymorphic link to Class/Service/Membership plans. |
+| `QuestionnaireResponse` | `questionnaire_responses` | belongsTo QuestionnaireVersion, belongsTo Host, belongsTo Client, belongsTo Booking (nullable), hasMany QuestionnaireAnswer | Client response session. Token-based access. |
+| `QuestionnaireAnswer` | `questionnaire_answers` | belongsTo QuestionnaireResponse, belongsTo QuestionnaireQuestion | Individual answer storage. |
 
 ---
 
@@ -978,6 +2186,8 @@ Tables (planned):
 | `schedule.js` | Host dashboard | Class schedule management | Planned |
 | `crm.js` | Host dashboard | Student/lead management | Planned |
 | `feedback.js` | Customer | Reviews and feedback | Planned |
+| `questionnaire-builder.js` | `/questionnaires/{id}/builder` | Drag-drop questionnaire builder | Planned |
+| `questionnaire-response.js` | `/q/{token}` | Client-facing form (single/wizard) | Planned |
 
 > Each entrypoint is registered in `vite.config.js` under `laravel({ input: [...] })`.
 > Each entrypoint creates its own Vue app via `createApp()` and mounts into a page-specific `<div id="xxx-app">`.
@@ -1058,6 +2268,19 @@ Log every decision with date and reasoning. Most recent first.
 
 | Date | Decision | Context | Outcome |
 |---|---|---|---|
+| 2026-02-13 | Questionnaire Builder architecture (ADR-016) | Studios need customizable client intake forms | Schema-driven system: questionnaires → versions → steps → blocks → questions; follows Custom Fields pattern |
+| 2026-02-13 | Questionnaire versioning strategy (ADR-017) | Responses must stay valid when questionnaires are edited | Explicit versions; edits create draft; responses link to version_id; old versions archived not deleted |
+| 2026-02-13 | Questionnaire attachment model (ADR-018) | Questionnaires attach to class/service/membership plans | Polymorphic `questionnaire_attachments` table with timing + scope config |
+| 2026-02-13 | Response token system (ADR-019) | Clients complete forms via email link without login | Unique tokens per response; public routes; 30-day expiry; rate limiting |
+| 2026-02-13 | Questionnaire Attachment UI implementation | Admins need to link questionnaires to plans | Added morphMany to ClassPlan/ServicePlan/MembershipPlan; created reusable partial `_questionnaire-attachments.blade.php`; added SyncsQuestionnaireAttachments trait |
+| 2026-02-13 | Questionnaire Builder all phases completed | Full questionnaire system implementation | Phases 1-4 completed: database/models, builder UI, client response pages, wizard auto-save, admin response viewing, version history, client profile tab, SMS placeholder |
+| 2026-02-13 | Questionnaire types: single vs wizard | Need both quick forms and multi-step intake | Single page (all questions) or Wizard (steps with progress); admin chooses per questionnaire |
+| 2026-02-13 | Block-based question grouping | Questions need logical sections with headers | Blocks contain questions; blocks have title, description, visibility; supports card styling |
+| 2026-02-13 | 11 MVP question types | Need comprehensive input types for intake forms | short_text, long_text, email, phone, yes_no, single_select, multi_select, dropdown, date, number, acknowledgement |
+| 2026-02-13 | Wizard auto-save and resume | Long forms shouldn't lose progress | Auto-save after each step; resume link in email; `current_step` tracks position |
+| 2026-02-13 | Mobile-first client experience | Most clients complete on phone | Single column, large tap targets, sticky submit button, minimal scrolling per step |
+| 2026-02-13 | Sensitive question privacy | Some health/injury questions need restricted access | `is_sensitive` flag; visible only to owner/admin + assigned instructor; hidden from staff |
+| 2026-02-13 | SMS delivery as "Coming Soon" | SMS is valuable but not MVP | Placeholder UI; architecture supports `channel = email | sms`; Twilio integration later |
 | 2026-02-11 | Clients Module replaces Students (ADR-012) | Need unified client management with lifecycle stages | Single `clients` table with status-driven lifecycle: lead → client → member → at_risk |
 | 2026-02-11 | Client Custom Fields system (ADR-013) | Studios need flexible extra fields for clients | Schema-driven: sections, definitions, values tables; supports 7 field types; default fields hideable not deletable |
 | 2026-02-11 | Member Portal with passwordless OTP (ADR-014) | Members need self-service access without password management | Email OTP auth; 6-digit code; 10min expiry; eligibility check (active membership/class pack) |
