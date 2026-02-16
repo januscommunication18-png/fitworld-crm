@@ -205,7 +205,7 @@
             {{-- Intake Forms / Questionnaire Responses --}}
             @php
                 $questionnaireResponses = \App\Models\QuestionnaireResponse::where('booking_id', $booking->id)
-                    ->with(['version.questionnaire'])
+                    ->with(['version.questionnaire', 'version.blocks.questions', 'answers.question', 'client'])
                     ->get();
             @endphp
             @if($questionnaireResponses->isNotEmpty())
@@ -241,11 +241,10 @@
                                 </div>
                                 <div>
                                     @if($response->isCompleted())
-                                        <a href="{{ route('questionnaires.responses.show', [$response->version->questionnaire, $response]) }}"
-                                           class="btn btn-sm btn-outline">
+                                        <button type="button" class="btn btn-sm btn-outline" onclick="openDrawer('response-{{ $response->id }}', event)">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                             View Response
-                                        </a>
+                                        </button>
                                     @else
                                         <span class="badge badge-warning">Pending</span>
                                     @endif
@@ -274,7 +273,11 @@
                             <div class="timeline-end timeline-box">
                                 <span class="font-medium">Booking Created</span>
                                 @if($booking->createdBy)
-                                    <span class="text-sm text-base-content/60 block">by {{ $booking->createdBy->name }}</span>
+                                    <span class="text-sm text-base-content/60 block">by {{ $booking->createdBy->full_name }}</span>
+                                @else
+                                    <span class="text-sm text-base-content/60 block">
+                                        via {{ $booking->booking_source === 'online' ? 'Online Booking' : ($booking->booking_source === 'internal_walkin' ? 'Walk-in' : 'API') }}
+                                    </span>
                                 @endif
                             </div>
                             <hr>
@@ -301,8 +304,16 @@
                             </div>
                             <div class="timeline-end timeline-box">
                                 <span class="font-medium">Cancelled</span>
+                                @if($booking->cancelledBy)
+                                    <span class="text-sm text-base-content/60 block">by {{ $booking->cancelledBy->full_name }}</span>
+                                @elseif($booking->cancelled_by_user_id)
+                                    <span class="text-sm text-base-content/60 block">by Staff (user removed)</span>
+                                @endif
                                 @if($booking->cancellation_reason)
-                                    <span class="text-sm text-base-content/60 block">{{ $booking->cancellation_reason }}</span>
+                                    <span class="text-sm text-base-content/60 block">Reason: {{ $booking->cancellation_reason }}</span>
+                                @endif
+                                @if($booking->cancellation_notes)
+                                    <span class="text-sm text-base-content/60 block italic">{{ $booking->cancellation_notes }}</span>
                                 @endif
                             </div>
                         </li>
@@ -378,6 +389,13 @@
                             <span class="icon-[tabler--plus] size-5"></span>
                             New Booking
                         </a>
+
+                        @if($booking->canBeCancelled())
+                            <button type="button" class="btn btn-error btn-outline w-full" onclick="openCancelBookingModal('cancel-modal-{{ $booking->id }}')">
+                                <span class="icon-[tabler--x] size-5"></span>
+                                Cancel Booking
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -424,5 +442,15 @@
         </div>
     </div>
 </div>
+
+{{-- Cancel Booking Modal --}}
+@include('host.bookings.partials.cancel-modal', ['booking' => $booking, 'modalId' => 'cancel-modal-' . $booking->id])
+
+{{-- Questionnaire Response Drawers --}}
+@if(isset($questionnaireResponses) && $questionnaireResponses->count() > 0)
+    @foreach($questionnaireResponses as $response)
+        @include('host.questionnaires.partials.response-drawer', ['response' => $response])
+    @endforeach
+@endif
 
 @endsection

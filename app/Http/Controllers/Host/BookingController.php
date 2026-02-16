@@ -170,7 +170,7 @@ class BookingController extends Controller
             abort(403);
         }
 
-        $booking->load(['client', 'bookable', 'createdBy', 'customerMembership', 'classPackPurchase', 'payments']);
+        $booking->load(['client', 'bookable', 'createdBy', 'cancelledBy', 'customerMembership', 'classPackPurchase', 'payments']);
 
         return view('host.bookings.show', [
             'booking' => $booking,
@@ -217,5 +217,42 @@ class BookingController extends Controller
             ]);
             return back()->with('error', 'Failed to send email. Please try again.');
         }
+    }
+
+    /**
+     * Cancel a booking
+     */
+    public function cancel(Request $request, Booking $booking)
+    {
+        $host = auth()->user()->currentHost();
+
+        if ($booking->host_id !== $host->id) {
+            abort(403);
+        }
+
+        // Check if booking can be cancelled
+        if (!$booking->canBeCancelled()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This booking cannot be cancelled.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|max:255',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        // Cancel the booking
+        $booking->cancel(
+            $validated['reason'],
+            $validated['notes'] ?? null,
+            auth()->id()
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Booking cancelled successfully.',
+        ]);
     }
 }

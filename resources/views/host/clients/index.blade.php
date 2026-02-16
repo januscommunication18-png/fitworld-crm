@@ -278,9 +278,9 @@
                             </span>
                         </div>
                         <div class="flex gap-1">
-                            <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                            <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('client-{{ $client->id }}', event)">
                                 <span class="icon-[tabler--eye] size-4"></span>
-                            </a>
+                            </button>
                             <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
                                 <span class="icon-[tabler--edit] size-4"></span>
                             </a>
@@ -376,9 +376,9 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('client-{{ $client->id }}', event)">
                                             <span class="icon-[tabler--eye] size-4"></span>
-                                        </a>
+                                        </button>
                                         <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
@@ -438,4 +438,10 @@
         @endif
     @endif
 </div>
+
+{{-- Client Details Drawers --}}
+@foreach($clients as $client)
+    @include('host.clients.partials.drawer', ['client' => $client])
+@endforeach
+
 @endsection

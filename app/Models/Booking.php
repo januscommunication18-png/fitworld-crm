@@ -58,6 +58,10 @@ class Booking extends Model
         'credits_used',
         'booked_at',
         'cancelled_at',
+        'cancellation_reason',
+        'cancellation_notes',
+        'cancelled_by_user_id',
+        'is_late_cancellation',
         'checked_in_at',
     ];
 
@@ -66,6 +70,7 @@ class Booking extends Model
         return [
             'price_paid' => 'decimal:2',
             'capacity_override' => 'boolean',
+            'is_late_cancellation' => 'boolean',
             'booked_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'checked_in_at' => 'datetime',
@@ -102,12 +107,12 @@ class Booking extends Model
 
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by_user_id');
+        return $this->belongsTo(User::class, 'created_by_user_id')->withTrashed();
     }
 
     public function intakeWaivedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'intake_waived_by');
+        return $this->belongsTo(User::class, 'intake_waived_by')->withTrashed();
     }
 
     public function payments(): HasMany
@@ -169,6 +174,92 @@ class Booking extends Model
     public function isCancelled(): bool
     {
         return $this->status === self::STATUS_CANCELLED;
+    }
+
+    /**
+     * Check if booking can be cancelled based on studio policy
+     */
+    public function canBeCancelled(): bool
+    {
+        // Already cancelled or completed
+        if ($this->isCancelled() || $this->status === self::STATUS_COMPLETED) {
+            return false;
+        }
+
+        // Check if host allows cancellations
+        $host = $this->host;
+        if (!$host->getPolicy('allow_cancellations', true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if this would be a late cancellation
+     */
+    public function isLateCancellation(): bool
+    {
+        $bookable = $this->bookable;
+        if (!$bookable || !$bookable->start_time) {
+            return false;
+        }
+
+        $host = $this->host;
+        $windowHours = $host->getPolicy('cancellation_window_hours', 12);
+
+        // If window is 0, no cancellation is ever late
+        if ($windowHours === 0) {
+            return false;
+        }
+
+        $cutoffTime = $bookable->start_time->subHours($windowHours);
+        return now()->isAfter($cutoffTime);
+    }
+
+    /**
+     * Get the cancellation deadline
+     */
+    public function getCancellationDeadline(): ?\Carbon\Carbon
+    {
+        $bookable = $this->bookable;
+        if (!$bookable || !$bookable->start_time) {
+            return null;
+        }
+
+        $host = $this->host;
+        $windowHours = $host->getPolicy('cancellation_window_hours', 12);
+
+        if ($windowHours === 0) {
+            return $bookable->start_time;
+        }
+
+        return $bookable->start_time->subHours($windowHours);
+    }
+
+    /**
+     * Cancel the booking
+     */
+    public function cancel(?string $reason = null, ?string $notes = null, ?int $cancelledByUserId = null): bool
+    {
+        $isLate = $this->isLateCancellation();
+
+        return $this->update([
+            'status' => self::STATUS_CANCELLED,
+            'cancelled_at' => now(),
+            'cancellation_reason' => $reason,
+            'cancellation_notes' => $notes,
+            'cancelled_by_user_id' => $cancelledByUserId,
+            'is_late_cancellation' => $isLate,
+        ]);
+    }
+
+    /**
+     * Get relationship to user who cancelled
+     */
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by_user_id')->withTrashed();
     }
 
     /**

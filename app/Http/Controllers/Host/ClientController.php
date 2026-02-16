@@ -355,10 +355,18 @@ class ClientController extends Controller
         $client->load(['tags', 'clientNotes.author', 'fieldValues.fieldDefinition']);
         $customFields = $this->getCustomFieldsWithValues($client);
 
+        // Load recent bookings for this client
+        $bookings = \App\Models\Booking::forClient($client->id)
+            ->with(['bookable.primaryInstructor', 'bookable.location', 'client'])
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+
         return view('host.clients.show', [
             'client' => $client,
             'customFields' => $customFields,
             'statuses' => Client::getStatuses(),
+            'bookings' => $bookings,
         ]);
     }
 

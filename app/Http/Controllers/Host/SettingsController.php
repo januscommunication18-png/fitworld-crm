@@ -365,6 +365,28 @@ class SettingsController extends Controller
         ]);
     }
 
+    public function updateStudioCancellation(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'allow_cancellations' => 'boolean',
+            'cancellation_window_hours' => 'required|integer|in:0,2,6,12,24,48,72',
+        ]);
+
+        // Get existing policies and merge with new values
+        $policies = $host->policies ?? [];
+        $policies['allow_cancellations'] = $validated['allow_cancellations'] ?? true;
+        $policies['cancellation_window_hours'] = $validated['cancellation_window_hours'];
+
+        $host->update(['policies' => $policies]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cancellation policy updated successfully',
+        ]);
+    }
+
     // ─────────────────────────────────────────────────────────────
     // Locations
     // ─────────────────────────────────────────────────────────────

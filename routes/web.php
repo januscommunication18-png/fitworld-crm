@@ -274,6 +274,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookings/cancellations', [BookingController::class, 'cancelled'])->name('bookings.cancelled');
     Route::get('/bookings/no-shows', [BookingController::class, 'noShows'])->name('bookings.no-shows');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+    Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/resend-intake', [BookingController::class, 'resendIntake'])->name('bookings.resend-intake');
 
     // Offers
@@ -300,6 +301,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/studio/social', [SettingsController::class, 'updateStudioSocial'])->name('settings.studio.social.update');
     Route::put('/settings/studio/amenities', [SettingsController::class, 'updateStudioAmenities'])->name('settings.studio.amenities.update');
     Route::put('/settings/studio/currency', [SettingsController::class, 'updateStudioCurrency'])->name('settings.studio.currency.update');
+    Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
     Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
 

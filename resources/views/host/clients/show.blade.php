@@ -656,14 +656,55 @@
                             </div>
                         </div>
 
-                        {{-- Timeline --}}
-                        <div class="divider text-sm text-base-content/50">Recent Activity</div>
+                        {{-- Recent Bookings --}}
+                        <div class="divider text-sm text-base-content/50">Recent Bookings</div>
 
-                        <div class="text-center py-8">
-                            <span class="icon-[tabler--calendar-off] size-12 text-base-content/20 mx-auto"></span>
-                            <p class="text-base-content/50 mt-4">No activity recorded yet</p>
-                            <p class="text-sm text-base-content/40">Bookings and attendance will appear here.</p>
-                        </div>
+                        @if(isset($bookings) && $bookings->count() > 0)
+                            <div class="space-y-3">
+                                @foreach($bookings as $booking)
+                                    <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-lg flex items-center justify-center {{ $booking->status === 'confirmed' ? 'bg-success/10' : ($booking->status === 'cancelled' ? 'bg-error/10' : 'bg-base-300') }}">
+                                                <span class="icon-[tabler--calendar-event] size-5 {{ $booking->status === 'confirmed' ? 'text-success' : ($booking->status === 'cancelled' ? 'text-error' : 'text-base-content/50') }}"></span>
+                                            </div>
+                                            <div>
+                                                <div class="font-medium">{{ $booking->bookable->display_title ?? $booking->bookable->title ?? 'Session' }}</div>
+                                                <div class="text-sm text-base-content/60">
+                                                    @if($booking->bookable && $booking->bookable->start_time)
+                                                        {{ $booking->bookable->start_time->format('M j, Y \a\t g:i A') }}
+                                                    @else
+                                                        {{ $booking->created_at->format('M j, Y') }}
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-sm {{ $booking->status_badge_class }} badge-soft">
+                                                {{ ucfirst(str_replace('_', ' ', $booking->status)) }}
+                                            </span>
+                                            <button type="button" class="btn btn-ghost btn-xs btn-square" title="View Details" onclick="openDrawer('booking-{{ $booking->id }}', event)">
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            @if($bookings->count() >= 10)
+                                <div class="text-center mt-4">
+                                    <a href="{{ route('bookings.index', ['search' => $client->email]) }}" class="btn btn-ghost btn-sm">
+                                        View All Bookings
+                                        <span class="icon-[tabler--arrow-right] size-4"></span>
+                                    </a>
+                                </div>
+                            @endif
+                        @else
+                            <div class="text-center py-8">
+                                <span class="icon-[tabler--calendar-off] size-12 text-base-content/20 mx-auto"></span>
+                                <p class="text-base-content/50 mt-4">No bookings yet</p>
+                                <p class="text-sm text-base-content/40">Client's booking history will appear here.</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -718,6 +759,16 @@
         <button>close</button>
     </form>
 </dialog>
+
+{{-- Booking Details Drawers --}}
+@if(isset($bookings))
+    @foreach($bookings as $booking)
+        @include('host.bookings.partials.drawer', ['booking' => $booking])
+    @endforeach
+
+    {{-- Cancel Booking Modal (shared) --}}
+    @include('host.bookings.partials.cancel-modal-shared')
+@endif
 
 @push('scripts')
 <script>

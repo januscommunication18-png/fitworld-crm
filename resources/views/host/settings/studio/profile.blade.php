@@ -310,6 +310,50 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
+    {{-- Booking Cancellation Policy Card --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold">Booking Cancellation Policy</h2>
+                    <p class="text-base-content/60 text-sm">How far in advance clients must cancel bookings</p>
+                </div>
+                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-cancellation-drawer')">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                </button>
+            </div>
+
+            @php
+                $cancellationHours = $host->getPolicy('cancellation_window_hours', 12);
+                $allowCancellations = $host->getPolicy('allow_cancellations', true);
+                $cancellationOptions = [
+                    0 => 'No advance notice required',
+                    2 => '2 hours before class',
+                    6 => '6 hours before class',
+                    12 => '12 hours before class',
+                    24 => '24 hours before class',
+                    48 => '2 days before class',
+                    72 => '3 days before class',
+                ];
+            @endphp
+
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-full bg-warning/20 flex items-center justify-center">
+                    <span class="icon-[tabler--clock-cancel] size-7 text-warning"></span>
+                </div>
+                <div>
+                    @if(!$allowCancellations)
+                        <div class="font-semibold text-error">Cancellations Disabled</div>
+                        <p class="text-sm text-base-content/60">Clients cannot cancel their bookings</p>
+                    @else
+                        <div class="font-semibold" id="display-cancellation-window">{{ $cancellationOptions[$cancellationHours] ?? $cancellationHours . ' hours before class' }}</div>
+                        <p class="text-sm text-base-content/60">Clients must cancel at least this far in advance</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {{-- Drawer Backdrop --}}
@@ -624,6 +668,73 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </form>
 </div>
+
+{{-- Edit Cancellation Policy Drawer --}}
+<div id="edit-cancellation-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Booking Cancellation Policy</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-cancellation-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="edit-cancellation-form" class="flex flex-col flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-4">
+            <div class="space-y-5">
+                {{-- Allow Cancellations Toggle --}}
+                <div class="flex items-center justify-between p-4 bg-base-200/50 rounded-lg">
+                    <div>
+                        <label class="label-text font-medium" for="allow_cancellations">Allow Cancellations</label>
+                        <p class="text-xs text-base-content/60 mt-1">Enable clients to cancel their bookings</p>
+                    </div>
+                    <input type="checkbox" id="allow_cancellations" class="toggle toggle-primary" {{ $host->getPolicy('allow_cancellations', true) ? 'checked' : '' }} />
+                </div>
+
+                {{-- Cancellation Window --}}
+                <div id="cancellation-window-section">
+                    <label class="label-text font-medium" for="cancellation_window_hours">Cancellation Window</label>
+                    <p class="text-xs text-base-content/60 mb-3">How far in advance clients must cancel</p>
+                    <div class="space-y-2">
+                        @php
+                            $currentWindow = $host->getPolicy('cancellation_window_hours', 12);
+                            $windowOptions = [
+                                ['value' => 0, 'label' => 'No advance notice required', 'desc' => 'Clients can cancel anytime'],
+                                ['value' => 2, 'label' => '2 hours before', 'desc' => 'Short notice cancellation'],
+                                ['value' => 6, 'label' => '6 hours before', 'desc' => 'Same day cancellation'],
+                                ['value' => 12, 'label' => '12 hours before', 'desc' => 'Half day notice'],
+                                ['value' => 24, 'label' => '24 hours before', 'desc' => '1 day notice'],
+                                ['value' => 48, 'label' => '2 days before', 'desc' => '48 hours notice'],
+                                ['value' => 72, 'label' => '3 days before', 'desc' => '72 hours notice'],
+                            ];
+                        @endphp
+                        @foreach($windowOptions as $option)
+                        <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer rounded-lg border border-base-300 hover:border-primary/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                            <input type="radio" name="cancellation_window_hours" class="radio radio-primary radio-sm" value="{{ $option['value'] }}" {{ $currentWindow == $option['value'] ? 'checked' : '' }} />
+                            <div class="flex-1">
+                                <span class="label-text font-medium">{{ $option['label'] }}</span>
+                                <p class="text-xs text-base-content/60">{{ $option['desc'] }}</p>
+                            </div>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="alert alert-soft alert-warning">
+                    <span class="icon-[tabler--alert-triangle] size-5"></span>
+                    <div class="text-sm">
+                        Cancellations made after this window may be marked as late cancellations.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-cancellation-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="cancellation-spinner"></span>
+                Save Changes
+            </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-cancellation-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
 @endsection
 
 @push('scripts')
@@ -674,7 +785,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-cancellation-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -943,6 +1054,60 @@ document.getElementById('edit-currency-form').addEventListener('submit', functio
             document.getElementById('display-currencies').innerHTML = currenciesHtml;
             closeDrawer('edit-currency-drawer');
             setTimeout(function() { showToast('Currencies updated!'); }, 350);
+        } else { showToast(result.message || 'Failed to update', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Cancellation Policy
+var cancellationOptions = {
+    0: 'No advance notice required',
+    2: '2 hours before class',
+    6: '6 hours before class',
+    12: '12 hours before class',
+    24: '24 hours before class',
+    48: '2 days before class',
+    72: '3 days before class'
+};
+
+// Toggle cancellation window section based on allow_cancellations
+document.getElementById('allow_cancellations').addEventListener('change', function() {
+    var section = document.getElementById('cancellation-window-section');
+    if (this.checked) {
+        section.classList.remove('opacity-50', 'pointer-events-none');
+    } else {
+        section.classList.add('opacity-50', 'pointer-events-none');
+    }
+});
+
+document.getElementById('edit-cancellation-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-cancellation-btn');
+    var spinner = document.getElementById('cancellation-spinner');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    var allowCancellations = document.getElementById('allow_cancellations').checked;
+    var selectedRadio = document.querySelector('input[name="cancellation_window_hours"]:checked');
+    var windowHours = selectedRadio ? parseInt(selectedRadio.value) : 12;
+
+    fetch('{{ route("settings.studio.cancellation.update") }}', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({
+            allow_cancellations: allowCancellations,
+            cancellation_window_hours: windowHours
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var displayEl = document.getElementById('display-cancellation-window');
+            if (displayEl) {
+                displayEl.textContent = cancellationOptions[windowHours] || windowHours + ' hours before class';
+            }
+            closeDrawer('edit-cancellation-drawer');
+            setTimeout(function() { showToast('Cancellation policy updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })

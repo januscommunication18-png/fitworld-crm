@@ -111,6 +111,7 @@
         })();
     </script>
 
+    <script src="{{ asset('js/drawer.js') }}"></script>
     <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
     @stack('scripts')
 </body>

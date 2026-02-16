@@ -137,8 +137,8 @@
                         <thead>
                             <tr>
                                 <th>Date/Time</th>
-                                <th>Class/Service</th>
                                 <th>Client</th>
+                                <th>Class/Service</th>
                                 <th>Source</th>
                                 <th>Payment</th>
                                 <th>Status</th>
@@ -165,18 +165,6 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="font-medium">
-                                        @if($booking->bookable)
-                                            {{ $booking->bookable->display_title ?? $booking->bookable->title ?? 'Unknown' }}
-                                        @else
-                                            <span class="text-base-content/50">Deleted</span>
-                                        @endif
-                                    </div>
-                                    <div class="text-sm text-base-content/60">
-                                        {{ class_basename($booking->bookable_type ?? '') }}
-                                    </div>
-                                </td>
-                                <td>
                                     @if($booking->client)
                                         <div class="flex items-center gap-3">
                                             <x-avatar :src="$booking->client->avatar_url" :initials="$booking->client->initials" :alt="$booking->client->full_name" size="sm" />
@@ -188,6 +176,18 @@
                                     @else
                                         <span class="text-base-content/50">Unknown Client</span>
                                     @endif
+                                </td>
+                                <td>
+                                    <div class="font-medium">
+                                        @if($booking->bookable)
+                                            {{ $booking->bookable->display_title ?? $booking->bookable->title ?? 'Unknown' }}
+                                        @else
+                                            <span class="text-base-content/50">Deleted</span>
+                                        @endif
+                                    </div>
+                                    <div class="text-sm text-base-content/60">
+                                        {{ class_basename($booking->bookable_type ?? '') }}
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge badge-sm {{ $booking->source_badge_class }} badge-soft">
@@ -214,9 +214,9 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <a href="{{ route('bookings.show', $booking) }}" class="btn btn-ghost btn-xs btn-square" title="View Details">
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="View Details" onclick="openDrawer('booking-{{ $booking->id }}', event)">
                                             <span class="icon-[tabler--eye] size-4"></span>
-                                        </a>
+                                        </button>
                                         <div class="dropdown relative inline-flex [--trigger:hover] [--placement:bottom-end]">
                                             <button type="button" class="dropdown-toggle btn btn-ghost btn-xs btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
                                                 <span class="icon-[tabler--dots] size-4"></span>
@@ -261,4 +261,13 @@
         </div>
     </div>
 </div>
+
+{{-- Booking Details Drawers --}}
+@foreach($bookings as $booking)
+    @include('host.bookings.partials.drawer', ['booking' => $booking])
+@endforeach
+
+{{-- Cancel Booking Modal (shared) --}}
+@include('host.bookings.partials.cancel-modal-shared')
+
 @endsection
