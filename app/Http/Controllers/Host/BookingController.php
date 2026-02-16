@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Host;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\QuestionnaireResponse;
+use App\Mail\BookingConfirmationMail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class BookingController extends Controller
 {
@@ -172,5 +175,47 @@ class BookingController extends Controller
         return view('host.bookings.show', [
             'booking' => $booking,
         ]);
+    }
+
+    /**
+     * Resend intake form email to client
+     */
+    public function resendIntake(Booking $booking)
+    {
+        $host = auth()->user()->currentHost();
+
+        if ($booking->host_id !== $host->id) {
+            abort(403);
+        }
+
+        $client = $booking->client;
+
+        if (!$client || !$client->email) {
+            return back()->with('error', 'Client does not have an email address.');
+        }
+
+        // Get pending questionnaire responses for this booking
+        $responses = QuestionnaireResponse::where('booking_id', $booking->id)
+            ->incomplete()
+            ->with('version.questionnaire')
+            ->get()
+            ->toArray();
+
+        if (empty($responses)) {
+            return back()->with('error', 'No pending intake forms found for this booking.');
+        }
+
+        try {
+            Mail::to($client->email)
+                ->send(new BookingConfirmationMail($booking, $responses));
+
+            return back()->with('success', 'Intake form email resent successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Failed to resend intake email', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+            return back()->with('error', 'Failed to send email. Please try again.');
+        }
     }
 }

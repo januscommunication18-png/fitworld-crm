@@ -37,20 +37,55 @@
                 </div>
                 @endif
 
-                <form action="{{ route('security-code.verify') }}" method="POST">
+                <form action="{{ route('security-code.verify') }}" method="POST" id="otp-form">
                     @csrf
+                    <input type="hidden" name="security_code" id="security_code">
+
                     <div>
-                        <label class="label-text" for="security_code">Security Code</label>
-                        <input
-                            type="text"
-                            id="security_code"
-                            name="security_code"
-                            class="input w-full @error('security_code') input-error @enderror"
-                            placeholder="Enter security code"
-                            value="{{ old('security_code') }}"
-                            autocomplete="off"
-                            autofocus
-                        >
+                        <label class="label-text mb-2 block text-center" for="otp-1">Security Code</label>
+                        <div class="flex justify-center gap-3">
+                            <input
+                                type="text"
+                                id="otp-1"
+                                class="input input-lg w-14 h-14 text-center text-2xl font-semibold @error('security_code') input-error @enderror"
+                                maxlength="1"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                autocomplete="off"
+                                autofocus
+                                data-otp-input
+                            >
+                            <input
+                                type="text"
+                                id="otp-2"
+                                class="input input-lg w-14 h-14 text-center text-2xl font-semibold @error('security_code') input-error @enderror"
+                                maxlength="1"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                autocomplete="off"
+                                data-otp-input
+                            >
+                            <input
+                                type="text"
+                                id="otp-3"
+                                class="input input-lg w-14 h-14 text-center text-2xl font-semibold @error('security_code') input-error @enderror"
+                                maxlength="1"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                autocomplete="off"
+                                data-otp-input
+                            >
+                            <input
+                                type="text"
+                                id="otp-4"
+                                class="input input-lg w-14 h-14 text-center text-2xl font-semibold @error('security_code') input-error @enderror"
+                                maxlength="1"
+                                inputmode="numeric"
+                                pattern="[0-9]*"
+                                autocomplete="off"
+                                data-otp-input
+                            >
+                        </div>
                     </div>
 
                     <div class="mt-6">
@@ -60,6 +95,86 @@
                         </button>
                     </div>
                 </form>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const inputs = document.querySelectorAll('[data-otp-input]');
+                        const form = document.getElementById('otp-form');
+                        const hiddenInput = document.getElementById('security_code');
+
+                        function updateHiddenInput() {
+                            let code = '';
+                            inputs.forEach(input => {
+                                code += input.value;
+                            });
+                            hiddenInput.value = code;
+                        }
+
+                        inputs.forEach((input, index) => {
+                            // Handle input
+                            input.addEventListener('input', function(e) {
+                                // Only allow digits
+                                this.value = this.value.replace(/[^0-9]/g, '');
+
+                                updateHiddenInput();
+
+                                // Auto-advance to next input
+                                if (this.value.length === 1 && index < inputs.length - 1) {
+                                    inputs[index + 1].focus();
+                                }
+
+                                // Auto-submit when all fields are filled
+                                if (index === inputs.length - 1 && this.value.length === 1) {
+                                    let allFilled = true;
+                                    inputs.forEach(inp => {
+                                        if (!inp.value) allFilled = false;
+                                    });
+                                    if (allFilled) {
+                                        form.submit();
+                                    }
+                                }
+                            });
+
+                            // Handle backspace
+                            input.addEventListener('keydown', function(e) {
+                                if (e.key === 'Backspace' && !this.value && index > 0) {
+                                    inputs[index - 1].focus();
+                                }
+                            });
+
+                            // Handle paste
+                            input.addEventListener('paste', function(e) {
+                                e.preventDefault();
+                                const pastedData = e.clipboardData.getData('text').replace(/[^0-9]/g, '');
+
+                                if (pastedData.length > 0) {
+                                    for (let i = 0; i < Math.min(pastedData.length, inputs.length); i++) {
+                                        inputs[i].value = pastedData[i];
+                                    }
+                                    updateHiddenInput();
+
+                                    // Focus last filled input or submit if complete
+                                    const lastIndex = Math.min(pastedData.length, inputs.length) - 1;
+                                    if (lastIndex === inputs.length - 1) {
+                                        form.submit();
+                                    } else {
+                                        inputs[lastIndex + 1].focus();
+                                    }
+                                }
+                            });
+
+                            // Select content on focus
+                            input.addEventListener('focus', function() {
+                                this.select();
+                            });
+                        });
+
+                        // Update hidden input on form submit
+                        form.addEventListener('submit', function() {
+                            updateHiddenInput();
+                        });
+                    });
+                </script>
             </div>
         </div>
 

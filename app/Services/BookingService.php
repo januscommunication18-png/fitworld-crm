@@ -11,8 +11,13 @@ use App\Models\CustomerMembership;
 use App\Models\Host;
 use App\Models\Payment;
 use App\Models\ServiceSlot;
+use App\Models\Questionnaire;
+use App\Models\QuestionnaireResponse;
+use App\Models\QuestionnaireVersion;
+use App\Mail\BookingConfirmationMail;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 class BookingService
 {
@@ -97,8 +102,107 @@ class BookingService
             $client->increment('total_classes_attended');
             $client->update(['last_visit_at' => now()]);
 
+            // Handle intake form / questionnaire responses
+            $questionnaireResponses = [];
+            if (($options['send_intake_form'] ?? false) && !empty($options['questionnaire_ids'])) {
+                $questionnaireResponses = $this->createQuestionnaireResponses(
+                    $host,
+                    $client,
+                    $booking,
+                    $options['questionnaire_ids']
+                );
+
+                // Update booking intake status if questionnaires were sent
+                if (count($questionnaireResponses) > 0) {
+                    $booking->update(['intake_status' => Booking::INTAKE_PENDING]);
+                }
+            }
+
+            // Send booking confirmation email if client has email
+            if ($client->email && ($options['send_confirmation_email'] ?? true)) {
+                $this->sendBookingConfirmationEmail($booking, $questionnaireResponses);
+            }
+
             return $booking->load(['client', 'bookable', 'payments']);
         });
+    }
+
+    /**
+     * Create questionnaire responses for a booking
+     *
+     * @param Host $host
+     * @param Client $client
+     * @param Booking $booking
+     * @param array $questionnaireIds
+     * @return array<QuestionnaireResponse>
+     */
+    protected function createQuestionnaireResponses(
+        Host $host,
+        Client $client,
+        Booking $booking,
+        array $questionnaireIds
+    ): array {
+        $responses = [];
+
+        foreach ($questionnaireIds as $questionnaireId) {
+            $questionnaire = Questionnaire::where('host_id', $host->id)
+                ->find($questionnaireId);
+
+            if (!$questionnaire) {
+                continue;
+            }
+
+            // Get the active version
+            $version = $questionnaire->activeVersion;
+            if (!$version) {
+                continue;
+            }
+
+            // Create response record
+            $response = QuestionnaireResponse::create([
+                'questionnaire_version_id' => $version->id,
+                'host_id' => $host->id,
+                'client_id' => $client->id,
+                'booking_id' => $booking->id,
+                'status' => QuestionnaireResponse::STATUS_PENDING,
+                'current_step' => 1,
+            ]);
+
+            $responses[] = $response;
+        }
+
+        return $responses;
+    }
+
+    /**
+     * Send booking confirmation email
+     *
+     * @param Booking $booking
+     * @param array<QuestionnaireResponse> $questionnaireResponses
+     */
+    protected function sendBookingConfirmationEmail(Booking $booking, array $questionnaireResponses = []): void
+    {
+        $client = $booking->client;
+
+        if (!$client || !$client->email) {
+            return;
+        }
+
+        // Load relationships for the email (keep as models, not arrays)
+        $responses = collect($questionnaireResponses)->map(function ($response) {
+            return $response->load('version.questionnaire');
+        })->all();
+
+        try {
+            Mail::to($client->email)
+                ->send(new BookingConfirmationMail($booking, $responses));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send booking confirmation email', [
+                'booking_id' => $booking->id,
+                'client_id' => $client->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

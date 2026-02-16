@@ -12,6 +12,44 @@
     </ol>
 @endsection
 
+@push('styles')
+<style>
+    .flatpickr-calendar {
+        z-index: 9999 !important;
+    }
+    .flatpickr-calendar.hasTime.noCalendar {
+        width: auto !important;
+        min-width: 200px;
+    }
+    .flatpickr-time {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px;
+        max-height: none !important;
+        height: auto !important;
+        padding: 10px !important;
+    }
+    .flatpickr-time .numInputWrapper {
+        width: 50px !important;
+        height: 40px !important;
+    }
+    .flatpickr-time .numInputWrapper input {
+        font-size: 1.25rem !important;
+    }
+    .flatpickr-time .flatpickr-time-separator {
+        font-size: 1.25rem !important;
+        line-height: 40px !important;
+    }
+    .flatpickr-time .flatpickr-am-pm {
+        width: 50px !important;
+        height: 40px !important;
+        line-height: 40px !important;
+        font-size: 0.875rem !important;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="max-w-3xl mx-auto">
     {{-- Header --}}
@@ -23,14 +61,6 @@
             <h1 class="text-2xl font-bold">New Booking</h1>
             <p class="text-base-content/60">Book a client for a class</p>
         </div>
-    </div>
-
-    {{-- Progress Steps --}}
-    <div class="mb-8">
-        <ul class="steps steps-horizontal w-full">
-            <li class="step step-primary" data-step="1">Client & Class</li>
-            <li class="step" data-step="2">Payment</li>
-        </ul>
     </div>
 
     <form id="booking-form" action="" method="POST">
@@ -47,7 +77,7 @@
                     </h2>
 
                     {{-- Client Type Selection --}}
-                    <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div id="client-type-selection" class="grid grid-cols-2 gap-3 mb-6">
                         <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
                             <input type="radio" name="client_type" value="existing" class="radio radio-primary" checked>
                             <span class="icon-[tabler--users] size-6 text-primary"></span>
@@ -66,6 +96,7 @@
                         </label>
                     </div>
 
+                    {{-- Existing Client Search --}}
                     {{-- Existing Client Search --}}
                     <div id="existing-client-section">
                         <div class="form-control mb-4">
@@ -86,35 +117,38 @@
                         <div id="search-results" class="hidden mb-4 max-h-64 overflow-y-auto">
                             <div id="search-results-list" class="space-y-2"></div>
                         </div>
+                    </div>
 
-                        {{-- Selected Client Display --}}
-                        <div id="selected-client" class="hidden">
-                            <div class="alert alert-success">
-                                <div class="flex items-center gap-3 w-full">
-                                    <div id="selected-avatar-container">
-                                        <div id="selected-avatar-img" class="avatar hidden">
-                                            <div class="size-12 rounded-full">
-                                                <img id="selected-avatar-src" src="" alt="">
-                                            </div>
-                                        </div>
-                                        <div id="selected-avatar-initials" class="avatar placeholder">
-                                            <div class="bg-success-content text-success size-12 rounded-full">
-                                                <span id="selected-initials" class="text-lg font-bold">JD</span>
-                                            </div>
+                    {{-- Selected Client Display (shown after client selected) --}}
+                    <div id="selected-client" class="hidden">
+                        <div id="selected-client-alert" class="alert alert-success">
+                            <div class="flex items-center gap-3 w-full">
+                                <div id="selected-avatar-container">
+                                    <div id="selected-avatar-img" class="avatar hidden">
+                                        <div class="size-12 rounded-full">
+                                            <img id="selected-avatar-src" src="" alt="">
                                         </div>
                                     </div>
-                                    <div class="flex-1">
-                                        <div class="font-semibold text-lg" id="selected-name">John Doe</div>
-                                        <div class="text-sm opacity-80" id="selected-contact">john@example.com</div>
+                                    <div id="selected-avatar-initials" class="avatar placeholder">
+                                        <div id="selected-avatar-circle" class="bg-success-content text-success size-12 rounded-full">
+                                            <span id="selected-initials" class="text-lg font-bold">JD</span>
+                                        </div>
                                     </div>
-                                    <button type="button" class="btn btn-ghost btn-sm" onclick="clearClient()">
-                                        <span class="icon-[tabler--x] size-5"></span>
-                                        Change
-                                    </button>
                                 </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold text-lg" id="selected-name">John Doe</span>
+                                        <span id="selected-new-badge" class="badge badge-primary badge-sm hidden">New</span>
+                                    </div>
+                                    <div class="text-sm opacity-80" id="selected-contact">john@example.com</div>
+                                </div>
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="clearClient()">
+                                    <span class="icon-[tabler--x] size-5"></span>
+                                    Change
+                                </button>
                             </div>
-                            <input type="hidden" name="client_id" id="client-id" value="">
                         </div>
+                        <input type="hidden" name="client_id" id="client-id" value="">
                     </div>
 
                     {{-- New Client Form --}}
@@ -133,10 +167,14 @@
                             <label class="label" for="new-email"><span class="label-text">Email</span></label>
                             <input type="email" id="new-email" name="email" class="input input-bordered" placeholder="john@example.com">
                         </div>
-                        <div class="form-control">
+                        <div class="form-control mb-4">
                             <label class="label" for="new-phone"><span class="label-text">Phone</span></label>
                             <input type="tel" id="new-phone" name="phone" class="input input-bordered" placeholder="(555) 123-4567">
                         </div>
+                        <button type="button" id="add-new-client-btn" class="btn btn-primary w-full" onclick="confirmNewClient()" disabled>
+                            <span class="icon-[tabler--user-plus] size-5"></span>
+                            Add Client
+                        </button>
                     </div>
                 </div>
             </div>
@@ -192,6 +230,27 @@
                                placeholder="Select date...">
                     </div>
 
+                    {{-- Duration Selection (shown after date selected) --}}
+                    <div class="form-control mb-6 hidden" id="duration-selection">
+                        <label class="label" for="session-duration">
+                            <span class="label-text font-medium">Duration (minutes)</span>
+                        </label>
+                        <div class="join w-full">
+                            <button type="button" class="btn btn-outline join-item duration-preset" data-duration="30">30</button>
+                            <button type="button" class="btn btn-outline join-item duration-preset" data-duration="45">45</button>
+                            <button type="button" class="btn btn-primary join-item duration-preset active" data-duration="60">60</button>
+                            <button type="button" class="btn btn-outline join-item duration-preset" data-duration="90">90</button>
+                            <input type="number"
+                                   id="session-duration"
+                                   class="input input-bordered join-item w-24 text-center"
+                                   value="60"
+                                   min="5"
+                                   max="480"
+                                   placeholder="Custom">
+                            <span class="btn btn-ghost join-item pointer-events-none">min</span>
+                        </div>
+                    </div>
+
                     {{-- Session Selection (shown after date selected) --}}
                     <div class="form-control hidden" id="session-selection">
                         <label class="label">
@@ -206,9 +265,19 @@
                         <div id="sessions-empty" class="hidden">
                             <div class="text-center py-6 border-2 border-dashed border-base-300 rounded-lg">
                                 <span class="icon-[tabler--calendar-off] size-8 text-base-content/30 mx-auto mb-2"></span>
-                                <p class="text-base-content/60">No sessions for this class on selected date</p>
-                                <div id="next-available" class="hidden mt-4">
-                                    <p class="text-sm text-base-content/60 mb-2">Next available:</p>
+                                <p class="text-base-content/60 mb-4">No sessions for this class on selected date</p>
+
+                                {{-- Quick Actions --}}
+                                <div class="flex flex-col sm:flex-row justify-center gap-3 mb-4">
+                                    <button type="button" class="btn btn-primary" onclick="openQuickCreateModal()">
+                                        <span class="icon-[tabler--plus] size-5"></span>
+                                        Create Session
+                                    </button>
+                                </div>
+
+                                {{-- Next Available --}}
+                                <div id="next-available" class="hidden">
+                                    <div class="divider text-xs text-base-content/40">OR SELECT UPCOMING</div>
                                     <div id="next-available-dates" class="flex flex-wrap justify-center gap-2"></div>
                                 </div>
                             </div>
@@ -355,10 +424,55 @@
                     <textarea id="notes" name="notes" rows="2" class="textarea textarea-bordered" placeholder="Any notes about this booking..."></textarea>
                 </div>
 
-                {{-- Check in now --}}
-                <div class="form-control mb-6">
+                {{-- Intake Form Section --}}
+                <div id="intake-form-section" class="mb-6 hidden">
+                    <div class="form-control">
+                        <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-info has-[:checked]:bg-info/5 transition-all">
+                            <input type="checkbox" id="send-intake-form" name="send_intake_form" value="1" class="checkbox checkbox-info">
+                            <div class="flex-1">
+                                <span class="font-semibold">Send Intake Form</span>
+                                <span class="text-sm text-base-content/60 block">Email questionnaire(s) to client after booking</span>
+                            </div>
+                            <span class="icon-[tabler--file-text] size-6 text-info"></span>
+                        </label>
+                    </div>
+
+                    {{-- Questionnaire Selection (shown when checkbox is checked) --}}
+                    <div id="questionnaire-selection" class="hidden mt-4 p-4 bg-base-200/50 rounded-lg">
+                        <div class="text-sm font-medium text-base-content/70 mb-3">Select questionnaires to send:</div>
+
+                        {{-- Loading state --}}
+                        <div id="questionnaires-loading" class="hidden flex items-center justify-center py-4">
+                            <span class="loading loading-spinner loading-sm text-primary"></span>
+                            <span class="ml-2 text-sm text-base-content/60">Loading questionnaires...</span>
+                        </div>
+
+                        {{-- No questionnaires available --}}
+                        <div id="questionnaires-empty" class="hidden text-center py-4">
+                            <span class="icon-[tabler--file-off] size-6 text-base-content/30 mx-auto mb-2"></span>
+                            <p class="text-sm text-base-content/50">No questionnaires attached to this class plan</p>
+                            <a href="{{ route('questionnaires.index') }}" target="_blank" class="text-xs text-primary hover:underline mt-1 inline-block">
+                                Manage questionnaires
+                            </a>
+                        </div>
+
+                        {{-- No email warning --}}
+                        <div id="no-email-warning" class="hidden alert alert-warning mb-3">
+                            <span class="icon-[tabler--alert-triangle] size-5"></span>
+                            <span class="text-sm">Client has no email address. Please add an email to send intake forms.</span>
+                        </div>
+
+                        {{-- Questionnaire List --}}
+                        <div id="questionnaires-list" class="space-y-2">
+                            {{-- Questionnaires loaded via AJAX --}}
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Check in now (only shown for current time slot sessions) --}}
+                <div id="check-in-now-container" class="form-control mb-6 hidden">
                     <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" name="check_in_now" value="1" class="checkbox checkbox-primary">
+                        <input type="checkbox" name="check_in_now" value="1" class="checkbox checkbox-primary" id="check-in-now-checkbox">
                         <div>
                             <span class="font-medium">Check in client now</span>
                             <span class="text-sm text-base-content/60 block">Mark as arrived immediately after booking</span>
@@ -383,6 +497,212 @@
     </form>
 </div>
 
+{{-- Quick Create Session Modal --}}
+<div id="quick-create-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 opacity-0 transition-opacity duration-300 hidden [&.open]:opacity-100" role="dialog" tabindex="-1">
+    <div class="absolute inset-0 bg-base-content/50" onclick="closeQuickCreateModal()"></div>
+    <div class="modal-dialog relative z-10 w-full max-w-5xl transform scale-95 transition-transform duration-300 [.open_&]:scale-100">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <span class="icon-[tabler--calendar-plus] size-5 inline-block align-middle mr-2"></span>
+                    Quick Create Session
+                </h3>
+                <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" onclick="closeQuickCreateModal()">
+                    <span class="icon-[tabler--x] size-4"></span>
+                </button>
+            </div>
+            <div class="modal-body min-h-[500px]">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {{-- Left Column: Form Fields --}}
+                    <div class="space-y-5">
+                        {{-- Selected Class, Date & Duration Display --}}
+                        <div class="bg-base-200 rounded-lg p-3">
+                            <div class="flex items-center gap-3">
+                                <div class="size-10 rounded-lg flex items-center justify-center" id="modal-class-color" style="background-color: #6366f1;">
+                                    <span class="icon-[tabler--yoga] size-5 text-white"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-semibold" id="modal-class-name">Class Name</div>
+                                    <div class="text-sm text-base-content/60" id="modal-date">Date</div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-primary" id="modal-duration">60</div>
+                                    <div class="text-xs text-base-content/60">minutes</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Primary Instructor --}}
+                        <div class="form-control">
+                            <label class="label" for="quick-primary-instructor">
+                                <span class="label-text font-medium">Primary Instructor <span class="text-error">*</span></span>
+                            </label>
+                            <select id="quick-primary-instructor" class="select select-bordered w-full" required>
+                                <option value="">Select an instructor...</option>
+                                @foreach($instructors as $instructor)
+                                <option value="{{ $instructor->id }}">{{ $instructor->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        {{-- Available Time Slots --}}
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text font-medium">Available Time Slots <span class="text-error">*</span></span>
+                            </label>
+
+                            {{-- Placeholder when no instructor selected --}}
+                            <div id="slots-placeholder" class="text-center py-6 border-2 border-dashed border-base-300 rounded-lg">
+                                <span class="icon-[tabler--clock] size-8 text-base-content/30 mx-auto mb-2"></span>
+                                <p class="text-base-content/50 text-sm">Select an instructor to see available slots</p>
+                            </div>
+
+                            {{-- Loading state --}}
+                            <div id="slots-loading" class="hidden text-center py-6">
+                                <span class="loading loading-spinner loading-md text-primary"></span>
+                                <p class="text-base-content/50 text-sm mt-2">Calculating available slots...</p>
+                            </div>
+
+                            {{-- No slots available --}}
+                            <div id="slots-empty" class="hidden text-center py-6 border-2 border-dashed border-base-300 rounded-lg">
+                                <span class="icon-[tabler--calendar-off] size-8 text-error/50 mx-auto mb-2"></span>
+                                <p class="text-base-content/50 text-sm">No available slots for this duration</p>
+                            </div>
+
+                            {{-- Time Slots with Tabs --}}
+                            <div id="slots-container" class="hidden">
+                                {{-- Tabs --}}
+                                <div class="flex gap-1 mb-3">
+                                    <button type="button" class="slot-tab btn btn-sm btn-primary flex-1" data-tab="morning" onclick="switchSlotTab('morning')">
+                                        <span class="icon-[tabler--sunrise] size-4"></span>
+                                        Morning
+                                        <span id="morning-count" class="badge badge-xs">0</span>
+                                    </button>
+                                    <button type="button" class="slot-tab btn btn-sm btn-outline flex-1" data-tab="afternoon" onclick="switchSlotTab('afternoon')">
+                                        <span class="icon-[tabler--sun] size-4"></span>
+                                        Afternoon
+                                        <span id="afternoon-count" class="badge badge-xs">0</span>
+                                    </button>
+                                    <button type="button" class="slot-tab btn btn-sm btn-outline flex-1" data-tab="evening" onclick="switchSlotTab('evening')">
+                                        <span class="icon-[tabler--moon] size-4"></span>
+                                        Evening
+                                        <span id="evening-count" class="badge badge-xs">0</span>
+                                    </button>
+                                </div>
+
+                                {{-- Slot Grids --}}
+                                <div id="morning-slots" class="slot-panel grid grid-cols-4 gap-2 max-h-48 overflow-y-auto"></div>
+                                <div id="afternoon-slots" class="slot-panel hidden grid grid-cols-4 gap-2 max-h-48 overflow-y-auto"></div>
+                                <div id="evening-slots" class="slot-panel hidden grid grid-cols-4 gap-2 max-h-48 overflow-y-auto"></div>
+
+                                {{-- No slots in selected tab --}}
+                                <div id="tab-empty" class="hidden text-center py-4 text-base-content/50 text-sm">
+                                    No slots available in this time period
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="quick-start-time" value="">
+                        </div>
+
+                        {{-- Capacity (readonly - from class plan) --}}
+                        <div class="form-control">
+                            <label class="label" for="quick-capacity">
+                                <span class="label-text font-medium">Capacity</span>
+                            </label>
+                            <input type="number" id="quick-capacity" class="input input-bordered w-full bg-base-200" value="10" readonly>
+                        </div>
+                    </div>
+
+                    {{-- Right Column: Instructor Availability --}}
+                    <div class="border-l border-base-300 pl-6">
+                        <h4 class="font-semibold text-sm text-base-content/70 mb-3">Instructor Availability</h4>
+
+                        {{-- Placeholder when no instructor selected --}}
+                        <div id="availability-placeholder" class="flex flex-col items-center justify-center h-96 text-center">
+                            <span class="icon-[tabler--calendar-user] size-12 text-base-content/20 mb-3"></span>
+                            <p class="text-base-content/50 text-sm">Select an instructor to view<br>their availability</p>
+                        </div>
+
+                        {{-- Loading state --}}
+                        <div id="availability-loading" class="hidden flex flex-col items-center justify-center h-96">
+                            <span class="loading loading-spinner loading-md text-primary"></span>
+                            <p class="text-base-content/50 text-sm mt-2">Loading availability...</p>
+                        </div>
+
+                        {{-- Availability Panel --}}
+                        <div id="availability-panel" class="hidden space-y-4">
+                            {{-- Instructor Info --}}
+                            <div class="flex items-center gap-3">
+                                <div id="avail-avatar" class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content size-10 rounded-full">
+                                        <span id="avail-initials" class="text-sm font-bold">JS</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-semibold" id="avail-name">John Smith</div>
+                                    <div class="text-xs text-base-content/60" id="avail-date">Monday, Feb 16, 2026</div>
+                                </div>
+                            </div>
+
+                            {{-- Working Days --}}
+                            <div>
+                                <div class="text-xs font-medium text-base-content/60 mb-2">Working Days</div>
+                                <div class="flex gap-1" id="avail-working-days">
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-base-200 text-base-content/40">S</span>
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-success/20 text-success">M</span>
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-success/20 text-success">T</span>
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-success/20 text-success">W</span>
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-success/20 text-success">T</span>
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-success/20 text-success">F</span>
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-base-200 text-base-content/40">S</span>
+                                </div>
+                            </div>
+
+                            {{-- Today's Hours --}}
+                            <div>
+                                <div class="text-xs font-medium text-base-content/60 mb-2">Today's Hours</div>
+                                <div id="avail-hours-status">
+                                    {{-- Will show either warning or success based on availability --}}
+                                </div>
+                            </div>
+
+                            {{-- Existing Sessions --}}
+                            <div>
+                                <div class="text-xs font-medium text-base-content/60 mb-2">Existing Sessions Today</div>
+                                <div id="avail-existing-sessions" class="space-y-1 max-h-36 overflow-y-auto">
+                                    {{-- Sessions will be populated here --}}
+                                </div>
+                            </div>
+
+                            {{-- Weekly Workload --}}
+                            <div>
+                                <div class="text-xs font-medium text-base-content/60 mb-2">Weekly Workload</div>
+                                <div class="grid grid-cols-2 gap-2" id="avail-workload">
+                                    <div class="bg-base-200 rounded-lg p-2 text-center">
+                                        <div class="text-lg font-bold"><span id="avail-classes-count">0</span><span class="text-base-content/40" id="avail-classes-max">/10</span></div>
+                                        <div class="text-xs text-base-content/60">Classes</div>
+                                    </div>
+                                    <div class="bg-base-200 rounded-lg p-2 text-center">
+                                        <div class="text-lg font-bold"><span id="avail-hours-count">0</span><span class="text-base-content/40" id="avail-hours-max">/20</span></div>
+                                        <div class="text-xs text-base-content/60">Hours</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-soft btn-secondary" onclick="closeQuickCreateModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="quick-create-btn" onclick="submitQuickCreate()">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Create & Select
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -390,14 +710,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentStep = 1;
     let selectedClientId = null;
     let selectedClientName = '';
+    let selectedClientEmail = '';
     let selectedSessionId = null;
     let selectedSessionData = null;
     let isNewClient = false;
+    let availableQuestionnaires = [];
 
     // Elements
     const step1 = document.getElementById('step-1');
     const step2 = document.getElementById('step-2');
-    const stepIndicators = document.querySelectorAll('.steps .step');
 
     // Client type toggle
     document.querySelectorAll('input[name="client_type"]').forEach(radio => {
@@ -411,8 +732,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // New client form validation
     ['new-first-name', 'new-last-name'].forEach(id => {
-        document.getElementById(id).addEventListener('input', validateStep1);
+        document.getElementById(id).addEventListener('input', updateNewClientButton);
     });
+
+    function updateNewClientButton() {
+        const firstName = document.getElementById('new-first-name').value.trim();
+        const lastName = document.getElementById('new-last-name').value.trim();
+        const addBtn = document.getElementById('add-new-client-btn');
+
+        if (firstName.length > 0 && lastName.length > 0) {
+            addBtn.disabled = false;
+        } else {
+            addBtn.disabled = true;
+        }
+    }
+
+    // Add new client button handler
+    window.confirmNewClient = function() {
+        const firstName = document.getElementById('new-first-name').value.trim();
+        const lastName = document.getElementById('new-last-name').value.trim();
+        const email = document.getElementById('new-email').value.trim();
+        const phone = document.getElementById('new-phone').value.trim();
+
+        if (firstName.length === 0 || lastName.length === 0) {
+            return;
+        }
+
+        // Show as selected client
+        selectedClientName = firstName + ' ' + lastName;
+        selectedClientEmail = email || '';
+        const initials = (firstName[0] + lastName[0]).toUpperCase();
+        const contact = email || phone || 'New client';
+
+        document.getElementById('selected-initials').textContent = initials;
+        document.getElementById('selected-avatar-img').classList.add('hidden');
+        document.getElementById('selected-avatar-initials').classList.remove('hidden');
+        document.getElementById('selected-name').textContent = selectedClientName;
+        document.getElementById('selected-contact').textContent = contact;
+
+        // New client - show new badge, use primary styling
+        document.getElementById('selected-new-badge').classList.remove('hidden');
+        document.getElementById('selected-client-alert').className = 'alert alert-info';
+        document.getElementById('selected-avatar-circle').className = 'bg-info-content text-info size-12 rounded-full';
+
+        // Hide form, show selected
+        document.getElementById('client-type-selection').classList.add('hidden');
+        document.getElementById('new-client-section').classList.add('hidden');
+        document.getElementById('selected-client').classList.remove('hidden');
+
+        // Mark as new client selected (we'll create on submit)
+        selectedClientId = 'new';
+
+        validateStep1();
+    };
 
     // Client search
     const searchInput = document.getElementById('client-search');
@@ -479,6 +851,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.selectClient = function(id, firstName, lastName, email, phone, avatarUrl) {
         selectedClientId = id;
         selectedClientName = firstName + ' ' + lastName;
+        selectedClientEmail = email || '';
         document.getElementById('client-id').value = id;
 
         const initials = (firstName[0] + lastName[0]).toUpperCase();
@@ -500,9 +873,17 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selected-name').textContent = selectedClientName;
         document.getElementById('selected-contact').textContent = contact;
 
+        // Existing client - hide new badge, use success styling
+        document.getElementById('selected-new-badge').classList.add('hidden');
+        document.getElementById('selected-client-alert').className = 'alert alert-success';
+        document.getElementById('selected-avatar-circle').className = 'bg-success-content text-success size-12 rounded-full';
+
+        // Hide all client selection UI, show only selected client
+        document.getElementById('client-type-selection').classList.add('hidden');
+        document.getElementById('existing-client-section').classList.add('hidden');
+        document.getElementById('new-client-section').classList.add('hidden');
         document.getElementById('selected-client').classList.remove('hidden');
         document.getElementById('search-results').classList.add('hidden');
-        searchInput.closest('.form-control').classList.add('hidden');
 
         validateStep1();
     };
@@ -510,26 +891,49 @@ document.addEventListener('DOMContentLoaded', function() {
     window.clearClient = function() {
         selectedClientId = null;
         selectedClientName = '';
+        selectedClientEmail = '';
+        isNewClient = false;
         document.getElementById('client-id').value = '';
         document.getElementById('selected-client').classList.add('hidden');
+
+        // Show client type selection again
+        document.getElementById('client-type-selection').classList.remove('hidden');
+        document.getElementById('existing-client-section').classList.remove('hidden');
+        document.getElementById('new-client-section').classList.add('hidden');
+
+        // Reset to existing client radio
+        document.querySelector('input[name="client_type"][value="existing"]').checked = true;
+
+        // Reset search
         searchInput.closest('.form-control').classList.remove('hidden');
         searchInput.value = '';
+        document.getElementById('search-results').classList.add('hidden');
+
+        // Reset new client form
+        document.getElementById('new-first-name').value = '';
+        document.getElementById('new-last-name').value = '';
+        document.getElementById('new-email').value = '';
+        document.getElementById('new-phone').value = '';
+
         validateStep1();
     };
 
     function validateStep1() {
         let clientValid = false;
-        if (isNewClient) {
+        if (selectedClientId === 'new') {
+            // New client - check if names are filled
             const firstName = document.getElementById('new-first-name').value.trim();
             const lastName = document.getElementById('new-last-name').value.trim();
             clientValid = firstName.length > 0 && lastName.length > 0;
         } else {
-            clientValid = selectedClientId !== null;
+            clientValid = selectedClientId !== null && selectedClientId !== '';
         }
 
-        const classPlanValid = selectedClassPlanId !== null;
-        const sessionValid = selectedSessionId !== null;
-        document.getElementById('step1-next').disabled = !(clientValid && classPlanValid && sessionValid);
+        const classPlanValid = selectedClassPlanId !== null && selectedClassPlanId !== '';
+        const sessionValid = selectedSessionId !== null && selectedSessionId !== '';
+
+        const allValid = clientValid && classPlanValid && sessionValid;
+        document.getElementById('step1-next').disabled = !allValid;
     }
 
     // Class Plan selection
@@ -546,6 +950,7 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedClassPlanId = null;
             selectedClassPlanName = '';
             document.getElementById('date-selection').classList.add('hidden');
+            document.getElementById('duration-selection').classList.add('hidden');
             document.getElementById('session-selection').classList.add('hidden');
             validateStep1();
             return;
@@ -557,6 +962,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show date selection
         document.getElementById('date-selection').classList.remove('hidden');
 
+        // Fetch questionnaires for this class plan
+        fetchQuestionnairesForClassPlan(selectedClassPlanId);
+
         // Reset session selection
         selectedSessionId = null;
         selectedSessionData = null;
@@ -564,6 +972,15 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('session-selection').classList.add('hidden');
         document.getElementById('sessions-list').innerHTML = '';
         validateStep1();
+
+        // Fetch default duration for this class plan
+        fetch(`/walk-in/class-plan-defaults?class_plan_id=${selectedClassPlanId}`)
+            .then(res => res.json())
+            .then(data => {
+                const defaultDuration = data.duration_minutes || 60;
+                document.getElementById('session-duration').value = defaultDuration;
+                updateDurationPresets(defaultDuration);
+            });
 
         // Initialize date picker if not already
         if (!datePicker) {
@@ -591,6 +1008,118 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listen to change event
     classPlanSelect.addEventListener('change', handleClassPlanChange);
 
+    // Fetch questionnaires for class plan
+    function fetchQuestionnairesForClassPlan(classPlanId) {
+        const intakeSection = document.getElementById('intake-form-section');
+        const loading = document.getElementById('questionnaires-loading');
+        const empty = document.getElementById('questionnaires-empty');
+        const list = document.getElementById('questionnaires-list');
+
+        if (!classPlanId) {
+            intakeSection.classList.add('hidden');
+            availableQuestionnaires = [];
+            return;
+        }
+
+        // Show loading
+        loading.classList.remove('hidden');
+        empty.classList.add('hidden');
+        list.innerHTML = '';
+
+        fetch(`/walk-in/class-plan-questionnaires?class_plan_id=${classPlanId}`)
+            .then(res => res.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                availableQuestionnaires = data.questionnaires || [];
+
+                if (availableQuestionnaires.length > 0) {
+                    intakeSection.classList.remove('hidden');
+                    renderQuestionnaires();
+                } else {
+                    intakeSection.classList.add('hidden');
+                }
+            })
+            .catch(err => {
+                console.error('Error fetching questionnaires:', err);
+                loading.classList.add('hidden');
+                intakeSection.classList.add('hidden');
+                availableQuestionnaires = [];
+            });
+    }
+
+    function renderQuestionnaires() {
+        const list = document.getElementById('questionnaires-list');
+        const empty = document.getElementById('questionnaires-empty');
+
+        if (availableQuestionnaires.length === 0) {
+            list.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+
+        empty.classList.add('hidden');
+        list.innerHTML = availableQuestionnaires.map(q => {
+            const durationText = q.estimated_duration ? `${q.estimated_duration} min` : '';
+            const requiredBadge = q.is_required ? '<span class="badge badge-error badge-xs ml-2">Required</span>' : '';
+            return `
+                <label class="flex items-center gap-3 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-info has-[:checked]:bg-info/5 transition-all">
+                    <input type="checkbox" name="questionnaire_ids[]" value="${q.id}" class="checkbox checkbox-info checkbox-sm" ${q.is_required ? 'checked' : ''}>
+                    <div class="flex-1">
+                        <div class="font-medium text-sm">${q.name}${requiredBadge}</div>
+                        ${durationText ? `<div class="text-xs text-base-content/50">${durationText}</div>` : ''}
+                    </div>
+                    <span class="icon-[tabler--file-text] size-4 text-base-content/30"></span>
+                </label>
+            `;
+        }).join('');
+    }
+
+    // Intake form checkbox toggle
+    document.getElementById('send-intake-form').addEventListener('change', function() {
+        const selection = document.getElementById('questionnaire-selection');
+        const noEmailWarning = document.getElementById('no-email-warning');
+
+        if (this.checked) {
+            selection.classList.remove('hidden');
+
+            // Check if client has email
+            if (selectedClientEmail) {
+                noEmailWarning.classList.add('hidden');
+            } else {
+                noEmailWarning.classList.remove('hidden');
+            }
+        } else {
+            selection.classList.add('hidden');
+        }
+    });
+
+    // Duration preset buttons
+    document.querySelectorAll('.duration-preset').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const duration = parseInt(this.dataset.duration);
+            document.getElementById('session-duration').value = duration;
+            updateDurationPresets(duration);
+        });
+    });
+
+    // Duration input change
+    document.getElementById('session-duration').addEventListener('input', function() {
+        updateDurationPresets(parseInt(this.value) || 0);
+    });
+
+    function updateDurationPresets(duration) {
+        document.querySelectorAll('.duration-preset').forEach(btn => {
+            const presetVal = parseInt(btn.dataset.duration);
+            if (presetVal === duration) {
+                btn.classList.remove('btn-outline');
+                btn.classList.add('btn-primary', 'active');
+            } else {
+                btn.classList.add('btn-outline');
+                btn.classList.remove('btn-primary', 'active');
+            }
+        });
+    }
+
     function loadSessions(date) {
         if (!selectedClassPlanId) return;
 
@@ -598,6 +1127,9 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedSessionData = null;
         document.getElementById('session-id').value = '';
         validateStep1();
+
+        // Show duration selection after date is picked
+        document.getElementById('duration-selection').classList.remove('hidden');
 
         document.getElementById('session-selection').classList.remove('hidden');
         document.getElementById('sessions-loading').classList.remove('hidden');
@@ -634,6 +1166,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                data-title="${session.title}"
                                data-time="${session.time}"
                                data-price="${session.price || 0}"
+                               data-start="${session.start_time_iso}"
+                               data-end="${session.end_time_iso}"
                                onchange="selectSession(this)">
                         <div class="flex-1">
                             <div class="font-semibold">${session.time}</div>
@@ -672,11 +1206,42 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedSessionData = {
             title: selectedClassPlanName,
             time: radio.dataset.time,
-            price: parseFloat(radio.dataset.price) || 0
+            price: parseFloat(radio.dataset.price) || 0,
+            startTime: radio.dataset.start,
+            endTime: radio.dataset.end
         };
         document.getElementById('session-id').value = selectedSessionId;
+
+        // Check if session is happening now (30 min before start to end time)
+        updateCheckInVisibility();
+
         validateStep1();
     };
+
+    function updateCheckInVisibility() {
+        const checkInContainer = document.getElementById('check-in-now-container');
+        const checkInCheckbox = document.getElementById('check-in-now-checkbox');
+
+        if (!selectedSessionData || !selectedSessionData.startTime) {
+            checkInContainer.classList.add('hidden');
+            checkInCheckbox.checked = false;
+            return;
+        }
+
+        const now = new Date();
+        const startTime = new Date(selectedSessionData.startTime);
+        const endTime = new Date(selectedSessionData.endTime);
+
+        // Allow check-in from 30 minutes before start until session ends
+        const checkInWindowStart = new Date(startTime.getTime() - 30 * 60 * 1000);
+
+        if (now >= checkInWindowStart && now <= endTime) {
+            checkInContainer.classList.remove('hidden');
+        } else {
+            checkInContainer.classList.add('hidden');
+            checkInCheckbox.checked = false;
+        }
+    }
 
     // Trial class toggle
     const trialCheckbox = document.getElementById('trial-class');
@@ -735,7 +1300,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Step navigation
     document.getElementById('step1-next').addEventListener('click', async function() {
         // If new client, create them first
-        if (isNewClient) {
+        if (selectedClientId === 'new') {
             const firstName = document.getElementById('new-first-name').value.trim();
             const lastName = document.getElementById('new-last-name').value.trim();
             const email = document.getElementById('new-email').value.trim();
@@ -791,18 +1356,484 @@ document.addEventListener('DOMContentLoaded', function() {
             step2.classList.remove('hidden');
         }
 
-        // Update indicators
-        stepIndicators.forEach((indicator, index) => {
-            if (index + 1 <= step) {
-                indicator.classList.add('step-primary');
-            } else {
-                indicator.classList.remove('step-primary');
-            }
-        });
-
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // Quick Create Session Modal Functions
+    const quickCreateModal = document.getElementById('quick-create-modal');
+    let selectedSlotTime = null;
+
+    window.openQuickCreateModal = function() {
+        const classPlanSelect = document.getElementById('class-plan-select');
+        const selectedOption = classPlanSelect.options[classPlanSelect.selectedIndex];
+
+        // Update modal with class info
+        document.getElementById('modal-class-name').textContent = selectedOption.dataset.name || selectedOption.text.split(' - ')[0];
+        document.getElementById('modal-date').textContent = datePicker ? datePicker.altInput.value : 'Select date';
+        document.getElementById('modal-class-color').style.backgroundColor = selectedOption.dataset.color || '#6366f1';
+        document.getElementById('modal-duration').textContent = document.getElementById('session-duration').value;
+
+        // Reset instructor selections
+        document.getElementById('quick-primary-instructor').value = '';
+
+        // Reset time slot selection
+        selectedSlotTime = null;
+        document.getElementById('quick-start-time').value = '';
+        document.getElementById('slots-placeholder').classList.remove('hidden');
+        document.getElementById('slots-loading').classList.add('hidden');
+        document.getElementById('slots-empty').classList.add('hidden');
+        document.getElementById('slots-container').classList.add('hidden');
+
+        // Reset slot tabs
+        document.getElementById('morning-slots').innerHTML = '';
+        document.getElementById('afternoon-slots').innerHTML = '';
+        document.getElementById('evening-slots').innerHTML = '';
+        document.getElementById('morning-count').textContent = '0';
+        document.getElementById('afternoon-count').textContent = '0';
+        document.getElementById('evening-count').textContent = '0';
+
+        // Reset availability panel
+        document.getElementById('availability-placeholder').classList.remove('hidden');
+        document.getElementById('availability-loading').classList.add('hidden');
+        document.getElementById('availability-panel').classList.add('hidden');
+
+        // Fetch defaults for capacity
+        fetch(`/walk-in/class-plan-defaults?class_plan_id=${selectedClassPlanId}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('quick-capacity').value = data.capacity || 10;
+            });
+
+        // Show modal
+        quickCreateModal.classList.remove('hidden');
+        setTimeout(() => quickCreateModal.classList.add('open'), 10);
+        document.body.style.overflow = 'hidden';
+    };
+
+    // Slot selection handler
+    window.selectTimeSlot = function(time, button) {
+        selectedSlotTime = time;
+        document.getElementById('quick-start-time').value = time;
+
+        // Update UI - remove active state from all slots
+        document.querySelectorAll('#slots-grid .slot-btn').forEach(btn => {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline');
+        });
+
+        // Add active state to selected slot
+        button.classList.remove('btn-outline');
+        button.classList.add('btn-primary');
+
+        updateCreateButtonState();
+    };
+
+    document.getElementById('quick-primary-instructor').addEventListener('change', function() {
+        fetchInstructorAvailability();
+        fetchAvailableSlots();
+    });
+
+    function fetchAvailableSlots() {
+        const instructorId = document.getElementById('quick-primary-instructor').value;
+        const date = datePicker ? datePicker.formatDate(datePicker.selectedDates[0], 'Y-m-d') : null;
+        const duration = document.getElementById('session-duration').value;
+
+        const placeholder = document.getElementById('slots-placeholder');
+        const loading = document.getElementById('slots-loading');
+        const empty = document.getElementById('slots-empty');
+        const container = document.getElementById('slots-container');
+
+        // Reset slot selection
+        selectedSlotTime = null;
+        document.getElementById('quick-start-time').value = '';
+
+        if (!instructorId || !date) {
+            placeholder.classList.remove('hidden');
+            loading.classList.add('hidden');
+            empty.classList.add('hidden');
+            container.classList.add('hidden');
+            updateCreateButtonState();
+            return;
+        }
+
+        // Show loading
+        placeholder.classList.add('hidden');
+        loading.classList.remove('hidden');
+        empty.classList.add('hidden');
+        container.classList.add('hidden');
+
+        fetch(`/walk-in/available-slots?instructor_id=${instructorId}&date=${date}&duration=${duration}`)
+            .then(res => res.json())
+            .then(data => {
+                loading.classList.add('hidden');
+
+                if (!data.slots || data.slots.length === 0) {
+                    empty.classList.remove('hidden');
+                    updateCreateButtonState();
+                    return;
+                }
+
+                // Categorize slots by time of day
+                const morning = [];   // Before 12:00 PM
+                const afternoon = []; // 12:00 PM - 5:00 PM
+                const evening = [];   // After 5:00 PM
+
+                data.slots.forEach(slot => {
+                    const hour = parseInt(slot.time.split(':')[0]);
+                    if (hour < 12) {
+                        morning.push(slot);
+                    } else if (hour < 17) {
+                        afternoon.push(slot);
+                    } else {
+                        evening.push(slot);
+                    }
+                });
+
+                // Render each category
+                renderSlotCategory('morning', morning);
+                renderSlotCategory('afternoon', afternoon);
+                renderSlotCategory('evening', evening);
+
+                // Update counts
+                document.getElementById('morning-count').textContent = morning.length;
+                document.getElementById('afternoon-count').textContent = afternoon.length;
+                document.getElementById('evening-count').textContent = evening.length;
+
+                // Show first tab that has slots
+                if (morning.length > 0) {
+                    switchSlotTab('morning');
+                } else if (afternoon.length > 0) {
+                    switchSlotTab('afternoon');
+                } else if (evening.length > 0) {
+                    switchSlotTab('evening');
+                }
+
+                container.classList.remove('hidden');
+                updateCreateButtonState();
+            })
+            .catch(err => {
+                console.error('Error fetching slots:', err);
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+                updateCreateButtonState();
+            });
+    }
+
+    function renderSlotCategory(category, slots) {
+        const container = document.getElementById(`${category}-slots`);
+        if (slots.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        container.innerHTML = slots.map(slot => `
+            <button type="button"
+                    class="btn btn-sm btn-outline slot-btn"
+                    onclick="selectTimeSlot('${slot.time}', this)">
+                ${slot.display}
+            </button>
+        `).join('');
+    }
+
+    window.switchSlotTab = function(tab) {
+        // Update tab buttons
+        document.querySelectorAll('.slot-tab').forEach(btn => {
+            if (btn.dataset.tab === tab) {
+                btn.classList.remove('btn-outline');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.classList.add('btn-outline');
+                btn.classList.remove('btn-primary');
+            }
+        });
+
+        // Show/hide panels
+        document.querySelectorAll('.slot-panel').forEach(panel => {
+            panel.classList.add('hidden');
+        });
+
+        const activePanel = document.getElementById(`${tab}-slots`);
+        const tabEmpty = document.getElementById('tab-empty');
+
+        if (activePanel.children.length > 0) {
+            activePanel.classList.remove('hidden');
+            tabEmpty.classList.add('hidden');
+        } else {
+            tabEmpty.classList.remove('hidden');
+        }
+    };
+
+    // Instructor Availability Functions
+    let instructorWorksToday = true; // Track if instructor works on selected day
+
+    function fetchInstructorAvailability() {
+        const instructorId = document.getElementById('quick-primary-instructor').value;
+        const date = datePicker ? datePicker.formatDate(datePicker.selectedDates[0], 'Y-m-d') : null;
+
+        const placeholder = document.getElementById('availability-placeholder');
+        const loading = document.getElementById('availability-loading');
+        const panel = document.getElementById('availability-panel');
+        const createBtn = document.getElementById('quick-create-btn');
+
+        if (!instructorId || !date) {
+            placeholder.classList.remove('hidden');
+            loading.classList.add('hidden');
+            panel.classList.add('hidden');
+            instructorWorksToday = true; // Reset to allow creation
+            updateCreateButtonState();
+            return;
+        }
+
+        // Show loading
+        placeholder.classList.add('hidden');
+        loading.classList.remove('hidden');
+        panel.classList.add('hidden');
+
+        fetch(`/walk-in/instructor-availability?instructor_id=${instructorId}&date=${date}`)
+            .then(res => res.json())
+            .then(data => {
+                loading.classList.add('hidden');
+                panel.classList.remove('hidden');
+                instructorWorksToday = data.works_today;
+                displayInstructorAvailability(data);
+                updateCreateButtonState();
+            })
+            .catch(err => {
+                console.error('Error fetching availability:', err);
+                loading.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+                instructorWorksToday = true; // Reset on error
+                updateCreateButtonState();
+            });
+    }
+
+    function updateCreateButtonState() {
+        const createBtn = document.getElementById('quick-create-btn');
+        const instructorSelected = document.getElementById('quick-primary-instructor').value;
+
+        if (!instructorWorksToday || !selectedSlotTime || !instructorSelected) {
+            createBtn.disabled = true;
+            createBtn.classList.add('btn-disabled');
+        } else {
+            createBtn.disabled = false;
+            createBtn.classList.remove('btn-disabled');
+        }
+    }
+
+    function displayInstructorAvailability(data) {
+        // Instructor info
+        document.getElementById('avail-initials').textContent = data.instructor.initials;
+        document.getElementById('avail-name').textContent = data.instructor.name;
+        document.getElementById('avail-date').textContent = data.formatted_date;
+
+        // Working days
+        const dayLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        const workingDaysContainer = document.getElementById('avail-working-days');
+        workingDaysContainer.innerHTML = data.working_days.map((works, index) => {
+            const isToday = index === data.day_of_week;
+            const baseClass = 'size-8 rounded text-xs font-medium flex items-center justify-center';
+            const colorClass = works
+                ? (isToday ? 'bg-primary text-primary-content ring-2 ring-primary ring-offset-1' : 'bg-success/20 text-success')
+                : 'bg-base-200 text-base-content/40';
+            return `<span class="${baseClass} ${colorClass}">${dayLetters[index]}</span>`;
+        }).join('');
+
+        // Today's hours status
+        const hoursStatus = document.getElementById('avail-hours-status');
+        if (!data.works_today) {
+            hoursStatus.innerHTML = `
+                <div class="alert alert-error py-2 px-3">
+                    <span class="icon-[tabler--calendar-x] size-4"></span>
+                    <div>
+                        <span class="text-sm font-medium">Does not work on ${data.day_name}s</span>
+                        <p class="text-xs opacity-80 mt-0.5">Cannot create session on this day</p>
+                    </div>
+                </div>
+            `;
+        } else if (data.availability) {
+            hoursStatus.innerHTML = `
+                <div class="alert alert-success py-2 px-3">
+                    <span class="icon-[tabler--clock-check] size-4"></span>
+                    <span class="text-sm">Available ${data.availability.from} - ${data.availability.to}</span>
+                </div>
+            `;
+        } else {
+            hoursStatus.innerHTML = `
+                <div class="alert alert-info py-2 px-3">
+                    <span class="icon-[tabler--clock] size-4"></span>
+                    <span class="text-sm">No hour restrictions set</span>
+                </div>
+            `;
+        }
+
+        // Existing sessions
+        const sessionsContainer = document.getElementById('avail-existing-sessions');
+        if (data.existing_sessions.length === 0) {
+            sessionsContainer.innerHTML = `<p class="text-sm text-base-content/50">No sessions scheduled</p>`;
+        } else {
+            sessionsContainer.innerHTML = data.existing_sessions.map(session => `
+                <div class="flex items-center gap-2 text-sm bg-base-200 rounded px-2 py-1">
+                    <span class="icon-[tabler--calendar-event] size-4 text-base-content/50"></span>
+                    <span class="font-medium">${session.time}</span>
+                    <span class="text-base-content/60 truncate">- ${session.title}</span>
+                </div>
+            `).join('');
+        }
+
+        // Weekly workload
+        document.getElementById('avail-classes-count').textContent = data.workload.classes_this_week;
+        document.getElementById('avail-hours-count').textContent = data.workload.hours_this_week;
+
+        if (data.workload.max_classes) {
+            document.getElementById('avail-classes-max').textContent = '/' + data.workload.max_classes;
+        } else {
+            document.getElementById('avail-classes-max').textContent = '';
+        }
+
+        if (data.workload.max_hours) {
+            document.getElementById('avail-hours-max').textContent = '/' + data.workload.max_hours;
+        } else {
+            document.getElementById('avail-hours-max').textContent = '';
+        }
+    }
+
+    window.closeQuickCreateModal = function() {
+        quickCreateModal.classList.remove('open');
+        setTimeout(() => {
+            quickCreateModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }, 300);
+    };
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !quickCreateModal.classList.contains('hidden')) {
+            closeQuickCreateModal();
+        }
+    });
+
+    window.submitQuickCreate = async function() {
+        const btn = document.getElementById('quick-create-btn');
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Creating...';
+
+        // Get time from selected slot
+        const startTime = selectedSlotTime;
+        const duration = document.getElementById('session-duration').value; // Use duration from main form
+        const capacity = document.getElementById('quick-capacity').value;
+        const primaryInstructorId = document.getElementById('quick-primary-instructor').value;
+        const date = datePicker ? datePicker.formatDate(datePicker.selectedDates[0], 'Y-m-d') : null;
+
+        if (!date || !startTime) {
+            alert('Please select a time slot');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            return;
+        }
+
+        if (!primaryInstructorId) {
+            alert('Please select a primary instructor');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            return;
+        }
+
+        // Check if instructor works today
+        if (!instructorWorksToday) {
+            alert('Cannot create session - instructor does not work on this day');
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+            return;
+        }
+
+        try {
+            const res = await fetch('/walk-in/sessions/quick-create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    class_plan_id: selectedClassPlanId,
+                    date: date,
+                    start_time: startTime,
+                    duration_minutes: parseInt(duration),
+                    capacity: parseInt(capacity),
+                    primary_instructor_id: primaryInstructorId
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Failed to create session');
+            }
+
+            if (data.success) {
+                closeQuickCreateModal();
+
+                // Add the new session to the list and select it
+                const container = document.getElementById('sessions-list');
+                const session = data.session;
+
+                document.getElementById('sessions-empty').classList.add('hidden');
+                document.getElementById('session-selection').classList.remove('hidden');
+                container.innerHTML = `
+                    <label class="flex items-center gap-4 p-4 border border-primary rounded-lg cursor-pointer bg-primary/5 transition-all">
+                        <input type="radio" name="session_radio" value="${session.id}" class="radio radio-primary" checked
+                               data-title="${session.title}"
+                               data-time="${session.time}"
+                               data-price="${session.price || 0}"
+                               data-start="${session.start_time_iso}"
+                               data-end="${session.end_time_iso}"
+                               onchange="selectSession(this)">
+                        <div class="flex-1">
+                            <div class="font-semibold">${session.time}</div>
+                            <div class="flex flex-wrap items-center gap-3 text-sm text-base-content/60 mt-1">
+                                <span class="flex items-center gap-1">
+                                    <span class="icon-[tabler--user] size-4"></span>
+                                    ${session.instructor}
+                                </span>
+                                <span class="badge badge-success badge-sm">Just created</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-success">${session.spots_remaining}</div>
+                            <div class="text-xs text-base-content/60">spots</div>
+                        </div>
+                    </label>
+                `;
+
+                // Auto-select the new session
+                selectedSessionId = String(session.id);
+                selectedSessionData = {
+                    title: session.title,
+                    time: session.time,
+                    price: parseFloat(session.price) || 0,
+                    startTime: session.start_time_iso,
+                    endTime: session.end_time_iso
+                };
+                document.getElementById('session-id').value = session.id;
+
+                // Update check-in visibility and validate
+                updateCheckInVisibility();
+
+                // Ensure validation runs after DOM update
+                setTimeout(() => {
+                    validateStep1();
+                }, 50);
+            } else {
+                alert(data.message || 'Failed to create session. Please try again.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert(err.message || 'Error creating session. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    };
 });
 </script>
 @endpush

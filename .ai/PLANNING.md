@@ -1932,7 +1932,79 @@ Walk-in bookings must be labeled: `booking_source = internal_walkin`
 
 ---
 
-#### 8.22 Coming Soon / Future
+#### 8.22 Intake Form Implementation (In Progress)
+
+**Status:** Completed (Feb 2026)
+**Description:** Implementing the intake form integration within the walk-in booking flow.
+
+**Requirements:**
+1. Questionnaires are pre-attached to Class Plans in settings
+2. Client fills form before first session (sent via email)
+3. Show warning at check-in if intake is pending
+
+**Implementation Steps:**
+
+| Step | File | Status |
+|------|------|--------|
+| 1. Add questionnaire endpoint | `WalkInController::getClassPlanQuestionnaires()` | Done |
+| 2. Add route | `GET /walk-in/class-plan-questionnaires` | Done |
+| 3. Update walk-in form UI | `select-session.blade.php` | Done |
+| 4. Create booking email mailable | `BookingConfirmationMail.php` | Done |
+| 5. Create email template | `emails/booking-confirmation.blade.php` | Done |
+| 6. Update BookingService | Add questionnaire response creation + email | Done |
+| 7. Update bookClass | Accept questionnaire_ids[] | Done |
+| 8. Add check-in warning | `bookings/show.blade.php` | Done |
+| 9. Add resend intake route | `POST /bookings/{booking}/resend-intake` | Done |
+
+**Data Flow:**
+
+```
+1. Staff selects Class Plan
+   ↓
+2. System fetches attached questionnaires (AJAX)
+   ↓
+3. Staff checks "Send Intake Form" and selects questionnaires
+   ↓
+4. Staff completes booking
+   ↓
+5. BookingService:
+   - Creates Booking
+   - Creates QuestionnaireResponse records (pending, with tokens)
+   - Sends BookingConfirmationMail with questionnaire URLs
+   ↓
+6. Client receives email with link(s)
+   ↓
+7. Client clicks link → sees questionnaire form (existing views)
+   ↓
+8. Client submits → QuestionnaireResponse marked completed
+   ↓
+9. At check-in, system shows warning if responses still pending
+```
+
+**UI Mockup (Pricing & Payment Step):**
+
+```
+┌─────────────────────────────────────────────┐
+│ ☐ Send Intake Form                          │
+│                                             │
+│ ┌─────────────────────────────────────────┐ │
+│ │ Select questionnaires to send:          │ │
+│ │ ☑ New Client Health Assessment (5 min)  │ │
+│ │ ☐ Injury History Form (3 min)           │ │
+│ │ ☐ Emergency Contact Info (2 min)        │ │
+│ └─────────────────────────────────────────┘ │
+└─────────────────────────────────────────────┘
+```
+
+**Notes:**
+- Uses existing `QuestionnaireAttachment` model for class plan linkage
+- Uses existing `QuestionnaireResponse` model for token-based client access
+- Email only sent if client has valid email address
+- Leverages existing questionnaire wizard view (`questionnaire/wizard.blade.php`)
+
+---
+
+#### 8.23 Coming Soon / Future
 
 | Feature | Description |
 |---------|-------------|

@@ -213,31 +213,36 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <div class="dropdown relative inline-flex [--trigger:hover] [--placement:bottom-end]">
-                                        <button type="button" class="dropdown-toggle btn btn-ghost btn-xs btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
-                                            <span class="icon-[tabler--dots] size-4"></span>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu">
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('bookings.show', $booking) }}">
-                                                    <span class="icon-[tabler--eye] size-4 me-2"></span>View Details
-                                                </a>
-                                            </li>
-                                            @if($booking->client)
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('clients.show', $booking->client) }}">
-                                                    <span class="icon-[tabler--user] size-4 me-2"></span>View Client
-                                                </a>
-                                            </li>
-                                            @endif
-                                            @if($booking->bookable && $booking->bookable_type === 'App\\Models\\ClassSession')
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('class-sessions.show', $booking->bookable_id) }}">
-                                                    <span class="icon-[tabler--calendar-event] size-4 me-2"></span>View Session
-                                                </a>
-                                            </li>
-                                            @endif
-                                        </ul>
+                                    <div class="flex items-center gap-1">
+                                        <a href="{{ route('bookings.show', $booking) }}" class="btn btn-ghost btn-xs btn-square" title="View Details">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
+                                        <div class="dropdown relative inline-flex [--trigger:hover] [--placement:bottom-end]">
+                                            <button type="button" class="dropdown-toggle btn btn-ghost btn-xs btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
+                                                <span class="icon-[tabler--dots] size-4"></span>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu">
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('bookings.show', $booking) }}">
+                                                        <span class="icon-[tabler--eye] size-4 me-2"></span>View Details
+                                                    </a>
+                                                </li>
+                                                @if($booking->client)
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('clients.show', $booking->client) }}">
+                                                        <span class="icon-[tabler--user] size-4 me-2"></span>View Client
+                                                    </a>
+                                                </li>
+                                                @endif
+                                                @if($booking->bookable && $booking->bookable_type === 'App\\Models\\ClassSession')
+                                                <li>
+                                                    <a class="dropdown-item" href="{{ route('class-sessions.show', $booking->bookable_id) }}">
+                                                        <span class="icon-[tabler--calendar-event] size-4 me-2"></span>View Session
+                                                    </a>
+                                                </li>
+                                                @endif
+                                            </ul>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>

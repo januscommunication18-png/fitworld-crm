@@ -304,9 +304,22 @@ class Instructor extends Model
      */
     public function getAvailabilityForDay(int $dayOfWeek): ?array
     {
-        // Check day-specific override first
-        if (!empty($this->availability_by_day) && isset($this->availability_by_day[$dayOfWeek])) {
-            return $this->availability_by_day[$dayOfWeek];
+        // Check day-specific override first (handle both int and string keys from JSON)
+        if (!empty($this->availability_by_day)) {
+            $dayKey = $dayOfWeek;
+            $stringKey = (string) $dayOfWeek;
+            $dayOverride = null;
+
+            if (isset($this->availability_by_day[$dayKey])) {
+                $dayOverride = $this->availability_by_day[$dayKey];
+            } elseif (isset($this->availability_by_day[$stringKey])) {
+                $dayOverride = $this->availability_by_day[$stringKey];
+            }
+
+            // Only use day override if it has actual values (not null)
+            if ($dayOverride && !empty($dayOverride['from']) && !empty($dayOverride['to'])) {
+                return $dayOverride;
+            }
         }
 
         // Fall back to default availability

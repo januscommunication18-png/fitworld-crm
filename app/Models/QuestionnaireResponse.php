@@ -164,10 +164,39 @@ class QuestionnaireResponse extends Model
 
     public function complete(): bool
     {
-        return $this->update([
+        $result = $this->update([
             'status' => self::STATUS_COMPLETED,
             'completed_at' => now(),
         ]);
+
+        // Check if all questionnaire responses for this booking are completed
+        if ($result && $this->booking_id) {
+            $this->updateBookingIntakeStatus();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Update the booking's intake status based on all questionnaire responses
+     */
+    protected function updateBookingIntakeStatus(): void
+    {
+        $booking = $this->booking;
+
+        if (!$booking) {
+            return;
+        }
+
+        // Check if there are any incomplete responses for this booking
+        $pendingCount = self::where('booking_id', $this->booking_id)
+            ->incomplete()
+            ->count();
+
+        // If all responses are completed, update booking intake status
+        if ($pendingCount === 0) {
+            $booking->update(['intake_status' => \App\Models\Booking::INTAKE_COMPLETED]);
+        }
     }
 
     public function updateProgress(int $stepNumber): bool

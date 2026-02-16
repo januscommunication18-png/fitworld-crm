@@ -250,6 +250,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in/payment-methods/{client}', [WalkInController::class, 'getPaymentMethods'])->name('walk-in.payment-methods');
     Route::post('/walk-in/clients/quick-add', [WalkInController::class, 'quickAddClient'])->name('walk-in.clients.quick-add');
     Route::get('/walk-in/clients/search', [WalkInController::class, 'searchClients'])->name('walk-in.clients.search');
+    Route::post('/walk-in/sessions/quick-create', [WalkInController::class, 'quickCreateSession'])->name('walk-in.sessions.quick-create');
+    Route::get('/walk-in/class-plan-defaults', [WalkInController::class, 'getClassPlanDefaults'])->name('walk-in.class-plan-defaults');
+    Route::get('/walk-in/instructor-availability', [WalkInController::class, 'getInstructorAvailability'])->name('walk-in.instructor-availability');
+    Route::get('/walk-in/available-slots', [WalkInController::class, 'getAvailableSlots'])->name('walk-in.available-slots');
+    Route::get('/walk-in/class-plan-questionnaires', [WalkInController::class, 'getClassPlanQuestionnaires'])->name('walk-in.class-plan-questionnaires');
 
     // Class Requests
     Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');
@@ -269,6 +274,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookings/cancellations', [BookingController::class, 'cancelled'])->name('bookings.cancelled');
     Route::get('/bookings/no-shows', [BookingController::class, 'noShows'])->name('bookings.no-shows');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
+    Route::post('/bookings/{booking}/resend-intake', [BookingController::class, 'resendIntake'])->name('bookings.resend-intake');
 
     // Offers
     Route::get('/offers', [OfferController::class, 'index'])->name('offers.index');
