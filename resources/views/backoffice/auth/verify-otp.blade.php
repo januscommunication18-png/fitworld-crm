@@ -24,13 +24,18 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="label-text" for="code">Verification Code</label>
-                    <input type="text" id="code" name="code" value="{{ old('code') }}"
-                        class="input w-full text-center text-2xl tracking-widest font-mono @error('code') input-error @enderror"
-                        placeholder="000000" maxlength="6" required autofocus
-                        pattern="[0-9]{6}" inputmode="numeric" />
+                    <label class="label-text mb-2 block text-center" for="pin-input">Verification Code</label>
+                    <div class="flex justify-center gap-2" data-pin-input='{"availableCharsRE": "^[0-9]+$"}' id="pin-input">
+                        <input type="tel" class="pin-input pin-input-lg @error('code') input-error @enderror" data-pin-input-item autofocus />
+                        <input type="tel" class="pin-input pin-input-lg @error('code') input-error @enderror" data-pin-input-item />
+                        <input type="tel" class="pin-input pin-input-lg @error('code') input-error @enderror" data-pin-input-item />
+                        <input type="tel" class="pin-input pin-input-lg @error('code') input-error @enderror" data-pin-input-item />
+                        <input type="tel" class="pin-input pin-input-lg @error('code') input-error @enderror" data-pin-input-item />
+                        <input type="tel" class="pin-input pin-input-lg @error('code') input-error @enderror" data-pin-input-item />
+                    </div>
+                    <input type="hidden" id="code" name="code" value="{{ old('code') }}" />
                     @error('code')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        <p class="text-error text-sm mt-1 text-center">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -60,4 +65,64 @@
         </form>
     </p>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pinContainer = document.getElementById('pin-input');
+    const codeInput = document.getElementById('code');
+    const form = pinContainer.closest('form');
+    const pinInputs = Array.from(pinContainer.querySelectorAll('[data-pin-input-item]'));
+
+    // Collect pin values into hidden field
+    function updateCodeValue() {
+        const code = pinInputs.map(input => input.value).join('');
+        codeInput.value = code;
+        return code;
+    }
+
+    // Handle paste event - distribute digits across inputs
+    pinInputs.forEach((input, index) => {
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+            const digits = pastedData.replace(/\D/g, '').slice(0, 6);
+
+            if (digits.length > 0) {
+                digits.split('').forEach((digit, i) => {
+                    if (pinInputs[i]) {
+                        pinInputs[i].value = digit;
+                    }
+                });
+
+                // Focus last filled input or last input
+                const focusIndex = Math.min(digits.length, pinInputs.length) - 1;
+                pinInputs[focusIndex].focus();
+
+                // Update hidden field and auto-submit if complete
+                const code = updateCodeValue();
+                if (code.length === 6) {
+                    setTimeout(() => form.submit(), 100);
+                }
+            }
+        });
+
+        input.addEventListener('input', updateCodeValue);
+    });
+
+    // Auto-submit when all 6 digits are entered via typing
+    pinInputs[pinInputs.length - 1].addEventListener('input', function() {
+        const code = updateCodeValue();
+        if (code.length === 6) {
+            setTimeout(() => form.submit(), 100);
+        }
+    });
+
+    // Update hidden field before form submit
+    form.addEventListener('submit', function(e) {
+        updateCodeValue();
+    });
+});
+</script>
 @endsection

@@ -54,5 +54,8 @@
         {{-- Page Content --}}
         @yield('content')
     </div>
+
+    @vite(['resources/js/app.js'])
+    @yield('scripts')
 </body>
 </html>
