@@ -15,6 +15,38 @@
         </div>
     </div>
 
+    {{-- Validation Errors --}}
+    @if ($errors->any())
+    <div class="alert alert-error mb-6">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <div>
+            <div class="font-medium">Please fix the following errors:</div>
+            <ul class="mt-1 text-sm list-disc list-inside">
+                @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
+    {{-- Session Error --}}
+    @if (session('error'))
+    <div class="alert alert-error mb-6">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <span>{{ session('error') }}</span>
+    </div>
+    @endif
+
+    {{-- Dynamic Error Container (for JavaScript errors) --}}
+    <div id="form-error" class="alert alert-error mb-6 hidden">
+        <span class="icon-[tabler--alert-circle] size-5 shrink-0"></span>
+        <span id="form-error-message"></span>
+        <button type="button" class="btn btn-sm btn-ghost btn-circle ml-auto" onclick="hideFormError()">
+            <span class="icon-[tabler--x] size-4"></span>
+        </button>
+    </div>
+
     {{-- Session Info Card --}}
     <div class="card bg-base-100 border border-base-200 mb-6">
         <div class="card-body">
@@ -313,6 +345,19 @@
 
 @push('scripts')
 <script>
+// Form error display functions
+function showFormError(message) {
+    const errorDiv = document.getElementById('form-error');
+    const errorMsg = document.getElementById('form-error-message');
+    errorMsg.textContent = message;
+    errorDiv.classList.remove('hidden');
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideFormError() {
+    document.getElementById('form-error').classList.add('hidden');
+}
+
 let selectedClientId = null;
 
 // Client search
@@ -442,7 +487,7 @@ function createClient() {
     const phone = document.getElementById('new-phone').value.trim();
 
     if (!firstName || !lastName) {
-        alert('Please enter first and last name');
+        showFormError('Please enter first and last name');
         return;
     }
 

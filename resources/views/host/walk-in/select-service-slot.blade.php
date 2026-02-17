@@ -48,6 +48,15 @@
     </div>
     @endif
 
+    {{-- Dynamic Error Container (for JavaScript errors) --}}
+    <div id="form-error" class="alert alert-error mb-6 hidden">
+        <span class="icon-[tabler--alert-circle] size-5 shrink-0"></span>
+        <span id="form-error-message"></span>
+        <button type="button" class="btn btn-sm btn-ghost btn-circle ml-auto" onclick="hideFormError()">
+            <span class="icon-[tabler--x] size-4"></span>
+        </button>
+    </div>
+
     <form id="booking-form" action="" method="POST">
         @csrf
 
@@ -397,6 +406,14 @@
                 </button>
             </div>
             <div class="modal-body overflow-y-auto" style="max-height: calc(90vh - 140px);">
+                {{-- Modal Error Container --}}
+                <div id="modal-error" class="alert alert-error mb-4 hidden">
+                    <span class="icon-[tabler--alert-circle] size-5 shrink-0"></span>
+                    <span id="modal-error-message"></span>
+                    <button type="button" class="btn btn-sm btn-ghost btn-circle ml-auto" onclick="hideModalError()">
+                        <span class="icon-[tabler--x] size-4"></span>
+                    </button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Left Column: Selection --}}
                     <div class="space-y-5">
@@ -522,6 +539,31 @@
 
 @push('scripts')
 <script>
+// Form error display functions (global)
+function showFormError(message) {
+    const errorDiv = document.getElementById('form-error');
+    const errorMsg = document.getElementById('form-error-message');
+    errorMsg.textContent = message;
+    errorDiv.classList.remove('hidden');
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideFormError() {
+    document.getElementById('form-error').classList.add('hidden');
+}
+
+// Modal error display functions
+function showModalError(message) {
+    const errorDiv = document.getElementById('modal-error');
+    const errorMsg = document.getElementById('modal-error-message');
+    errorMsg.textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function hideModalError() {
+    document.getElementById('modal-error').classList.add('hidden');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // State
     let currentStep = 1;
@@ -922,7 +964,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Validate required fields
             if (!firstName || !lastName) {
-                alert('Please enter both first and last name for the new client.');
+                showFormError('Please enter both first and last name for the new client.');
                 return;
             }
 
@@ -949,14 +991,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else if (data.message) {
                         errorMsg = data.message;
                     }
-                    alert(errorMsg);
+                    showFormError(errorMsg);
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     return;
                 }
 
                 if (!data.success) {
-                    alert(data.message || 'Failed to create client. Please try again.');
+                    showFormError(data.message || 'Failed to create client. Please try again.');
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     return;
@@ -968,7 +1010,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Client created successfully:', data.client);
             } catch (err) {
                 console.error('Error creating client:', err);
-                alert('Error creating client. Please try again.');
+                showFormError('Error creating client. Please try again.');
                 btn.disabled = false;
                 btn.innerHTML = originalText;
                 return;
@@ -983,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Proceeding to step 2 with client_id:', clientIdValue, 'selectedClientId:', selectedClientId);
 
         if (!clientIdValue || clientIdValue === 'new') {
-            alert('Client ID was not properly set. Please try again.');
+            showFormError('Client ID was not properly set. Please try again.');
             return;
         }
 
@@ -1011,13 +1053,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!clientId || clientId === 'new') {
             e.preventDefault();
-            alert('Error: Client ID is not set. Please go back and select a client again.');
+            showFormError('Client ID is not set. Please go back and select a client again.');
             return false;
         }
 
         if (!slotId) {
             e.preventDefault();
-            alert('Error: Slot ID is not set. Please go back and select a slot again.');
+            showFormError('Slot ID is not set. Please go back and select a slot again.');
             return false;
         }
     });
@@ -1261,21 +1303,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const date = datePicker ? datePicker.formatDate(datePicker.selectedDates[0], 'Y-m-d') : null;
 
         if (!instructorId) {
-            alert('Please select an instructor');
+            showModalError('Please select an instructor');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
             return;
         }
 
         if (!startTime) {
-            alert('Please select a time slot');
+            showModalError('Please select a time slot');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
             return;
         }
 
         if (!modalInstructorWorksToday) {
-            alert('Cannot create slot - instructor does not work on this day');
+            showModalError('Cannot create slot - instructor does not work on this day');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
             return;
@@ -1355,7 +1397,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         } catch (err) {
             console.error(err);
-            alert(err.message || 'Error creating slot. Please try again.');
+            showModalError(err.message || 'Error creating slot. Please try again.');
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;

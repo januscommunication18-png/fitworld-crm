@@ -63,6 +63,38 @@
         </div>
     </div>
 
+    {{-- Validation Errors --}}
+    @if ($errors->any())
+    <div class="alert alert-error mb-6">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <div>
+            <div class="font-medium">Please fix the following errors:</div>
+            <ul class="mt-1 text-sm list-disc list-inside">
+                @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
+    {{-- Session Error --}}
+    @if (session('error'))
+    <div class="alert alert-error mb-6">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <span>{{ session('error') }}</span>
+    </div>
+    @endif
+
+    {{-- Dynamic Error Container (for JavaScript errors) --}}
+    <div id="form-error" class="alert alert-error mb-6 hidden">
+        <span class="icon-[tabler--alert-circle] size-5 shrink-0"></span>
+        <span id="form-error-message"></span>
+        <button type="button" class="btn btn-sm btn-ghost btn-circle ml-auto" onclick="hideFormError()">
+            <span class="icon-[tabler--x] size-4"></span>
+        </button>
+    </div>
+
     <form id="booking-form" action="" method="POST">
         @csrf
 
@@ -512,6 +544,14 @@
                 </button>
             </div>
             <div class="modal-body min-h-[500px]">
+                {{-- Modal Error Container --}}
+                <div id="modal-error" class="alert alert-error mb-4 hidden">
+                    <span class="icon-[tabler--alert-circle] size-5 shrink-0"></span>
+                    <span id="modal-error-message"></span>
+                    <button type="button" class="btn btn-sm btn-ghost btn-circle ml-auto" onclick="hideModalError()">
+                        <span class="icon-[tabler--x] size-4"></span>
+                    </button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {{-- Left Column: Form Fields --}}
                     <div class="space-y-5">
@@ -705,6 +745,36 @@
 
 @push('scripts')
 <script>
+// Form error display functions (global)
+function showFormError(message) {
+    const errorDiv = document.getElementById('form-error');
+    const errorMsg = document.getElementById('form-error-message');
+    errorMsg.textContent = message;
+    errorDiv.classList.remove('hidden');
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function hideFormError() {
+    document.getElementById('form-error').classList.add('hidden');
+}
+
+// Modal error display functions
+function showModalError(message) {
+    const errorDiv = document.getElementById('modal-error');
+    const errorMsg = document.getElementById('modal-error-message');
+    if (errorDiv && errorMsg) {
+        errorMsg.textContent = message;
+        errorDiv.classList.remove('hidden');
+    }
+}
+
+function hideModalError() {
+    const errorDiv = document.getElementById('modal-error');
+    if (errorDiv) {
+        errorDiv.classList.add('hidden');
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // State
     let currentStep = 1;
@@ -1333,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('client-id').value = data.client.id;
                 }
             } catch (err) {
-                alert('Error creating client. Please try again.');
+                showFormError('Error creating client. Please try again.');
                 return;
             }
         }
@@ -1737,14 +1807,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const date = datePicker ? datePicker.formatDate(datePicker.selectedDates[0], 'Y-m-d') : null;
 
         if (!date || !startTime) {
-            alert('Please select a time slot');
+            showModalError('Please select a time slot');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
             return;
         }
 
         if (!primaryInstructorId) {
-            alert('Please select a primary instructor');
+            showModalError('Please select a primary instructor');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
             return;
@@ -1752,7 +1822,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Check if instructor works today
         if (!instructorWorksToday) {
-            alert('Cannot create session - instructor does not work on this day');
+            showModalError('Cannot create session - instructor does not work on this day');
             btn.disabled = false;
             btn.innerHTML = originalHtml;
             return;
@@ -1835,11 +1905,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     validateStep1();
                 }, 50);
             } else {
-                alert(data.message || 'Failed to create session. Please try again.');
+                showModalError(data.message || 'Failed to create session. Please try again.');
             }
         } catch (err) {
             console.error(err);
-            alert(err.message || 'Error creating session. Please try again.');
+            showModalError(err.message || 'Error creating session. Please try again.');
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHtml;
