@@ -24,19 +24,41 @@ class ServiceSlotController extends Controller
         $instructorId = $request->get('instructor_id');
         $status = $request->get('status');
         $date = $request->get('date', now()->format('Y-m-d'));
+        $range = $request->get('range', 'today');
 
-        // Date range for calendar view (default to current week)
-        $startDate = Carbon::parse($date)->startOfWeek();
-        $endDate = Carbon::parse($date)->endOfWeek();
+        // Calculate date range based on range filter
+        if ($range === 'today') {
+            $startDate = Carbon::parse($date)->startOfDay();
+            $endDate = Carbon::parse($date)->endOfDay();
+        } elseif ($range === 'week') {
+            $startDate = Carbon::parse($date)->startOfWeek();
+            $endDate = Carbon::parse($date)->endOfWeek();
+        } elseif ($range === 'month') {
+            $startDate = Carbon::parse($date)->startOfMonth();
+            $endDate = Carbon::parse($date)->endOfMonth();
+        } else {
+            // 'all' - show all upcoming slots
+            $startDate = now()->startOfDay();
+            $endDate = now()->addYear();
+        }
 
-        $slots = $host->serviceSlots()
-            ->with(['servicePlan', 'instructor', 'location', 'room'])
+        $query = $host->serviceSlots()
+            ->with(['servicePlan', 'instructor', 'location', 'room', 'bookings.client'])
             ->when($servicePlanId, fn($q) => $q->where('service_plan_id', $servicePlanId))
             ->when($instructorId, fn($q) => $q->where('instructor_id', $instructorId))
             ->when($status, fn($q) => $q->where('status', $status))
-            ->forDateRange($startDate, $endDate)
-            ->orderBy('start_time')
-            ->get();
+            ->orderBy('start_time');
+
+        if ($range !== 'all') {
+            $query->forDateRange($startDate, $endDate);
+        } else {
+            $query->where('start_time', '>=', $startDate);
+        }
+
+        $slots = $query->get();
+
+        // Group slots by date for display
+        $slotsByDate = $slots->groupBy(fn($slot) => $slot->start_time->format('Y-m-d'));
 
         // Get filter options
         $servicePlans = $host->servicePlans()->active()->orderBy('name')->get();
@@ -44,8 +66,8 @@ class ServiceSlotController extends Controller
         $statuses = ServiceSlot::getStatuses();
 
         return view('host.service-slots.index', compact(
-            'slots', 'servicePlans', 'instructors', 'statuses',
-            'servicePlanId', 'instructorId', 'status', 'date',
+            'slots', 'slotsByDate', 'servicePlans', 'instructors', 'statuses',
+            'servicePlanId', 'instructorId', 'status', 'date', 'range',
             'startDate', 'endDate'
         ));
     }

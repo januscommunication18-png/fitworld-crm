@@ -53,7 +53,9 @@ class BookingConfirmationMail extends Mailable
                 'sessionTime' => $bookable?->start_time && $bookable?->end_time
                     ? $bookable->start_time->format('g:i A') . ' - ' . $bookable->end_time->format('g:i A')
                     : '-',
-                'instructorName' => $bookable?->primaryInstructor?->name ?? null,
+                'instructorName' => $bookable instanceof \App\Models\ServiceSlot
+                    ? ($bookable?->instructor?->name ?? null)
+                    : ($bookable?->primaryInstructor?->name ?? null),
                 'locationName' => $bookable?->location?->name ?? null,
                 'studioName' => $host?->studio_name ?? 'Our Studio',
                 'questionnaireResponses' => $this->questionnaireResponses,

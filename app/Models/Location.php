@@ -101,6 +101,11 @@ class Location extends Model
         return $query->whereIn('location_type', [self::TYPE_IN_PERSON, self::TYPE_PUBLIC]);
     }
 
+    public function scopeActive($query)
+    {
+        return $query; // All locations are considered active (no is_active column)
+    }
+
     // ========== Type Checkers ==========
 
     public function isInPerson(): bool

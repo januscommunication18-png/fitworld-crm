@@ -37,6 +37,11 @@ class Booking extends Model
     const INTAKE_COMPLETED = 'completed';
     const INTAKE_WAIVED = 'waived';
 
+    // Check-in method constants
+    const CHECKIN_STAFF = 'staff';
+    const CHECKIN_SELF = 'self';
+    const CHECKIN_CARD_READER = 'card_reader';
+
     protected $fillable = [
         'host_id',
         'client_id',
@@ -63,6 +68,8 @@ class Booking extends Model
         'cancelled_by_user_id',
         'is_late_cancellation',
         'checked_in_at',
+        'checked_in_by_user_id',
+        'checked_in_method',
     ];
 
     protected function casts(): array
@@ -265,6 +272,38 @@ class Booking extends Model
     public function cancelledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by_user_id')->withTrashed();
+    }
+
+    /**
+     * Get relationship to user who checked in the booking
+     */
+    public function checkedInBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_in_by_user_id')->withTrashed();
+    }
+
+    /**
+     * Check in the booking
+     */
+    public function checkIn(?int $checkedInByUserId = null, string $method = self::CHECKIN_STAFF): bool
+    {
+        return $this->update([
+            'checked_in_at' => now(),
+            'checked_in_by_user_id' => $checkedInByUserId,
+            'checked_in_method' => $method,
+        ]);
+    }
+
+    /**
+     * Get available check-in methods
+     */
+    public static function getCheckInMethods(): array
+    {
+        return [
+            self::CHECKIN_STAFF => 'Staff',
+            self::CHECKIN_SELF => 'Self Check-in',
+            self::CHECKIN_CARD_READER => 'Card Reader',
+        ];
     }
 
     /**

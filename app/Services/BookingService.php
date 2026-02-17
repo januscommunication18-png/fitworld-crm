@@ -77,6 +77,8 @@ class BookingService
                 'price_paid' => $options['price_paid'] ?? 0,
                 'booked_at' => now(),
                 'checked_in_at' => ($options['check_in_now'] ?? false) ? now() : null,
+                'checked_in_by_user_id' => ($options['check_in_now'] ?? false) ? auth()->id() : null,
+                'checked_in_method' => ($options['check_in_now'] ?? false) ? Booking::CHECKIN_STAFF : null,
             ]);
 
             // Process payment based on method
@@ -242,6 +244,8 @@ class BookingService
                 'price_paid' => $options['price_paid'] ?? $slot->servicePlan->price ?? 0,
                 'booked_at' => now(),
                 'checked_in_at' => ($options['check_in_now'] ?? false) ? now() : null,
+                'checked_in_by_user_id' => ($options['check_in_now'] ?? false) ? auth()->id() : null,
+                'checked_in_method' => ($options['check_in_now'] ?? false) ? Booking::CHECKIN_STAFF : null,
             ]);
 
             // Process payment
@@ -333,10 +337,14 @@ class BookingService
     /**
      * Check in a client
      */
-    public function checkIn(Booking $booking): Booking
+    public function checkIn(Booking $booking, ?int $checkedInByUserId = null, string $method = Booking::CHECKIN_STAFF): Booking
     {
-        return DB::transaction(function () use ($booking) {
-            $booking->update(['checked_in_at' => now()]);
+        return DB::transaction(function () use ($booking, $checkedInByUserId, $method) {
+            $booking->update([
+                'checked_in_at' => now(),
+                'checked_in_by_user_id' => $checkedInByUserId ?? auth()->id(),
+                'checked_in_method' => $method,
+            ]);
 
             $this->auditService->logBookingCheckedIn($booking);
 

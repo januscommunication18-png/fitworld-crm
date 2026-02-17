@@ -50,6 +50,7 @@ class ScheduleController extends Controller
             'instructors' => $host->instructors()->active()->orderBy('name')->get(),
             'classSessions' => $classSessions,
             'serviceSlots' => $serviceSlots,
+            'timezone' => $host->timezone ?? config('app.timezone', 'America/New_York'),
         ]);
     }
 
@@ -160,6 +161,7 @@ class ScheduleController extends Controller
     public function events(Request $request): JsonResponse
     {
         $host = auth()->user()->host;
+        $hostTimezone = $host->timezone ?? config('app.timezone', 'America/New_York');
         $start = Carbon::parse($request->input('start'));
         $end = Carbon::parse($request->input('end'));
         $type = $request->input('type', 'all');
@@ -186,11 +188,13 @@ class ScheduleController extends Controller
                 $checkedInCount = $confirmedBookings->filter(fn($b) => $b->checked_in_at !== null)->count();
                 $cancelledCount = $session->bookings()->where('status', 'cancelled')->count();
 
+                // Times in DB are stored as local times (host timezone), not UTC
+                // Just format them without timezone conversion
                 $events[] = [
                     'id' => 'class_' . $session->id,
                     'title' => $session->display_title,
-                    'start' => $session->start_time->toIso8601String(),
-                    'end' => $session->end_time->toIso8601String(),
+                    'start' => $session->start_time->format('Y-m-d\TH:i:s'),
+                    'end' => $session->end_time->format('Y-m-d\TH:i:s'),
                     'backgroundColor' => $session->status === ClassSession::STATUS_DRAFT ? '#f59e0b' : '#6366f1',
                     'borderColor' => $session->status === ClassSession::STATUS_DRAFT ? '#f59e0b' : '#6366f1',
                     'extendedProps' => [
@@ -223,11 +227,13 @@ class ScheduleController extends Controller
             }
 
             foreach ($serviceSlotsQuery->get() as $slot) {
+                // Times in DB are stored as local times (host timezone), not UTC
+                // Just format them without timezone conversion
                 $events[] = [
                     'id' => 'service_' . $slot->id,
                     'title' => $slot->servicePlan?->name ?? 'Service',
-                    'start' => $slot->start_time->toIso8601String(),
-                    'end' => $slot->end_time->toIso8601String(),
+                    'start' => $slot->start_time->format('Y-m-d\TH:i:s'),
+                    'end' => $slot->end_time->format('Y-m-d\TH:i:s'),
                     'backgroundColor' => $slot->status === ServiceSlot::STATUS_DRAFT ? '#f59e0b' : '#10b981',
                     'borderColor' => $slot->status === ServiceSlot::STATUS_DRAFT ? '#f59e0b' : '#10b981',
                     'extendedProps' => [
@@ -263,12 +269,12 @@ class ScheduleController extends Controller
         }
 
         // Check in the booking
-        $booking->update(['checked_in_at' => now()]);
+        $booking->checkIn(auth()->id(), Booking::CHECKIN_STAFF);
 
         return response()->json([
             'success' => true,
             'message' => 'Checked in successfully',
-            'checked_in_at' => $booking->checked_in_at->format('g:i A'),
+            'checked_in_at' => $booking->fresh()->checked_in_at->format('g:i A'),
         ]);
     }
 

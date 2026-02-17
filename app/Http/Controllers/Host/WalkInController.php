@@ -8,6 +8,8 @@ use App\Models\ServiceSlot;
 use App\Models\Client;
 use App\Models\Booking;
 use App\Models\ClassPlan;
+use App\Models\ServicePlan;
+use App\Models\Instructor;
 use App\Models\QuestionnaireAttachment;
 use App\Services\BookingService;
 use App\Services\PaymentService;
@@ -322,7 +324,7 @@ class WalkInController extends Controller
 
             return redirect()
                 ->route('service-slots.index')
-                ->with('success', "Walk-in booking confirmed for {$client->full_name}!");
+                ->with('success', "Slot Booked for {$client->full_name}!");
 
         } catch (\Exception $e) {
             return back()
@@ -380,7 +382,7 @@ class WalkInController extends Controller
             'last_name' => $validated['last_name'],
             'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'] ?? null,
-            'status' => 'lead',
+            'status' => 'client',
         ]);
 
         return response()->json([
@@ -771,5 +773,206 @@ class WalkInController extends Controller
             });
 
         return response()->json(['questionnaires' => $attachments]);
+    }
+
+    /**
+     * Show service slot selection page (walk-in services)
+     */
+    public function selectServiceSlot(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        // Get active service plans
+        $servicePlans = ServicePlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // Get active instructors
+        $instructors = Instructor::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        // Preload slot if provided
+        $preloadSlot = null;
+        if ($request->has('slot')) {
+            $preloadSlot = ServiceSlot::where('host_id', $host->id)
+                ->where('id', $request->get('slot'))
+                ->first();
+        }
+
+        // Selected date - use preload slot date if available, otherwise request date or today
+        $selectedDate = $preloadSlot
+            ? $preloadSlot->start_time->format('Y-m-d')
+            : $request->get('date', now()->format('Y-m-d'));
+
+        return view('host.walk-in.select-service-slot', compact(
+            'servicePlans',
+            'instructors',
+            'selectedDate',
+            'preloadSlot'
+        ));
+    }
+
+    /**
+     * Get service slots by date (AJAX)
+     */
+    public function getServiceSlotsByDate(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'service_plan_id' => 'nullable|exists:service_plans,id',
+        ]);
+
+        $date = \Carbon\Carbon::parse($validated['date']);
+
+        $query = ServiceSlot::where('host_id', $host->id)
+            ->whereDate('start_time', $date)
+            ->where('status', ServiceSlot::STATUS_AVAILABLE)
+            ->with(['servicePlan', 'instructor', 'location']);
+
+        if (!empty($validated['service_plan_id'])) {
+            $query->where('service_plan_id', $validated['service_plan_id']);
+        }
+
+        $slots = $query->orderBy('start_time')->get();
+
+        $slotsData = $slots->map(function ($slot) {
+            return [
+                'id' => $slot->id,
+                'time' => $slot->start_time->format('g:i A') . ' - ' . $slot->end_time->format('g:i A'),
+                'time_raw' => $slot->start_time->format('H:i'),
+                'service' => $slot->servicePlan->name ?? 'Unknown Service',
+                'instructor' => $slot->instructor->name ?? 'TBD',
+                'location' => $slot->location->name ?? null,
+                'duration' => $slot->duration_minutes,
+                'price' => $slot->getEffectivePrice(),
+                'formatted_price' => $slot->formatted_price,
+                'start_time_iso' => $slot->start_time->toIso8601String(),
+                'end_time_iso' => $slot->end_time->toIso8601String(),
+            ];
+        });
+
+        // Find next available dates if no slots
+        $nextAvailable = [];
+        if ($slots->isEmpty()) {
+            $nextAvailable = ServiceSlot::where('host_id', $host->id)
+                ->where('status', ServiceSlot::STATUS_AVAILABLE)
+                ->where('start_time', '>', $date->endOfDay())
+                ->when(!empty($validated['service_plan_id']), function ($q) use ($validated) {
+                    $q->where('service_plan_id', $validated['service_plan_id']);
+                })
+                ->orderBy('start_time')
+                ->limit(5)
+                ->get()
+                ->groupBy(fn($s) => $s->start_time->format('Y-m-d'))
+                ->take(3)
+                ->map(function ($group, $dateStr) {
+                    $dateObj = \Carbon\Carbon::parse($dateStr);
+                    return [
+                        'date' => $dateStr,
+                        'formatted_date' => $dateObj->format('M j'),
+                        'slot_count' => $group->count(),
+                    ];
+                })
+                ->values()
+                ->all();
+        }
+
+        return response()->json([
+            'slots' => $slotsData,
+            'next_available' => $nextAvailable,
+        ]);
+    }
+
+    /**
+     * Get service plan defaults (AJAX)
+     */
+    public function getServicePlanDefaults(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'service_plan_id' => 'required|exists:service_plans,id',
+        ]);
+
+        $servicePlan = ServicePlan::where('host_id', $host->id)
+            ->findOrFail($validated['service_plan_id']);
+
+        return response()->json([
+            'duration_minutes' => $servicePlan->duration_minutes,
+            'price' => $servicePlan->price,
+        ]);
+    }
+
+    /**
+     * Quick create service slot (AJAX)
+     */
+    public function quickCreateServiceSlot(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'service_plan_id' => 'required|exists:service_plans,id',
+            'instructor_id' => 'required|exists:instructors,id',
+            'date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+        ]);
+
+        // Verify service plan and instructor belong to host
+        $servicePlan = ServicePlan::where('host_id', $host->id)
+            ->findOrFail($validated['service_plan_id']);
+        $instructor = Instructor::where('host_id', $host->id)
+            ->findOrFail($validated['instructor_id']);
+
+        $date = \Carbon\Carbon::parse($validated['date']);
+        $startTime = $date->copy()->setTimeFromTimeString($validated['start_time']);
+        $endTime = $startTime->copy()->addMinutes($servicePlan->duration_minutes);
+
+        // Check for conflicts
+        $conflicting = ServiceSlot::where('host_id', $host->id)
+            ->where('instructor_id', $instructor->id)
+            ->where(function ($query) use ($startTime, $endTime) {
+                $query->where(function ($q) use ($startTime, $endTime) {
+                    $q->where('start_time', '<', $endTime)
+                        ->where('end_time', '>', $startTime);
+                });
+            })
+            ->exists();
+
+        if ($conflicting) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This time slot conflicts with an existing appointment.',
+            ], 422);
+        }
+
+        // Create slot
+        $slot = ServiceSlot::create([
+            'host_id' => $host->id,
+            'service_plan_id' => $servicePlan->id,
+            'instructor_id' => $instructor->id,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'status' => ServiceSlot::STATUS_AVAILABLE,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'slot' => [
+                'id' => $slot->id,
+                'time' => $slot->start_time->format('g:i A') . ' - ' . $slot->end_time->format('g:i A'),
+                'service' => $servicePlan->name,
+                'instructor' => $instructor->name,
+                'duration' => $servicePlan->duration_minutes,
+                'price' => $slot->getEffectivePrice(),
+                'formatted_price' => $slot->formatted_price,
+                'start_time_iso' => $slot->start_time->toIso8601String(),
+                'end_time_iso' => $slot->end_time->toIso8601String(),
+            ],
+        ]);
     }
 }

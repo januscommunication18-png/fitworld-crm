@@ -97,10 +97,15 @@
                                         {{ $booking->bookable->start_time->format('g:i A') }} - {{ $booking->bookable->end_time->format('g:i A') }}
                                     </span>
                                 </div>
-                                @if($booking->bookable->primaryInstructor)
+                                @php
+                                    $instructorShow = $booking->bookable instanceof \App\Models\ServiceSlot
+                                        ? $booking->bookable->instructor
+                                        : $booking->bookable->primaryInstructor;
+                                @endphp
+                                @if($instructorShow)
                                     <div class="flex items-center gap-1 mt-2 text-base-content/70">
                                         <span class="icon-[tabler--user] size-4"></span>
-                                        {{ $booking->bookable->primaryInstructor->name }}
+                                        {{ $instructorShow->name }}
                                     </div>
                                 @endif
                                 @if($booking->bookable->location)
@@ -291,6 +296,16 @@
                             </div>
                             <div class="timeline-end timeline-box">
                                 <span class="font-medium">Checked In</span>
+                                @if($booking->checkedInBy)
+                                    <span class="text-sm text-base-content/60 block">by {{ $booking->checkedInBy->full_name }}</span>
+                                @elseif($booking->checked_in_method)
+                                    @php
+                                        $methodLabels = \App\Models\Booking::getCheckInMethods();
+                                    @endphp
+                                    <span class="text-sm text-base-content/60 block">
+                                        via {{ $methodLabels[$booking->checked_in_method] ?? ucfirst($booking->checked_in_method) }}
+                                    </span>
+                                @endif
                             </div>
                             <hr>
                         </li>

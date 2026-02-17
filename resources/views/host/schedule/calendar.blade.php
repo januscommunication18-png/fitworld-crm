@@ -24,20 +24,55 @@
             {{-- Current Time Display --}}
             <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">
                 <span class="icon-[tabler--clock] size-5 text-primary"></span>
-                <span id="current-time" class="font-semibold text-base-content">{{ now()->format('g:i A') }}</span>
+                <span id="current-time" class="font-semibold text-base-content">{{ now()->setTimezone($timezone)->format('g:i A') }}</span>
+                <span class="text-xs text-base-content/50">{{ str_replace('_', ' ', $timezone) }}</span>
             </div>
-            <a href="{{ route('walk-in.select') }}" class="btn btn-success">
-                <span class="icon-[tabler--user-plus] size-5"></span>
-                Add Booking
-            </a>
-            <a href="{{ route('class-sessions.create') }}" class="btn btn-primary">
-                <span class="icon-[tabler--plus] size-5"></span>
-                Add Class
-            </a>
-            <a href="{{ route('service-slots.create') }}" class="btn btn-soft btn-primary">
-                <span class="icon-[tabler--plus] size-5"></span>
-                Add Service
-            </a>
+
+            {{-- Add Booking Dropdown --}}
+            <div class="relative">
+                <button type="button" class="btn btn-success" onclick="toggleDropdown('booking-dropdown')">
+                    <span class="icon-[tabler--user-plus] size-5"></span>
+                    Add Booking
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <ul id="booking-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
+                    <li>
+                        <a href="{{ route('walk-in.select') }}">
+                            <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                            Class Session
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('walk-in.select-service') }}">
+                            <span class="icon-[tabler--massage] size-5 text-success"></span>
+                            Service Slot
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            {{-- Add Schedule Dropdown --}}
+            <div class="relative">
+                <button type="button" class="btn btn-primary" onclick="toggleDropdown('schedule-dropdown')">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Add Class
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <ul id="schedule-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
+                    <li>
+                        <a href="{{ route('class-sessions.create') }}">
+                            <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                            Class Session
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('service-slots.create') }}">
+                            <span class="icon-[tabler--massage] size-5 text-success"></span>
+                            Service Slot
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -490,6 +525,31 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Dropdown toggle function
+    window.toggleDropdown = function(id) {
+        const dropdown = document.getElementById(id);
+        const allDropdowns = document.querySelectorAll('#booking-dropdown, #schedule-dropdown');
+
+        // Close other dropdowns
+        allDropdowns.forEach(function(d) {
+            if (d.id !== id) {
+                d.classList.add('hidden');
+            }
+        });
+
+        // Toggle this dropdown
+        dropdown.classList.toggle('hidden');
+    };
+
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.relative')) {
+            document.querySelectorAll('#booking-dropdown, #schedule-dropdown').forEach(function(d) {
+                d.classList.add('hidden');
+            });
+        }
+    });
+
     const calendarEl = document.getElementById('studio-calendar');
     if (!calendarEl) return;
 
@@ -498,10 +558,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentInstructor = '';
     let currentLocation = '';
 
-    // Initialize calendar
+    // Studio timezone for reference (times from API are already in this timezone)
+    const studioTimezone = '{{ $timezone }}';
+
     const calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
         initialDate: new Date().toISOString().split('T')[0],
+        timeZone: 'local', // Times from API are already in host timezone
         editable: false,
         dragScroll: true,
         dayMaxEvents: true,  // Show "+more" link when too many events
@@ -584,9 +647,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const props = info.event.extendedProps;
             const event = info.event;
 
-            // Create popover content
-            const startTime = event.start ? new Date(event.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
-            const endTime = event.end ? new Date(event.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+            // Create popover content (times are already in host timezone from API)
+            const startTime = event.start ? event.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+            const endTime = event.end ? event.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
             const type = props.type === 'class' ? 'Class' : 'Service';
             const typeIcon = props.type === 'class' ? 'yoga' : 'massage';
             const typeColor = props.type === 'class' ? 'primary' : 'success';
@@ -690,12 +753,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     calendar.render();
 
-    // Update current time display
+    // Update current time display using studio timezone
     function updateCurrentTime() {
         const timeEl = document.getElementById('current-time');
         if (timeEl) {
             const now = new Date();
-            timeEl.textContent = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            timeEl.textContent = now.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                timeZone: studioTimezone
+            });
         }
     }
     setInterval(updateCurrentTime, 60000); // Update every minute

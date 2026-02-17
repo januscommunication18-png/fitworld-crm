@@ -98,13 +98,18 @@
                         @endif
                     </div>
                 @endif
-                @if($booking->bookable->primaryInstructor)
+                @php
+                    $instructor = $booking->bookable instanceof \App\Models\ServiceSlot
+                        ? $booking->bookable->instructor
+                        : $booking->bookable->primaryInstructor;
+                @endphp
+                @if($instructor)
                     <div class="bg-base-100 rounded-lg p-3">
                         <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                             <span class="icon-[tabler--user-star] size-3.5"></span>
                             Instructor
                         </div>
-                        <div class="font-medium">{{ $booking->bookable->primaryInstructor->name }}</div>
+                        <div class="font-medium">{{ $instructor->name }}</div>
                     </div>
                 @endif
                 @if($booking->bookable->location)

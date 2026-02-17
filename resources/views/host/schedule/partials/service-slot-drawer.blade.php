@@ -160,7 +160,7 @@
             <div class="text-center py-6">
                 <span class="icon-[tabler--user-plus] size-10 text-base-content/20 mx-auto mb-2"></span>
                 <p class="text-sm text-base-content/60 mb-3">This slot is available for booking</p>
-                <a href="{{ route('walk-in.service', $serviceSlot) }}" class="btn btn-sm btn-primary">
+                <a href="{{ route('walk-in.select-service', ['slot' => $serviceSlot->id]) }}" class="btn btn-sm btn-primary">
                     <span class="icon-[tabler--user-plus] size-4"></span>
                     Add Booking
                 </a>
@@ -188,7 +188,7 @@
                 </form>
             @endif
             @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE)
-                <a href="{{ route('walk-in.service', $serviceSlot) }}" class="btn btn-soft btn-primary btn-sm">
+                <a href="{{ route('walk-in.select-service', ['slot' => $serviceSlot->id]) }}" class="btn btn-soft btn-primary btn-sm">
                     <span class="icon-[tabler--user-plus] size-4"></span>
                     Add Booking
                 </a>

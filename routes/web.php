@@ -261,6 +261,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in/available-slots', [WalkInController::class, 'getAvailableSlots'])->name('walk-in.available-slots');
     Route::get('/walk-in/class-plan-questionnaires', [WalkInController::class, 'getClassPlanQuestionnaires'])->name('walk-in.class-plan-questionnaires');
 
+    // Walk-In Service Slot Booking
+    Route::get('/walk-in/services', [WalkInController::class, 'selectServiceSlot'])->name('walk-in.select-service');
+    Route::get('/walk-in/service-slots', [WalkInController::class, 'getServiceSlotsByDate'])->name('walk-in.service-slots');
+    Route::get('/walk-in/service-plan-defaults', [WalkInController::class, 'getServicePlanDefaults'])->name('walk-in.service-plan-defaults');
+    Route::post('/walk-in/service-slots/quick-create', [WalkInController::class, 'quickCreateServiceSlot'])->name('walk-in.service-slots.quick-create');
+
     // Class Requests
     Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');
     Route::get('/class-requests/{class_request}', [ClassRequestController::class, 'show'])->name('class-requests.show');

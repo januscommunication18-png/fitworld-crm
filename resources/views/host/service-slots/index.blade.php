@@ -6,7 +6,9 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--calendar-event] me-1 size-4"></span> Service Slots</li>
+        <li><a href="{{ route('schedule.index') }}"><span class="icon-[tabler--calendar] me-1 size-4"></span> Schedule</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li aria-current="page">Services</li>
     </ol>
 @endsection
 
@@ -16,7 +18,17 @@
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold">Service Slots</h1>
-            <p class="text-base-content/60 mt-1">Manage available time slots for 1-on-1 services.</p>
+            <p class="text-base-content/60 mt-1">
+                @if($range === 'today')
+                    {{ $startDate->format('l, F j, Y') }}
+                @elseif($range === 'month')
+                    {{ $startDate->format('F Y') }}
+                @elseif($range === 'all')
+                    All upcoming slots
+                @else
+                    {{ $startDate->format('M j') }} - {{ $endDate->format('M j, Y') }}
+                @endif
+            </p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('service-slots.create') }}" class="btn btn-primary">
@@ -32,162 +44,292 @@
 
     {{-- Filters --}}
     <div class="card bg-base-100">
-        <div class="card-body">
-            <form action="{{ route('service-slots.index') }}" method="GET" class="flex flex-wrap gap-4 items-end">
-                <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="date">Week of</label>
-                    <input type="date" id="date" name="date" value="{{ $date }}" class="input w-full">
+        <div class="card-body py-3 px-4">
+            <form id="filter-form" action="{{ route('service-slots.index') }}" method="GET" class="flex flex-wrap gap-4 items-end">
+                {{-- Range Toggle --}}
+                <div>
+                    <label class="label-text">Range</label>
+                    <div class="join">
+                        <button type="button" class="btn btn-sm join-item {{ $range === 'today' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('today')">
+                            Today
+                        </button>
+                        <button type="button" class="btn btn-sm join-item {{ $range === 'week' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('week')">
+                            Week
+                        </button>
+                        <button type="button" class="btn btn-sm join-item {{ $range === 'month' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('month')">
+                            Month
+                        </button>
+                        <button type="button" class="btn btn-sm join-item {{ $range === 'all' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('all')">
+                            All
+                        </button>
+                    </div>
+                    <input type="hidden" name="range" id="range-input" value="{{ $range }}">
+                    <input type="hidden" name="date" id="date" value="{{ $date }}">
                 </div>
-                <div class="flex-1 min-w-[200px]">
+
+                {{-- Service Plan Filter --}}
+                <div class="w-40">
                     <label class="label-text" for="service_plan_id">Service</label>
-                    <select id="service_plan_id" name="service_plan_id" class="select w-full">
+                    <select id="service_plan_id" name="service_plan_id" class="select select-sm w-full" onchange="submitFilters()">
                         <option value="">All Services</option>
                         @foreach($servicePlans as $plan)
-                        <option value="{{ $plan->id }}" {{ $servicePlanId == $plan->id ? 'selected' : '' }}>{{ $plan->name }}</option>
+                            <option value="{{ $plan->id }}" {{ $servicePlanId == $plan->id ? 'selected' : '' }}>
+                                {{ $plan->name }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="flex-1 min-w-[200px]">
+
+                {{-- Instructor Filter --}}
+                <div class="w-40">
                     <label class="label-text" for="instructor_id">Instructor</label>
-                    <select id="instructor_id" name="instructor_id" class="select w-full">
+                    <select id="instructor_id" name="instructor_id" class="select select-sm w-full" onchange="submitFilters()">
                         <option value="">All Instructors</option>
                         @foreach($instructors as $instructor)
-                        <option value="{{ $instructor->id }}" {{ $instructorId == $instructor->id ? 'selected' : '' }}>{{ $instructor->name }}</option>
+                            <option value="{{ $instructor->id }}" {{ $instructorId == $instructor->id ? 'selected' : '' }}>
+                                {{ $instructor->name }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
-                <div class="flex-1 min-w-[150px]">
+
+                {{-- Status Filter --}}
+                <div class="w-32">
                     <label class="label-text" for="status">Status</label>
-                    <select id="status" name="status" class="select w-full">
+                    <select id="status" name="status" class="select select-sm w-full" onchange="submitFilters()">
                         <option value="">All Statuses</option>
                         @foreach($statuses as $value => $label)
-                        <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ $label }}</option>
+                            <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">
-                    <span class="icon-[tabler--filter] size-5"></span>
-                    Filter
-                </button>
+
+                @if($servicePlanId || $instructorId || $status)
+                    <a href="{{ route('service-slots.index', ['date' => $date, 'range' => $range]) }}" class="btn btn-ghost btn-sm">
+                        <span class="icon-[tabler--x] size-4"></span>
+                        Clear
+                    </a>
+                @endif
             </form>
         </div>
     </div>
 
-    {{-- Week Navigation --}}
+    {{-- Navigation --}}
     <div class="flex items-center justify-between">
-        <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->subWeek()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
-            <span class="icon-[tabler--chevron-left] size-5"></span>
-            Previous Week
-        </a>
-        <h2 class="font-semibold">{{ $startDate->format('M d') }} - {{ $endDate->format('M d, Y') }}</h2>
-        <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->addWeek()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
-            Next Week
-            <span class="icon-[tabler--chevron-right] size-5"></span>
-        </a>
+        @if($range === 'all')
+            <div></div>
+        @elseif($range === 'today')
+            <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->subDay()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
+                <span class="icon-[tabler--chevron-left] size-5"></span>
+                Previous Day
+            </a>
+        @elseif($range === 'week')
+            <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->subWeek()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
+                <span class="icon-[tabler--chevron-left] size-5"></span>
+                Previous Week
+            </a>
+        @elseif($range === 'month')
+            <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->subMonth()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
+                <span class="icon-[tabler--chevron-left] size-5"></span>
+                Previous Month
+            </a>
+        @endif
+
+        <div class="flex items-center gap-4 text-sm text-base-content/60">
+            <span>
+                <span class="font-semibold text-base-content">{{ $slots->count() }}</span> {{ Str::plural('slot', $slots->count()) }}
+            </span>
+        </div>
+
+        @if($range === 'all')
+            <div></div>
+        @elseif($range === 'today')
+            <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->addDay()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
+                Next Day
+                <span class="icon-[tabler--chevron-right] size-5"></span>
+            </a>
+        @elseif($range === 'week')
+            <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->addWeek()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
+                Next Week
+                <span class="icon-[tabler--chevron-right] size-5"></span>
+            </a>
+        @elseif($range === 'month')
+            <a href="{{ route('service-slots.index', array_merge(request()->query(), ['date' => $startDate->copy()->addMonth()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
+                Next Month
+                <span class="icon-[tabler--chevron-right] size-5"></span>
+            </a>
+        @endif
     </div>
 
     {{-- Slots List --}}
     @if($slots->isEmpty())
-    <div class="card bg-base-100">
-        <div class="card-body text-center py-12">
-            <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
-            <h3 class="text-lg font-semibold mb-2">No Slots Found</h3>
-            <p class="text-base-content/60 mb-4">No service slots match your filters for this week.</p>
-            <a href="{{ route('service-slots.create') }}" class="btn btn-primary">
-                <span class="icon-[tabler--plus] size-5"></span>
-                Add Your First Slot
-            </a>
-        </div>
-    </div>
-    @else
-    <div class="card bg-base-100">
-        <div class="card-body p-0">
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date & Time</th>
-                            <th>Service</th>
-                            <th>Instructor</th>
-                            <th>Location</th>
-                            <th>Price</th>
-                            <th>Status</th>
-                            <th class="w-32">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($slots as $slot)
-                        <tr>
-                            <td>
-                                <div class="font-medium">{{ $slot->start_time->format('D, M j') }}</div>
-                                <div class="text-sm text-base-content/60">{{ $slot->formatted_time_range }}</div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-3 h-3 rounded-full" style="background-color: {{ $slot->servicePlan->color }};"></div>
-                                    {{ $slot->servicePlan->name }}
-                                </div>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-2">
-                                    @if($slot->instructor->photo_url)
-                                    <img src="{{ $slot->instructor->photo_url }}" alt="{{ $slot->instructor->name }}" class="w-6 h-6 rounded-full object-cover">
-                                    @else
-                                    <div class="avatar avatar-placeholder">
-                                        <div class="bg-primary text-primary-content w-6 h-6 rounded-full font-bold text-xs">
-                                            {{ strtoupper(substr($slot->instructor->name, 0, 1)) }}
-                                        </div>
-                                    </div>
-                                    @endif
-                                    {{ $slot->instructor->name }}
-                                </div>
-                            </td>
-                            <td>
-                                @if($slot->location)
-                                {{ $slot->location->name }}
-                                @if($slot->room)
-                                <span class="text-base-content/60">/ {{ $slot->room->name }}</span>
-                                @endif
-                                @else
-                                <span class="text-base-content/60">-</span>
-                                @endif
-                            </td>
-                            <td>{{ $slot->formatted_price }}</td>
-                            <td>
-                                <span class="badge {{ $slot->getStatusBadgeClass() }} badge-soft badge-sm capitalize">{{ $slot->status }}</span>
-                            </td>
-                            <td>
-                                <div class="flex items-center gap-1">
-                                    @if($slot->isAvailable())
-                                    <a href="{{ route('walk-in.service', $slot) }}"
-                                       class="btn btn-ghost btn-xs btn-square text-primary"
-                                       title="Add Booking">
-                                        <span class="icon-[tabler--walk] size-4"></span>
-                                    </a>
-                                    @endif
-                                    <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
-                                        <span class="icon-[tabler--edit] size-4"></span>
-                                    </a>
-                                    @if($slot->status !== 'booked')
-                                    <form action="{{ route('service-slots.destroy', $slot) }}" method="POST" class="inline" onsubmit="return confirm('Delete this slot?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">
-                                            <span class="icon-[tabler--trash] size-4"></span>
-                                        </button>
-                                    </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+        <div class="card bg-base-100">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
+                <h3 class="text-lg font-semibold mb-2">No Slots Found</h3>
+                <p class="text-base-content/60 mb-4">
+                    @if($servicePlanId || $instructorId || $status)
+                        No service slots match your current filters.
+                    @else
+                        @if($range === 'today')
+                            No service slots scheduled for today.
+                        @elseif($range === 'week')
+                            No service slots scheduled for this week.
+                        @elseif($range === 'month')
+                            No service slots scheduled for this month.
+                        @else
+                            No upcoming service slots found.
+                        @endif
+                    @endif
+                </p>
+                <a href="{{ route('service-slots.create') }}" class="btn btn-primary">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Add Your First Slot
+                </a>
             </div>
         </div>
-    </div>
+    @else
+        <div class="space-y-4">
+            @foreach($slotsByDate as $dateKey => $daySlots)
+                @php
+                    $dateObj = \Carbon\Carbon::parse($dateKey);
+                    $isToday = $dateObj->isToday();
+                @endphp
+                <div class="card bg-base-100">
+                    {{-- Date Header --}}
+                    <div class="px-4 py-3 border-b border-base-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-lg flex flex-col items-center justify-center {{ $isToday ? 'bg-primary text-primary-content' : 'bg-base-200' }}">
+                                <span class="text-xs uppercase {{ $isToday ? 'text-primary-content/70' : 'text-base-content/60' }}">{{ $dateObj->format('D') }}</span>
+                                <span class="text-lg font-bold">{{ $dateObj->format('j') }}</span>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold {{ $isToday ? 'text-primary' : '' }}">
+                                    {{ $dateObj->format('l, F j, Y') }}
+                                    @if($isToday)
+                                        <span class="badge badge-primary badge-sm ml-2">Today</span>
+                                    @endif
+                                </h3>
+                                <p class="text-sm text-base-content/60">{{ $daySlots->count() }} {{ Str::plural('slot', $daySlots->count()) }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Slots Table --}}
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="w-24">Time</th>
+                                    <th>Service</th>
+                                    <th>Instructor</th>
+                                    <th>Location</th>
+                                    <th>Client</th>
+                                    <th>Price</th>
+                                    <th>Status</th>
+                                    <th class="w-32">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($daySlots as $slot)
+                                    @php
+                                        $booking = $slot->bookings->first();
+                                    @endphp
+                                    <tr class="hover:bg-base-200/50">
+                                        <td>
+                                            <div class="font-medium">{{ $slot->start_time->format('g:i A') }}</div>
+                                            <div class="text-xs text-base-content/60">{{ $slot->duration_minutes }} min</div>
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-2">
+                                                @if($slot->servicePlan)
+                                                    <div class="w-3 h-3 rounded-full" style="background-color: {{ $slot->servicePlan->color ?? '#6366f1' }};"></div>
+                                                @endif
+                                                <span class="font-medium">{{ $slot->servicePlan->name ?? 'Unknown' }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-2">
+                                                @if($slot->instructor)
+                                                    <x-avatar
+                                                        :src="$slot->instructor->photo_url ?? null"
+                                                        :initials="$slot->instructor->initials ?? '?'"
+                                                        size="xs"
+                                                    />
+                                                    <span class="text-sm">{{ $slot->instructor->name }}</span>
+                                                @else
+                                                    <span class="text-base-content/40">TBD</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="text-sm">{{ $slot->location?->name ?? 'TBD' }}</div>
+                                            @if($slot->room)
+                                                <div class="text-xs text-base-content/60">{{ $slot->room->name }}</div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($booking && $booking->client)
+                                                <div class="flex items-center gap-2">
+                                                    <x-avatar
+                                                        :src="$booking->client->avatar_url ?? null"
+                                                        :initials="$booking->client->initials ?? '?'"
+                                                        size="xs"
+                                                    />
+                                                    <span class="text-sm">{{ $booking->client->full_name }}</span>
+                                                </div>
+                                            @else
+                                                <span class="text-base-content/30">-</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $slot->formatted_price }}</td>
+                                        <td>
+                                            <span class="badge {{ $slot->getStatusBadgeClass() }} badge-soft badge-sm capitalize">{{ $slot->status }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-1">
+                                                @if($slot->isAvailable())
+                                                    <a href="{{ route('walk-in.select-service', ['slot' => $slot->id]) }}"
+                                                       class="btn btn-ghost btn-xs btn-square text-primary"
+                                                       title="Add Booking">
+                                                        <span class="icon-[tabler--user-plus] size-4"></span>
+                                                    </a>
+                                                @endif
+                                                <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('service-slot-{{ $slot->id }}', event)">
+                                                    <span class="icon-[tabler--eye] size-4"></span>
+                                                </button>
+                                                <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                                    <span class="icon-[tabler--edit] size-4"></span>
+                                                </a>
+                                                @if($slot->status !== 'booked')
+                                                    <form action="{{ route('service-slots.destroy', $slot) }}" method="POST" class="inline" onsubmit="return confirm('Delete this slot?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">
+                                                            <span class="icon-[tabler--trash] size-4"></span>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endforeach
+        </div>
     @endif
 </div>
+
+{{-- Drawer Backdrop --}}
+<div id="drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeAllDrawers()"></div>
+
+{{-- Service Slot Drawers --}}
+@foreach($slots as $slot)
+    @include('host.schedule.partials.service-slot-drawer', ['serviceSlot' => $slot])
+@endforeach
 
 {{-- Bulk Create Modal --}}
 <div id="bulk-create-modal" class="overlay modal overlay-open:opacity-100 hidden" role="dialog" tabindex="-1">
@@ -270,6 +412,27 @@
 
 @push('scripts')
 <script>
+// Filter form auto-submit
+function submitFilters() {
+    document.getElementById('filter-form').submit();
+}
+
+// Range toggle
+function setRange(range) {
+    document.getElementById('range-input').value = range;
+    const dateInput = document.getElementById('date');
+
+    // Set appropriate date value based on range
+    if (range === 'today') {
+        if (dateInput) dateInput.value = '{{ now()->format('Y-m-d') }}';
+    } else if (range === 'month') {
+        if (dateInput) dateInput.value = '{{ now()->format('Y-m-d') }}';
+    }
+
+    submitFilters();
+}
+
+// Bulk create time slots
 function addTimeSlot() {
     var container = document.getElementById('time-slots-container');
     var newSlot = document.createElement('div');
@@ -279,6 +442,86 @@ function addTimeSlot() {
         '<span class="icon-[tabler--trash] size-4"></span></button>';
     container.appendChild(newSlot);
 }
+
+// Drawer functions
+function openDrawer(id, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const drawer = document.getElementById('drawer-' + id);
+    const backdrop = document.getElementById('drawer-backdrop');
+
+    if (drawer) {
+        // Close any open drawers first
+        document.querySelectorAll('[id^="drawer-"]').forEach(d => {
+            if (d.id !== 'drawer-backdrop' && d.id !== 'drawer-' + id) {
+                d.classList.add('translate-x-full', 'hidden');
+            }
+        });
+
+        // Show backdrop
+        if (backdrop) {
+            backdrop.classList.remove('hidden');
+        }
+
+        // Show and animate drawer
+        drawer.classList.remove('hidden');
+        setTimeout(() => {
+            drawer.classList.remove('translate-x-full');
+        }, 10);
+
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeDrawer(id) {
+    const drawer = document.getElementById('drawer-' + id);
+    const backdrop = document.getElementById('drawer-backdrop');
+
+    if (drawer) {
+        drawer.classList.add('translate-x-full');
+        setTimeout(() => {
+            drawer.classList.add('hidden');
+        }, 300);
+    }
+
+    // Hide backdrop
+    if (backdrop) {
+        backdrop.classList.add('hidden');
+    }
+
+    // Restore body scroll
+    document.body.style.overflow = '';
+}
+
+function closeAllDrawers() {
+    document.querySelectorAll('[id^="drawer-"]').forEach(drawer => {
+        if (drawer.id !== 'drawer-backdrop') {
+            drawer.classList.add('translate-x-full');
+            setTimeout(() => {
+                drawer.classList.add('hidden');
+            }, 300);
+        }
+    });
+
+    const backdrop = document.getElementById('drawer-backdrop');
+    if (backdrop) {
+        backdrop.classList.add('hidden');
+    }
+
+    document.body.style.overflow = '';
+}
+
+// Close drawer on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAllDrawers();
+    }
+});
 </script>
 @endpush
+
 @endsection

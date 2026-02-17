@@ -355,18 +355,54 @@ class ClientController extends Controller
         $client->load(['tags', 'clientNotes.author', 'fieldValues.fieldDefinition']);
         $customFields = $this->getCustomFieldsWithValues($client);
 
-        // Load recent bookings for this client
+        // Load all bookings for this client
         $bookings = \App\Models\Booking::forClient($client->id)
-            ->with(['bookable.primaryInstructor', 'bookable.location', 'client'])
+            ->with(['bookable.location', 'client'])
             ->orderBy('created_at', 'desc')
-            ->take(10)
             ->get();
+
+        // Eager load the correct instructor relationship based on bookable type
+        $bookings->each(function ($booking) {
+            if ($booking->bookable instanceof \App\Models\ClassSession) {
+                $booking->bookable->load(['primaryInstructor', 'classPlan']);
+            } elseif ($booking->bookable instanceof \App\Models\ServiceSlot) {
+                $booking->bookable->load(['instructor', 'servicePlan']);
+            }
+        });
+
+        // Calculate booking stats
+        $bookingStats = [
+            'total' => $bookings->count(),
+            'confirmed' => $bookings->where('status', 'confirmed')->count(),
+            'attended' => $bookings->whereNotNull('checked_in_at')->count(),
+            'cancelled' => $bookings->where('status', 'cancelled')->count(),
+            'no_show' => $bookings->where('status', 'no_show')->count(),
+        ];
+
+        // Load questionnaire responses with their bookings
+        $questionnaireResponses = $client->questionnaireResponses()
+            ->with(['version.questionnaire', 'booking.bookable'])
+            ->latest()
+            ->get();
+
+        // Load booking info for each questionnaire response
+        $questionnaireResponses->each(function ($response) {
+            if ($response->booking && $response->booking->bookable) {
+                if ($response->booking->bookable instanceof \App\Models\ClassSession) {
+                    $response->booking->bookable->load('classPlan');
+                } elseif ($response->booking->bookable instanceof \App\Models\ServiceSlot) {
+                    $response->booking->bookable->load('servicePlan');
+                }
+            }
+        });
 
         return view('host.clients.show', [
             'client' => $client,
             'customFields' => $customFields,
             'statuses' => Client::getStatuses(),
             'bookings' => $bookings,
+            'bookingStats' => $bookingStats,
+            'questionnaireResponses' => $questionnaireResponses,
         ]);
     }
 

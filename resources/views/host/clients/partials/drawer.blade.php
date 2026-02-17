@@ -94,95 +94,182 @@
         </div>
     </div>
 
-    {{-- Activity & Stats Grid --}}
-    <div class="grid grid-cols-2 gap-4 mb-4">
-        {{-- Stats Card --}}
-        <div class="bg-base-200/50 rounded-xl p-4">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="icon-[tabler--chart-bar] size-4 text-primary"></span>
-                <h4 class="text-sm font-semibold uppercase tracking-wide">Stats</h4>
+    {{-- Booking Stats --}}
+    @php
+        $allBookings = \App\Models\Booking::forClient($client->id)->get();
+        $bookingStats = [
+            'total' => $allBookings->count(),
+            'attended' => $allBookings->whereNotNull('checked_in_at')->count(),
+            'cancelled' => $allBookings->where('status', 'cancelled')->count(),
+            'no_show' => $allBookings->where('status', 'no_show')->count(),
+        ];
+    @endphp
+    <div class="bg-base-200/50 rounded-xl p-4 mb-4">
+        <div class="flex items-center gap-2 mb-3">
+            <span class="icon-[tabler--chart-bar] size-4 text-primary"></span>
+            <h4 class="text-sm font-semibold uppercase tracking-wide">Booking Stats</h4>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+            <div class="bg-base-100 rounded-lg p-2 text-center">
+                <div class="text-lg font-bold">{{ $bookingStats['total'] }}</div>
+                <div class="text-xs text-base-content/60">Total</div>
             </div>
-            <div class="space-y-3">
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-base-content/60">Total Classes</span>
-                    <span class="font-semibold">{{ $client->total_classes_attended ?? 0 }}</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-base-content/60">Last Visit</span>
-                    <span class="font-medium">{{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-base-content/60">Member Since</span>
-                    <span class="font-medium">{{ $client->created_at->format('M Y') }}</span>
-                </div>
+            <div class="bg-base-100 rounded-lg p-2 text-center">
+                <div class="text-lg font-bold text-success">{{ $bookingStats['attended'] }}</div>
+                <div class="text-xs text-base-content/60">Attended</div>
+            </div>
+            <div class="bg-base-100 rounded-lg p-2 text-center">
+                <div class="text-lg font-bold text-warning">{{ $bookingStats['cancelled'] }}</div>
+                <div class="text-xs text-base-content/60">Cancelled</div>
+            </div>
+            <div class="bg-base-100 rounded-lg p-2 text-center">
+                <div class="text-lg font-bold text-error">{{ $bookingStats['no_show'] }}</div>
+                <div class="text-xs text-base-content/60">No Show</div>
             </div>
         </div>
-
-        {{-- Source & Info Card --}}
-        <div class="bg-base-200/50 rounded-xl p-4">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
-                <h4 class="text-sm font-semibold uppercase tracking-wide">Info</h4>
+        <div class="grid grid-cols-2 gap-3 mt-3">
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-base-content/60">Last Visit</span>
+                <span class="font-medium">{{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}</span>
             </div>
-            <div class="space-y-3">
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-base-content/60">Source</span>
-                    <span class="badge badge-sm badge-soft badge-neutral">
-                        {{ $sources[$client->lead_source] ?? $client->lead_source ?? 'Unknown' }}
-                    </span>
-                </div>
-                @if($client->emergency_contact_name)
-                    <div>
-                        <div class="text-xs text-base-content/60 mb-1">Emergency Contact</div>
-                        <div class="font-medium text-sm">{{ $client->emergency_contact_name }}</div>
-                        @if($client->emergency_contact_phone)
-                            <div class="text-xs text-base-content/60">{{ $client->emergency_contact_phone }}</div>
-                        @endif
-                    </div>
-                @endif
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-base-content/60">Client Since</span>
+                <span class="font-medium">{{ $client->created_at->format('M Y') }}</span>
             </div>
         </div>
     </div>
 
-    {{-- Active Bookings --}}
+    {{-- Recent Bookings --}}
     @php
-        $activeBookings = \App\Models\Booking::forClient($client->id)
-            ->with(['bookable.primaryInstructor', 'bookable.location'])
-            ->whereIn('status', ['confirmed'])
-            ->whereHasMorph('bookable', [\App\Models\ClassSession::class], function ($q) {
-                $q->where('start_time', '>=', now());
-            })
+        $recentBookings = \App\Models\Booking::forClient($client->id)
+            ->with(['bookable.location'])
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
+
+        // Eager load the correct relationships based on bookable type
+        $recentBookings->each(function ($booking) {
+            if ($booking->bookable instanceof \App\Models\ClassSession) {
+                $booking->bookable->load(['primaryInstructor', 'classPlan']);
+            } elseif ($booking->bookable instanceof \App\Models\ServiceSlot) {
+                $booking->bookable->load(['instructor', 'servicePlan']);
+            }
+        });
     @endphp
-    @if($activeBookings->count() > 0)
+    @if($recentBookings->count() > 0)
         <div class="bg-base-200/50 rounded-xl p-4 mb-4">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="icon-[tabler--calendar-event] size-4 text-primary"></span>
-                <h4 class="text-sm font-semibold uppercase tracking-wide">Upcoming Bookings</h4>
-                <span class="badge badge-sm badge-primary">{{ $activeBookings->count() }}</span>
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--calendar-event] size-4 text-primary"></span>
+                    <h4 class="text-sm font-semibold uppercase tracking-wide">Recent Bookings</h4>
+                </div>
+                <a href="{{ route('clients.show', $client) }}?tab=bookings" class="text-xs text-primary hover:underline">View All</a>
             </div>
             <div class="space-y-2">
-                @foreach($activeBookings as $booking)
+                @foreach($recentBookings as $booking)
+                    @php
+                        $isServiceSlot = $booking->bookable instanceof \App\Models\ServiceSlot;
+                        $instructor = $isServiceSlot
+                            ? ($booking->bookable->instructor ?? null)
+                            : ($booking->bookable->primaryInstructor ?? null);
+                        $icon = $isServiceSlot ? 'icon-[tabler--massage]' : 'icon-[tabler--yoga]';
+                        $title = $isServiceSlot
+                            ? ($booking->bookable->servicePlan->name ?? 'Service')
+                            : ($booking->bookable->display_title ?? $booking->bookable->classPlan->name ?? 'Class');
+                        $statusBadge = match($booking->status) {
+                            'confirmed' => 'badge-success',
+                            'cancelled' => 'badge-error',
+                            'no_show' => 'badge-warning',
+                            default => 'badge-neutral'
+                        };
+                    @endphp
                     <div class="bg-base-100 rounded-lg p-3 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10">
-                                <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                            <div class="w-9 h-9 rounded-lg flex items-center justify-center {{ $isServiceSlot ? 'bg-secondary/10' : 'bg-primary/10' }}">
+                                <span class="{{ $icon }} size-4 {{ $isServiceSlot ? 'text-secondary' : 'text-primary' }}"></span>
                             </div>
                             <div>
-                                <div class="font-medium text-sm">{{ $booking->bookable->display_title ?? $booking->bookable->title ?? 'Class' }}</div>
+                                <div class="font-medium text-sm">{{ $title }}</div>
                                 <div class="text-xs text-base-content/60">
                                     @if($booking->bookable && $booking->bookable->start_time)
                                         {{ $booking->bookable->start_time->format('M j, g:i A') }}
-                                        @if($booking->bookable->primaryInstructor)
-                                            <span class="mx-1">·</span> {{ $booking->bookable->primaryInstructor->name }}
-                                        @endif
                                     @endif
                                 </div>
                             </div>
                         </div>
-                        <span class="badge badge-sm badge-success badge-soft">Confirmed</span>
+                        <div class="flex items-center gap-1">
+                            @if($booking->checked_in_at)
+                                <span class="badge badge-xs badge-success">Attended</span>
+                            @else
+                                <span class="badge badge-sm {{ $statusBadge }} badge-soft">{{ ucfirst($booking->status) }}</span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Questionnaire Responses --}}
+    @php
+        $questionnaireResponses = $client->questionnaireResponses()
+            ->with(['version.questionnaire', 'booking.bookable'])
+            ->latest()
+            ->take(3)
+            ->get();
+
+        $questionnaireResponses->each(function ($response) {
+            if ($response->booking && $response->booking->bookable) {
+                if ($response->booking->bookable instanceof \App\Models\ClassSession) {
+                    $response->booking->bookable->load('classPlan');
+                } elseif ($response->booking->bookable instanceof \App\Models\ServiceSlot) {
+                    $response->booking->bookable->load('servicePlan');
+                }
+            }
+        });
+    @endphp
+    @if($questionnaireResponses->count() > 0)
+        <div class="bg-base-200/50 rounded-xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--forms] size-4 text-primary"></span>
+                    <h4 class="text-sm font-semibold uppercase tracking-wide">Questionnaires</h4>
+                </div>
+                <a href="{{ route('clients.show', $client) }}?tab=questionnaires" class="text-xs text-primary hover:underline">View All</a>
+            </div>
+            <div class="space-y-2">
+                @foreach($questionnaireResponses as $response)
+                    @php
+                        $bookingInfo = null;
+                        $bookingIcon = 'icon-[tabler--calendar]';
+                        if ($response->booking && $response->booking->bookable) {
+                            $bookable = $response->booking->bookable;
+                            if ($bookable instanceof \App\Models\ServiceSlot) {
+                                $bookingInfo = $bookable->servicePlan->name ?? 'Service';
+                                $bookingIcon = 'icon-[tabler--massage]';
+                            } elseif ($bookable instanceof \App\Models\ClassSession) {
+                                $bookingInfo = $bookable->classPlan->name ?? $bookable->display_title ?? 'Class';
+                                $bookingIcon = 'icon-[tabler--yoga]';
+                            }
+                        }
+                    @endphp
+                    <div class="bg-base-100 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium text-sm">{{ $response->version?->questionnaire?->name ?? 'Unknown' }}</div>
+                            <span class="badge badge-xs {{ \App\Models\QuestionnaireResponse::getStatusBadgeClass($response->status) }}">
+                                {{ \App\Models\QuestionnaireResponse::getStatuses()[$response->status] ?? $response->status }}
+                            </span>
+                        </div>
+                        @if($bookingInfo)
+                            <div class="flex items-center gap-1 mt-1 text-xs text-base-content/60">
+                                <span class="{{ $bookingIcon }} size-3"></span>
+                                <span>{{ $bookingInfo }}</span>
+                                @if($response->booking->bookable->start_time)
+                                    <span class="mx-1">·</span>
+                                    <span>{{ $response->booking->bookable->start_time->format('M j') }}</span>
+                                @endif
+                            </div>
+                        @endif
                     </div>
                 @endforeach
             </div>

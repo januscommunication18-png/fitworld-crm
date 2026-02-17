@@ -111,14 +111,18 @@
             <span class="icon-[tabler--user] size-4 mr-2"></span>
             Client Info
         </button>
+        <button class="tab" data-tab="bookings" role="tab">
+            <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>
+            Bookings
+            @if($bookings->count() > 0)
+                <span class="badge badge-sm badge-primary ml-2">{{ $bookings->count() }}</span>
+            @endif
+        </button>
         <button class="tab" data-tab="questionnaires" role="tab">
             <span class="icon-[tabler--forms] size-4 mr-2"></span>
             Questionnaires
-            @php
-                $questionnaireResponseCount = $client->questionnaireResponses()->count();
-            @endphp
-            @if($questionnaireResponseCount > 0)
-                <span class="badge badge-sm badge-primary ml-2">{{ $questionnaireResponseCount }}</span>
+            @if($questionnaireResponses->count() > 0)
+                <span class="badge badge-sm badge-primary ml-2">{{ $questionnaireResponses->count() }}</span>
             @endif
         </button>
         <button class="tab" data-tab="notes" role="tab">
@@ -466,6 +470,142 @@
             </div>
         </div>
 
+        {{-- Bookings Tab --}}
+        <div class="tab-content hidden" data-content="bookings">
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="card-title text-lg">
+                            <span class="icon-[tabler--calendar-event] size-5"></span>
+                            All Bookings
+                        </h2>
+                        <div class="flex gap-2">
+                            <a href="{{ route('walk-in.select') }}" class="btn btn-primary btn-sm">
+                                <span class="icon-[tabler--plus] size-4"></span>
+                                Book Class
+                            </a>
+                            <a href="{{ route('walk-in.select-service') }}" class="btn btn-soft btn-primary btn-sm">
+                                <span class="icon-[tabler--plus] size-4"></span>
+                                Book Service
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- Booking Stats --}}
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                        <div class="stat bg-base-200/50 rounded-lg p-3">
+                            <div class="stat-title text-xs">Total</div>
+                            <div class="stat-value text-xl">{{ $bookingStats['total'] }}</div>
+                        </div>
+                        <div class="stat bg-base-200/50 rounded-lg p-3">
+                            <div class="stat-title text-xs">Confirmed</div>
+                            <div class="stat-value text-xl text-info">{{ $bookingStats['confirmed'] }}</div>
+                        </div>
+                        <div class="stat bg-base-200/50 rounded-lg p-3">
+                            <div class="stat-title text-xs">Attended</div>
+                            <div class="stat-value text-xl text-success">{{ $bookingStats['attended'] }}</div>
+                        </div>
+                        <div class="stat bg-base-200/50 rounded-lg p-3">
+                            <div class="stat-title text-xs">Cancelled</div>
+                            <div class="stat-value text-xl text-warning">{{ $bookingStats['cancelled'] }}</div>
+                        </div>
+                        <div class="stat bg-base-200/50 rounded-lg p-3">
+                            <div class="stat-title text-xs">No Show</div>
+                            <div class="stat-value text-xl text-error">{{ $bookingStats['no_show'] }}</div>
+                        </div>
+                    </div>
+
+                    @if($bookings->isEmpty())
+                        <div class="text-center py-12">
+                            <span class="icon-[tabler--calendar-off] size-12 text-base-content/20 mx-auto"></span>
+                            <p class="text-base-content/50 mt-4">No bookings yet</p>
+                            <p class="text-sm text-base-content/40">Book a class or service for this client.</p>
+                        </div>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Class/Service</th>
+                                        <th>Date & Time</th>
+                                        <th>Instructor</th>
+                                        <th>Status</th>
+                                        <th>Payment</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($bookings as $booking)
+                                        @php
+                                            $isServiceSlot = $booking->bookable instanceof \App\Models\ServiceSlot;
+                                            $icon = $isServiceSlot ? 'icon-[tabler--massage]' : 'icon-[tabler--yoga]';
+                                            $title = $isServiceSlot
+                                                ? ($booking->bookable->servicePlan->name ?? 'Service')
+                                                : ($booking->bookable->display_title ?? $booking->bookable->classPlan->name ?? 'Class');
+                                            $instructor = $isServiceSlot
+                                                ? ($booking->bookable->instructor ?? null)
+                                                : ($booking->bookable->primaryInstructor ?? null);
+                                        @endphp
+                                        <tr class="hover">
+                                            <td>
+                                                <div class="flex items-center gap-3">
+                                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center {{ $isServiceSlot ? 'bg-secondary/10' : 'bg-primary/10' }}">
+                                                        <span class="{{ $icon }} size-5 {{ $isServiceSlot ? 'text-secondary' : 'text-primary' }}"></span>
+                                                    </div>
+                                                    <div>
+                                                        <div class="font-medium">{{ $title }}</div>
+                                                        <div class="text-xs text-base-content/50">
+                                                            {{ $isServiceSlot ? 'Service' : 'Class' }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if($booking->bookable && $booking->bookable->start_time)
+                                                    <div class="font-medium">{{ $booking->bookable->start_time->format('M j, Y') }}</div>
+                                                    <div class="text-sm text-base-content/60">{{ $booking->bookable->start_time->format('g:i A') }}</div>
+                                                @else
+                                                    <span class="text-base-content/40">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($instructor)
+                                                    {{ $instructor->name }}
+                                                @else
+                                                    <span class="text-base-content/40">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-sm {{ $booking->status_badge_class }} badge-soft">
+                                                    {{ ucfirst(str_replace('_', ' ', $booking->status)) }}
+                                                </span>
+                                                @if($booking->checked_in_at)
+                                                    <span class="badge badge-xs badge-success ml-1">Checked In</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($booking->price_paid)
+                                                    <span class="font-medium">${{ number_format($booking->price_paid, 2) }}</span>
+                                                    <div class="text-xs text-base-content/50">{{ ucfirst($booking->payment_method ?? 'N/A') }}</div>
+                                                @else
+                                                    <span class="text-base-content/40">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-ghost btn-xs btn-square" title="View Details" onclick="openDrawer('booking-{{ $booking->id }}', event)">
+                                                    <span class="icon-[tabler--eye] size-4"></span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
         {{-- Questionnaires Tab --}}
         <div class="tab-content hidden" data-content="questionnaires">
             <div class="card bg-base-100">
@@ -478,14 +618,7 @@
                         </button>
                     </div>
 
-                    @php
-                        $responses = $client->questionnaireResponses()
-                            ->with(['version.questionnaire'])
-                            ->latest()
-                            ->get();
-                    @endphp
-
-                    @if($responses->isEmpty())
+                    @if($questionnaireResponses->isEmpty())
                         <div class="text-center py-12">
                             <span class="icon-[tabler--forms] size-12 text-base-content/20 mx-auto"></span>
                             <p class="text-base-content/50 mt-4">No questionnaires sent yet</p>
@@ -497,6 +630,7 @@
                                 <thead>
                                     <tr>
                                         <th>Questionnaire</th>
+                                        <th>For Class/Service</th>
                                         <th>Status</th>
                                         <th>Sent</th>
                                         <th>Completed</th>
@@ -504,10 +638,41 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($responses as $response)
+                                    @foreach($questionnaireResponses as $response)
+                                        @php
+                                            $bookingInfo = null;
+                                            $bookingIcon = 'icon-[tabler--calendar]';
+                                            if ($response->booking && $response->booking->bookable) {
+                                                $bookable = $response->booking->bookable;
+                                                if ($bookable instanceof \App\Models\ServiceSlot) {
+                                                    $bookingInfo = $bookable->servicePlan->name ?? 'Service';
+                                                    $bookingIcon = 'icon-[tabler--massage]';
+                                                } elseif ($bookable instanceof \App\Models\ClassSession) {
+                                                    $bookingInfo = $bookable->classPlan->name ?? $bookable->display_title ?? 'Class';
+                                                    $bookingIcon = 'icon-[tabler--yoga]';
+                                                }
+                                            }
+                                        @endphp
                                         <tr class="hover">
                                             <td class="font-medium">
                                                 {{ $response->version?->questionnaire?->name ?? 'Unknown' }}
+                                            </td>
+                                            <td>
+                                                @if($bookingInfo)
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="{{ $bookingIcon }} size-4 text-base-content/50"></span>
+                                                        <div>
+                                                            <div class="font-medium text-sm">{{ $bookingInfo }}</div>
+                                                            @if($response->booking->bookable->start_time)
+                                                                <div class="text-xs text-base-content/50">
+                                                                    {{ $response->booking->bookable->start_time->format('M j, Y \a\t g:i A') }}
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <span class="text-base-content/40 text-sm">General / Not linked</span>
+                                                @endif
                                             </td>
                                             <td>
                                                 <span class="badge {{ \App\Models\QuestionnaireResponse::getStatusBadgeClass($response->status) }}">
@@ -835,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check URL for tab parameter on page load
     const urlParams = new URLSearchParams(window.location.search);
     const activeTab = urlParams.get('tab');
-    if (activeTab && ['info', 'questionnaires', 'notes', 'activity'].includes(activeTab)) {
+    if (activeTab && ['info', 'bookings', 'questionnaires', 'notes', 'activity'].includes(activeTab)) {
         switchToTab(activeTab);
     }
 
