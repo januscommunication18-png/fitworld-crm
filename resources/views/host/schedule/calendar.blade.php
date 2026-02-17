@@ -37,34 +37,10 @@
         </div>
     </div>
 
-    {{-- Sub Navigation --}}
-    @include('host.schedule.partials.sub-nav')
-
     {{-- Filters Card --}}
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body py-4 px-5">
             <div class="flex flex-wrap gap-5 items-center">
-                {{-- Type Toggle --}}
-                <div class="flex items-center gap-3">
-                    <span class="text-sm font-semibold text-base-content">Show:</span>
-                    <div class="join">
-                        <button type="button" class="join-item btn btn-sm calendar-type-btn btn-active btn-primary" data-type="all" id="type-all">
-                            <span class="icon-[tabler--layout-grid] size-4 mr-1"></span>
-                            All
-                        </button>
-                        <button type="button" class="join-item btn btn-sm calendar-type-btn" data-type="class" id="type-class">
-                            <span class="icon-[tabler--yoga] size-4 mr-1"></span>
-                            Classes
-                        </button>
-                        <button type="button" class="join-item btn btn-sm calendar-type-btn" data-type="service" id="type-service">
-                            <span class="icon-[tabler--massage] size-4 mr-1"></span>
-                            Services
-                        </button>
-                    </div>
-                </div>
-
-                <div class="h-8 w-px bg-base-300 hidden sm:block"></div>
-
                 {{-- Location Filter --}}
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--map-pin] size-4 text-base-content/60"></span>

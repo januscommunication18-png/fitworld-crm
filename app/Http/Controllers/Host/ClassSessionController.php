@@ -52,8 +52,14 @@ class ClassSessionController extends Controller
 
         $sessions = $query->orderBy('start_time')->get();
 
+        // Group sessions by date
+        $sessionsByDate = $sessions->groupBy(function ($session) {
+            return $session->start_time->format('Y-m-d');
+        })->sortKeys();
+
         return view('host.class-sessions.index', [
             'sessions' => $sessions,
+            'sessionsByDate' => $sessionsByDate,
             'date' => $date,
             'startDate' => $startDate,
             'endDate' => $endDate,
