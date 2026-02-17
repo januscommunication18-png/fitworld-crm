@@ -17,6 +17,7 @@ class ClassSession extends Model
 
     const STATUS_DRAFT = 'draft';
     const STATUS_PUBLISHED = 'published';
+    const STATUS_COMPLETED = 'completed';
     const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
@@ -203,6 +204,11 @@ class ClassSession extends Model
         return $this->status === self::STATUS_CANCELLED;
     }
 
+    public function isCompleted(): bool
+    {
+        return $this->status === self::STATUS_COMPLETED;
+    }
+
     public function isPast(): bool
     {
         return $this->start_time->isPast();
@@ -238,6 +244,16 @@ class ClassSession extends Model
         $this->status = self::STATUS_CANCELLED;
         $this->cancelled_at = now();
         $this->cancellation_reason = $reason;
+        return $this->save();
+    }
+
+    public function markComplete(): bool
+    {
+        if ($this->isCancelled()) {
+            return false;
+        }
+
+        $this->status = self::STATUS_COMPLETED;
         return $this->save();
     }
 
@@ -378,6 +394,7 @@ class ClassSession extends Model
         return match ($this->status) {
             self::STATUS_DRAFT => 'badge-warning',
             self::STATUS_PUBLISHED => 'badge-success',
+            self::STATUS_COMPLETED => 'badge-info',
             self::STATUS_CANCELLED => 'badge-error',
             default => 'badge-neutral',
         };
@@ -390,6 +407,7 @@ class ClassSession extends Model
         return [
             self::STATUS_DRAFT => 'Draft',
             self::STATUS_PUBLISHED => 'Published',
+            self::STATUS_COMPLETED => 'Completed',
             self::STATUS_CANCELLED => 'Cancelled',
         ];
     }

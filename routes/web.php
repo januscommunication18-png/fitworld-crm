@@ -115,9 +115,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Schedule
-    Route::get('/schedule/classes', [ScheduleController::class, 'classes'])->name('schedule.classes');
-    Route::get('/schedule/appointments', [ScheduleController::class, 'appointments'])->name('schedule.appointments');
+    Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/schedule/calendar', [ScheduleController::class, 'calendar'])->name('schedule.calendar');
+    Route::get('/schedule/list', [ScheduleController::class, 'list'])->name('schedule.list');
+    Route::get('/schedule/requests', [ScheduleController::class, 'requests'])->name('schedule.requests');
+    Route::get('/schedule/waitlist', [ScheduleController::class, 'waitlist'])->name('schedule.waitlist');
+    Route::get('/schedule/events', [ScheduleController::class, 'events'])->name('schedule.events');
+    Route::post('/schedule/check-in/{booking}', [ScheduleController::class, 'checkIn'])->name('schedule.check-in');
+    Route::post('/schedule/mark-complete/{classSession}', [ScheduleController::class, 'markComplete'])->name('schedule.mark-complete');
 
     // Clients (renamed from Students)
     // Static routes must come before wildcard routes

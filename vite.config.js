@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/js/layout.js',
                 'resources/js/apps/signup.js',
                 'resources/js/questionnaire-builder.js',
+                'resources/js/schedule-calendar.js',
             ],
             refresh: true,
         }),
