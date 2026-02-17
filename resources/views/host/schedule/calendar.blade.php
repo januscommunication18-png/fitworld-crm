@@ -218,59 +218,68 @@
 
     /* Event Color Classes - Consistent across all views */
     #studio-calendar .fc-event-primary,
-    #studio-calendar .fc .fc-event.fc-event-primary {
+    #studio-calendar .fc .fc-event.fc-event-primary,
+    #studio-calendar .fc-event.fc-event-primary {
         background-color: #6366f1 !important;
         border-color: #6366f1 !important;
         color: #ffffff !important;
     }
+    #studio-calendar .fc-event-primary *,
+    #studio-calendar .fc .fc-event.fc-event-primary *,
+    #studio-calendar .fc-event.fc-event-primary * {
+        color: #ffffff !important;
+    }
 
     #studio-calendar .fc-event-success,
-    #studio-calendar .fc .fc-event.fc-event-success {
+    #studio-calendar .fc .fc-event.fc-event-success,
+    #studio-calendar .fc-event.fc-event-success {
         background-color: #10b981 !important;
         border-color: #10b981 !important;
         color: #ffffff !important;
     }
+    #studio-calendar .fc-event-success *,
+    #studio-calendar .fc .fc-event.fc-event-success *,
+    #studio-calendar .fc-event.fc-event-success * {
+        color: #ffffff !important;
+    }
 
     #studio-calendar .fc-event-warning,
-    #studio-calendar .fc .fc-event.fc-event-warning {
+    #studio-calendar .fc .fc-event.fc-event-warning,
+    #studio-calendar .fc-event.fc-event-warning {
         background-color: #f59e0b !important;
         border-color: #f59e0b !important;
         color: #000000 !important;
     }
+    #studio-calendar .fc-event-warning *,
+    #studio-calendar .fc .fc-event.fc-event-warning *,
+    #studio-calendar .fc-event.fc-event-warning * {
+        color: #000000 !important;
+    }
 
     #studio-calendar .fc-event-info,
-    #studio-calendar .fc .fc-event.fc-event-info {
+    #studio-calendar .fc .fc-event.fc-event-info,
+    #studio-calendar .fc-event.fc-event-info {
         background-color: #3b82f6 !important;
         border-color: #3b82f6 !important;
         color: #ffffff !important;
     }
+    #studio-calendar .fc-event-info *,
+    #studio-calendar .fc .fc-event.fc-event-info *,
+    #studio-calendar .fc-event.fc-event-info * {
+        color: #ffffff !important;
+    }
 
     #studio-calendar .fc-event-error,
-    #studio-calendar .fc .fc-event.fc-event-error {
+    #studio-calendar .fc .fc-event.fc-event-error,
+    #studio-calendar .fc-event.fc-event-error {
         background-color: #ef4444 !important;
         border-color: #ef4444 !important;
         color: #ffffff !important;
     }
-
-    /* Event text colors */
-    #studio-calendar .fc .fc-event.fc-event-primary .fc-event-main,
-    #studio-calendar .fc .fc-event.fc-event-primary .fc-event-time,
-    #studio-calendar .fc .fc-event.fc-event-primary .fc-event-title,
-    #studio-calendar .fc .fc-event.fc-event-success .fc-event-main,
-    #studio-calendar .fc .fc-event.fc-event-success .fc-event-time,
-    #studio-calendar .fc .fc-event.fc-event-success .fc-event-title,
-    #studio-calendar .fc .fc-event.fc-event-info .fc-event-main,
-    #studio-calendar .fc .fc-event.fc-event-info .fc-event-time,
-    #studio-calendar .fc .fc-event.fc-event-info .fc-event-title {
+    #studio-calendar .fc-event-error *,
+    #studio-calendar .fc .fc-event.fc-event-error *,
+    #studio-calendar .fc-event.fc-event-error * {
         color: #ffffff !important;
-        font-weight: 600;
-    }
-
-    #studio-calendar .fc .fc-event.fc-event-warning .fc-event-main,
-    #studio-calendar .fc .fc-event.fc-event-warning .fc-event-time,
-    #studio-calendar .fc .fc-event.fc-event-warning .fc-event-title {
-        color: #000000 !important;
-        font-weight: 600;
     }
 
     /* Month/DayGrid view - ensure colored backgrounds with proper text */
@@ -354,6 +363,47 @@
     #studio-calendar .fc .fc-timegrid-event .fc-event-time {
         font-size: 0.75rem;
         font-weight: 700;
+    }
+
+    /* Week/Day (timegrid) view - text colors matching background */
+    #studio-calendar .fc .fc-timegrid-event.fc-event-primary,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-primary *,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-primary .fc-event-main,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-primary .fc-event-main-frame,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-primary .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-primary .fc-event-title,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-primary .fc-event-title-container {
+        color: #ffffff !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-success,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-success *,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-main,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-main-frame,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-title,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-title-container {
+        color: #ffffff !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-warning,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-warning *,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-warning .fc-event-main,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-warning .fc-event-main-frame,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-warning .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-warning .fc-event-title,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-warning .fc-event-title-container {
+        color: #000000 !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-info,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-info *,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-main,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-main-frame,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-title,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-title-container {
+        color: #ffffff !important;
     }
 
     /* Ensure events show full content */
@@ -518,7 +568,7 @@ document.addEventListener('DOMContentLoaded', function() {
             fetch(`${eventsUrl}?${params.toString()}`)
                 .then(response => response.json())
                 .then(data => {
-                    // Map events to use FlyonUI color classes
+                    // Map events to use CSS color classes (remove inline colors for consistency)
                     const mappedEvents = data.map(event => {
                         let colorClass = 'fc-event-primary';
                         if (event.extendedProps.type === 'service') {
@@ -532,6 +582,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         return {
                             ...event,
+                            backgroundColor: null,
+                            borderColor: null,
                             classNames: [colorClass]
                         };
                     });
