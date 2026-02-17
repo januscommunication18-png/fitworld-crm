@@ -276,7 +276,7 @@
                                     <span class="text-sm text-base-content/60 block">by {{ $booking->createdBy->full_name }}</span>
                                 @else
                                     <span class="text-sm text-base-content/60 block">
-                                        via {{ $booking->booking_source === 'online' ? 'Online Booking' : ($booking->booking_source === 'internal_walkin' ? 'Walk-in' : 'API') }}
+                                        via {{ $booking->booking_source === 'online' ? 'Online Booking' : ($booking->booking_source === 'internal_walkin' ? 'Staff Booking' : 'API') }}
                                     </span>
                                 @endif
                             </div>
@@ -419,7 +419,7 @@
                                 @php
                                     $sourceLabels = [
                                         'online' => 'Online',
-                                        'internal_walkin' => 'Walk-in',
+                                        'internal_walkin' => 'Staff Booking',
                                         'api' => 'API',
                                     ];
                                 @endphp

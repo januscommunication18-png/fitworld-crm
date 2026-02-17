@@ -26,6 +26,10 @@
                 <span class="icon-[tabler--clock] size-5 text-primary"></span>
                 <span id="current-time" class="font-semibold text-base-content">{{ now()->format('g:i A') }}</span>
             </div>
+            <a href="{{ route('walk-in.select') }}" class="btn btn-success">
+                <span class="icon-[tabler--user-plus] size-5"></span>
+                Add Booking
+            </a>
             <a href="{{ route('class-sessions.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 Add Class

@@ -1192,6 +1192,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </label>
                 `).join('');
+
+                // Auto-select preloaded session if provided
+                if (window.preloadSessionId) {
+                    const preloadRadio = document.querySelector(`input[name="session_radio"][value="${window.preloadSessionId}"]`);
+                    if (preloadRadio) {
+                        preloadRadio.checked = true;
+                        selectSession(preloadRadio);
+                        // Clear preload ID so it doesn't auto-select again on date change
+                        window.preloadSessionId = null;
+                    }
+                }
             });
     }
 
@@ -1834,6 +1845,38 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.innerHTML = originalHtml;
         }
     };
+
+    // Preload session if provided via URL parameter
+    @if($preloadSession)
+    (function() {
+        const preloadData = {
+            id: {{ $preloadSession->id }},
+            classPlanId: {{ $preloadSession->class_plan_id }},
+            date: '{{ $preloadSession->start_time->format('Y-m-d') }}'
+        };
+
+        // Wait for HSSelect to initialize
+        setTimeout(() => {
+            // Set class plan value
+            const classPlanSelect = document.getElementById('class-plan-select');
+            if (classPlanSelect) {
+                classPlanSelect.value = preloadData.classPlanId;
+
+                // Trigger HSSelect update if it exists
+                const hsSelect = window.HSSelect?.getInstance(classPlanSelect);
+                if (hsSelect) {
+                    hsSelect.setValue(String(preloadData.classPlanId));
+                }
+
+                // Trigger change event to load sessions
+                classPlanSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            // Store the preload session ID to auto-select after sessions load
+            window.preloadSessionId = preloadData.id;
+        }, 100);
+    })();
+    @endif
 });
 </script>
 @endpush

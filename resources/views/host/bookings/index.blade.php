@@ -142,6 +142,7 @@
                                 <th>Source</th>
                                 <th>Payment</th>
                                 <th>Status</th>
+                                <th class="text-center">Intake</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -211,6 +212,21 @@
                                             <span class="icon-[tabler--check] size-3"></span> Checked in
                                         </div>
                                     @endif
+                                </td>
+                                <td class="text-center">
+                                    @php
+                                        $intakeStatuses = \App\Models\Booking::getIntakeStatuses();
+                                        $intakeIcons = [
+                                            'completed' => 'icon-[tabler--circle-check-filled] text-success',
+                                            'pending' => 'icon-[tabler--clock] text-warning',
+                                            'waived' => 'icon-[tabler--circle-minus] text-info',
+                                            'not_required' => 'icon-[tabler--minus] text-base-content/30',
+                                        ];
+                                    @endphp
+                                    <div class="flex items-center justify-center gap-1">
+                                        <span class="{{ $intakeIcons[$booking->intake_status] ?? 'icon-[tabler--minus] text-base-content/30' }} size-4" title="{{ $intakeStatuses[$booking->intake_status] ?? 'Unknown' }}"></span>
+                                        <span class="text-xs text-base-content/60">{{ $intakeStatuses[$booking->intake_status] ?? '-' }}</span>
+                                    </div>
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">

@@ -161,7 +161,7 @@
                                     @if($slot->isAvailable())
                                     <a href="{{ route('walk-in.service', $slot) }}"
                                        class="btn btn-ghost btn-xs btn-square text-primary"
-                                       title="Walk-in Booking">
+                                       title="Add Booking">
                                         <span class="icon-[tabler--walk] size-4"></span>
                                     </a>
                                     @endif

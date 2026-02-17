@@ -128,9 +128,9 @@
                     </button>
                 </form>
             @endif
-            <a href="{{ route('walk-in.class', $classSession) }}" class="btn btn-soft btn-primary btn-sm">
+            <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-soft btn-primary btn-sm">
                 <span class="icon-[tabler--user-plus] size-4"></span>
-                Walk-In
+                Booking
             </a>
         </div>
     </div>
@@ -156,9 +156,9 @@
             <div class="text-center py-6">
                 <span class="icon-[tabler--users-minus] size-10 text-base-content/20 mx-auto mb-2"></span>
                 <p class="text-sm text-base-content/60">No bookings yet</p>
-                <a href="{{ route('walk-in.class', $classSession) }}" class="btn btn-sm btn-primary mt-3">
+                <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-sm btn-primary mt-3">
                     <span class="icon-[tabler--user-plus] size-4"></span>
-                    Add Walk-In
+                    Add Booking
                 </a>
             </div>
         @else
@@ -167,9 +167,11 @@
                     <thead>
                         <tr>
                             <th>Client</th>
-                            <th>Status</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Payment</th>
+                            <th class="text-center">Intake</th>
                             <th class="text-center">Check In</th>
-                            <th class="w-20">Actions</th>
+                            <th class="w-24">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -191,33 +193,72 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <span class="badge {{ $booking->status_badge_class }} badge-sm">
                                         {{ \App\Models\Booking::getStatuses()[$booking->status] ?? $booking->status }}
                                     </span>
                                 </td>
                                 <td class="text-center">
+                                    @if($booking->price_paid !== null)
+                                        <div class="font-medium text-success">${{ number_format($booking->price_paid, 2) }}</div>
+                                        @if($booking->payment_method)
+                                            <div class="text-xs text-base-content/50 capitalize">{{ $booking->payment_method }}</div>
+                                        @endif
+                                    @else
+                                        <span class="text-base-content/40">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @php
+                                        $intakeStatuses = \App\Models\Booking::getIntakeStatuses();
+                                        $intakeIcons = [
+                                            'completed' => 'icon-[tabler--circle-check-filled] text-success',
+                                            'pending' => 'icon-[tabler--clock] text-warning',
+                                            'waived' => 'icon-[tabler--circle-minus] text-info',
+                                            'not_required' => 'icon-[tabler--minus] text-base-content/30',
+                                        ];
+                                    @endphp
+                                    <div class="flex items-center justify-center gap-1">
+                                        <span class="{{ $intakeIcons[$booking->intake_status] ?? 'icon-[tabler--minus] text-base-content/30' }} size-4" title="{{ $intakeStatuses[$booking->intake_status] ?? 'Unknown' }}"></span>
+                                        <span class="text-xs text-base-content/60">{{ $intakeStatuses[$booking->intake_status] ?? '-' }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-center" id="checkin-cell-{{ $booking->id }}">
                                     @if($booking->isCheckedIn())
                                         <div class="flex items-center justify-center gap-1 text-success">
                                             <span class="icon-[tabler--circle-check-filled] size-5"></span>
-                                            <span class="text-xs" id="checkin-time-{{ $booking->id }}">{{ $booking->checked_in_at->format('g:i A') }}</span>
+                                            <span class="text-xs">{{ $booking->checked_in_at->format('g:i A') }}</span>
                                         </div>
                                     @else
-                                        <button
-                                            type="button"
-                                            class="btn btn-xs btn-success btn-soft"
-                                            id="checkin-btn-{{ $booking->id }}"
-                                            onclick="checkInBooking({{ $booking->id }})"
-                                        >
-                                            <span class="icon-[tabler--check] size-3"></span>
-                                            Check In
-                                        </button>
+                                        <span class="icon-[tabler--circle-dashed] size-5 text-base-content/30"></span>
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('bookings.show', $booking) }}" class="btn btn-ghost btn-xs btn-square" title="View Booking">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </a>
+                                    <div class="flex items-center gap-1">
+                                        @if(!$booking->isCheckedIn())
+                                            <button
+                                                type="button"
+                                                class="btn btn-ghost btn-xs btn-square text-success hover:bg-success/10"
+                                                id="checkin-btn-{{ $booking->id }}"
+                                                onclick="checkInBooking({{ $booking->id }})"
+                                                title="Check In"
+                                            >
+                                                <span class="icon-[tabler--login] size-4"></span>
+                                            </button>
+                                        @else
+                                            <button
+                                                type="button"
+                                                class="btn btn-ghost btn-xs btn-square btn-disabled text-success"
+                                                disabled
+                                                title="Already Checked In"
+                                            >
+                                                <span class="icon-[tabler--check] size-4"></span>
+                                            </button>
+                                        @endif
+                                        <a href="{{ route('bookings.show', $booking) }}" class="btn btn-ghost btn-xs btn-square" title="View Booking">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
@@ -244,6 +285,7 @@
 <script>
 function checkInBooking(bookingId) {
     const btn = document.getElementById(`checkin-btn-${bookingId}`);
+    const checkinCell = document.getElementById(`checkin-cell-${bookingId}`);
     if (!btn) return;
 
     btn.disabled = true;
@@ -260,23 +302,31 @@ function checkInBooking(bookingId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Replace button with checkmark
-            btn.parentElement.innerHTML = `
-                <div class="flex items-center justify-center gap-1 text-success">
-                    <span class="icon-[tabler--circle-check-filled] size-5"></span>
-                    <span class="text-xs">${data.checked_in_at}</span>
-                </div>
+            // Update the check-in status cell
+            if (checkinCell) {
+                checkinCell.innerHTML = `
+                    <div class="flex items-center justify-center gap-1 text-success">
+                        <span class="icon-[tabler--circle-check-filled] size-5"></span>
+                        <span class="text-xs">${data.checked_in_at}</span>
+                    </div>
+                `;
+            }
+            // Replace check-in button with disabled checkmark
+            btn.outerHTML = `
+                <button type="button" class="btn btn-ghost btn-xs btn-square btn-disabled text-success" disabled title="Already Checked In">
+                    <span class="icon-[tabler--check] size-4"></span>
+                </button>
             `;
         } else {
             btn.disabled = false;
-            btn.innerHTML = '<span class="icon-[tabler--check] size-3"></span> Check In';
+            btn.innerHTML = '<span class="icon-[tabler--login] size-4"></span>';
             alert(data.message || 'Failed to check in');
         }
     })
     .catch(error => {
         console.error('Error:', error);
         btn.disabled = false;
-        btn.innerHTML = '<span class="icon-[tabler--check] size-3"></span> Check In';
+        btn.innerHTML = '<span class="icon-[tabler--login] size-4"></span>';
         alert('An error occurred. Please try again.');
     });
 }

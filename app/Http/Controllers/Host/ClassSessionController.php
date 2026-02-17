@@ -25,13 +25,39 @@ class ClassSessionController extends Controller
     public function index(Request $request)
     {
         $host = auth()->user()->host;
-        $date = $request->input('date', now()->format('Y-m-d'));
-        $startDate = Carbon::parse($date)->startOfWeek();
-        $endDate = $startDate->copy()->endOfWeek();
+        $range = $request->input('range', 'today'); // 'today', 'week', 'month', or 'all'
+        $dateInput = $request->input('date', now()->format('Y-m-d'));
+
+        // Handle month input format (Y-m) by appending -01
+        if ($range === 'month' && preg_match('/^\d{4}-\d{2}$/', $dateInput)) {
+            $dateInput = $dateInput . '-01';
+        }
+
+        $date = $dateInput;
+
+        // Determine date range based on range filter
+        $startDate = null;
+        $endDate = null;
+
+        if ($range === 'today') {
+            $startDate = Carbon::parse($date)->startOfDay();
+            $endDate = Carbon::parse($date)->endOfDay();
+        } elseif ($range === 'week') {
+            $startDate = Carbon::parse($date)->startOfWeek();
+            $endDate = $startDate->copy()->endOfWeek();
+        } elseif ($range === 'month') {
+            $startDate = Carbon::parse($date)->startOfMonth();
+            $endDate = $startDate->copy()->endOfMonth();
+        }
+        // 'all' - no date filtering
 
         $query = ClassSession::where('host_id', $host->id)
-            ->with(['classPlan', 'primaryInstructor', 'backupInstructors', 'location', 'room'])
-            ->forDateRange($startDate, $endDate);
+            ->with(['classPlan', 'primaryInstructor', 'backupInstructors', 'location', 'room']);
+
+        // Apply date range filter if not 'all'
+        if ($startDate && $endDate) {
+            $query->forDateRange($startDate, $endDate);
+        }
 
         // Apply filters
         if ($request->filled('status')) {
@@ -61,6 +87,7 @@ class ClassSessionController extends Controller
             'sessions' => $sessions,
             'sessionsByDate' => $sessionsByDate,
             'date' => $date,
+            'range' => $range,
             'startDate' => $startDate,
             'endDate' => $endDate,
             'classPlans' => $host->classPlans()->active()->orderBy('name')->get(),
@@ -182,10 +209,27 @@ class ClassSessionController extends Controller
             'location',
             'room',
             'recurrenceChildren' => fn ($q) => $q->orderBy('start_time'),
+            'bookings.client',
+            'bookings.questionnaireResponses.version.questionnaire',
+            'bookings.questionnaireResponses.answers.question',
         ]);
+
+        // Get booking stats
+        $allBookings = $classSession->bookings;
+        $confirmedBookings = $allBookings->whereIn('status', ['confirmed', 'completed']);
+        $cancelledBookings = $allBookings->where('status', 'cancelled');
+        $checkedInCount = $confirmedBookings->filter(fn($b) => $b->isCheckedIn())->count();
+        $intakeCompleted = $confirmedBookings->filter(fn($b) => $b->intake_status === 'completed')->count();
+        $intakePending = $confirmedBookings->filter(fn($b) => $b->intake_status === 'pending')->count();
 
         return view('host.class-sessions.show', [
             'classSession' => $classSession,
+            'allBookings' => $allBookings,
+            'confirmedBookings' => $confirmedBookings,
+            'cancelledBookings' => $cancelledBookings,
+            'checkedInCount' => $checkedInCount,
+            'intakeCompleted' => $intakeCompleted,
+            'intakePending' => $intakePending,
         ]);
     }
 

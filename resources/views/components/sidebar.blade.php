@@ -59,16 +59,6 @@
                 </ul>
             </li>
 
-            {{-- Catalog - Requires schedule permissions --}}
-            @if($canManageSchedule)
-            <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }}" data-nav="catalog">
-                <a href="{{ url('/catalog') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
-                    <span class="icon-[tabler--layout-grid] size-5 shrink-0"></span>
-                    <span class="sidebar-label">Catalog</span>
-                </a>
-            </li>
-            @endif
-
             {{-- Schedule - Requires schedule.view or schedule.view_own --}}
             @if($canViewSchedule)
             <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('class-requests*') ? 'active' : '' }}" data-nav="schedule">
@@ -202,6 +192,16 @@
                         <span class="icon-[tabler--wallet] size-4 mr-2 opacity-50"></span><span class="opacity-50">Payouts</span> <span class="badge badge-xs badge-soft badge-neutral ml-1">Later</span>
                     </a></li>
                 </ul>
+            </li>
+            @endif
+
+            {{-- Catalog - Requires schedule permissions --}}
+            @if($canManageSchedule)
+            <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }}" data-nav="catalog">
+                <a href="{{ url('/catalog') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
+                    <span class="icon-[tabler--layout-grid] size-5 shrink-0"></span>
+                    <span class="sidebar-label">Catalog</span>
+                </a>
             </li>
             @endif
 

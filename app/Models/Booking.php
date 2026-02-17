@@ -120,6 +120,11 @@ class Booking extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function questionnaireResponses(): HasMany
+    {
+        return $this->hasMany(QuestionnaireResponse::class);
+    }
+
     /**
      * Get formatted price paid
      */

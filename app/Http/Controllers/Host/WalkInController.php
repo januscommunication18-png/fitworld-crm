@@ -42,6 +42,19 @@ class WalkInController extends Controller
         $host = auth()->user()->currentHost();
         $date = $request->get('date', now()->format('Y-m-d'));
 
+        // Check if a specific session is being preloaded
+        $preloadSession = null;
+        if ($request->has('session_id')) {
+            $preloadSession = ClassSession::where('host_id', $host->id)
+                ->where('id', $request->get('session_id'))
+                ->with(['classPlan:id,name,color,default_price'])
+                ->first();
+
+            if ($preloadSession) {
+                $date = $preloadSession->start_time->format('Y-m-d');
+            }
+        }
+
         // Cache class plans for 5 minutes (they rarely change)
         $classPlans = cache()->remember(
             "host.{$host->id}.active_class_plans",
@@ -62,6 +75,7 @@ class WalkInController extends Controller
             'selectedDate' => $date,
             'classPlans' => $classPlans,
             'instructors' => $instructors,
+            'preloadSession' => $preloadSession,
         ]);
     }
 
@@ -259,7 +273,7 @@ class WalkInController extends Controller
             );
 
             return redirect()
-                ->route('bookings.show', $booking)
+                ->route('schedule.calendar')
                 ->with('success', "Walk-in booking confirmed for {$client->full_name}!");
 
         } catch (\Exception $e) {

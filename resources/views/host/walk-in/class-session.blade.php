@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Walk-In Booking')
+@section('title', 'New Booking')
 
 @section('content')
 <div class="max-w-4xl mx-auto">
@@ -10,7 +10,7 @@
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
-            <h1 class="text-2xl font-bold">Walk-In Booking</h1>
+            <h1 class="text-2xl font-bold">New Booking</h1>
             <p class="text-base-content/60">Book a client for this class</p>
         </div>
     </div>

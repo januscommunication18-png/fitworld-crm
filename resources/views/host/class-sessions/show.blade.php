@@ -29,9 +29,9 @@
         </div>
         <div class="flex items-center gap-2">
             @if($classSession->isPublished() && !$classSession->isPast())
-            <a href="{{ route('walk-in.class', $classSession) }}" class="btn btn-success">
-                <span class="icon-[tabler--walk] size-5"></span>
-                Walk-in
+            <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-success">
+                <span class="icon-[tabler--user-plus] size-5"></span>
+                Add Booking
             </a>
             @endif
             @if($classSession->isDraft())
@@ -112,16 +112,24 @@
                 <div class="card-header">
                     <h3 class="card-title">Session Details</h3>
                 </div>
-                <div class="card-body">
-                    <dl class="grid grid-cols-2 gap-4">
+                <div class="card-body space-y-6">
+                    {{-- Basic Info Grid --}}
+                    <dl class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <dt class="text-sm text-base-content/60">Status</dt>
+                            <dd><span class="badge {{ $classSession->getStatusBadgeClass() }} badge-soft badge-sm capitalize">{{ $classSession->status }}</span></dd>
+                        </div>
                         <div>
                             <dt class="text-sm text-base-content/60">Class Plan</dt>
                             <dd class="font-medium">{{ $classSession->classPlan->name }}</dd>
-                            <dd class="text-sm text-base-content/60">Default price: ${{ number_format($classSession->classPlan->default_price, 2) }}</dd>
                         </div>
                         <div>
                             <dt class="text-sm text-base-content/60">Category</dt>
                             <dd class="capitalize">{{ $classSession->classPlan->category }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-sm text-base-content/60">Difficulty</dt>
+                            <dd><span class="badge {{ $classSession->classPlan->getDifficultyBadgeClass() }} badge-soft badge-sm capitalize">{{ str_replace('_', ' ', $classSession->classPlan->difficulty_level) }}</span></dd>
                         </div>
                         <div>
                             <dt class="text-sm text-base-content/60">Duration</dt>
@@ -134,77 +142,114 @@
                         <div>
                             <dt class="text-sm text-base-content/60">Session Price</dt>
                             <dd class="font-medium">{{ $classSession->formatted_price }}</dd>
-                            @if($classSession->price && $classSession->price != $classSession->classPlan->default_price)
-                            <dd class="text-xs text-base-content/50"><s>Plan: ${{ number_format($classSession->classPlan->default_price, 2) }}</s></dd>
-                            @endif
                         </div>
                         <div>
-                            <dt class="text-sm text-base-content/60">Difficulty</dt>
-                            <dd><span class="badge {{ $classSession->classPlan->getDifficultyBadgeClass() }} badge-soft badge-sm capitalize">{{ str_replace('_', ' ', $classSession->classPlan->difficulty_level) }}</span></dd>
+                            <dt class="text-sm text-base-content/60">Created</dt>
+                            <dd>{{ $classSession->created_at->format('M j, Y') }}</dd>
                         </div>
                     </dl>
-                </div>
-            </div>
 
-            {{-- Instructors --}}
-            <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Instructors</h3>
-                </div>
-                <div class="card-body">
-                    <div class="space-y-4">
-                        {{-- Primary Instructor --}}
-                        <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
-                            @if($classSession->primaryInstructor->photo_url)
-                            <img src="{{ $classSession->primaryInstructor->photo_url }}" alt="{{ $classSession->primaryInstructor->name }}" class="w-12 h-12 rounded-full object-cover">
+                    {{-- Recurrence Info --}}
+                    @if($classSession->isRecurring())
+                    <div class="border-t border-base-content/10 pt-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="icon-[tabler--repeat] size-4 text-info"></span>
+                            <span class="text-sm font-medium">Recurrence</span>
+                            <span class="badge badge-soft badge-info badge-sm">Recurring</span>
+                        </div>
+                        <div class="flex flex-wrap gap-4 text-sm">
+                            @if($classSession->isRecurrenceParent())
+                                <div>
+                                    <span class="text-base-content/60">Sessions:</span>
+                                    <span class="font-medium">{{ $classSession->recurrenceChildren->count() + 1 }} total</span>
+                                </div>
+                                @if($classSession->recurrenceChildren->isNotEmpty())
+                                <div>
+                                    <span class="text-base-content/60">Ends:</span>
+                                    <span class="font-medium">{{ $classSession->recurrenceChildren->last()->start_time->format('M j, Y') }}</span>
+                                </div>
+                                @endif
+                                @if($classSession->recurrence_rule)
+                                @php
+                                    $rule = is_string($classSession->recurrence_rule) ? json_decode($classSession->recurrence_rule, true) : $classSession->recurrence_rule;
+                                    $days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+                                    $selectedDays = isset($rule['days']) ? array_map(fn($d) => $days[$d], $rule['days']) : [];
+                                @endphp
+                                @if(!empty($selectedDays))
+                                <div>
+                                    <span class="text-base-content/60">Days:</span>
+                                    <span class="font-medium">{{ implode(', ', $selectedDays) }}</span>
+                                </div>
+                                @endif
+                                @endif
                             @else
-                            <div class="avatar avatar-placeholder">
-                                <div class="bg-primary text-primary-content w-12 h-12 rounded-full font-bold">
-                                    {{ strtoupper(substr($classSession->primaryInstructor->name, 0, 1)) }}
+                                <div>
+                                    <span class="text-base-content/60">Parent:</span>
+                                    <a href="{{ route('class-sessions.show', $classSession->recurrenceParent) }}" class="text-primary hover:underline">View series</a>
                                 </div>
-                            </div>
                             @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Cancellation Info --}}
+                    @if($classSession->isCancelled())
+                    <div class="border-t border-base-content/10 pt-4">
+                        <div class="alert alert-error alert-soft">
+                            <span class="icon-[tabler--x] size-5"></span>
                             <div>
-                                <div class="font-medium">{{ $classSession->primaryInstructor->name }}</div>
-                                <div class="text-sm text-base-content/60">Primary Instructor</div>
+                                <div class="font-medium">Cancelled on {{ $classSession->cancelled_at->format('M j, Y') }}</div>
+                                @if($classSession->cancellation_reason)
+                                    <p class="text-sm">{{ $classSession->cancellation_reason }}</p>
+                                @endif
                             </div>
                         </div>
+                    </div>
+                    @endif
 
-                        {{-- Backup Instructors --}}
-                        @if($classSession->backupInstructors->isNotEmpty())
-                        <div>
-                            <div class="text-sm text-base-content/60 mb-2">Backup Instructors (in priority order)</div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                @foreach($classSession->backupInstructors as $index => $backupInstructor)
-                                <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
-                                    @if($backupInstructor->photo_url)
-                                    <img src="{{ $backupInstructor->photo_url }}" alt="{{ $backupInstructor->name }}" class="w-10 h-10 rounded-full object-cover">
-                                    @else
-                                    <div class="avatar avatar-placeholder">
-                                        <div class="bg-secondary text-secondary-content w-10 h-10 rounded-full text-sm font-bold">
-                                            {{ strtoupper(substr($backupInstructor->name, 0, 1)) }}
-                                        </div>
-                                    </div>
-                                    @endif
-                                    <div>
-                                        <div class="font-medium">{{ $backupInstructor->name }}</div>
-                                        <div class="text-xs text-base-content/60">Backup #{{ $index + 1 }}</div>
+                    {{-- Instructors Section --}}
+                    <div class="border-t border-base-content/10 pt-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="icon-[tabler--users] size-4 text-primary"></span>
+                            <span class="text-sm font-medium">Instructors</span>
+                        </div>
+                        <div class="flex flex-wrap gap-3">
+                            {{-- Primary Instructor --}}
+                            <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                                @if($classSession->primaryInstructor->photo_url)
+                                <img src="{{ $classSession->primaryInstructor->photo_url }}" alt="{{ $classSession->primaryInstructor->name }}" class="w-10 h-10 rounded-full object-cover">
+                                @else
+                                <div class="avatar avatar-placeholder">
+                                    <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold text-sm">
+                                        {{ strtoupper(substr($classSession->primaryInstructor->name, 0, 1)) }}
                                     </div>
                                 </div>
-                                @endforeach
+                                @endif
+                                <div>
+                                    <div class="font-medium text-sm">{{ $classSession->primaryInstructor->name }}</div>
+                                    <div class="text-xs text-base-content/60">Primary</div>
+                                </div>
                             </div>
+
+                            {{-- Backup Instructors --}}
+                            @foreach($classSession->backupInstructors as $index => $backupInstructor)
+                            <div class="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                                @if($backupInstructor->photo_url)
+                                <img src="{{ $backupInstructor->photo_url }}" alt="{{ $backupInstructor->name }}" class="w-10 h-10 rounded-full object-cover">
+                                @else
+                                <div class="avatar avatar-placeholder">
+                                    <div class="bg-secondary text-secondary-content w-10 h-10 rounded-full text-sm font-bold">
+                                        {{ strtoupper(substr($backupInstructor->name, 0, 1)) }}
+                                    </div>
+                                </div>
+                                @endif
+                                <div>
+                                    <div class="font-medium text-sm">{{ $backupInstructor->name }}</div>
+                                    <div class="text-xs text-base-content/60">Backup #{{ $index + 1 }}</div>
+                                </div>
+                            </div>
+                            @endforeach
                         </div>
-                        @else
-                        <div class="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg border border-dashed border-base-content/20">
-                            <div class="w-12 h-12 rounded-full bg-base-300 flex items-center justify-center">
-                                <span class="icon-[tabler--user-plus] size-6 text-base-content/30"></span>
-                            </div>
-                            <div>
-                                <div class="text-base-content/60">No backup instructors assigned</div>
-                                <a href="{{ route('class-sessions.edit', $classSession) }}" class="text-sm text-primary hover:underline">Add backup instructors</a>
-                            </div>
-                        </div>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -343,97 +388,411 @@
 
         {{-- Sidebar --}}
         <div class="space-y-6">
-            {{-- Quick Info --}}
+            {{-- Quick Stats --}}
             <div class="card bg-base-100">
                 <div class="card-header">
-                    <h3 class="card-title">Session Info</h3>
+                    <h3 class="card-title">Booking Stats</h3>
                 </div>
                 <div class="card-body">
-                    <dl class="space-y-3 text-sm">
-                        <div class="flex justify-between">
-                            <dt class="text-base-content/60">Status</dt>
-                            <dd><span class="badge {{ $classSession->getStatusBadgeClass() }} badge-soft badge-sm capitalize">{{ $classSession->status }}</span></dd>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="text-center p-3 bg-base-200/50 rounded-lg">
+                            <div class="text-2xl font-bold text-primary">{{ $confirmedBookings->count() }}</div>
+                            <div class="text-xs text-base-content/60">Booked</div>
                         </div>
-                        <div class="flex justify-between">
-                            <dt class="text-base-content/60">Created</dt>
-                            <dd>{{ $classSession->created_at->format('M j, Y') }}</dd>
+                        <div class="text-center p-3 bg-base-200/50 rounded-lg">
+                            <div class="text-2xl font-bold text-success">{{ $checkedInCount }}</div>
+                            <div class="text-xs text-base-content/60">Checked In</div>
                         </div>
-                        @if($classSession->isRecurring())
-                        <div class="border-t border-base-content/10 pt-3 mt-3">
-                            <dt class="text-base-content/60 mb-2 flex items-center gap-1">
-                                <span class="icon-[tabler--repeat] size-4"></span> Recurrence
-                            </dt>
-                            <div class="space-y-2">
-                                <div class="flex justify-between">
-                                    <span class="text-base-content/60">Type</span>
-                                    <span class="badge badge-soft badge-info badge-sm">Recurring</span>
-                                </div>
-                                @if($classSession->isRecurrenceParent())
-                                <div class="flex justify-between">
-                                    <span class="text-base-content/60">Sessions</span>
-                                    <span>{{ $classSession->recurrenceChildren->count() + 1 }} total</span>
-                                </div>
-                                @if($classSession->recurrenceChildren->isNotEmpty())
-                                <div class="flex justify-between">
-                                    <span class="text-base-content/60">Ends</span>
-                                    <span>{{ $classSession->recurrenceChildren->last()->start_time->format('M j, Y') }}</span>
-                                </div>
-                                @endif
-                                @if($classSession->recurrence_rule)
-                                @php
-                                    $rule = is_string($classSession->recurrence_rule) ? json_decode($classSession->recurrence_rule, true) : $classSession->recurrence_rule;
-                                    $days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                    $selectedDays = isset($rule['days']) ? array_map(fn($d) => $days[$d], $rule['days']) : [];
-                                @endphp
-                                @if(!empty($selectedDays))
-                                <div class="flex justify-between">
-                                    <span class="text-base-content/60">Days</span>
-                                    <span>{{ implode(', ', $selectedDays) }}</span>
-                                </div>
-                                @endif
-                                @endif
-                                @else
-                                {{-- This is a child session --}}
-                                <div class="flex justify-between">
-                                    <span class="text-base-content/60">Parent</span>
-                                    <a href="{{ route('class-sessions.show', $classSession->recurrenceParent) }}" class="text-primary hover:underline">View series</a>
-                                </div>
-                                @endif
-                            </div>
+                        <div class="text-center p-3 bg-base-200/50 rounded-lg">
+                            <div class="text-2xl font-bold text-success">{{ $intakeCompleted }}</div>
+                            <div class="text-xs text-base-content/60">Intake Done</div>
                         </div>
-                        @endif
-                        @if($classSession->isCancelled())
-                        <div class="border-t border-base-content/10 pt-3 mt-3">
-                            <div class="flex justify-between">
-                                <dt class="text-base-content/60">Cancelled</dt>
-                                <dd>{{ $classSession->cancelled_at->format('M j, Y') }}</dd>
-                            </div>
-                            @if($classSession->cancellation_reason)
-                            <div class="mt-2">
-                                <dt class="text-base-content/60 mb-1">Reason</dt>
-                                <dd class="text-error">{{ $classSession->cancellation_reason }}</dd>
-                            </div>
-                            @endif
+                        <div class="text-center p-3 bg-base-200/50 rounded-lg">
+                            <div class="text-2xl font-bold {{ $intakePending > 0 ? 'text-warning' : 'text-base-content/30' }}">{{ $intakePending }}</div>
+                            <div class="text-xs text-base-content/60">Intake Pending</div>
                         </div>
-                        @endif
-                    </dl>
-                </div>
-            </div>
-
-            {{-- Bookings (placeholder for future) --}}
-            <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Bookings</h3>
-                </div>
-                <div class="card-body text-center py-8">
-                    <span class="icon-[tabler--users] size-10 text-base-content/20 mx-auto mb-2"></span>
-                    <p class="text-sm text-base-content/60">0 / {{ $classSession->capacity }} booked</p>
-                    <p class="text-xs text-base-content/40 mt-1">Booking management coming soon</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- Bookings Section - Full Width --}}
+    <div class="card bg-base-100">
+        <div class="card-header flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <h3 class="card-title">Bookings</h3>
+                <span class="badge badge-primary">{{ $confirmedBookings->count() }} confirmed</span>
+                @if($cancelledBookings->count() > 0)
+                    <span class="badge badge-error badge-soft">{{ $cancelledBookings->count() }} cancelled</span>
+                @endif
+            </div>
+            @if($classSession->isPublished() && !$classSession->isPast())
+                <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-primary btn-sm">
+                    <span class="icon-[tabler--user-plus] size-4"></span>
+                    Add Booking
+                </a>
+            @endif
+        </div>
+        <div class="card-body p-0">
+            @if($allBookings->isEmpty())
+                <div class="text-center py-12">
+                    <span class="icon-[tabler--users-minus] size-12 text-base-content/20 mx-auto mb-4"></span>
+                    <h3 class="font-semibold text-lg mb-2">No Bookings Yet</h3>
+                    <p class="text-base-content/60 text-sm mb-4">No one has booked this class session yet.</p>
+                    @if($classSession->isPublished() && !$classSession->isPast())
+                        <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-primary">
+                            <span class="icon-[tabler--user-plus] size-5"></span>
+                            Add Booking
+                        </a>
+                    @endif
+                </div>
+            @else
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Client</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center">Payment</th>
+                                <th class="text-center">Intake</th>
+                                <th class="text-center">Check In</th>
+                                <th>Booked</th>
+                                <th class="w-28">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($allBookings->sortByDesc('created_at') as $booking)
+                                @php
+                                    $intakeStatuses = \App\Models\Booking::getIntakeStatuses();
+                                    $intakeIcons = [
+                                        'completed' => 'icon-[tabler--circle-check-filled] text-success',
+                                        'pending' => 'icon-[tabler--clock] text-warning',
+                                        'waived' => 'icon-[tabler--circle-minus] text-info',
+                                        'not_required' => 'icon-[tabler--minus] text-base-content/30',
+                                    ];
+                                @endphp
+                                <tr class="hover:bg-base-200/50 {{ $booking->status === 'cancelled' ? 'opacity-60' : '' }}">
+                                    <td>
+                                        <div class="flex items-center gap-3">
+                                            @if($booking->client)
+                                                <x-avatar
+                                                    :src="$booking->client->avatar_url ?? null"
+                                                    :initials="$booking->client->initials ?? '?'"
+                                                    :alt="$booking->client->full_name ?? 'Unknown'"
+                                                    size="sm"
+                                                />
+                                                <div>
+                                                    <a href="{{ route('clients.show', $booking->client) }}" class="font-medium hover:text-primary">
+                                                        {{ $booking->client->full_name }}
+                                                    </a>
+                                                    @if($booking->client->email)
+                                                        <div class="text-xs text-base-content/60">{{ $booking->client->email }}</div>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                <div class="avatar avatar-placeholder">
+                                                    <div class="bg-base-300 w-8 h-8 rounded-full">
+                                                        <span class="icon-[tabler--user] size-4"></span>
+                                                    </div>
+                                                </div>
+                                                <span class="text-base-content/50">Unknown Client</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge {{ $booking->status_badge_class }} badge-sm">
+                                            {{ \App\Models\Booking::getStatuses()[$booking->status] ?? $booking->status }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if($booking->price_paid !== null)
+                                            <div class="font-medium text-success">${{ number_format($booking->price_paid, 2) }}</div>
+                                            @if($booking->payment_method)
+                                                <div class="text-xs text-base-content/50 capitalize">{{ $booking->payment_method }}</div>
+                                            @endif
+                                        @else
+                                            <span class="text-base-content/40">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <span class="{{ $intakeIcons[$booking->intake_status] ?? 'icon-[tabler--minus] text-base-content/30' }} size-4" title="{{ $intakeStatuses[$booking->intake_status] ?? 'Unknown' }}"></span>
+                                            <span class="text-xs text-base-content/60">{{ $intakeStatuses[$booking->intake_status] ?? '-' }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center" id="checkin-cell-{{ $booking->id }}">
+                                        @if($booking->status === 'cancelled')
+                                            <span class="text-base-content/30">-</span>
+                                        @elseif($booking->isCheckedIn())
+                                            <div class="flex items-center justify-center gap-1 text-success">
+                                                <span class="icon-[tabler--circle-check-filled] size-5"></span>
+                                                <span class="text-xs">{{ $booking->checked_in_at->format('g:i A') }}</span>
+                                            </div>
+                                        @else
+                                            <span class="icon-[tabler--circle-dashed] size-5 text-base-content/30"></span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="text-sm">{{ $booking->created_at->format('M j, Y') }}</div>
+                                        <div class="text-xs text-base-content/60">{{ $booking->created_at->format('g:i A') }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-1">
+                                            @if($booking->status !== 'cancelled' && !$booking->isCheckedIn())
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-ghost btn-xs btn-square text-success hover:bg-success/10"
+                                                    id="checkin-btn-{{ $booking->id }}"
+                                                    onclick="checkInBooking({{ $booking->id }})"
+                                                    title="Check In"
+                                                >
+                                                    <span class="icon-[tabler--login] size-4"></span>
+                                                </button>
+                                            @elseif($booking->isCheckedIn())
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-ghost btn-xs btn-square btn-disabled text-success"
+                                                    disabled
+                                                    title="Already Checked In"
+                                                >
+                                                    <span class="icon-[tabler--check] size-4"></span>
+                                                </button>
+                                            @endif
+                                            <button type="button" class="btn btn-ghost btn-xs btn-square" title="View Booking" onclick="openDrawer('booking-{{ $booking->id }}', event)">
+                                                <span class="icon-[tabler--eye] size-4"></span>
+                                            </button>
+                                            @if($booking->client)
+                                                <a href="{{ route('clients.show', $booking->client) }}" class="btn btn-ghost btn-xs btn-square" title="View Client">
+                                                    <span class="icon-[tabler--user] size-4"></span>
+                                                </a>
+                                            @endif
+                                            @if($booking->questionnaireResponses->where('status', 'completed')->isNotEmpty())
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-ghost btn-xs btn-square text-info hover:bg-info/10"
+                                                    onclick="openDrawer('intake-{{ $booking->id }}', event)"
+                                                    title="View Intake Form"
+                                                >
+                                                    <span class="icon-[tabler--file-text] size-4"></span>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </div>
+    </div>
 </div>
+
+@push('scripts')
+<script>
+// Drawer functions
+function openDrawer(id, event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    const drawer = document.getElementById('drawer-' + id);
+    const backdrop = document.getElementById('drawer-backdrop');
+
+    if (drawer) {
+        document.querySelectorAll('[id^="drawer-"]').forEach(d => {
+            if (d.id !== 'drawer-backdrop' && d.id !== 'drawer-' + id) {
+                d.classList.add('translate-x-full', 'hidden');
+            }
+        });
+
+        if (backdrop) {
+            backdrop.classList.remove('hidden');
+        }
+
+        drawer.classList.remove('hidden');
+        setTimeout(() => {
+            drawer.classList.remove('translate-x-full');
+        }, 10);
+
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeDrawer(id) {
+    const drawer = document.getElementById('drawer-' + id);
+    const backdrop = document.getElementById('drawer-backdrop');
+
+    if (drawer) {
+        drawer.classList.add('translate-x-full');
+        setTimeout(() => {
+            drawer.classList.add('hidden');
+        }, 300);
+    }
+
+    if (backdrop) {
+        backdrop.classList.add('hidden');
+    }
+
+    document.body.style.overflow = '';
+}
+
+function closeAllDrawers() {
+    document.querySelectorAll('[id^="drawer-"]').forEach(drawer => {
+        if (drawer.id !== 'drawer-backdrop') {
+            drawer.classList.add('translate-x-full');
+            setTimeout(() => {
+                drawer.classList.add('hidden');
+            }, 300);
+        }
+    });
+
+    const backdrop = document.getElementById('drawer-backdrop');
+    if (backdrop) {
+        backdrop.classList.add('hidden');
+    }
+
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAllDrawers();
+    }
+});
+
+function checkInBooking(bookingId) {
+    const btn = document.getElementById(`checkin-btn-${bookingId}`);
+    const checkinCell = document.getElementById(`checkin-cell-${bookingId}`);
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+
+    fetch(`/schedule/check-in/${bookingId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update the check-in status cell
+            if (checkinCell) {
+                checkinCell.innerHTML = `
+                    <div class="flex items-center justify-center gap-1 text-success">
+                        <span class="icon-[tabler--circle-check-filled] size-5"></span>
+                        <span class="text-xs">${data.checked_in_at}</span>
+                    </div>
+                `;
+            }
+            // Replace check-in button with disabled checkmark
+            btn.outerHTML = `
+                <button type="button" class="btn btn-ghost btn-xs btn-square btn-disabled text-success" disabled title="Already Checked In">
+                    <span class="icon-[tabler--check] size-4"></span>
+                </button>
+            `;
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="icon-[tabler--login] size-4"></span>';
+            alert(data.message || 'Failed to check in');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon-[tabler--login] size-4"></span>';
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
+@endpush
+
+{{-- Drawer Backdrop --}}
+<div id="drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeAllDrawers()"></div>
+
+{{-- Booking Drawers --}}
+@foreach($allBookings as $booking)
+    @include('host.bookings.partials.drawer', ['booking' => $booking])
+@endforeach
+
+{{-- Intake Form Drawers --}}
+@foreach($allBookings as $booking)
+    @if($booking->questionnaireResponses->where('status', 'completed')->isNotEmpty())
+        <div id="drawer-intake-{{ $booking->id }}" class="fixed inset-y-0 right-0 w-full max-w-xl bg-base-100 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden overflow-y-auto">
+            <div class="sticky top-0 bg-base-100 border-b border-base-200 p-4 flex items-center justify-between z-10">
+                <div>
+                    <h3 class="text-lg font-semibold">Intake Form Responses</h3>
+                    <p class="text-sm text-base-content/60">{{ $booking->client?->full_name ?? 'Unknown Client' }}</p>
+                </div>
+                <button type="button" onclick="closeDrawer('intake-{{ $booking->id }}')" class="btn btn-ghost btn-sm btn-circle">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
+            </div>
+            <div class="p-4 space-y-6">
+                @foreach($booking->questionnaireResponses->where('status', 'completed') as $response)
+                    <div class="card bg-base-200/50">
+                        <div class="card-header py-3 px-4">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--file-text] size-5 text-primary"></span>
+                                <h4 class="font-semibold">{{ $response->version?->questionnaire?->name ?? 'Questionnaire' }}</h4>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-base-content/60">
+                                <span class="badge badge-success badge-xs">Completed</span>
+                                @if($response->completed_at)
+                                    <span>{{ $response->completed_at->format('M j, Y g:i A') }}</span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="card-body py-3 px-4">
+                            <div class="space-y-4">
+                                @foreach($response->answers as $answer)
+                                    <div class="border-b border-base-300 pb-3 last:border-0 last:pb-0">
+                                        <div class="text-sm font-medium text-base-content/70 mb-1">
+                                            {{ $answer->question?->label ?? 'Question' }}
+                                            @if($answer->question?->is_required)
+                                                <span class="text-error">*</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-sm">
+                                            @if($answer->answer)
+                                                @if($answer->question?->type === 'checkbox' || $answer->question?->type === 'multi_select')
+                                                    @php
+                                                        $values = json_decode($answer->answer, true) ?? [$answer->answer];
+                                                    @endphp
+                                                    <div class="flex flex-wrap gap-1">
+                                                        @foreach((array)$values as $value)
+                                                            <span class="badge badge-soft badge-sm">{{ $value }}</span>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif($answer->question?->type === 'textarea' || $answer->question?->type === 'long_text')
+                                                    <p class="whitespace-pre-wrap text-base-content/80">{{ $answer->answer }}</p>
+                                                @elseif($answer->question?->type === 'date')
+                                                    {{ \Carbon\Carbon::parse($answer->answer)->format('M j, Y') }}
+                                                @elseif($answer->question?->type === 'signature')
+                                                    <img src="{{ $answer->answer }}" alt="Signature" class="max-w-xs border border-base-300 rounded bg-white p-2">
+                                                @else
+                                                    {{ $answer->answer }}
+                                                @endif
+                                            @else
+                                                <span class="text-base-content/40 italic">No answer provided</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+@endforeach
 
 {{-- Cancel Modal --}}
 <div id="cancel-modal" class="overlay modal overlay-open:opacity-100 hidden" role="dialog" tabindex="-1">

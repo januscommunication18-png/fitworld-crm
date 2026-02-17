@@ -162,7 +162,7 @@
                 <p class="text-sm text-base-content/60 mb-3">This slot is available for booking</p>
                 <a href="{{ route('walk-in.service', $serviceSlot) }}" class="btn btn-sm btn-primary">
                     <span class="icon-[tabler--user-plus] size-4"></span>
-                    Book Walk-In
+                    Add Booking
                 </a>
             </div>
         </div>
@@ -190,7 +190,7 @@
             @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE)
                 <a href="{{ route('walk-in.service', $serviceSlot) }}" class="btn btn-soft btn-primary btn-sm">
                     <span class="icon-[tabler--user-plus] size-4"></span>
-                    Walk-In Booking
+                    Add Booking
                 </a>
             @endif
         </div>

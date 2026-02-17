@@ -1,4 +1,4 @@
-{{-- Walk-In Booking Modal --}}
+{{-- Booking Modal --}}
 <div id="walk-in-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden" role="dialog" tabindex="-1">
     {{-- Backdrop --}}
     <div class="absolute inset-0 bg-black/50" onclick="closeWalkInModal()"></div>
@@ -6,7 +6,7 @@
     <div class="relative bg-base-100 rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden">
         {{-- Modal Header --}}
         <div class="flex items-center justify-between p-4 border-b border-base-200">
-            <h3 class="text-lg font-semibold">Walk-In Booking</h3>
+            <h3 class="text-lg font-semibold">New Booking</h3>
             <button type="button" class="btn btn-ghost btn-circle btn-sm" aria-label="Close" onclick="closeWalkInModal()">
                 <span class="icon-[tabler--x] size-5"></span>
             </button>
