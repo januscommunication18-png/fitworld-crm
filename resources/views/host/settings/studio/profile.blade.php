@@ -64,7 +64,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 
                 <div class="space-y-1">
                     <label class="text-sm text-base-content/60">Subdomain</label>
-                    <p class="font-medium" id="display-subdomain">{{ $host->subdomain ? $host->subdomain . '.fitcrm.app' : 'Not set' }}</p>
+                    <p class="font-medium" id="display-subdomain">{{ $host->subdomain ? $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz') : 'Not set' }}</p>
                 </div>
 
                 <div class="space-y-1">
@@ -378,7 +378,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <label class="label-text" for="subdomain">Subdomain</label>
                     <div class="join w-full">
                         <input id="subdomain" type="text" class="input join-item flex-1 input-disabled bg-base-200 cursor-not-allowed" value="{{ $host->subdomain ?? '' }}" readonly />
-                        <span class="btn btn-soft join-item pointer-events-none">.fitcrm.app</span>
+                        <span class="btn btn-soft join-item pointer-events-none">.{{ config('app.booking_domain', 'fitcrm.biz') }}</span>
                     </div>
                     <p class="text-xs text-base-content/50 mt-1">Subdomain cannot be changed after setup</p>
                 </div>

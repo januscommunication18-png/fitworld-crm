@@ -16,8 +16,8 @@ use Illuminate\Support\Facades\Route;
 | Local:      faizans-studio.projectfit.local:8888
 | Production: faizans-studio.fitcrm.biz
 |
-| Set BOOKING_DOMAIN in .env:
-|   Local:      BOOKING_DOMAIN=projectfit.local:8888
+| Set BOOKING_DOMAIN in .env (without port - Laravel domain matching ignores port):
+|   Local:      BOOKING_DOMAIN=projectfit.local
 |   Production: BOOKING_DOMAIN=fitcrm.biz
 |
 */
