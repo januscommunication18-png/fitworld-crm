@@ -247,6 +247,24 @@ class Host extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Get all assignable team members (from pivot table OR direct host_id)
+     * This ensures we get users regardless of how they're linked to the host
+     */
+    public function getAllTeamMembers()
+    {
+        // Get users from pivot table
+        $pivotUserIds = $this->teamMembers()->pluck('users.id')->toArray();
+
+        // Get users with direct host_id
+        $directUserIds = $this->users()->pluck('id')->toArray();
+
+        // Combine and get unique
+        $allUserIds = array_unique(array_merge($pivotUserIds, $directUserIds));
+
+        return User::whereIn('id', $allUserIds)->orderBy('first_name')->get();
+    }
+
     public function instructors(): HasMany
     {
         return $this->hasMany(Instructor::class);
