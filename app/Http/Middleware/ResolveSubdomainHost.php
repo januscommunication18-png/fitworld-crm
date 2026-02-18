@@ -17,9 +17,20 @@ class ResolveSubdomainHost
             return response()->view('subdomain.errors.studio-not-found', [], 404);
         }
 
+        // Try exact match first (e.g., 'pulse-pilates')
         $host = Host::where('subdomain', $subdomain)
             ->where('status', 'active')
             ->first();
+
+        // If not found, try with full domain suffix (e.g., 'pulse-pilates.fitcrm.biz')
+        if (!$host) {
+            $bookingDomain = config('app.booking_domain', 'fitcrm.biz');
+            $fullSubdomain = $subdomain . '.' . $bookingDomain;
+
+            $host = Host::where('subdomain', $fullSubdomain)
+                ->where('status', 'active')
+                ->first();
+        }
 
         if (!$host) {
             return response()->view('subdomain.errors.studio-not-found', [

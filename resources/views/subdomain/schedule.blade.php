@@ -149,9 +149,19 @@
                                         <span class="badge badge-error badge-sm">Full</span>
                                     @endif
 
-                                    <button type="button" class="btn btn-outline btn-sm" disabled>
-                                        Coming Soon
-                                    </button>
+                                    @if($spotsLeft <= 0)
+                                        <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id, 'waitlist' => 1]) }}"
+                                           class="btn btn-warning btn-sm">
+                                            <span class="icon-[tabler--list-check] size-4"></span>
+                                            Join Waitlist
+                                        </a>
+                                    @else
+                                        <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id]) }}"
+                                           class="btn btn-primary btn-sm">
+                                            <span class="icon-[tabler--calendar-plus] size-4"></span>
+                                            Request Info
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         </div>

@@ -245,7 +245,17 @@
                         @else
                             <span class="text-xs text-base-content/40">{{ $spotsLeft }} spots</span>
                         @endif
-                        <button class="btn btn-sm btn-outline" disabled>Coming Soon</button>
+                        @if($spotsLeft <= 0)
+                            <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id, 'waitlist' => 1]) }}"
+                               class="btn btn-warning btn-sm">
+                                Join Waitlist
+                            </a>
+                        @else
+                            <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id]) }}"
+                               class="btn btn-primary btn-sm">
+                                Request Info
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>
