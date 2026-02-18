@@ -11,29 +11,42 @@ class ClassRequest extends Model
 {
     use HasFactory;
 
-    const STATUS_PENDING = 'pending';
-    const STATUS_SCHEDULED = 'scheduled';
-    const STATUS_IGNORED = 'ignored';
+    // Status constants
+    const STATUS_OPEN = 'open';
+    const STATUS_IN_DISCUSSION = 'in_discussion';
+    const STATUS_NEED_TO_CONVERT = 'need_to_convert';
+    const STATUS_BOOKED = 'booked';
 
     protected $fillable = [
         'host_id',
         'class_plan_id',
         'service_plan_id',
-        'requester_name',
-        'requester_email',
-        'preferred_days',
-        'preferred_times',
-        'notes',
+        'class_session_id',
+        'client_id',
+        'helpdesk_ticket_id',
+        'first_name',
+        'last_name',
+        'email',
+        'phone',
+        'message',
+        'waitlist_requested',
+        'source',
         'status',
-        'scheduled_session_id',
     ];
 
     protected function casts(): array
     {
         return [
-            'preferred_days' => 'array',
-            'preferred_times' => 'array',
+            'waitlist_requested' => 'boolean',
         ];
+    }
+
+    /**
+     * Get the requester's full name
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . $this->last_name);
     }
 
     // Relationships
@@ -53,26 +66,56 @@ class ClassRequest extends Model
         return $this->belongsTo(ServicePlan::class);
     }
 
-    public function scheduledSession(): BelongsTo
+    public function classSession(): BelongsTo
     {
-        return $this->belongsTo(ClassSession::class, 'scheduled_session_id');
+        return $this->belongsTo(ClassSession::class);
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function helpdeskTicket(): BelongsTo
+    {
+        return $this->belongsTo(HelpdeskTicket::class);
+    }
+
+    public function waitlistEntry(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(WaitlistEntry::class);
+    }
+
+    public function waitlistEntries(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(WaitlistEntry::class);
     }
 
     // Scopes
 
-    public function scopePending(Builder $query): Builder
+    public function scopeOpen(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_PENDING);
+        return $query->where('status', self::STATUS_OPEN);
     }
 
-    public function scopeScheduled(Builder $query): Builder
+    public function scopeInDiscussion(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_SCHEDULED);
+        return $query->where('status', self::STATUS_IN_DISCUSSION);
     }
 
-    public function scopeIgnored(Builder $query): Builder
+    public function scopeNeedToConvert(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_IGNORED);
+        return $query->where('status', self::STATUS_NEED_TO_CONVERT);
+    }
+
+    public function scopeBooked(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_BOOKED);
+    }
+
+    public function scopeUnresolved(Builder $query): Builder
+    {
+        return $query->where('status', '!=', self::STATUS_BOOKED);
     }
 
     public function scopeForClassPlan(Builder $query, $classPlanId): Builder
@@ -97,38 +140,50 @@ class ClassRequest extends Model
 
     // Status methods
 
-    public function isPending(): bool
+    public function isOpen(): bool
     {
-        return $this->status === self::STATUS_PENDING;
+        return $this->status === self::STATUS_OPEN;
     }
 
-    public function isScheduled(): bool
+    public function isInDiscussion(): bool
     {
-        return $this->status === self::STATUS_SCHEDULED;
+        return $this->status === self::STATUS_IN_DISCUSSION;
     }
 
-    public function isIgnored(): bool
+    public function isNeedToConvert(): bool
     {
-        return $this->status === self::STATUS_IGNORED;
+        return $this->status === self::STATUS_NEED_TO_CONVERT;
     }
 
-    public function markAsScheduled(int $sessionId): bool
+    public function isBooked(): bool
     {
-        $this->status = self::STATUS_SCHEDULED;
-        $this->scheduled_session_id = $sessionId;
+        return $this->status === self::STATUS_BOOKED;
+    }
+
+    public function markAsOpen(): bool
+    {
+        $this->status = self::STATUS_OPEN;
         return $this->save();
     }
 
-    public function markAsIgnored(): bool
+    public function markAsInDiscussion(): bool
     {
-        $this->status = self::STATUS_IGNORED;
+        $this->status = self::STATUS_IN_DISCUSSION;
         return $this->save();
     }
 
-    public function markAsPending(): bool
+    public function markAsNeedToConvert(): bool
     {
-        $this->status = self::STATUS_PENDING;
-        $this->scheduled_session_id = null;
+        $this->status = self::STATUS_NEED_TO_CONVERT;
+        return $this->save();
+    }
+
+    public function markAsBooked(int $sessionId = null): bool
+    {
+        $this->status = self::STATUS_BOOKED;
+        if ($sessionId) {
+            $this->class_session_id = $sessionId;
+        }
         return $this->save();
     }
 
@@ -154,28 +209,13 @@ class ClassRequest extends Model
         return $this->isClassRequest() ? 'Class' : 'Service';
     }
 
-    public function getFormattedPreferredDaysAttribute(): string
-    {
-        if (empty($this->preferred_days)) {
-            return 'Any day';
-        }
-        return implode(', ', $this->preferred_days);
-    }
-
-    public function getFormattedPreferredTimesAttribute(): string
-    {
-        if (empty($this->preferred_times)) {
-            return 'Any time';
-        }
-        return implode(', ', $this->preferred_times);
-    }
-
     public function getStatusBadgeClass(): string
     {
         return match ($this->status) {
-            self::STATUS_PENDING => 'badge-warning',
-            self::STATUS_SCHEDULED => 'badge-success',
-            self::STATUS_IGNORED => 'badge-neutral',
+            self::STATUS_OPEN => 'badge-info',
+            self::STATUS_IN_DISCUSSION => 'badge-warning',
+            self::STATUS_NEED_TO_CONVERT => 'badge-primary',
+            self::STATUS_BOOKED => 'badge-success',
             default => 'badge-neutral',
         };
     }
@@ -185,32 +225,11 @@ class ClassRequest extends Model
     public static function getStatuses(): array
     {
         return [
-            self::STATUS_PENDING => 'Pending',
-            self::STATUS_SCHEDULED => 'Scheduled',
-            self::STATUS_IGNORED => 'Ignored',
+            self::STATUS_OPEN => 'Open',
+            self::STATUS_IN_DISCUSSION => 'In Discussion',
+            self::STATUS_NEED_TO_CONVERT => 'Need to Convert',
+            self::STATUS_BOOKED => 'Booked',
         ];
     }
 
-    public static function getDayOptions(): array
-    {
-        return [
-            'Monday',
-            'Tuesday',
-            'Wednesday',
-            'Thursday',
-            'Friday',
-            'Saturday',
-            'Sunday',
-        ];
-    }
-
-    public static function getTimeOptions(): array
-    {
-        return [
-            'Early Morning (6-9 AM)',
-            'Morning (9 AM-12 PM)',
-            'Afternoon (12-5 PM)',
-            'Evening (5-9 PM)',
-        ];
-    }
 }

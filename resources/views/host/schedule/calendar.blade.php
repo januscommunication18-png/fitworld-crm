@@ -80,6 +80,38 @@
     <div class="card bg-base-100 shadow-sm">
         <div class="card-body py-4 px-5">
             <div class="flex flex-wrap gap-5 items-center">
+                {{-- Type Filter --}}
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--category] size-4 text-base-content/60"></span>
+                    <select id="filter-type" class="select select-sm w-40 select-bordered">
+                        <option value="all">All Types</option>
+                        <option value="class">Classes Only</option>
+                        <option value="service">Services Only</option>
+                    </select>
+                </div>
+
+                {{-- Class Plan Filter (shown when Classes Only selected) --}}
+                <div id="class-plan-filter" class="flex items-center gap-2 hidden">
+                    <span class="icon-[tabler--yoga] size-4 text-primary"></span>
+                    <select id="filter-class-plan" class="select select-sm w-48 select-bordered">
+                        <option value="">All Classes</option>
+                        @foreach($classPlans ?? [] as $plan)
+                            <option value="{{ $plan->id }}">{{ $plan->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Service Plan Filter (shown when Services Only selected) --}}
+                <div id="service-plan-filter" class="flex items-center gap-2 hidden">
+                    <span class="icon-[tabler--massage] size-4 text-success"></span>
+                    <select id="filter-service-plan" class="select select-sm w-48 select-bordered">
+                        <option value="">All Services</option>
+                        @foreach($servicePlans ?? [] as $plan)
+                            <option value="{{ $plan->id }}">{{ $plan->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
                 {{-- Location Filter --}}
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--map-pin] size-4 text-base-content/60"></span>
@@ -768,6 +800,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentType = 'all';
     let currentInstructor = '';
     let currentLocation = '';
+    let currentClassPlan = '';
+    let currentServicePlan = '';
 
     // Studio timezone for reference (times from API are already in this timezone)
     const studioTimezone = '{{ $timezone }}';
@@ -854,6 +888,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (currentLocation) {
                 params.append('location_id', currentLocation);
+            }
+            if (currentClassPlan) {
+                params.append('class_plan_id', currentClassPlan);
+            }
+            if (currentServicePlan) {
+                params.append('service_plan_id', currentServicePlan);
             }
 
             fetch(`${eventsUrl}?${params.toString()}`)
@@ -1059,6 +1099,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Filter change handlers
+    const typeFilter = document.getElementById('filter-type');
+    const classPlanFilterDiv = document.getElementById('class-plan-filter');
+    const servicePlanFilterDiv = document.getElementById('service-plan-filter');
+    const classPlanFilter = document.getElementById('filter-class-plan');
+    const servicePlanFilter = document.getElementById('filter-service-plan');
+
+    if (typeFilter) {
+        typeFilter.addEventListener('change', function() {
+            currentType = this.value;
+
+            // Show/hide secondary filters based on type
+            if (classPlanFilterDiv && servicePlanFilterDiv) {
+                if (this.value === 'class') {
+                    classPlanFilterDiv.classList.remove('hidden');
+                    servicePlanFilterDiv.classList.add('hidden');
+                    // Reset service plan filter
+                    if (servicePlanFilter) {
+                        servicePlanFilter.value = '';
+                        currentServicePlan = '';
+                    }
+                } else if (this.value === 'service') {
+                    classPlanFilterDiv.classList.add('hidden');
+                    servicePlanFilterDiv.classList.remove('hidden');
+                    // Reset class plan filter
+                    if (classPlanFilter) {
+                        classPlanFilter.value = '';
+                        currentClassPlan = '';
+                    }
+                } else {
+                    // All types - hide both secondary filters
+                    classPlanFilterDiv.classList.add('hidden');
+                    servicePlanFilterDiv.classList.add('hidden');
+                    // Reset both filters
+                    if (classPlanFilter) {
+                        classPlanFilter.value = '';
+                        currentClassPlan = '';
+                    }
+                    if (servicePlanFilter) {
+                        servicePlanFilter.value = '';
+                        currentServicePlan = '';
+                    }
+                }
+            }
+
+            calendar.refetchEvents();
+        });
+    }
+
+    if (classPlanFilter) {
+        classPlanFilter.addEventListener('change', function() {
+            currentClassPlan = this.value;
+            calendar.refetchEvents();
+        });
+    }
+
+    if (servicePlanFilter) {
+        servicePlanFilter.addEventListener('change', function() {
+            currentServicePlan = this.value;
+            calendar.refetchEvents();
+        });
+    }
+
     const instructorFilter = document.getElementById('filter-instructor');
     if (instructorFilter) {
         instructorFilter.addEventListener('change', function() {

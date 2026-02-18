@@ -84,6 +84,11 @@ class HelpdeskTicket extends Model
         return $this->belongsToMany(HelpdeskTag::class, 'helpdesk_ticket_tag', 'ticket_id', 'tag_id');
     }
 
+    public function classRequest(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ClassRequest::class, 'helpdesk_ticket_id');
+    }
+
     // Accessors
 
     public function getIsOpenAttribute(): bool
@@ -217,7 +222,8 @@ class HelpdeskTicket extends Model
         // Update ticket status based on sender
         if ($senderType === 'customer') {
             $this->markAsCustomerReply();
-        } elseif ($senderType === 'staff' && $this->status === self::STATUS_CUSTOMER_REPLY) {
+        } elseif ($senderType === 'staff' && in_array($this->status, [self::STATUS_OPEN, self::STATUS_CUSTOMER_REPLY])) {
+            // Staff reply moves from open or customer_reply to in_progress
             $this->markAsInProgress();
         }
 

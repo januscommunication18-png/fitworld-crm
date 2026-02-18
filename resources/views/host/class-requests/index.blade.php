@@ -16,23 +16,26 @@
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold">Class Requests</h1>
-            <p class="text-base-content/60 mt-1">Review and schedule requested classes and services from clients.</p>
+            <p class="text-base-content/60 mt-1">Review and manage class requests from clients.</p>
         </div>
     </div>
 
     {{-- Status Tabs --}}
-    <div class="flex items-center gap-4 border-b border-base-content/10">
+    <div class="flex items-center gap-2 flex-wrap border-b border-base-content/10">
         <a href="{{ route('class-requests.index') }}" class="px-4 py-2 border-b-2 {{ !$currentStatus ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
             All <span class="badge badge-sm ml-1">{{ array_sum($statusCounts) }}</span>
         </a>
-        <a href="{{ route('class-requests.index', ['status' => 'pending']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'pending' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Pending <span class="badge badge-warning badge-sm ml-1">{{ $statusCounts['pending'] }}</span>
+        <a href="{{ route('class-requests.index', ['status' => 'open']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'open' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
+            Open <span class="badge badge-info badge-sm ml-1">{{ $statusCounts['open'] }}</span>
         </a>
-        <a href="{{ route('class-requests.index', ['status' => 'scheduled']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'scheduled' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Scheduled <span class="badge badge-success badge-sm ml-1">{{ $statusCounts['scheduled'] }}</span>
+        <a href="{{ route('class-requests.index', ['status' => 'in_discussion']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'in_discussion' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
+            In Discussion <span class="badge badge-warning badge-sm ml-1">{{ $statusCounts['in_discussion'] }}</span>
         </a>
-        <a href="{{ route('class-requests.index', ['status' => 'ignored']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'ignored' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Ignored <span class="badge badge-sm ml-1">{{ $statusCounts['ignored'] }}</span>
+        <a href="{{ route('class-requests.index', ['status' => 'need_to_convert']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'need_to_convert' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
+            Need to Convert <span class="badge badge-primary badge-sm ml-1">{{ $statusCounts['need_to_convert'] }}</span>
+        </a>
+        <a href="{{ route('class-requests.index', ['status' => 'booked']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'booked' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
+            Booked <span class="badge badge-success badge-sm ml-1">{{ $statusCounts['booked'] }}</span>
         </a>
     </div>
 
@@ -94,67 +97,77 @@
                     <thead>
                         <tr>
                             <th>Requester</th>
-                            <th>Type</th>
-                            <th>Class/Service</th>
-                            <th>Preferred Schedule</th>
+                            <th>Class</th>
+                            <th>Message</th>
                             <th>Status</th>
+                            <th>Waitlist</th>
                             <th>Submitted</th>
                             <th class="w-32">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($requests as $request)
+                        @foreach($requests as $classRequest)
                         <tr>
                             <td>
-                                <div class="font-medium">{{ $request->requester_name }}</div>
-                                <div class="text-sm text-base-content/60">{{ $request->requester_email }}</div>
+                                <div class="font-medium">{{ $classRequest->full_name }}</div>
+                                <div class="text-sm text-base-content/60">{{ $classRequest->email }}</div>
+                                @if($classRequest->phone)
+                                <div class="text-sm text-base-content/60">{{ $classRequest->phone }}</div>
+                                @endif
                             </td>
                             <td>
-                                <span class="badge {{ $request->isClassRequest() ? 'badge-primary' : 'badge-secondary' }} badge-soft badge-sm">
-                                    {{ $request->getTypeLabel() }}
-                                </span>
-                            </td>
-                            <td>
-                                @if($request->getPlan())
+                                @if($classRequest->classPlan)
                                 <div class="flex items-center gap-2">
-                                    <div class="w-3 h-3 rounded-full" style="background-color: {{ $request->getPlan()->color }};"></div>
-                                    {{ $request->getPlan()->name }}
+                                    @if($classRequest->classPlan->color)
+                                    <div class="w-3 h-3 rounded-full" style="background-color: {{ $classRequest->classPlan->color }};"></div>
+                                    @endif
+                                    {{ $classRequest->classPlan->name }}
                                 </div>
                                 @else
                                 <span class="text-base-content/60">-</span>
                                 @endif
                             </td>
                             <td>
-                                <div class="text-sm">
-                                    <div>{{ $request->formatted_preferred_days }}</div>
-                                    <div class="text-base-content/60">{{ $request->formatted_preferred_times }}</div>
+                                <div class="max-w-xs truncate text-sm text-base-content/70">
+                                    {{ $classRequest->message ?: '-' }}
                                 </div>
                             </td>
                             <td>
-                                <span class="badge {{ $request->getStatusBadgeClass() }} badge-soft badge-sm capitalize">{{ $request->status }}</span>
+                                <span class="badge {{ $classRequest->getStatusBadgeClass() }} badge-sm">
+                                    {{ $statuses[$classRequest->status] ?? ucfirst(str_replace('_', ' ', $classRequest->status)) }}
+                                </span>
                             </td>
-                            <td>{{ $request->created_at->diffForHumans() }}</td>
+                            <td>
+                                @if($classRequest->waitlist_requested)
+                                <span class="badge badge-info badge-sm">Yes</span>
+                                @else
+                                <span class="text-base-content/40">-</span>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="text-sm">{{ $classRequest->created_at->format('M j, Y') }}</div>
+                                <div class="text-xs text-base-content/60">{{ $classRequest->created_at->diffForHumans() }}</div>
+                            </td>
                             <td>
                                 <div class="flex items-center gap-1">
-                                    <a href="{{ route('class-requests.show', $request) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                    <a href="{{ route('class-requests.show', $classRequest) }}" class="btn btn-ghost btn-xs btn-square" title="View Details">
                                         <span class="icon-[tabler--eye] size-4"></span>
                                     </a>
-                                    @if($request->isPending())
-                                    <form action="{{ route('class-requests.schedule', $request) }}" method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="Schedule">
-                                            <span class="icon-[tabler--calendar-plus] size-4"></span>
-                                        </button>
-                                    </form>
-                                    <form action="{{ route('class-requests.ignore', $request) }}" method="POST" class="inline">
+                                    @if($classRequest->helpdeskTicket)
+                                    <a href="{{ route('helpdesk.show', $classRequest->helpdeskTicket) }}" class="btn btn-ghost btn-xs btn-square" title="View Ticket">
+                                        <span class="icon-[tabler--ticket] size-4"></span>
+                                    </a>
+                                    @endif
+                                    @if($classRequest->status !== 'booked')
+                                    <form action="{{ route('class-requests.mark-booked', $classRequest) }}" method="POST" class="inline">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-base-content/50" title="Ignore">
-                                            <span class="icon-[tabler--x] size-4"></span>
+                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="Mark as Booked">
+                                            <span class="icon-[tabler--check] size-4"></span>
                                         </button>
                                     </form>
                                     @endif
-                                    <form action="{{ route('class-requests.destroy', $request) }}" method="POST" class="inline" onsubmit="return confirm('Delete this request?')">
+                                    <form action="{{ route('class-requests.destroy', $classRequest) }}" method="POST" class="inline" onsubmit="return confirm('Delete this request?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">

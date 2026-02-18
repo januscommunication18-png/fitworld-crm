@@ -22,6 +22,7 @@ use App\Http\Controllers\Host\CatalogController;
 use App\Http\Controllers\Host\ClassPlanController;
 use App\Http\Controllers\Host\ClassSessionController;
 use App\Http\Controllers\Host\ClassRequestController;
+use App\Http\Controllers\Host\WaitlistController;
 use App\Http\Controllers\Host\ServicePlanController;
 use App\Http\Controllers\Host\ServiceSlotController;
 use App\Http\Controllers\Host\MembershipPlanController;
@@ -270,9 +271,19 @@ Route::middleware('auth')->group(function () {
     // Class Requests
     Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');
     Route::get('/class-requests/{class_request}', [ClassRequestController::class, 'show'])->name('class-requests.show');
+    Route::patch('/class-requests/{class_request}/status', [ClassRequestController::class, 'updateStatus'])->name('class-requests.update-status');
+    Route::patch('/class-requests/{class_request}/booked', [ClassRequestController::class, 'markAsBooked'])->name('class-requests.mark-booked');
     Route::post('/class-requests/{class_request}/schedule', [ClassRequestController::class, 'scheduleFromRequest'])->name('class-requests.schedule');
-    Route::patch('/class-requests/{class_request}/ignore', [ClassRequestController::class, 'ignore'])->name('class-requests.ignore');
+    Route::post('/class-requests/{class_request}/add-to-waitlist', [ClassRequestController::class, 'addToWaitlist'])->name('class-requests.add-to-waitlist');
     Route::delete('/class-requests/{class_request}', [ClassRequestController::class, 'destroy'])->name('class-requests.destroy');
+
+    // Waitlist
+    Route::get('/waitlist', [WaitlistController::class, 'index'])->name('waitlist.index');
+    Route::get('/waitlist/{waitlist_entry}', [WaitlistController::class, 'show'])->name('waitlist.show');
+    Route::patch('/waitlist/{waitlist_entry}/status', [WaitlistController::class, 'updateStatus'])->name('waitlist.update-status');
+    Route::patch('/waitlist/{waitlist_entry}/offer', [WaitlistController::class, 'offer'])->name('waitlist.offer');
+    Route::patch('/waitlist/{waitlist_entry}/cancel', [WaitlistController::class, 'cancel'])->name('waitlist.cancel');
+    Route::delete('/waitlist/{waitlist_entry}', [WaitlistController::class, 'destroy'])->name('waitlist.destroy');
 
     // Payments
     Route::get('/payments/transactions', [PaymentController::class, 'transactions'])->name('payments.transactions');

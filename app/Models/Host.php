@@ -310,6 +310,11 @@ class Host extends Model
         return $this->hasMany(ClassRequest::class);
     }
 
+    public function waitlistEntries(): HasMany
+    {
+        return $this->hasMany(WaitlistEntry::class);
+    }
+
     public function helpdeskTickets(): HasMany
     {
         return $this->hasMany(HelpdeskTicket::class);

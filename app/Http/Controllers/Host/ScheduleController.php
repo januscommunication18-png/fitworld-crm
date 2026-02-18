@@ -48,6 +48,8 @@ class ScheduleController extends Controller
         return view('host.schedule.calendar', [
             'locations' => $host->locations()->orderBy('name')->get(),
             'instructors' => $host->instructors()->active()->orderBy('name')->get(),
+            'classPlans' => $host->classPlans()->where('is_active', true)->orderBy('name')->get(),
+            'servicePlans' => $host->servicePlans()->where('is_active', true)->orderBy('name')->get(),
             'classSessions' => $classSessions,
             'serviceSlots' => $serviceSlots,
             'timezone' => $host->timezone ?? config('app.timezone', 'America/New_York'),
@@ -183,6 +185,10 @@ class ScheduleController extends Controller
                 $classSessionsQuery->where('location_id', $request->location_id);
             }
 
+            if ($request->filled('class_plan_id')) {
+                $classSessionsQuery->where('class_plan_id', $request->class_plan_id);
+            }
+
             foreach ($classSessionsQuery->get() as $session) {
                 $confirmedBookings = $session->confirmedBookings;
                 $checkedInCount = $confirmedBookings->filter(fn($b) => $b->checked_in_at !== null)->count();
@@ -224,6 +230,10 @@ class ScheduleController extends Controller
 
             if ($request->filled('location_id')) {
                 $serviceSlotsQuery->where('location_id', $request->location_id);
+            }
+
+            if ($request->filled('service_plan_id')) {
+                $serviceSlotsQuery->where('service_plan_id', $request->service_plan_id);
             }
 
             foreach ($serviceSlotsQuery->get() as $slot) {

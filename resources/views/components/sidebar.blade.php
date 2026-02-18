@@ -61,13 +61,13 @@
 
             {{-- Schedule - Requires schedule.view or schedule.view_own --}}
             @if($canViewSchedule)
-            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('class-requests*') ? 'active' : '' }}" data-nav="schedule">
+            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') ? 'active' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">Schedule</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('class-requests*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
                     <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>Calendar View
                     </a></li>
@@ -78,18 +78,6 @@
                     <li><a href="{{ url('/service-slots') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('service-slots*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clock] size-4 mr-2"></span>Service Slots
                     </a></li>
-                    <li><a href="{{ url('/class-requests') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-requests*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--message-circle-question] size-4 mr-2"></span>Requests
-                        @php $pendingRequests = auth()->user()?->host?->classRequests()->pending()->count() ?? 0; @endphp
-                        @if($pendingRequests > 0)
-                        <span class="badge badge-xs badge-warning ml-1">{{ $pendingRequests }}</span>
-                        @endif
-                    </a></li>
-                    @endif
-                    @if($user->hasPermission('bookings.waitlist'))
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--hourglass] size-4 mr-2"></span>Waitlist
-                    </a></li>
                     @endif
                 </ul>
             </li>
@@ -97,13 +85,13 @@
 
             {{-- Bookings - Requires bookings.view or bookings.view_own --}}
             @if($canViewBookings)
-            <li class="nav-item {{ request()->is('bookings*') ? 'active' : '' }}" data-nav="bookings">
+            <li class="nav-item {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') ? 'active' : '' }}" data-nav="bookings">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--book] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">Bookings</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('bookings*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
                     <li><a href="{{ route('bookings.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('bookings') && !request()->is('bookings/*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clipboard-list] size-4 mr-2"></span>{{ $user->hasPermission('bookings.view') ? 'All Bookings' : 'My Class Bookings' }}
                     </a></li>
@@ -116,6 +104,24 @@
                     </a></li>
                     <li><a href="{{ route('bookings.no-shows') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('bookings/no-shows*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--user-x] size-4 mr-2"></span>No-Shows
+                    </a></li>
+                    @endif
+                    @if($user->hasPermission('schedule.view'))
+                    <li><a href="{{ url('/class-requests') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-requests*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--message-circle-question] size-4 mr-2"></span>Requests
+                        @php $unresolvedRequests = auth()->user()?->host?->classRequests()->unresolved()->count() ?? 0; @endphp
+                        @if($unresolvedRequests > 0)
+                        <span class="badge badge-xs badge-info ml-1">{{ $unresolvedRequests }}</span>
+                        @endif
+                    </a></li>
+                    @endif
+                    @if($user->hasPermission('bookings.waitlist'))
+                    <li><a href="{{ route('waitlist.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('waitlist*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--hourglass] size-4 mr-2"></span>Waitlist
+                        @php $waitingCount = auth()->user()?->host?->waitlistEntries()->waiting()->count() ?? 0; @endphp
+                        @if($waitingCount > 0)
+                        <span class="badge badge-xs badge-info ml-1">{{ $waitingCount }}</span>
+                        @endif
                     </a></li>
                     @endif
                 </ul>

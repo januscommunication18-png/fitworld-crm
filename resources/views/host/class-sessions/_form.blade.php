@@ -57,13 +57,16 @@
 </style>
 @endpush
 
-<div class="space-y-6 max-w-4xl mx-auto">
+<div class="space-y-6">
     {{-- Main Form --}}
     <div class="space-y-6">
-        {{-- Class Selection --}}
+        {{-- Card 1: Class Selection --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Class Selection</h3>
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">1</span>
+                    <h3 class="card-title">Class Selection</h3>
+                </div>
             </div>
             <div class="card-body space-y-4">
                 <div>
@@ -110,79 +113,309 @@
             </div>
         </div>
 
-        {{-- Instructors --}}
+        {{-- Card 2: Date & Time --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Instructors</h3>
-            </div>
-            <div class="card-body space-y-4">
-                {{-- Primary Instructor --}}
-                <div>
-                    <label class="label-text" for="primary_instructor_id">Primary Instructor</label>
-                    <select id="primary_instructor_id" name="primary_instructor_id" class="hidden @error('primary_instructor_id') input-error @enderror" required
-                        data-select='{
-                            "hasSearch": true,
-                            "searchPlaceholder": "Search instructors...",
-                            "placeholder": "Select an instructor...",
-                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                            "toggleClasses": "advance-select-toggle",
-                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                            "optionClasses": "advance-select-option selected:select-active",
-                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                        }'>
-                        <option value="">Select an instructor...</option>
-                        @foreach($instructors as $instructor)
-                        <option value="{{ $instructor->id }}" {{ old('primary_instructor_id', $classSession?->primary_instructor_id) == $instructor->id ? 'selected' : '' }}>
-                            {{ $instructor->name }}
-                        </option>
-                        @endforeach
-                    </select>
-                    @error('primary_instructor_id')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">2</span>
+                    <h3 class="card-title">Date & Time</h3>
                 </div>
-
-                {{-- Backup Instructors (Multiple) --}}
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="label-text">Backup Instructors (optional)</label>
-                        <button type="button" id="add-backup-instructor" class="btn btn-ghost btn-sm btn-circle text-primary" title="Add backup instructor">
-                            <span class="icon-[tabler--plus] size-5"></span>
-                        </button>
-                    </div>
-                    <div id="backup-instructors-container" class="space-y-2">
-                        @php
-                            $backupInstructorIds = old('backup_instructor_ids', $classSession?->backupInstructors?->pluck('id')->toArray() ?? []);
-                            if (empty($backupInstructorIds)) {
-                                $backupInstructorIds = [null]; // Show one empty row by default
-                            }
-                        @endphp
-                        @foreach($backupInstructorIds as $index => $backupId)
-                        <div class="backup-instructor-row flex items-center gap-2" data-index="{{ $index }}">
-                            <div class="flex-1">
-                                <select name="backup_instructor_ids[]" class="select w-full backup-instructor-select">
-                                    <option value="">Select backup instructor...</option>
-                                    @foreach($instructors as $instructor)
-                                    <option value="{{ $instructor->id }}" {{ $backupId == $instructor->id ? 'selected' : '' }}>
-                                        {{ $instructor->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {{-- Left: Date/Time Fields --}}
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="label-text" for="session_date">Date</label>
+                                <input type="text" id="session_date" name="session_date"
+                                    value="{{ old('session_date', $selectedDate) }}"
+                                    class="input w-full flatpickr-date @error('session_date') input-error @enderror"
+                                    placeholder="Select date..."
+                                    required>
+                                @error('session_date')
+                                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                                @enderror
                             </div>
-                            <button type="button" class="remove-backup-instructor btn btn-ghost btn-sm btn-circle text-error flex-shrink-0" title="Remove">
-                                <span class="icon-[tabler--trash] size-4"></span>
-                            </button>
+                            <div>
+                                <label class="label-text" for="session_time">Start Time</label>
+                                <input type="text" id="session_time" name="session_time"
+                                    value="{{ old('session_time', $classSession?->start_time?->format('H:i') ?? '09:00') }}"
+                                    class="input w-full flatpickr-time @error('session_time') input-error @enderror"
+                                    placeholder="Select time..."
+                                    required>
+                                @error('session_time')
+                                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label class="label-text" for="duration_minutes">Duration (minutes)</label>
+                                <input type="number" id="duration_minutes" name="duration_minutes"
+                                    value="{{ old('duration_minutes', $classSession?->duration_minutes ?? 60) }}"
+                                    class="input w-full @error('duration_minutes') input-error @enderror"
+                                    min="5" max="480" required>
+                                @error('duration_minutes')
+                                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
-                        @endforeach
+
+                        <div id="time-preview" class="text-sm text-base-content/60 hidden">
+                            Session: <span id="preview-start"></span> - <span id="preview-end"></span>
+                        </div>
+
+                        {{-- Recurring Class Toggle --}}
+                        @if(!$classSession)
+                        <div class="border-t border-base-200 pt-4">
+                            <label class="flex items-center gap-3 cursor-pointer" for="is_recurring">
+                                <input type="checkbox" id="is_recurring" name="is_recurring" value="1" class="checkbox checkbox-primary"
+                                    {{ old('is_recurring') ? 'checked' : '' }}>
+                                <div>
+                                    <span class="label-text font-medium">Recurring Class</span>
+                                    <p class="text-xs text-base-content/50">Create multiple sessions on selected days of the week</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        {{-- Recurring Options (hidden by default) --}}
+                        <div id="recurring-options" class="space-y-4 {{ old('is_recurring') ? '' : 'hidden' }}">
+                            {{-- Days of Week Selection --}}
+                            <div>
+                                <label class="label-text mb-2 block">Days of Week</label>
+                                <div class="flex flex-wrap gap-2" id="days-of-week-selector">
+                                    @foreach(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $index => $day)
+                                    <label class="day-checkbox flex items-center justify-center w-14 h-10 rounded-lg border-2 border-base-300 cursor-pointer hover:bg-base-200 has-[:checked]:border-primary has-[:checked]:bg-primary/10 transition-all" for="day-{{ $index }}">
+                                        <input type="checkbox" id="day-{{ $index }}" name="recurrence_days[]" value="{{ $index }}" class="hidden session-day-checkbox"
+                                            {{ is_array(old('recurrence_days')) && in_array($index, old('recurrence_days')) ? 'checked' : '' }}>
+                                        <span class="text-sm font-medium">{{ $day }}</span>
+                                    </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            {{-- End Date --}}
+                            <div>
+                                <label class="label-text" for="recurrence_end_date">End Date (optional)</label>
+                                <input type="text" id="recurrence_end_date" name="recurrence_end_date"
+                                    value="{{ old('recurrence_end_date') }}"
+                                    class="input w-full flatpickr-date"
+                                    placeholder="Select end date...">
+                                <p class="text-xs text-base-content/50 mt-1">Leave empty to create sessions for up to 1 year</p>
+                            </div>
+
+                            {{-- Hidden field for recurrence_end_type --}}
+                            <input type="hidden" name="recurrence_end_type" id="recurrence_end_type" value="never">
+                        </div>
+                        @endif
                     </div>
-                    <p class="text-base-content/60 text-sm mt-2">Add backup instructors in order of priority. First backup will be called first.</p>
-                    @error('backup_instructor_ids')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                    @error('backup_instructor_ids.*')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
+
+                    {{-- Right: Sessions Preview Panel --}}
+                    <div>
+                        {{-- Placeholder (shown when not recurring or no days selected) --}}
+                        <div id="sessions-preview-placeholder" class="text-center py-12 border-2 border-dashed border-base-300 rounded-lg">
+                            <span class="icon-[tabler--calendar-event] size-12 text-base-content/20 mx-auto mb-3"></span>
+                            <p class="text-base-content/50">Enable recurring to see session preview</p>
+                        </div>
+
+                        {{-- Sessions Preview Panel --}}
+                        <div id="sessions-preview-panel" class="hidden">
+                            {{-- Header --}}
+                            <div class="flex items-center gap-4 bg-base-200 rounded-lg p-4 mb-4">
+                                <div class="flex items-center justify-center size-12 rounded-full bg-primary text-primary-content">
+                                    <span class="icon-[tabler--calendar-repeat] size-6"></span>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-lg">Sessions to be Created</div>
+                                    <div class="text-sm text-base-content/60" id="sessions-count">0 sessions</div>
+                                </div>
+                            </div>
+
+                            {{-- Sessions List --}}
+                            <div id="sessions-list" class="space-y-2 max-h-72 overflow-y-auto">
+                                {{-- Sessions will be populated here --}}
+                            </div>
+
+                            {{-- Show More Toggle --}}
+                            <div id="sessions-show-more" class="hidden mt-3 text-center">
+                                <button type="button" id="toggle-sessions-btn" class="btn btn-ghost btn-sm text-primary">
+                                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                                    Show all sessions
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Card 3: Instructors --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">3</span>
+                    <h3 class="card-title">Instructors</h3>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {{-- Left: Instructor Selection --}}
+                    <div class="space-y-4">
+                        {{-- Primary Instructor --}}
+                        <div>
+                            <label class="label-text" for="primary_instructor_id">Primary Instructor <span class="text-error">*</span></label>
+                            <select id="primary_instructor_id" name="primary_instructor_id" class="hidden @error('primary_instructor_id') input-error @enderror" required
+                                data-select='{
+                                    "hasSearch": true,
+                                    "searchPlaceholder": "Search instructors...",
+                                    "placeholder": "Select an instructor...",
+                                    "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                                    "toggleClasses": "advance-select-toggle",
+                                    "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+                                    "optionClasses": "advance-select-option selected:select-active",
+                                    "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                                    "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+                                }'>
+                                <option value="">Select an instructor...</option>
+                                @foreach($instructors as $instructor)
+                                <option value="{{ $instructor->id }}" {{ old('primary_instructor_id', $classSession?->primary_instructor_id) == $instructor->id ? 'selected' : '' }}>
+                                    {{ $instructor->name }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @error('primary_instructor_id')
+                                <p class="text-error text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        {{-- Backup Instructors (Multiple) --}}
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="label-text">Backup Instructors (optional)</label>
+                                <button type="button" id="add-backup-instructor" class="btn btn-ghost btn-sm btn-circle text-primary" title="Add backup instructor">
+                                    <span class="icon-[tabler--plus] size-5"></span>
+                                </button>
+                            </div>
+                            <div id="backup-instructors-container" class="space-y-2">
+                                @php
+                                    $backupInstructorIds = old('backup_instructor_ids', $classSession?->backupInstructors?->pluck('id')->toArray() ?? []);
+                                    if (empty($backupInstructorIds)) {
+                                        $backupInstructorIds = [null]; // Show one empty row by default
+                                    }
+                                @endphp
+                                @foreach($backupInstructorIds as $index => $backupId)
+                                <div class="backup-instructor-row flex items-center gap-2" data-index="{{ $index }}">
+                                    <div class="flex-1">
+                                        <select name="backup_instructor_ids[]" class="select w-full backup-instructor-select">
+                                            <option value="">Select backup instructor...</option>
+                                            @foreach($instructors as $instructor)
+                                            <option value="{{ $instructor->id }}" {{ $backupId == $instructor->id ? 'selected' : '' }}>
+                                                {{ $instructor->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <button type="button" class="remove-backup-instructor btn btn-ghost btn-sm btn-circle text-error flex-shrink-0" title="Remove">
+                                        <span class="icon-[tabler--trash] size-4"></span>
+                                    </button>
+                                </div>
+                                @endforeach
+                            </div>
+                            <p class="text-base-content/60 text-xs mt-2">Add backup instructors in order of priority.</p>
+                            @error('backup_instructor_ids')
+                                <p class="text-error text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    {{-- Right: Instructor Availability Panel --}}
+                    <div>
+                        {{-- Placeholder (shown when no instructor selected) --}}
+                        <div id="instructor-avail-placeholder" class="text-center py-12 border-2 border-dashed border-base-300 rounded-lg">
+                            <span class="icon-[tabler--user] size-12 text-base-content/20 mx-auto mb-3"></span>
+                            <p class="text-base-content/50">Select an instructor and date to see their availability</p>
+                        </div>
+
+                        {{-- Loading State --}}
+                        <div id="instructor-avail-loading" class="hidden text-center py-12">
+                            <span class="loading loading-spinner loading-lg text-primary"></span>
+                            <p class="text-base-content/50 mt-3">Loading availability...</p>
+                        </div>
+
+                        {{-- Availability Panel (shows for all selected days) --}}
+                        <div id="instructor-avail-panel" class="hidden space-y-4">
+                            {{-- Instructor Info --}}
+                            <div class="flex items-center gap-4 bg-base-200 rounded-lg p-4">
+                                <div class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content size-12 rounded-full">
+                                        <span id="instructor-avail-initials" class="text-lg font-bold">JS</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-lg" id="instructor-avail-name">Instructor Name</div>
+                                    <div class="text-sm text-base-content/60" id="instructor-avail-subtitle">Availability</div>
+                                </div>
+                            </div>
+
+                            {{-- Time Slot Display --}}
+                            <div id="instructor-time-slot" class="hidden">
+                                <div class="text-sm font-medium text-base-content/60 mb-2">Available Hours</div>
+                                <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                                    <span class="icon-[tabler--clock] size-5 text-primary"></span>
+                                    <span id="instructor-time-range" class="font-semibold text-lg">9:00 AM - 5:00 PM</span>
+                                </div>
+                            </div>
+
+                            {{-- Available Time Slots (clickable) --}}
+                            <div id="available-time-slots-section" class="hidden">
+                                <div class="text-sm font-medium text-base-content/60 mb-2">Available Time Slots</div>
+                                <div id="available-time-slots-loading" class="hidden py-4 text-center">
+                                    <span class="loading loading-spinner loading-sm text-primary"></span>
+                                    <span class="text-sm text-base-content/50 ml-2">Loading slots...</span>
+                                </div>
+                                <div id="available-time-slots-grid" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                                    {{-- Time slots will be populated here --}}
+                                </div>
+                                <div id="available-time-slots-empty" class="hidden py-4 text-center">
+                                    <span class="icon-[tabler--calendar-off] size-8 text-base-content/20"></span>
+                                    <p class="text-sm text-base-content/50 mt-2">No available slots for this date</p>
+                                </div>
+                            </div>
+
+                            {{-- Real-time Scheduling Warning --}}
+                            <div id="realtime-scheduling-warning" class="hidden">
+                                <div class="alert alert-soft alert-warning">
+                                    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold">Scheduling Warning</h4>
+                                        <p id="realtime-warning-message" class="text-sm"></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Working Days with Selection Indicator --}}
+                            <div>
+                                <div class="text-sm font-medium text-base-content/60 mb-2">Working Days</div>
+                                <div class="flex gap-2" id="instructor-avail-working-days">
+                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">S</span>
+                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">M</span>
+                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">T</span>
+                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">W</span>
+                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">T</span>
+                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">F</span>
+                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">S</span>
+                                </div>
+                                <p class="text-xs text-base-content/50 mt-2">
+                                    <span class="inline-block w-3 h-3 rounded bg-success/20 border-2 border-success mr-1 align-middle"></span> Works this day
+                                    <span class="inline-block w-3 h-3 rounded bg-primary ring-2 ring-primary ring-offset-1 ml-3 mr-1 align-middle"></span> Selected day
+                                </p>
+                            </div>
+
+                            {{-- Days Availability Summary --}}
+                            <div id="instructor-days-availability" class="space-y-2">
+                                {{-- Will be populated dynamically --}}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -208,109 +441,13 @@
         </div>
         @endif
 
-        {{-- Date & Time --}}
+        {{-- Card 4: Location --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Date & Time</h3>
-            </div>
-            <div class="card-body space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="label-text" for="session_date">Date</label>
-                        <input type="text" id="session_date" name="session_date"
-                            value="{{ old('session_date', $selectedDate) }}"
-                            class="input w-full flatpickr-date @error('session_date') input-error @enderror"
-                            placeholder="Select date..."
-                            required>
-                        @error('session_date')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="label-text" for="session_time">Start Time</label>
-                        <input type="text" id="session_time" name="session_time"
-                            value="{{ old('session_time', $classSession?->start_time?->format('H:i') ?? '09:00') }}"
-                            class="input w-full flatpickr-time @error('session_time') input-error @enderror"
-                            placeholder="Select time..."
-                            required>
-                        @error('session_time')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="label-text" for="duration_minutes">Duration (minutes)</label>
-                        <input type="number" id="duration_minutes" name="duration_minutes"
-                            value="{{ old('duration_minutes', $classSession?->duration_minutes ?? 60) }}"
-                            class="input w-full @error('duration_minutes') input-error @enderror"
-                            min="5" max="480" required>
-                        @error('duration_minutes')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">4</span>
+                    <h3 class="card-title">Location</h3>
                 </div>
-
-                <div id="time-preview" class="text-sm text-base-content/60 hidden">
-                    Session: <span id="preview-start"></span> - <span id="preview-end"></span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Recurrence (only for create) --}}
-        @if(!$classSession)
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <h3 class="card-title">Recurrence</h3>
-                <span class="badge badge-soft badge-neutral badge-sm">Optional</span>
-            </div>
-            <div class="card-body space-y-4">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="is_recurring" name="is_recurring" value="1" class="checkbox checkbox-primary checkbox-sm" {{ old('is_recurring') ? 'checked' : '' }}>
-                    <span class="label-text">Create recurring sessions</span>
-                </label>
-
-                <div id="recurrence-options" class="space-y-4 {{ old('is_recurring') ? '' : 'hidden' }}">
-                    <div>
-                        <label class="label-text">Days of Week</label>
-                        <div class="flex flex-wrap gap-2 mt-2">
-                            @foreach(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as $index => $day)
-                            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200">
-                                <input type="checkbox" name="recurrence_days[]" value="{{ $index }}" class="checkbox checkbox-sm checkbox-primary"
-                                    {{ is_array(old('recurrence_days')) && in_array($index, old('recurrence_days')) ? 'checked' : '' }}>
-                                <span class="text-sm">{{ $day }}</span>
-                            </label>
-                            @endforeach
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="label-text">End Recurrence</label>
-                        <div class="space-y-2 mt-2">
-                            <label class="flex items-center gap-2">
-                                <input type="radio" name="recurrence_end_type" value="never" class="radio radio-sm radio-primary" {{ old('recurrence_end_type', 'never') === 'never' ? 'checked' : '' }}>
-                                <span class="label-text">Never (creates up to 52 sessions)</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="radio" name="recurrence_end_type" value="after" class="radio radio-sm radio-primary" {{ old('recurrence_end_type') === 'after' ? 'checked' : '' }}>
-                                <span class="label-text">After</span>
-                                <input type="number" name="recurrence_count" value="{{ old('recurrence_count', 10) }}" class="input input-sm w-20" min="2" max="52">
-                                <span class="label-text">occurrences</span>
-                            </label>
-                            <label class="flex items-center gap-2">
-                                <input type="radio" name="recurrence_end_type" value="on" class="radio radio-sm radio-primary" {{ old('recurrence_end_type') === 'on' ? 'checked' : '' }}>
-                                <span class="label-text">On date</span>
-                                <input type="text" name="recurrence_end_date" id="recurrence_end_date" value="{{ old('recurrence_end_date') }}" class="input input-sm flatpickr-date" placeholder="Select date...">
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endif
-
-        {{-- Location --}}
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <h3 class="card-title">Location</h3>
                 <span class="badge badge-soft badge-neutral badge-sm">Optional</span>
             </div>
             <div class="card-body space-y-4">
@@ -421,10 +558,13 @@
             </div>
         </div>
 
-        {{-- Capacity & Price --}}
+        {{-- Card 5: Capacity & Price --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Capacity & Price</h3>
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">5</span>
+                    <h3 class="card-title">Capacity & Price</h3>
+                </div>
             </div>
             <div class="card-body space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -453,10 +593,13 @@
             </div>
         </div>
 
-        {{-- Notes --}}
+        {{-- Card 6: Notes --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Internal Notes</h3>
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">6</span>
+                    <h3 class="card-title">Internal Notes</h3>
+                </div>
             </div>
             <div class="card-body">
                 <textarea id="notes" name="notes" rows="3"
@@ -542,8 +685,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var previewStart = document.getElementById('preview-start');
     var previewEnd = document.getElementById('preview-end');
     var locationSelect = document.getElementById('location_id');
-    var isRecurringCheckbox = document.getElementById('is_recurring');
-    var recurrenceOptions = document.getElementById('recurrence-options');
 
     // Track if user has manually edited capacity/price
     var isEditMode = @json($classSession !== null);
@@ -826,17 +967,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 200);
     }, 100);
 
-    // Toggle recurrence options
-    if (isRecurringCheckbox) {
-        isRecurringCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                recurrenceOptions.classList.remove('hidden');
-            } else {
-                recurrenceOptions.classList.add('hidden');
-            }
-        });
-    }
-
     // Initialize flatpickr for date inputs
     flatpickr('.flatpickr-date', {
         altInput: true,
@@ -851,8 +981,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Initialize flatpickr for time inputs
-    flatpickr('.flatpickr-time', {
+    // Initialize flatpickr for time inputs (store instance for later updates)
+    var timePickerInstance = flatpickr('.flatpickr-time', {
         enableTime: true,
         noCalendar: true,
         dateFormat: 'H:i',
@@ -865,8 +995,146 @@ document.addEventListener('DOMContentLoaded', function() {
         static: false,
         onChange: function() {
             updateTimePreview();
+            // Re-check conflicts when time changes
+            if (cachedInstructorData) {
+                checkSchedulingConflict(cachedInstructorData);
+            }
         }
     });
+
+    // Function to update time picker based on instructor availability
+    function updateTimePickerFromAvailability(data) {
+        if (!data || !data.availability || !timePickerInstance) return;
+
+        // Parse instructor availability times
+        function parseTime12hToMinutes(timeStr) {
+            var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return null;
+            var hours = parseInt(match[1]);
+            var minutes = parseInt(match[2]);
+            var isPM = match[3].toUpperCase() === 'PM';
+            if (isPM && hours !== 12) hours += 12;
+            if (!isPM && hours === 12) hours = 0;
+            return hours * 60 + minutes;
+        }
+
+        function minutesToTime24(totalMinutes) {
+            var hours = Math.floor(totalMinutes / 60);
+            var minutes = totalMinutes % 60;
+            return (hours < 10 ? '0' : '') + hours + ':' + (minutes < 10 ? '0' : '') + minutes;
+        }
+
+        var availFromMinutes = parseTime12hToMinutes(data.availability.from);
+        var availToMinutes = parseTime12hToMinutes(data.availability.to);
+
+        if (availFromMinutes === null || availToMinutes === null) return;
+
+        // Get current time value
+        var currentTime = timeInput.value;
+        var currentMinutes = 0;
+        if (currentTime) {
+            var parts = currentTime.split(':');
+            currentMinutes = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+
+        // Check if current time is outside availability
+        if (currentMinutes < availFromMinutes || currentMinutes >= availToMinutes) {
+            // Set time to instructor's start time
+            var newTime = minutesToTime24(availFromMinutes);
+            timePickerInstance.setDate(newTime, true);
+            timeInput.value = newTime;
+            updateTimePreview();
+        }
+
+        // Update flatpickr min/max times
+        var minTimeStr = minutesToTime24(availFromMinutes);
+        var maxTimeStr = minutesToTime24(availToMinutes - 15); // Subtract 15 min so session can fit
+
+        timePickerInstance.set('minTime', minTimeStr);
+        timePickerInstance.set('maxTime', maxTimeStr);
+    }
+
+    // Function to fetch and display available time slots
+    function loadAvailableTimeSlots() {
+        var instructorId = primaryInstructorSelect.value;
+        var selectedDate = dateInput.value;
+        var duration = parseInt(durationInput.value) || 60;
+
+        // Hide slots section if no instructor or date
+        if (!instructorId || !selectedDate) {
+            availableSlotsSection.classList.add('hidden');
+            return;
+        }
+
+        // Show loading
+        availableSlotsSection.classList.remove('hidden');
+        availableSlotsLoading.classList.remove('hidden');
+        availableSlotsGrid.classList.add('hidden');
+        availableSlotsEmpty.classList.add('hidden');
+
+        // Fetch available slots
+        fetch('/walk-in/available-slots?instructor_id=' + instructorId + '&date=' + selectedDate + '&duration=' + duration)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                availableSlotsLoading.classList.add('hidden');
+
+                if (data.slots && data.slots.length > 0) {
+                    availableSlotsGrid.classList.remove('hidden');
+                    renderTimeSlots(data.slots);
+                } else {
+                    availableSlotsEmpty.classList.remove('hidden');
+                }
+            })
+            .catch(function(err) {
+                console.error('Error fetching slots:', err);
+                availableSlotsLoading.classList.add('hidden');
+                availableSlotsEmpty.classList.remove('hidden');
+            });
+    }
+
+    // Render clickable time slots
+    function renderTimeSlots(slots) {
+        var currentTime = timeInput.value;
+        var html = '';
+
+        slots.forEach(function(slot) {
+            var isSelected = slot.time === currentTime;
+            var btnClass = isSelected
+                ? 'btn btn-sm btn-primary'
+                : 'btn btn-sm btn-outline btn-primary';
+
+            html += '<button type="button" class="time-slot-btn ' + btnClass + '" data-time="' + slot.time + '">' +
+                slot.display +
+                '</button>';
+        });
+
+        availableSlotsGrid.innerHTML = html;
+
+        // Add click handlers
+        availableSlotsGrid.querySelectorAll('.time-slot-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var selectedTime = this.dataset.time;
+
+                // Update time input
+                timePickerInstance.setDate(selectedTime, true);
+                timeInput.value = selectedTime;
+                updateTimePreview();
+
+                // Update button styles
+                availableSlotsGrid.querySelectorAll('.time-slot-btn').forEach(function(b) {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-outline', 'btn-primary');
+                });
+                this.classList.remove('btn-outline');
+                this.classList.add('btn-primary');
+
+                // Re-check conflicts
+                if (cachedInstructorData) {
+                    checkSchedulingConflict(cachedInstructorData);
+                }
+            });
+        });
+    }
 
     // Backup instructors dynamic add/remove
     var backupContainer = document.getElementById('backup-instructors-container');
@@ -1004,6 +1272,7 @@ document.addEventListener('DOMContentLoaded', function() {
         mutations.forEach(function(mutation) {
             if (mutation.attributeName === 'value' || mutation.type === 'childList') {
                 updateBackupDropdowns();
+                loadInstructorAvailability();
             }
         });
     });
@@ -1012,6 +1281,471 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initial update
     updateRemoveButtons();
     updateBackupDropdowns();
+
+    // =====================================================
+    // Recurring Class Toggle & Days of Week Selection
+    // =====================================================
+    var isRecurringCheckbox = document.getElementById('is_recurring');
+    var recurringOptions = document.getElementById('recurring-options');
+    var dayCheckboxes = document.querySelectorAll('.session-day-checkbox');
+    var sessionsPreviewPlaceholder = document.getElementById('sessions-preview-placeholder');
+    var sessionsPreviewPanel = document.getElementById('sessions-preview-panel');
+    var sessionsList = document.getElementById('sessions-list');
+    var sessionsCount = document.getElementById('sessions-count');
+    var sessionsShowMore = document.getElementById('sessions-show-more');
+    var toggleSessionsBtn = document.getElementById('toggle-sessions-btn');
+    var endDateInput = document.getElementById('recurrence_end_date');
+    var recurrenceEndTypeInput = document.getElementById('recurrence_end_type');
+    var dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var dayNamesShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var showAllSessions = false;
+
+    // Toggle recurring options visibility
+    if (isRecurringCheckbox) {
+        isRecurringCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                recurringOptions.classList.remove('hidden');
+                // Uncheck all day checkboxes when turning off recurring
+            } else {
+                recurringOptions.classList.add('hidden');
+                dayCheckboxes.forEach(function(cb) {
+                    cb.checked = false;
+                });
+            }
+            updateSessionsPreview();
+            loadInstructorAvailability();
+        });
+    }
+
+    // Toggle show all sessions
+    if (toggleSessionsBtn) {
+        toggleSessionsBtn.addEventListener('click', function() {
+            showAllSessions = !showAllSessions;
+            updateSessionsPreview();
+        });
+    }
+
+    function getSelectedDays() {
+        var selected = [];
+        // Only count selected days if recurring is checked
+        if (isRecurringCheckbox && !isRecurringCheckbox.checked) {
+            return selected;
+        }
+        dayCheckboxes.forEach(function(cb) {
+            if (cb.checked) {
+                selected.push(parseInt(cb.value));
+            }
+        });
+        return selected;
+    }
+
+    function calculateSessionDates() {
+        var startDateStr = dateInput.value;
+
+        if (!startDateStr) {
+            return [];
+        }
+
+        var startDate = new Date(startDateStr + 'T00:00:00');
+        var isRecurring = isRecurringCheckbox && isRecurringCheckbox.checked;
+
+        // If not recurring, return just the single session date
+        if (!isRecurring) {
+            return [startDate];
+        }
+
+        var selectedDays = getSelectedDays();
+
+        // If recurring but no days selected, return empty
+        if (selectedDays.length === 0) {
+            return [];
+        }
+
+        var endDate;
+
+        // Get end date (default to 1 year from start, max 52 occurrences)
+        if (endDateInput && endDateInput.value) {
+            endDate = new Date(endDateInput.value + 'T23:59:59');
+        } else {
+            endDate = new Date(startDate);
+            endDate.setFullYear(endDate.getFullYear() + 1); // 1 year
+        }
+
+        var sessions = [];
+        var currentDate = new Date(startDate);
+
+        // Generate all session dates (max 52 to match server limit)
+        while (currentDate <= endDate && sessions.length < 52) {
+            var dayOfWeek = currentDate.getDay();
+            if (selectedDays.includes(dayOfWeek)) {
+                sessions.push(new Date(currentDate));
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        return sessions;
+    }
+
+    function formatSessionDate(date) {
+        return dayNamesShort[date.getDay()] + ', ' + monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+    }
+
+    function updateSessionsPreview() {
+        var sessions = calculateSessionDates();
+        var hasSessions = sessions.length > 0;
+        var isRecurring = isRecurringCheckbox && isRecurringCheckbox.checked;
+
+        // Show/hide placeholder and panel based on state
+        if (hasSessions && sessionsPreviewPanel) {
+            sessionsPreviewPlaceholder.classList.add('hidden');
+            sessionsPreviewPanel.classList.remove('hidden');
+
+            // Update count and header text based on single vs recurring
+            if (isRecurring) {
+                sessionsCount.textContent = sessions.length + ' session' + (sessions.length !== 1 ? 's' : '');
+            } else {
+                sessionsCount.textContent = '1 session';
+            }
+
+            // Build sessions list
+            var displayLimit = showAllSessions ? sessions.length : 8;
+            var sessionsHtml = '';
+
+            sessions.slice(0, displayLimit).forEach(function(date, index) {
+                var isFirst = index === 0;
+                var isLast = index === sessions.length - 1 && sessions.length > 1;
+                var iconClass = isRecurring ? (isFirst ? 'text-success' : (isLast ? 'text-warning' : 'text-primary')) : 'text-primary';
+                var label = isRecurring ? (isFirst ? 'First' : (isLast ? 'Last' : '')) : '';
+
+                sessionsHtml += '<div class="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-base-200/50">' +
+                    '<span class="icon-[tabler--calendar-event] size-5 ' + iconClass + '"></span>' +
+                    '<span class="flex-1 text-sm">' + formatSessionDate(date) + '</span>' +
+                    (label ? '<span class="badge badge-sm badge-soft ' + (isFirst ? 'badge-success' : 'badge-warning') + '">' + label + '</span>' : '') +
+                    '</div>';
+            });
+
+            sessionsList.innerHTML = sessionsHtml;
+
+            // Show/hide "show more" button
+            if (sessions.length > 8) {
+                sessionsShowMore.classList.remove('hidden');
+                toggleSessionsBtn.innerHTML = showAllSessions
+                    ? '<span class="icon-[tabler--chevron-up] size-4"></span> Show less'
+                    : '<span class="icon-[tabler--chevron-down] size-4"></span> Show all ' + sessions.length + ' sessions';
+            } else {
+                sessionsShowMore.classList.add('hidden');
+            }
+
+        } else if (sessionsPreviewPanel) {
+            sessionsPreviewPanel.classList.add('hidden');
+            // Show placeholder when recurring is checked but no days selected yet
+            if (isRecurring && sessionsPreviewPlaceholder) {
+                sessionsPreviewPlaceholder.classList.remove('hidden');
+                sessionsPreviewPlaceholder.innerHTML = '<span class="icon-[tabler--calendar-event] size-12 text-base-content/20 mx-auto mb-3"></span>' +
+                    '<p class="text-base-content/50">Select days of the week to see session preview</p>';
+            } else if (sessionsPreviewPlaceholder) {
+                // No date selected
+                sessionsPreviewPlaceholder.classList.remove('hidden');
+                sessionsPreviewPlaceholder.innerHTML = '<span class="icon-[tabler--calendar-event] size-12 text-base-content/20 mx-auto mb-3"></span>' +
+                    '<p class="text-base-content/50">Select a date to see session preview</p>';
+            }
+        }
+
+        // Reload availability when sessions change
+        loadInstructorAvailability();
+    }
+
+    dayCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateSessionsPreview);
+    });
+
+    // Listen for date changes
+    dateInput.addEventListener('change', updateSessionsPreview);
+    if (endDateInput) {
+        endDateInput.addEventListener('change', function() {
+            // Update recurrence_end_type based on whether end date is provided
+            if (recurrenceEndTypeInput) {
+                recurrenceEndTypeInput.value = this.value ? 'on' : 'never';
+            }
+            updateSessionsPreview();
+        });
+    }
+
+    // =====================================================
+    // Instructor Availability Panel (Multi-Day)
+    // =====================================================
+    var availPlaceholder = document.getElementById('instructor-avail-placeholder');
+    var availLoading = document.getElementById('instructor-avail-loading');
+    var availPanel = document.getElementById('instructor-avail-panel');
+    var availInitials = document.getElementById('instructor-avail-initials');
+    var availName = document.getElementById('instructor-avail-name');
+    var availSubtitle = document.getElementById('instructor-avail-subtitle');
+    var availWorkingDays = document.getElementById('instructor-avail-working-days');
+    var availDaysContainer = document.getElementById('instructor-days-availability');
+    var instructorTimeSlot = document.getElementById('instructor-time-slot');
+    var instructorTimeRange = document.getElementById('instructor-time-range');
+    var realtimeWarning = document.getElementById('realtime-scheduling-warning');
+    var realtimeWarningMessage = document.getElementById('realtime-warning-message');
+    var availableSlotsSection = document.getElementById('available-time-slots-section');
+    var availableSlotsLoading = document.getElementById('available-time-slots-loading');
+    var availableSlotsGrid = document.getElementById('available-time-slots-grid');
+    var availableSlotsEmpty = document.getElementById('available-time-slots-empty');
+
+    var cachedInstructorData = null;
+
+    function loadInstructorAvailability() {
+        var instructorId = primaryInstructorSelect.value;
+        var startDate = dateInput.value;
+        var selectedDays = getSelectedDays();
+
+        // Reset to placeholder if no instructor or date
+        if (!instructorId || !startDate) {
+            availPlaceholder.classList.remove('hidden');
+            availLoading.classList.add('hidden');
+            availPanel.classList.add('hidden');
+            return;
+        }
+
+        // Show loading
+        availPlaceholder.classList.add('hidden');
+        availLoading.classList.remove('hidden');
+        availPanel.classList.add('hidden');
+
+        // Fetch availability for the start date first
+        fetch('/walk-in/instructor-availability?instructor_id=' + instructorId + '&date=' + startDate)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                cachedInstructorData = data;
+                availLoading.classList.add('hidden');
+                availPanel.classList.remove('hidden');
+                displayInstructorAvailability(data, selectedDays);
+            })
+            .catch(function(err) {
+                console.error('Error fetching availability:', err);
+                availLoading.classList.add('hidden');
+                availPlaceholder.classList.remove('hidden');
+            });
+    }
+
+    function displayInstructorAvailability(data, selectedDays) {
+        // Instructor info
+        availInitials.textContent = data.instructor.initials;
+        availName.textContent = data.instructor.name;
+
+        // Determine which days to show
+        var daysToShow = selectedDays.length > 0 ? selectedDays : [data.day_of_week];
+        var subtitle = selectedDays.length > 0
+            ? 'Availability for ' + selectedDays.length + ' selected day' + (selectedDays.length > 1 ? 's' : '')
+            : data.formatted_date;
+        availSubtitle.textContent = subtitle;
+
+        // Show time slot if available
+        if (data.availability && data.availability.from && data.availability.to) {
+            instructorTimeSlot.classList.remove('hidden');
+            instructorTimeRange.textContent = data.availability.from + ' - ' + data.availability.to;
+
+            // Update time picker to match instructor's availability
+            updateTimePickerFromAvailability(data);
+
+            // Load available time slots
+            loadAvailableTimeSlots();
+        } else if (data.works_today) {
+            instructorTimeSlot.classList.remove('hidden');
+            instructorTimeRange.textContent = 'All day';
+            // Reset time picker constraints for "all day" availability
+            if (timePickerInstance) {
+                timePickerInstance.set('minTime', '06:00');
+                timePickerInstance.set('maxTime', '22:00');
+            }
+            // Load available time slots
+            loadAvailableTimeSlots();
+        } else {
+            instructorTimeSlot.classList.add('hidden');
+            availableSlotsSection.classList.add('hidden');
+        }
+
+        // Check for scheduling conflicts (real-time warning)
+        checkSchedulingConflict(data);
+
+        // Working days with selected days highlighted
+        var dayLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        var workingDaysHtml = '';
+        data.working_days.forEach(function(works, index) {
+            var isSelected = daysToShow.includes(index);
+            var baseClass = 'size-9 rounded text-sm font-medium flex items-center justify-center transition-all';
+            var colorClass;
+
+            if (isSelected) {
+                // Selected day
+                if (works) {
+                    colorClass = 'bg-primary text-primary-content ring-2 ring-primary ring-offset-1';
+                } else {
+                    colorClass = 'bg-error text-error-content ring-2 ring-error ring-offset-1';
+                }
+            } else {
+                // Not selected
+                colorClass = works ? 'bg-success/20 text-success' : 'bg-base-200 text-base-content/40';
+            }
+
+            workingDaysHtml += '<span class="' + baseClass + ' ' + colorClass + '">' + dayLetters[index] + '</span>';
+        });
+        availWorkingDays.innerHTML = workingDaysHtml;
+
+        // Build availability summary for each selected day
+        var availHtml = '';
+        daysToShow.forEach(function(dayIndex) {
+            var dayName = dayNames[dayIndex];
+            var works = data.working_days[dayIndex];
+
+            if (works) {
+                var hoursText = data.availability
+                    ? data.availability.from + ' - ' + data.availability.to
+                    : 'All day';
+
+                availHtml += '<div class="flex items-center gap-3 p-3 bg-success/10 border border-success/20 rounded-lg">' +
+                    '<span class="icon-[tabler--check] size-5 text-success"></span>' +
+                    '<div class="flex-1">' +
+                    '<div class="font-medium text-success">' + dayName + '</div>' +
+                    '<div class="text-sm text-base-content/60">Available ' + hoursText + '</div>' +
+                    '</div>' +
+                    '</div>';
+            } else {
+                availHtml += '<div class="flex items-center gap-3 p-3 bg-error/10 border border-error/20 rounded-lg">' +
+                    '<span class="icon-[tabler--x] size-5 text-error"></span>' +
+                    '<div class="flex-1">' +
+                    '<div class="font-medium text-error">' + dayName + '</div>' +
+                    '<div class="text-sm text-base-content/60">Does not work this day</div>' +
+                    '</div>' +
+                    '</div>';
+            }
+        });
+
+        // If there are existing sessions on the start date, show them
+        if (data.existing_sessions.length > 0 && selectedDays.length === 0) {
+            availHtml += '<div class="mt-3">' +
+                '<div class="text-sm font-medium text-base-content/60 mb-2">Existing appointments on ' + data.formatted_date + '</div>';
+            data.existing_sessions.forEach(function(session) {
+                availHtml += '<div class="flex items-center gap-2 text-sm bg-base-200 rounded px-3 py-2 mb-1">' +
+                    '<span class="icon-[tabler--calendar-event] size-4 text-base-content/50"></span>' +
+                    '<span class="font-medium">' + session.time + '</span>' +
+                    '<span class="text-base-content/60 truncate">- ' + session.title + '</span>' +
+                    '</div>';
+            });
+            availHtml += '</div>';
+        }
+
+        availDaysContainer.innerHTML = availHtml;
+    }
+
+    // Check if session time conflicts with instructor availability
+    function checkSchedulingConflict(data) {
+        var sessionTime = timeInput.value;
+        var duration = parseInt(durationInput.value) || 0;
+
+        // Hide warning by default
+        realtimeWarning.classList.add('hidden');
+
+        if (!sessionTime || !duration || !data.availability) {
+            return;
+        }
+
+        // Parse session start and end times
+        var sessionStartParts = sessionTime.split(':');
+        var sessionStartMinutes = parseInt(sessionStartParts[0]) * 60 + parseInt(sessionStartParts[1]);
+        var sessionEndMinutes = sessionStartMinutes + duration;
+
+        // Parse instructor availability (convert from 12h to 24h format)
+        function parseTime12h(timeStr) {
+            var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!match) return null;
+            var hours = parseInt(match[1]);
+            var minutes = parseInt(match[2]);
+            var isPM = match[3].toUpperCase() === 'PM';
+            if (isPM && hours !== 12) hours += 12;
+            if (!isPM && hours === 12) hours = 0;
+            return hours * 60 + minutes;
+        }
+
+        var availFromMinutes = parseTime12h(data.availability.from);
+        var availToMinutes = parseTime12h(data.availability.to);
+
+        if (availFromMinutes === null || availToMinutes === null) {
+            return;
+        }
+
+        // Check if session time is outside availability
+        var warnings = [];
+
+        if (sessionStartMinutes < availFromMinutes || sessionEndMinutes > availToMinutes) {
+            // Format session time for display
+            var sessionStartFormatted = formatTimeForDisplay(sessionStartMinutes);
+            var sessionEndFormatted = formatTimeForDisplay(sessionEndMinutes);
+
+            warnings.push(data.instructor.name + "'s availability is " + data.availability.from + " - " + data.availability.to + ". This session is " + sessionStartFormatted + " - " + sessionEndFormatted + ".");
+        }
+
+        // Check if instructor doesn't work on selected day
+        var selectedDays = getSelectedDays();
+        var daysToCheck = selectedDays.length > 0 ? selectedDays : [data.day_of_week];
+
+        daysToCheck.forEach(function(dayIndex) {
+            if (!data.working_days[dayIndex]) {
+                warnings.push(data.instructor.name + " does not work on " + dayNames[dayIndex] + "s.");
+            }
+        });
+
+        if (warnings.length > 0) {
+            realtimeWarning.classList.remove('hidden');
+            realtimeWarningMessage.innerHTML = warnings.map(function(w) { return '<span class="block">' + w + '</span>'; }).join('');
+        }
+    }
+
+    function formatTimeForDisplay(totalMinutes) {
+        var hours = Math.floor(totalMinutes / 60);
+        var minutes = totalMinutes % 60;
+        var ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        if (hours === 0) hours = 12;
+        return hours + ':' + (minutes < 10 ? '0' : '') + minutes + ' ' + ampm;
+    }
+
+    // Re-check conflicts when time or duration changes
+    timeInput.addEventListener('change', function() {
+        if (cachedInstructorData) {
+            checkSchedulingConflict(cachedInstructorData);
+        }
+        // Update selected slot highlight
+        var currentTime = timeInput.value;
+        availableSlotsGrid.querySelectorAll('.time-slot-btn').forEach(function(btn) {
+            if (btn.dataset.time === currentTime) {
+                btn.classList.remove('btn-outline');
+                btn.classList.add('btn-primary');
+            } else {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-outline', 'btn-primary');
+            }
+        });
+    });
+    durationInput.addEventListener('change', function() {
+        // Reload available slots when duration changes (different duration = different slot availability)
+        loadAvailableTimeSlots();
+        if (cachedInstructorData) {
+            checkSchedulingConflict(cachedInstructorData);
+        }
+    });
+
+    // Listen for date changes
+    dateInput.addEventListener('change', loadInstructorAvailability);
+
+    // Listen for primary instructor changes
+    primaryInstructorSelect.addEventListener('change', loadInstructorAvailability);
+
+    // Initial load
+    setTimeout(function() {
+        updateSessionsPreview();
+        loadInstructorAvailability();
+    }, 300);
 });
 </script>
 @endpush
