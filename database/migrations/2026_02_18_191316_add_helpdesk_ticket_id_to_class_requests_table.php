@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('class_requests', function (Blueprint $table) {
-            $table->foreignId('helpdesk_ticket_id')->nullable()->after('client_id')->constrained('helpdesk_tickets')->nullOnDelete();
+            $table->foreignId('helpdesk_ticket_id')->nullable()->after('scheduled_session_id')->constrained('helpdesk_tickets')->nullOnDelete();
         });
     }
 
