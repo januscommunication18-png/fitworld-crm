@@ -421,24 +421,235 @@
         color: #ffffff !important;
     }
 
-    /* Ensure events show full content */
+    /* Ensure events show content properly */
     #studio-calendar .fc .fc-timegrid-event {
-        overflow: visible;
-        min-height: 50px;
+        overflow: hidden;
+        min-height: 40px;
     }
 
     #studio-calendar .fc .fc-timegrid-col-events {
-        margin: 0 2px;
+        margin: 0 1px;
     }
 
     #studio-calendar .fc .fc-timegrid-event .fc-event-title-container {
         flex-grow: 1;
-        flex-shrink: 0;
+        flex-shrink: 1;
+        min-width: 0;
     }
 
     #studio-calendar .fc .fc-timegrid-event .fc-event-title {
-        white-space: normal;
-        overflow: visible;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+
+    /* Compact event styles when many overlap */
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact {
+        min-height: 30px;
+        padding: 1px 2px !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact .fc-event-main {
+        padding: 2px 3px;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact .fc-event-time {
+        font-size: 0.65rem;
+        display: none;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact .fc-event-title {
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+
+    /* Event stacking - show +more link when too many events */
+    #studio-calendar .fc .fc-timegrid-more-link {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        border: none;
+        border-radius: 0.5rem;
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #ffffff !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 3px 8px rgba(249, 115, 22, 0.4);
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    #studio-calendar .fc .fc-timegrid-more-link:hover {
+        background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+        box-shadow: 0 5px 12px rgba(249, 115, 22, 0.5);
+        transform: translateY(-2px) scale(1.02);
+    }
+
+    /* Also style the daygrid more link */
+    #studio-calendar .fc .fc-daygrid-more-link {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        border-radius: 0.375rem;
+        padding: 3px 8px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #ffffff !important;
+        text-decoration: none;
+        box-shadow: 0 2px 6px rgba(249, 115, 22, 0.35);
+    }
+
+    #studio-calendar .fc .fc-daygrid-more-link:hover {
+        background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+        box-shadow: 0 3px 8px rgba(249, 115, 22, 0.5);
+    }
+
+    /* Better narrow event handling */
+    #studio-calendar .fc .fc-timegrid-event[style*="left:"][style*="right:"] .fc-event-main {
+        padding: 2px 4px;
+    }
+
+    /* Very narrow events - icon only mode */
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow {
+        min-height: 35px;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-main {
+        padding: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-title-container {
+        display: none;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-narrow-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+
+    /* Popover for more events */
+    #studio-calendar .fc .fc-popover {
+        background: oklch(var(--b1));
+        border: 1px solid oklch(var(--bc) / 0.2);
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        z-index: 9999;
+    }
+
+    #studio-calendar .fc .fc-popover-header {
+        background: oklch(var(--b2));
+        padding: 0.5rem 0.75rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border-bottom: 1px solid oklch(var(--bc) / 0.1);
+    }
+
+    #studio-calendar .fc .fc-popover-body {
+        padding: 0.5rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    #studio-calendar .fc .fc-popover .fc-event {
+        margin-bottom: 4px;
+        border-radius: 4px;
+    }
+
+    /* Custom event content styling */
+    #studio-calendar .fc .fc-event-main-frame {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event .fc-event-title {
+        display: flex;
+        align-items: flex-start;
+        gap: 2px;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event .event-title-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* When event is very narrow, hide text and show only icon */
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-main-frame {
+        align-items: center;
+        justify-content: center;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .event-title-text {
+        display: none !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-title {
+        justify-content: center;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-title .icon-\[tabler--yoga\],
+    #studio-calendar .fc .fc-timegrid-event.fc-event-narrow .fc-event-title .icon-\[tabler--massage\] {
+        width: 1rem;
+        height: 1rem;
+        margin: 0;
+    }
+
+    /* Compact events - smaller text, tighter spacing */
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact .fc-event-time {
+        font-size: 0.6rem;
+        line-height: 1;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact .fc-event-title {
+        font-size: 0.65rem;
+        line-height: 1.1;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact .fc-event-title .icon-\[tabler--yoga\],
+    #studio-calendar .fc .fc-timegrid-event.fc-event-compact .fc-event-title .icon-\[tabler--massage\] {
+        width: 0.625rem;
+        height: 0.625rem;
+    }
+
+    /* Medium width events */
+    #studio-calendar .fc .fc-timegrid-event.fc-event-medium .fc-event-time {
+        font-size: 0.65rem;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-medium .fc-event-title {
+        font-size: 0.7rem;
+    }
+
+    /* Ensure event hover works well for narrow events */
+    #studio-calendar .fc .fc-timegrid-event:hover {
+        z-index: 10 !important;
+    }
+
+    /* Week view specific - better spacing between columns */
+    #studio-calendar .fc .fc-timegrid-event-harness {
+        margin-right: 1px;
+    }
+
+    /* Improve readability with background gradient for long events */
+    #studio-calendar .fc .fc-timegrid-event .fc-event-main {
+        position: relative;
+    }
+
+    /* Event slot gap for better visual separation */
+    #studio-calendar .fc .fc-timegrid-event-harness-inset {
+        inset-inline-end: 1px !important;
     }
 
     #studio-calendar .fc .fc-list-event-title {
@@ -587,12 +798,49 @@ document.addEventListener('DOMContentLoaded', function() {
         height: 'auto',
         expandRows: true,
         slotEventOverlap: false,
-        eventMinHeight: 50,
+        eventMaxStack: 4, // Show max 4 events, then "+more" link
+        eventMinHeight: 35,
         slotDuration: '00:30:00',
         eventTimeFormat: {
             hour: 'numeric',
             minute: '2-digit',
             meridiem: 'short'
+        },
+        moreLinkClick: 'popover', // Show popover with all events when clicking +more
+        moreLinkClassNames: ['fc-more-link-styled'],
+        moreLinkContent: function(args) {
+            return {
+                html: `<span class="fc-more-link-text">+${args.num} more</span>`
+            };
+        },
+        eventWillUnmount: function(info) {
+            // Clean up resize handler
+            if (info.el._resizeHandler) {
+                window.removeEventListener('resize', info.el._resizeHandler);
+            }
+        },
+        eventContent: function(arg) {
+            // Custom event rendering for better narrow event handling
+            const props = arg.event.extendedProps;
+            const typeIcon = props.type === 'class' ? 'yoga' : 'massage';
+
+            // Create custom HTML structure
+            const timeText = arg.timeText || '';
+            const title = arg.event.title || '';
+
+            return {
+                html: `
+                    <div class="fc-event-main-frame">
+                        <div class="fc-event-time">${timeText}</div>
+                        <div class="fc-event-title-container">
+                            <div class="fc-event-title fc-sticky" title="${title}">
+                                <span class="icon-[tabler--${typeIcon}] size-3 shrink-0 mr-1 inline-block align-middle"></span>
+                                <span class="event-title-text">${title}</span>
+                            </div>
+                        </div>
+                    </div>
+                `
+            };
         },
         events: function(info, successCallback, failureCallback) {
             const params = new URLSearchParams({
@@ -646,6 +894,36 @@ document.addEventListener('DOMContentLoaded', function() {
         eventDidMount: function(info) {
             const props = info.event.extendedProps;
             const event = info.event;
+            const el = info.el;
+
+            // Check event width and apply compact/narrow/medium classes
+            const applyWidthClasses = () => {
+                const eventWidth = el.offsetWidth;
+                el.classList.remove('fc-event-narrow', 'fc-event-compact', 'fc-event-medium');
+
+                if (eventWidth > 0 && eventWidth < 45) {
+                    // Very narrow - icon only mode
+                    el.classList.add('fc-event-narrow');
+                } else if (eventWidth >= 45 && eventWidth < 70) {
+                    // Compact mode - smaller text
+                    el.classList.add('fc-event-compact');
+                } else if (eventWidth >= 70 && eventWidth < 100) {
+                    // Medium mode - slightly smaller text
+                    el.classList.add('fc-event-medium');
+                }
+            };
+
+            // Apply immediately and after a short delay (for initial render)
+            setTimeout(applyWidthClasses, 10);
+
+            // Re-apply on window resize
+            const resizeHandler = () => {
+                requestAnimationFrame(applyWidthClasses);
+            };
+            window.addEventListener('resize', resizeHandler);
+
+            // Cleanup on unmount (FullCalendar handles this via eventWillUnmount but we store handler)
+            el._resizeHandler = resizeHandler;
 
             // Create popover content (times are already in host timezone from API)
             const startTime = event.start ? event.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
