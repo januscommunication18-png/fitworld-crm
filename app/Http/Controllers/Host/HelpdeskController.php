@@ -66,7 +66,7 @@ class HelpdeskController extends Controller
             ->withQueryString();
 
         $tags = HelpdeskTag::forHost($host->id)->orderBy('name')->get();
-        $teamMembers = $host->teamMembers()->get();
+        $teamMembers = $host->getAllTeamMembers();
 
         // Get counts for status tabs
         $counts = [
@@ -95,7 +95,7 @@ class HelpdeskController extends Controller
     {
         $host = $this->getHost();
         $tags = HelpdeskTag::forHost($host->id)->orderBy('name')->get();
-        $teamMembers = $host->teamMembers()->get();
+        $teamMembers = $host->getAllTeamMembers();
         $servicePlans = ServicePlan::where('host_id', $host->id)->where('is_active', true)->orderBy('name')->get();
 
         return view('host.helpdesk.create', [
@@ -176,7 +176,7 @@ class HelpdeskController extends Controller
 
         $ticket->load(['client', 'assignedUser', 'tags', 'servicePlan', 'messages.user']);
         $tags = HelpdeskTag::forHost($host->id)->orderBy('name')->get();
-        $teamMembers = $host->teamMembers()->get();
+        $teamMembers = $host->getAllTeamMembers();
 
         return view('host.helpdesk.show', [
             'ticket' => $ticket,

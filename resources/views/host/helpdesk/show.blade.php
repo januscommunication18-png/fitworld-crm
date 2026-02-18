@@ -232,7 +232,19 @@
 
                         <div>
                             <label class="label-text" for="assigned_user_id">Assigned To</label>
-                            <select id="assigned_user_id" name="assigned_user_id" class="select w-full" onchange="this.form.submit()">
+                            <select id="assigned_user_id" name="assigned_user_id" class="hidden" onchange="this.form.submit()"
+                                data-select='{
+                                    "placeholder": "Select team member...",
+                                    "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                                    "toggleClasses": "advance-select-toggle w-full",
+                                    "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+                                    "optionClasses": "advance-select-option selected:select-active",
+                                    "optionTemplate": "<div class=\"flex items-center\"><div data-icon></div><span class=\"text-base-content\" data-title></span></div>",
+                                    "hasSearch": true,
+                                    "searchPlaceholder": "Search team members...",
+                                    "searchClasses": "input input-sm border-base-content/20 w-full mb-2",
+                                    "searchWrapperClasses": "px-2 py-1 sticky top-0 bg-base-100"
+                                }'>
                                 <option value="">Unassigned</option>
                                 @foreach($teamMembers as $member)
                                     <option value="{{ $member->id }}" {{ $ticket->assigned_user_id == $member->id ? 'selected' : '' }}>

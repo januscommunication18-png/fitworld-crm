@@ -168,6 +168,14 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Alias for full_name for compatibility
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->full_name;
+    }
+
+    /**
      * Get profile photo URL (works with both local and cloud storage)
      */
     public function getProfilePhotoUrlAttribute(): ?string
