@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ClassSession;
 use App\Models\Host;
 use App\Models\Instructor;
+use App\Models\MembershipPlan;
 use App\Models\ServicePlan;
 use Illuminate\Http\Request;
 
@@ -55,6 +56,13 @@ class BookingController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Get active membership plans
+        $membershipPlans = MembershipPlan::where('host_id', $host->id)
+            ->where('status', MembershipPlan::STATUS_ACTIVE)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
         // Get booking settings
         $bookingSettings = array_merge(
             Host::defaultBookingSettings(),
@@ -70,6 +78,7 @@ class BookingController extends Controller
             'upcomingSessions' => $upcomingSessions,
             'instructors' => $instructors,
             'servicePlans' => $servicePlans,
+            'membershipPlans' => $membershipPlans,
             'bookingSettings' => $bookingSettings,
             'memberPortalEnabled' => $memberPortalEnabled,
         ]);

@@ -1,30 +1,10 @@
 @extends('layouts.subdomain')
 
-@section('title', 'Request a Service — ' . $host->studio_name)
+@section('title', 'Request Booking — ' . $host->studio_name)
 
 @section('content')
-@php
-    $logoUrl = $host->logo_path ? Storage::disk(config('filesystems.uploads'))->url($host->logo_path) : null;
-@endphp
 
-{{-- Header --}}
-<div class="bg-base-200 border-b border-base-300">
-    <div class="max-w-3xl mx-auto px-4 py-6">
-        <div class="flex items-center gap-4">
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ $host->studio_name }}" class="h-10 w-auto">
-            @else
-                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span class="icon-[tabler--building-community] size-5 text-primary"></span>
-                </div>
-            @endif
-            <div>
-                <h1 class="font-bold text-lg text-base-content">{{ $host->studio_name }}</h1>
-                <p class="text-sm text-base-content/60">Request a Service</p>
-            </div>
-        </div>
-    </div>
-</div>
+@include('subdomain.partials.navbar')
 
 {{-- Main Content --}}
 <div class="max-w-3xl mx-auto w-full px-4 py-8">
@@ -40,7 +20,7 @@
     <div class="card bg-base-100 border border-base-200">
         <div class="card-body p-6 md:p-8">
             <div class="mb-6">
-                <h2 class="text-2xl font-bold text-base-content">Request a Service</h2>
+                <h2 class="text-2xl font-bold text-base-content">Request a Booking</h2>
                 <p class="text-base-content/60 mt-1">
                     Fill in your details below and we'll get back to you to schedule your appointment.
                 </p>
@@ -70,47 +50,113 @@
             <form action="{{ route('subdomain.service-request.store', ['subdomain' => $host->subdomain]) }}" method="POST" class="space-y-6">
                 @csrf
 
-                {{-- Service Selection --}}
+                {{-- Booking Type Selection --}}
                 <div class="space-y-4">
                     <h3 class="font-semibold text-base-content flex items-center gap-2">
-                        <span class="icon-[tabler--sparkles] size-5 text-primary"></span>
-                        Service Selection
+                        <span class="icon-[tabler--category] size-5 text-primary"></span>
+                        What would you like to book?
                     </h3>
 
-                    <div>
+                    {{-- Type Tabs --}}
+                    <div class="tabs tabs-boxed bg-base-200 p-1 w-fit">
+                        <button type="button" id="tab-service" class="tab tab-active" onclick="switchTab('service')">
+                            <span class="icon-[tabler--sparkles] size-4 mr-1"></span>
+                            Service
+                        </button>
+                        <button type="button" id="tab-class" class="tab" onclick="switchTab('class')">
+                            <span class="icon-[tabler--yoga] size-4 mr-1"></span>
+                            Class
+                        </button>
+                    </div>
+
+                    <input type="hidden" name="booking_type" id="booking_type" value="{{ old('booking_type', 'service') }}">
+
+                    {{-- Service Dropdown --}}
+                    <div id="service-section" class="{{ old('booking_type') === 'class' ? 'hidden' : '' }}">
                         <label for="service_plan_id" class="label">
                             <span class="label-text font-medium">Service <span class="text-error">*</span></span>
                         </label>
-                        <select id="service_plan_id" name="service_plan_id"
-                                class="select select-bordered w-full @error('service_plan_id') select-error @enderror" required>
-                            <option value="">Select a service...</option>
-                            @foreach($servicePlans as $plan)
-                                <option value="{{ $plan->id }}"
-                                    {{ old('service_plan_id', $selectedServicePlan?->id) == $plan->id ? 'selected' : '' }}
-                                    data-price="{{ $plan->price }}"
-                                    data-duration="{{ $plan->duration_minutes }}">
-                                    {{ $plan->name }}
-                                    @if($plan->price) — ${{ number_format($plan->price, 0) }}@endif
-                                    @if($plan->duration_minutes) ({{ $plan->duration_minutes }} min)@endif
-                                </option>
-                            @endforeach
-                        </select>
+                        <div class="dropdown w-full" id="service-dropdown">
+                            <div tabindex="0" role="button" class="select select-bordered w-full flex items-center justify-between" id="service-display">
+                                <span id="service-text">{{ $selectedServicePlan ? $selectedServicePlan->name : 'Search or select a service...' }}</span>
+                                <span class="icon-[tabler--chevron-down] size-4"></span>
+                            </div>
+                            <div tabindex="0" class="dropdown-content bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
+                                <div class="p-2 border-b border-base-200">
+                                    <input type="text" id="service-search" placeholder="Search services..."
+                                           class="input input-bordered input-sm w-full"
+                                           onkeyup="filterServices()">
+                                </div>
+                                <ul class="menu p-2 max-h-60 overflow-y-auto" id="service-list">
+                                    @foreach($servicePlans as $plan)
+                                    <li>
+                                        <a href="javascript:void(0)"
+                                           onclick="selectService({{ $plan->id }}, '{{ addslashes($plan->name) }}', {{ $plan->price ?? 0 }}, {{ $plan->duration_minutes ?? 0 }})"
+                                           class="service-item flex justify-between items-center"
+                                           data-name="{{ strtolower($plan->name) }}">
+                                            <span>{{ $plan->name }}</span>
+                                            <span class="text-sm text-base-content/60">
+                                                @if($plan->price)${{ number_format($plan->price, 0) }}@endif
+                                                @if($plan->duration_minutes) · {{ $plan->duration_minutes }}min @endif
+                                            </span>
+                                        </a>
+                                    </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                        <input type="hidden" name="service_plan_id" id="service_plan_id" value="{{ old('service_plan_id', $selectedServicePlan?->id) }}">
                         @error('service_plan_id')
                             <span class="text-error text-sm mt-1">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    @if($selectedServicePlan)
-                        <div class="alert bg-primary/10 border-primary/20">
-                            <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
-                            <div>
-                                <span class="font-medium">{{ $selectedServicePlan->name }}</span>
-                                @if($selectedServicePlan->description)
-                                    <p class="text-sm mt-1">{{ $selectedServicePlan->description }}</p>
-                                @endif
+                    {{-- Class Dropdown --}}
+                    <div id="class-section" class="{{ old('booking_type') !== 'class' ? 'hidden' : '' }}">
+                        <label for="class_plan_id" class="label">
+                            <span class="label-text font-medium">Class <span class="text-error">*</span></span>
+                        </label>
+                        <div class="dropdown w-full" id="class-dropdown">
+                            <div tabindex="0" role="button" class="select select-bordered w-full flex items-center justify-between" id="class-display">
+                                <span id="class-text">Search or select a class...</span>
+                                <span class="icon-[tabler--chevron-down] size-4"></span>
+                            </div>
+                            <div tabindex="0" class="dropdown-content bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
+                                <div class="p-2 border-b border-base-200">
+                                    <input type="text" id="class-search" placeholder="Search classes..."
+                                           class="input input-bordered input-sm w-full"
+                                           onkeyup="filterClasses()">
+                                </div>
+                                <ul class="menu p-2 max-h-60 overflow-y-auto" id="class-list">
+                                    @foreach($classPlans ?? [] as $plan)
+                                    <li>
+                                        <a href="javascript:void(0)"
+                                           onclick="selectClass({{ $plan->id }}, '{{ addslashes($plan->name) }}')"
+                                           class="class-item"
+                                           data-name="{{ strtolower($plan->name) }}">
+                                            <span>{{ $plan->name }}</span>
+                                        </a>
+                                    </li>
+                                    @endforeach
+                                </ul>
                             </div>
                         </div>
-                    @endif
+                        <input type="hidden" name="class_plan_id" id="class_plan_id" value="{{ old('class_plan_id') }}">
+                        @error('class_plan_id')
+                            <span class="text-error text-sm mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    {{-- Selected Item Info --}}
+                    <div id="selected-info" class="alert bg-primary/10 border-primary/20 {{ !$selectedServicePlan ? 'hidden' : '' }}">
+                        <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
+                        <div>
+                            <span class="font-medium" id="selected-name">{{ $selectedServicePlan?->name }}</span>
+                            <p class="text-sm mt-1" id="selected-details">
+                                @if($selectedServicePlan?->description){{ $selectedServicePlan->description }}@endif
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Contact Information --}}
@@ -228,4 +274,99 @@
         </div>
     </div>
 </div>
+
+<script>
+function switchTab(type) {
+    const serviceTab = document.getElementById('tab-service');
+    const classTab = document.getElementById('tab-class');
+    const serviceSection = document.getElementById('service-section');
+    const classSection = document.getElementById('class-section');
+    const bookingType = document.getElementById('booking_type');
+
+    if (type === 'service') {
+        serviceTab.classList.add('tab-active');
+        classTab.classList.remove('tab-active');
+        serviceSection.classList.remove('hidden');
+        classSection.classList.add('hidden');
+        bookingType.value = 'service';
+    } else {
+        classTab.classList.add('tab-active');
+        serviceTab.classList.remove('tab-active');
+        classSection.classList.remove('hidden');
+        serviceSection.classList.add('hidden');
+        bookingType.value = 'class';
+    }
+
+    // Hide selected info when switching
+    document.getElementById('selected-info').classList.add('hidden');
+}
+
+function selectService(id, name, price, duration) {
+    document.getElementById('service_plan_id').value = id;
+    document.getElementById('service-text').textContent = name;
+    document.getElementById('service-display').blur();
+
+    // Show selected info
+    const infoDiv = document.getElementById('selected-info');
+    document.getElementById('selected-name').textContent = name;
+    let details = '';
+    if (price > 0) details += '$' + price;
+    if (duration > 0) details += (details ? ' · ' : '') + duration + ' minutes';
+    document.getElementById('selected-details').textContent = details;
+    infoDiv.classList.remove('hidden');
+
+    // Close dropdown
+    document.activeElement.blur();
+}
+
+function selectClass(id, name) {
+    document.getElementById('class_plan_id').value = id;
+    document.getElementById('class-text').textContent = name;
+
+    // Show selected info
+    const infoDiv = document.getElementById('selected-info');
+    document.getElementById('selected-name').textContent = name;
+    document.getElementById('selected-details').textContent = 'Group fitness class';
+    infoDiv.classList.remove('hidden');
+
+    // Close dropdown
+    document.activeElement.blur();
+}
+
+function filterServices() {
+    const search = document.getElementById('service-search').value.toLowerCase();
+    const items = document.querySelectorAll('.service-item');
+
+    items.forEach(item => {
+        const name = item.getAttribute('data-name');
+        if (name.includes(search)) {
+            item.parentElement.style.display = '';
+        } else {
+            item.parentElement.style.display = 'none';
+        }
+    });
+}
+
+function filterClasses() {
+    const search = document.getElementById('class-search').value.toLowerCase();
+    const items = document.querySelectorAll('.class-item');
+
+    items.forEach(item => {
+        const name = item.getAttribute('data-name');
+        if (name.includes(search)) {
+            item.parentElement.style.display = '';
+        } else {
+            item.parentElement.style.display = 'none';
+        }
+    });
+}
+
+// Initialize based on old input
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingType = '{{ old('booking_type', 'service') }}';
+    if (bookingType === 'class') {
+        switchTab('class');
+    }
+});
+</script>
 @endsection

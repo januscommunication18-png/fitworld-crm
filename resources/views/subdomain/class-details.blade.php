@@ -4,7 +4,6 @@
 
 @section('content')
 @php
-    $logoUrl = $host->logo_path ? Storage::disk(config('filesystems.uploads'))->url($host->logo_path) : null;
     $instructorPhotoUrl = $session->primaryInstructor?->photo_path
         ? Storage::disk(config('filesystems.uploads'))->url($session->primaryInstructor->photo_path)
         : null;
@@ -13,24 +12,7 @@
         : '';
 @endphp
 
-{{-- Header --}}
-<div class="bg-base-200 border-b border-base-300">
-    <div class="max-w-5xl mx-auto px-4 py-6">
-        <div class="flex items-center gap-4">
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ $host->studio_name }}" class="h-10 w-auto">
-            @else
-                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span class="icon-[tabler--building-community] size-5 text-primary"></span>
-                </div>
-            @endif
-            <div>
-                <h1 class="font-bold text-lg text-base-content">{{ $host->studio_name }}</h1>
-                <p class="text-sm text-base-content/60">Class Details</p>
-            </div>
-        </div>
-    </div>
-</div>
+@include('subdomain.partials.navbar')
 
 {{-- Main Content --}}
 <div class="max-w-5xl mx-auto w-full px-4 py-8 space-y-6">

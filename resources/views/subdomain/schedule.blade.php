@@ -4,58 +4,7 @@
 
 @section('content')
 
-{{-- Navigation Bar - 75px height --}}
-<nav class="bg-base-100 border-b border-base-200 sticky top-0 z-40" style="height: 75px;">
-    <div class="container-fixed h-full">
-        <div class="flex items-center justify-between h-full">
-            {{-- Left: Logo --}}
-            <div class="flex items-center">
-                @if($host->logo_url)
-                    <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="flex items-center">
-                        <img src="{{ $host->logo_url }}" alt="{{ $host->studio_name }}" class="h-12 w-auto max-w-[180px] object-contain">
-                    </a>
-                @else
-                    <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="flex items-center gap-2">
-                        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                            <span class="text-lg font-bold text-primary-content">{{ strtoupper(substr($host->studio_name, 0, 1)) }}</span>
-                        </div>
-                        <span class="font-bold text-lg hidden sm:inline">{{ $host->studio_name }}</span>
-                    </a>
-                @endif
-            </div>
-
-            {{-- Right: Social Icons + Member Login --}}
-            <div class="flex items-center gap-3">
-                {{-- Social Media Icons --}}
-                @if(($host->show_social_links ?? true) && $host->social_links && count(array_filter((array)$host->social_links)))
-                <div class="hidden sm:flex items-center gap-1">
-                    @foreach(['instagram' => 'brand-instagram', 'facebook' => 'brand-facebook', 'tiktok' => 'brand-tiktok', 'twitter' => 'brand-x', 'website' => 'world'] as $key => $icon)
-                        @if(!empty($host->social_links[$key]))
-                        <a href="{{ $host->social_links[$key] }}" target="_blank" rel="noopener"
-                           class="w-9 h-9 rounded-full bg-base-200 hover:bg-primary hover:text-white flex items-center justify-center transition-colors"
-                           title="{{ ucfirst($key) }}">
-                            <span class="icon-[tabler--{{ $icon }}] size-5"></span>
-                        </a>
-                        @endif
-                    @endforeach
-                </div>
-                <div class="hidden sm:block w-px h-8 bg-base-300"></div>
-                @endif
-
-                {{-- Member Login (Coming Soon) --}}
-                <div class="relative group">
-                    <button class="btn btn-ghost btn-sm sm:btn-md" disabled>
-                        <span class="icon-[tabler--login] size-5"></span>
-                        <span class="hidden sm:inline">Member Login</span>
-                    </button>
-                    <div class="absolute top-full right-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <span class="badge badge-sm badge-neutral whitespace-nowrap">Coming Soon</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</nav>
+@include('subdomain.partials.navbar')
 
 {{-- Main Content --}}
 <div class="container-fixed py-8 space-y-6">
@@ -156,11 +105,18 @@
                                             Join Waitlist
                                         </a>
                                     @else
-                                        <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id]) }}"
-                                           class="btn btn-primary btn-sm">
-                                            <span class="icon-[tabler--calendar-plus] size-4"></span>
-                                            Request Info
+                                        <a href="{{ route('subdomain.class', ['subdomain' => $host->subdomain, 'classSession' => $session->id]) }}"
+                                           class="btn btn-ghost btn-sm">
+                                            <span class="icon-[tabler--info-circle] size-4"></span>
+                                            Details
                                         </a>
+                                        <form action="{{ route('booking.select-class-session', ['subdomain' => $host->subdomain, 'session' => $session->id]) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                <span class="icon-[tabler--calendar-plus] size-4"></span>
+                                                Book
+                                            </button>
+                                        </form>
                                     @endif
                                 </div>
                             </div>

@@ -18,12 +18,12 @@ function initQuestionnaireBuilder() {
     // Sortable for blocks container (single page mode)
     const blocksContainer = document.getElementById('blocks-container');
     if (blocksContainer) {
-        new Sortable(blocksContainer, {
+        Sortable.create(blocksContainer, {
             animation: 150,
             handle: '.cursor-move',
             ghostClass: 'opacity-50',
             dragClass: 'shadow-lg',
-            onEnd: async function(evt) {
+            onEnd: async function() {
                 await saveOrder('blocks', blocksContainer, questionnaireId, csrfToken);
             }
         });
@@ -32,24 +32,24 @@ function initQuestionnaireBuilder() {
     // Sortable for steps container (wizard mode)
     const stepsContainer = document.getElementById('steps-container');
     if (stepsContainer) {
-        new Sortable(stepsContainer, {
+        Sortable.create(stepsContainer, {
             animation: 150,
             handle: '.cursor-move',
             ghostClass: 'opacity-50',
             dragClass: 'shadow-lg',
-            onEnd: async function(evt) {
+            onEnd: async function() {
                 await saveOrder('steps', stepsContainer, questionnaireId, csrfToken);
             }
         });
 
         // Also make blocks within each step sortable
         stepsContainer.querySelectorAll('.step-blocks-container').forEach(container => {
-            new Sortable(container, {
+            Sortable.create(container, {
                 animation: 150,
                 handle: '.cursor-move',
                 ghostClass: 'opacity-50',
                 group: 'blocks',
-                onEnd: async function(evt) {
+                onEnd: async function() {
                     await saveOrder('blocks', container, questionnaireId, csrfToken);
                 }
             });
@@ -58,12 +58,12 @@ function initQuestionnaireBuilder() {
 
     // Sortable for questions within each block
     document.querySelectorAll('.questions-container').forEach(container => {
-        new Sortable(container, {
+        Sortable.create(container, {
             animation: 150,
             handle: '.cursor-move',
             ghostClass: 'opacity-50',
             group: 'questions',
-            onEnd: async function(evt) {
+            onEnd: async function() {
                 await saveOrder('questions', container, questionnaireId, csrfToken);
             }
         });
