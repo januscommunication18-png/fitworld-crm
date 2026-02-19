@@ -80,12 +80,29 @@
                         @endif
                     </div>
 
-                    {{-- Book Button --}}
-                    <div class="mt-6">
-                        <button type="button" class="btn btn-primary btn-lg" disabled>
-                            <span class="icon-[tabler--clock] size-5"></span>
-                            Booking Coming Soon
-                        </button>
+                    {{-- Book & Info Buttons --}}
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        @if($spotsLeft > 0)
+                            <form action="{{ route('booking.select-class-session', ['subdomain' => $host->subdomain, 'session' => $session->id]) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <span class="icon-[tabler--calendar-plus] size-5"></span>
+                                    Book This Class
+                                </button>
+                            </form>
+                        @else
+                            <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id, 'waitlist' => 1]) }}"
+                               class="btn btn-warning btn-lg">
+                                <span class="icon-[tabler--list-check] size-5"></span>
+                                Join Waitlist
+                            </a>
+                        @endif
+
+                        <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id]) }}"
+                           class="btn btn-outline btn-lg">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            Request Info
+                        </a>
                     </div>
                 </div>
             </div>

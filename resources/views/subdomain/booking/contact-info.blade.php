@@ -67,7 +67,7 @@
                             <div class="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0">
                                 @if(($item['type'] ?? '') === 'class_session')
                                     <span class="icon-[tabler--yoga] size-7 text-primary"></span>
-                                @elseif(($item['type'] ?? '') === 'service_slot')
+                                @elseif(($item['type'] ?? '') === 'service_slot' || ($item['type'] ?? '') === 'service_plan')
                                     <span class="icon-[tabler--sparkles] size-7 text-primary"></span>
                                 @elseif(($item['type'] ?? '') === 'membership_plan')
                                     <span class="icon-[tabler--id-badge-2] size-7 text-primary"></span>
@@ -106,6 +106,18 @@
                                             <span class="flex items-center gap-1">
                                                 <span class="icon-[tabler--clock] size-4"></span>
                                                 Valid for {{ $item['validity_days'] }} days
+                                            </span>
+                                        @endif
+                                    @elseif(($item['type'] ?? '') === 'service_plan')
+                                        {{-- Service Plan Info (no slot) --}}
+                                        <span class="flex items-center gap-1">
+                                            <span class="icon-[tabler--sparkles] size-4"></span>
+                                            Service
+                                        </span>
+                                        @if(!empty($item['duration']))
+                                            <span class="flex items-center gap-1">
+                                                <span class="icon-[tabler--clock] size-4"></span>
+                                                {{ $item['duration'] }} minutes
                                             </span>
                                         @endif
                                     @else

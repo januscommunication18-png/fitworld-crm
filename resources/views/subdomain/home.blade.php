@@ -256,11 +256,13 @@
 
                     {{-- Buttons --}}
                     <div class="card-actions mt-4 flex-col gap-2">
-                        <a href="{{ route('booking.select-service.filter', ['subdomain' => $host->subdomain, 'servicePlanId' => $service->id]) }}"
-                           class="btn btn-primary w-full">
-                            <span class="icon-[tabler--calendar-plus] size-5"></span>
-                            Book Now
-                        </a>
+                        <form action="{{ route('booking.select-service-plan', ['subdomain' => $host->subdomain, 'servicePlan' => $service->id]) }}" method="POST" class="w-full">
+                            @csrf
+                            <button type="submit" class="btn btn-primary w-full">
+                                <span class="icon-[tabler--calendar-plus] size-5"></span>
+                                Book Now
+                            </button>
+                        </form>
                         <a href="{{ route('subdomain.service-request.plan', ['subdomain' => $host->subdomain, 'servicePlanId' => $service->id]) }}"
                            class="btn btn-ghost btn-sm w-full">
                             <span class="icon-[tabler--info-circle] size-4"></span>

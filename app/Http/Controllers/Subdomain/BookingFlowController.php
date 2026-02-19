@@ -267,6 +267,32 @@ class BookingFlowController extends Controller
     }
 
     /**
+     * Select a service plan directly (without a specific slot) and proceed to contact
+     */
+    public function selectServicePlanDirect(Request $request, string $subdomain, ServicePlan $servicePlan)
+    {
+        $host = $this->getHost($request);
+
+        // Verify service belongs to this host
+        if ($servicePlan->host_id !== $host->id || !$servicePlan->is_active) {
+            abort(404);
+        }
+
+        // Store in booking state
+        $this->bookingService->setBookingType($request, 'service_booking');
+        $this->bookingService->setSelectedItem($request, [
+            'type' => 'service_plan',
+            'id' => $servicePlan->id,
+            'name' => $servicePlan->name,
+            'price' => $servicePlan->price ?? 0,
+            'duration' => $servicePlan->duration_minutes,
+            'description' => $servicePlan->description,
+        ]);
+
+        return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
      * Step 1c: Select a membership plan or class pack
      */
     public function selectMembership(Request $request)

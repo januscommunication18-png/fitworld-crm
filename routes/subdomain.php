@@ -78,6 +78,7 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::get('/book/service', [BookingFlowController::class, 'selectService'])->name('booking.select-service');
         Route::get('/book/service/{servicePlanId}', [BookingFlowController::class, 'selectService'])->name('booking.select-service.filter')->where('servicePlanId', '[0-9]+');
         Route::post('/book/service/{slot}', [BookingFlowController::class, 'selectServiceSlot'])->name('booking.select-service-slot');
+        Route::post('/book/service-plan/{servicePlan}', [BookingFlowController::class, 'selectServicePlanDirect'])->name('booking.select-service-plan');
         Route::get('/book/membership', [BookingFlowController::class, 'selectMembership'])->name('booking.select-membership');
         Route::post('/book/membership/{plan}', [BookingFlowController::class, 'selectMembershipPlan'])->name('booking.select-membership-plan');
         Route::post('/book/class-pack/{pack}', [BookingFlowController::class, 'selectClassPack'])->name('booking.select-class-pack');

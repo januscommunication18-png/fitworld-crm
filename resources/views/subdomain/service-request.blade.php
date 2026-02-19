@@ -73,15 +73,15 @@
 
                     {{-- Service Dropdown --}}
                     <div id="service-section" class="{{ old('booking_type') === 'class' ? 'hidden' : '' }}">
-                        <label for="service_plan_id" class="label">
+                        <label class="label">
                             <span class="label-text font-medium">Service <span class="text-error">*</span></span>
                         </label>
-                        <div class="dropdown w-full" id="service-dropdown">
-                            <div tabindex="0" role="button" class="select select-bordered w-full flex items-center justify-between" id="service-display">
+                        <div class="relative w-full" id="service-dropdown">
+                            <div class="select select-bordered w-full flex items-center justify-between cursor-pointer" id="service-display" onclick="toggleDropdown('service')">
                                 <span id="service-text">{{ $selectedServicePlan ? $selectedServicePlan->name : 'Search or select a service...' }}</span>
                                 <span class="icon-[tabler--chevron-down] size-4"></span>
                             </div>
-                            <div tabindex="0" class="dropdown-content bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
+                            <div id="service-dropdown-content" class="hidden absolute left-0 right-0 bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
                                 <div class="p-2 border-b border-base-200">
                                     <input type="text" id="service-search" placeholder="Search services..."
                                            class="input input-bordered input-sm w-full"
@@ -113,15 +113,15 @@
 
                     {{-- Class Dropdown --}}
                     <div id="class-section" class="{{ old('booking_type') !== 'class' ? 'hidden' : '' }}">
-                        <label for="class_plan_id" class="label">
+                        <label class="label">
                             <span class="label-text font-medium">Class <span class="text-error">*</span></span>
                         </label>
-                        <div class="dropdown w-full" id="class-dropdown">
-                            <div tabindex="0" role="button" class="select select-bordered w-full flex items-center justify-between" id="class-display">
+                        <div class="relative w-full" id="class-dropdown">
+                            <div class="select select-bordered w-full flex items-center justify-between cursor-pointer" id="class-display" onclick="toggleDropdown('class')">
                                 <span id="class-text">Search or select a class...</span>
                                 <span class="icon-[tabler--chevron-down] size-4"></span>
                             </div>
-                            <div tabindex="0" class="dropdown-content bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
+                            <div id="class-dropdown-content" class="hidden absolute left-0 right-0 bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
                                 <div class="p-2 border-b border-base-200">
                                     <input type="text" id="class-search" placeholder="Search classes..."
                                            class="input input-bordered input-sm w-full"
@@ -283,6 +283,9 @@ function switchTab(type) {
     const classSection = document.getElementById('class-section');
     const bookingType = document.getElementById('booking_type');
 
+    // Close any open dropdowns
+    closeAllDropdowns();
+
     if (type === 'service') {
         serviceTab.classList.add('tab-active');
         classTab.classList.remove('tab-active');
@@ -301,10 +304,31 @@ function switchTab(type) {
     document.getElementById('selected-info').classList.add('hidden');
 }
 
+function toggleDropdown(type) {
+    const dropdown = document.getElementById(type + '-dropdown-content');
+    const isHidden = dropdown.classList.contains('hidden');
+
+    // Close all dropdowns first
+    closeAllDropdowns();
+
+    // Toggle this one
+    if (isHidden) {
+        dropdown.classList.remove('hidden');
+        // Focus search input
+        setTimeout(() => {
+            document.getElementById(type + '-search').focus();
+        }, 50);
+    }
+}
+
+function closeAllDropdowns() {
+    document.getElementById('service-dropdown-content')?.classList.add('hidden');
+    document.getElementById('class-dropdown-content')?.classList.add('hidden');
+}
+
 function selectService(id, name, price, duration) {
     document.getElementById('service_plan_id').value = id;
     document.getElementById('service-text').textContent = name;
-    document.getElementById('service-display').blur();
 
     // Show selected info
     const infoDiv = document.getElementById('selected-info');
@@ -316,7 +340,7 @@ function selectService(id, name, price, duration) {
     infoDiv.classList.remove('hidden');
 
     // Close dropdown
-    document.activeElement.blur();
+    closeAllDropdowns();
 }
 
 function selectClass(id, name) {
@@ -330,7 +354,7 @@ function selectClass(id, name) {
     infoDiv.classList.remove('hidden');
 
     // Close dropdown
-    document.activeElement.blur();
+    closeAllDropdowns();
 }
 
 function filterServices() {
@@ -360,6 +384,19 @@ function filterClasses() {
         }
     });
 }
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    const serviceDropdown = document.getElementById('service-dropdown');
+    const classDropdown = document.getElementById('class-dropdown');
+
+    if (serviceDropdown && !serviceDropdown.contains(e.target)) {
+        document.getElementById('service-dropdown-content')?.classList.add('hidden');
+    }
+    if (classDropdown && !classDropdown.contains(e.target)) {
+        document.getElementById('class-dropdown-content')?.classList.add('hidden');
+    }
+});
 
 // Initialize based on old input
 document.addEventListener('DOMContentLoaded', function() {
