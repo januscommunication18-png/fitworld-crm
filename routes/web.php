@@ -288,6 +288,9 @@ Route::middleware('auth')->group(function () {
 
     // Payments
     Route::get('/payments/transactions', [PaymentController::class, 'transactions'])->name('payments.transactions');
+    Route::get('/payments/transactions/{transaction}', [PaymentController::class, 'showTransaction'])->name('payments.transactions.show');
+    Route::post('/payments/transactions/{transaction}/confirm', [PaymentController::class, 'confirmPayment'])->name('payments.transactions.confirm');
+    Route::post('/payments/transactions/{transaction}/cancel', [PaymentController::class, 'cancelTransaction'])->name('payments.transactions.cancel');
     Route::get('/payments/memberships', [PaymentController::class, 'memberships'])->name('payments.memberships');
     Route::get('/payments/class-packs', [PaymentController::class, 'classPacks'])->name('payments.class-packs');
 
@@ -392,6 +395,10 @@ Route::middleware('auth')->group(function () {
     // Settings - Clients
     Route::get('/settings/clients', [SettingsController::class, 'clientSettings'])->name('settings.clients');
     Route::put('/settings/clients', [SettingsController::class, 'updateClientSettings'])->name('settings.clients.update');
+
+    // Settings - Member Portal
+    Route::get('/settings/member-portal', [SettingsController::class, 'memberPortal'])->name('settings.member-portal');
+    Route::put('/settings/member-portal', [SettingsController::class, 'updateMemberPortal'])->name('settings.member-portal.update');
 
     // Settings - Payments
     Route::get('/settings/payments/settings', [SettingsController::class, 'paymentSettings'])->name('settings.payments.settings');

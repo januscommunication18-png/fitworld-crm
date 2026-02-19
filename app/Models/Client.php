@@ -2,16 +2,21 @@
 
 namespace App\Models;
 
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
-class Client extends Model
+class Client extends Model implements AuthenticatableContract
 {
-    use HasFactory;
+    use HasFactory, Authenticatable, Notifiable;
 
     // Status constants
     const STATUS_LEAD = 'lead';
@@ -106,6 +111,18 @@ class Client extends Model
         'created_by_user_id',
         'updated_by_user_id',
         'archived_at',
+        // Member Portal Fields
+        'password',
+        'activation_code',
+        'activation_code_expires_at',
+        'portal_last_login_at',
+        'portal_login_count',
+        'portal_email_verified_at',
+        'remember_token',
+        'password_reset_token',
+        'password_reset_expires_at',
+        'otp_attempts',
+        'otp_locked_until',
     ];
 
     protected function casts(): array
@@ -130,6 +147,15 @@ class Client extends Model
             'total_services_booked' => 'integer',
             'lifetime_value' => 'decimal:2',
             'total_spent' => 'decimal:2',
+            // Member Portal
+            'password' => 'hashed',
+            'activation_code_expires_at' => 'datetime',
+            'portal_last_login_at' => 'datetime',
+            'portal_login_count' => 'integer',
+            'portal_email_verified_at' => 'datetime',
+            'password_reset_expires_at' => 'datetime',
+            'otp_attempts' => 'integer',
+            'otp_locked_until' => 'datetime',
         ];
     }
 
@@ -444,5 +470,241 @@ class Client extends Model
             'phone' => 'Phone',
             'sms' => 'SMS',
         ];
+    }
+
+    // ===== MEMBER PORTAL METHODS =====
+
+    /**
+     * Get the transactions for this client
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * Get the invoices for this client
+     */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
+     * Check if client has portal access (password or verified email for OTP)
+     */
+    public function hasPortalAccess(): bool
+    {
+        return !empty($this->password) || !empty($this->portal_email_verified_at);
+    }
+
+    /**
+     * Check if client can login (not locked out)
+     */
+    public function canAttemptOtp(): bool
+    {
+        if ($this->otp_locked_until && $this->otp_locked_until->isFuture()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Get remaining lockout time in minutes
+     */
+    public function getOtpLockoutMinutesRemaining(): ?int
+    {
+        if (!$this->otp_locked_until || $this->otp_locked_until->isPast()) {
+            return null;
+        }
+        return now()->diffInMinutes($this->otp_locked_until);
+    }
+
+    /**
+     * Generate and set OTP activation code
+     */
+    public function generateActivationCode(int $expiryMinutes = 10): string
+    {
+        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        $this->update([
+            'activation_code' => $code,
+            'activation_code_expires_at' => now()->addMinutes($expiryMinutes),
+        ]);
+
+        return $code;
+    }
+
+    /**
+     * Verify activation code
+     */
+    public function verifyActivationCode(string $code): bool
+    {
+        if (!$this->activation_code || !$this->activation_code_expires_at) {
+            return false;
+        }
+
+        if ($this->activation_code_expires_at->isPast()) {
+            return false;
+        }
+
+        if ($this->activation_code !== $code) {
+            $this->incrementOtpAttempts();
+            return false;
+        }
+
+        // Clear the code and reset attempts on success
+        $this->update([
+            'activation_code' => null,
+            'activation_code_expires_at' => null,
+            'otp_attempts' => 0,
+            'otp_locked_until' => null,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Increment OTP attempts and lock if needed
+     */
+    public function incrementOtpAttempts(int $maxAttempts = 5, int $lockoutMinutes = 30): void
+    {
+        $attempts = ($this->otp_attempts ?? 0) + 1;
+
+        $updates = ['otp_attempts' => $attempts];
+
+        if ($attempts >= $maxAttempts) {
+            $updates['otp_locked_until'] = now()->addMinutes($lockoutMinutes);
+        }
+
+        $this->update($updates);
+    }
+
+    /**
+     * Generate password reset token
+     */
+    public function generatePasswordResetToken(int $expiryMinutes = 60): string
+    {
+        $token = Str::random(64);
+
+        $this->update([
+            'password_reset_token' => $token,
+            'password_reset_expires_at' => now()->addMinutes($expiryMinutes),
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * Verify password reset token
+     */
+    public function verifyPasswordResetToken(string $token): bool
+    {
+        if (!$this->password_reset_token || !$this->password_reset_expires_at) {
+            return false;
+        }
+
+        if ($this->password_reset_expires_at->isPast()) {
+            return false;
+        }
+
+        return hash_equals($this->password_reset_token, $token);
+    }
+
+    /**
+     * Reset password using token
+     */
+    public function resetPassword(string $token, string $newPassword): bool
+    {
+        if (!$this->verifyPasswordResetToken($token)) {
+            return false;
+        }
+
+        $this->update([
+            'password' => Hash::make($newPassword),
+            'password_reset_token' => null,
+            'password_reset_expires_at' => null,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Set password for portal access
+     */
+    public function setPortalPassword(string $password): void
+    {
+        $this->update([
+            'password' => Hash::make($password),
+        ]);
+    }
+
+    /**
+     * Record portal login
+     */
+    public function recordPortalLogin(): void
+    {
+        $this->update([
+            'portal_last_login_at' => now(),
+            'portal_login_count' => ($this->portal_login_count ?? 0) + 1,
+        ]);
+    }
+
+    /**
+     * Mark email as verified for portal
+     */
+    public function markPortalEmailAsVerified(): void
+    {
+        $this->update([
+            'portal_email_verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Check if portal email is verified
+     */
+    public function hasVerifiedPortalEmail(): bool
+    {
+        return !is_null($this->portal_email_verified_at);
+    }
+
+    /**
+     * Get upcoming bookings
+     */
+    public function upcomingBookings()
+    {
+        return $this->bookings()
+            ->whereHas('bookable', function ($query) {
+                $query->where('start_time', '>=', now());
+            })
+            ->whereIn('status', [Booking::STATUS_CONFIRMED])
+            ->with(['bookable'])
+            ->orderBy('created_at')
+            ->get();
+    }
+
+    /**
+     * Get past bookings
+     */
+    public function pastBookings()
+    {
+        return $this->bookings()
+            ->whereHas('bookable', function ($query) {
+                $query->where('start_time', '<', now());
+            })
+            ->with(['bookable'])
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Scope: Clients with portal access
+     */
+    public function scopeWithPortalAccess(Builder $query): Builder
+    {
+        return $query->where(function ($q) {
+            $q->whereNotNull('password')
+              ->orWhereNotNull('portal_email_verified_at');
+        });
     }
 }

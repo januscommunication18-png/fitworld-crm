@@ -110,6 +110,9 @@
                         <li><a href="{{ route('settings.clients') }}" class="{{ request()->routeIs('settings.clients') ? 'active' : '' }}">
                             <span class="icon-[tabler--users-cog] size-4"></span> Client Settings
                         </a></li>
+                        <li><a href="{{ route('settings.member-portal') }}" class="{{ request()->routeIs('settings.member-portal') ? 'active' : '' }}">
+                            <span class="icon-[tabler--user-shield] size-4"></span> Member Portal
+                        </a></li>
                     </ul>
                 </div>
                 @endif

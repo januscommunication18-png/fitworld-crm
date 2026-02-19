@@ -4,6 +4,7 @@ use App\Http\Middleware\AdminAuthenticate;
 use App\Http\Middleware\AdminHasPermission;
 use App\Http\Middleware\AdminMustChangePassword;
 use App\Http\Middleware\AdminOtpVerified;
+use App\Http\Middleware\AuthenticateMember;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckSecurityCode;
 use App\Http\Middleware\ResolveSubdomainHost;
@@ -52,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.permission' => AdminHasPermission::class,
             'subdomain.host' => ResolveSubdomainHost::class,
             'permission' => CheckPermission::class,
+            'auth.member' => AuthenticateMember::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

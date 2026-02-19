@@ -8,6 +8,7 @@ use App\Models\HelpdeskTicket;
 use App\Models\Host;
 use App\Models\ServicePlan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ServiceRequestController extends Controller
 {
@@ -17,6 +18,47 @@ class ServiceRequestController extends Controller
     protected function getHost(Request $request): Host
     {
         return $request->attributes->get('subdomain_host');
+    }
+
+    /**
+     * Show the service request form
+     */
+    public function create(Request $request, $servicePlanId = null)
+    {
+        $servicePlanId = $servicePlanId ? (int) $servicePlanId : null;
+        $host = $this->getHost($request);
+
+        $servicePlans = ServicePlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        $selectedServicePlan = null;
+        if ($servicePlanId) {
+            $selectedServicePlan = $servicePlans->firstWhere('id', $servicePlanId);
+        }
+
+        // Get logged-in member if authenticated
+        $member = Auth::guard('member')->user();
+
+        return view('subdomain.service-request', [
+            'host' => $host,
+            'servicePlans' => $servicePlans,
+            'selectedServicePlan' => $selectedServicePlan,
+            'member' => $member,
+        ]);
+    }
+
+    /**
+     * Show success page after submitting request
+     */
+    public function success(Request $request)
+    {
+        $host = $this->getHost($request);
+
+        return view('subdomain.service-request-success', [
+            'host' => $host,
+        ]);
     }
 
     /**
@@ -81,6 +123,7 @@ class ServiceRequestController extends Controller
             $ticket->addMessage($validated['message'], null, 'customer');
         }
 
-        return redirect()->back()->with('success', 'Thank you! Your service request has been submitted. We\'ll be in touch soon.');
+        return redirect()->route('subdomain.service-request.success', ['subdomain' => $host->subdomain])
+            ->with('success', 'Thank you! Your service request has been submitted. We\'ll be in touch soon.');
     }
 }

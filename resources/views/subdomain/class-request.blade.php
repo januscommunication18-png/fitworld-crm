@@ -46,6 +46,13 @@
                 </p>
             </div>
 
+            @if($member ?? false)
+                <div class="alert alert-info mb-6">
+                    <span class="icon-[tabler--user-check] size-5"></span>
+                    <span>Logged in as <strong>{{ $member->full_name }}</strong>. Your information has been pre-filled.</span>
+                </div>
+            @endif
+
             @if(session('error'))
                 <div class="alert alert-error mb-6">
                     <span class="icon-[tabler--alert-circle] size-5"></span>
@@ -69,7 +76,7 @@
                                 <span class="label-text font-medium">First Name <span class="text-error">*</span></span>
                             </label>
                             <input type="text" id="first_name" name="first_name"
-                                   value="{{ old('first_name') }}"
+                                   value="{{ old('first_name', $member?->first_name) }}"
                                    class="input input-bordered w-full @error('first_name') input-error @enderror"
                                    placeholder="First name" required>
                             @error('first_name')
@@ -82,7 +89,7 @@
                                 <span class="label-text font-medium">Last Name <span class="text-error">*</span></span>
                             </label>
                             <input type="text" id="last_name" name="last_name"
-                                   value="{{ old('last_name') }}"
+                                   value="{{ old('last_name', $member?->last_name) }}"
                                    class="input input-bordered w-full @error('last_name') input-error @enderror"
                                    placeholder="Last name" required>
                             @error('last_name')
@@ -97,9 +104,9 @@
                                 <span class="label-text font-medium">Email <span class="text-error">*</span></span>
                             </label>
                             <input type="email" id="email" name="email"
-                                   value="{{ old('email') }}"
+                                   value="{{ old('email', $member?->email) }}"
                                    class="input input-bordered w-full @error('email') input-error @enderror"
-                                   placeholder="your@email.com" required>
+                                   placeholder="your@email.com" required {{ $member ? 'readonly' : '' }}>
                             @error('email')
                                 <span class="text-error text-sm mt-1">{{ $message }}</span>
                             @enderror
@@ -110,7 +117,7 @@
                                 <span class="label-text font-medium">Phone Number <span class="text-error">*</span></span>
                             </label>
                             <input type="tel" id="phone" name="phone"
-                                   value="{{ old('phone') }}"
+                                   value="{{ old('phone', $member?->phone) }}"
                                    class="input input-bordered w-full @error('phone') input-error @enderror"
                                    placeholder="(555) 123-4567" required>
                             @error('phone')

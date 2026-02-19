@@ -55,6 +55,7 @@ class Host extends Model
         'booking_settings',
         'payment_settings',
         'client_settings',
+        'member_portal_settings',
         'policies',
         'status',
         'verified_at',
@@ -78,6 +79,7 @@ class Host extends Model
             'booking_settings' => 'array',
             'payment_settings' => 'array',
             'client_settings' => 'array',
+            'member_portal_settings' => 'array',
             'policies' => 'array',
             'is_live' => 'boolean',
             'show_address' => 'boolean',
@@ -179,6 +181,41 @@ class Host extends Model
     public function getPolicy(string $key, $default = null)
     {
         return $this->policies[$key] ?? $default;
+    }
+
+    /**
+     * Get a member portal setting with default fallback
+     */
+    public function getMemberPortalSetting(string $key, $default = null)
+    {
+        return $this->member_portal_settings[$key] ?? $default;
+    }
+
+    /**
+     * Get default member portal settings
+     */
+    public static function defaultMemberPortalSettings(): array
+    {
+        return [
+            'enabled' => false,
+            'allow_self_registration' => true,
+            'login_method' => 'otp', // 'otp' or 'password'
+            'session_timeout_days' => 30,
+            'require_email_verification' => false,
+            'activation_code_expiry_minutes' => 10,
+            'max_otp_resend_per_hour' => 3,
+            'max_login_attempts' => 10,
+            'lockout_duration_minutes' => 30,
+            'allowed_features' => ['schedule', 'bookings', 'payments', 'invoices', 'profile'],
+        ];
+    }
+
+    /**
+     * Check if member portal is enabled
+     */
+    public function isMemberPortalEnabled(): bool
+    {
+        return (bool) $this->getMemberPortalSetting('enabled', false);
     }
 
     /**

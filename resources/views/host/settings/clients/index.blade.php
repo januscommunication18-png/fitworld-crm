@@ -171,6 +171,20 @@
 
 @push('scripts')
 <script>
+// Toast notification function
+function showToast(message, type) {
+    type = type || 'success';
+    var toast = document.createElement('div');
+    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] alert alert-' + type + ' shadow-lg max-w-sm';
+    toast.innerHTML = '<span class="icon-[tabler--' + (type === 'success' ? 'check' : 'alert-circle') + '] size-5"></span><span>' + message + '</span>';
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s';
+        setTimeout(function() { toast.remove(); }, 300);
+    }, 3000);
+}
+
 document.getElementById('client-settings-form').addEventListener('submit', async function(e) {
     e.preventDefault();
 
@@ -206,13 +220,13 @@ document.getElementById('client-settings-form').addEventListener('submit', async
         const result = await response.json();
 
         if (result.success) {
-            window.FitCRM?.toast?.('Settings saved successfully', 'success');
+            showToast('Settings saved successfully', 'success');
         } else {
-            window.FitCRM?.toast?.(result.message || 'Failed to save settings', 'error');
+            showToast(result.message || 'Failed to save settings', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        window.FitCRM?.toast?.('An error occurred while saving settings', 'error');
+        showToast('An error occurred while saving settings', 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = originalHtml;

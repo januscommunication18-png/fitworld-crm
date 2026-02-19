@@ -30,6 +30,7 @@ class EmailLog extends Model
         'opened_at',
         'clicked_at',
         'metadata',
+        'created_at',
     ];
 
     protected function casts(): array
@@ -144,6 +145,7 @@ class EmailLog extends Model
             'body_preview' => substr($bodyPreview, 0, 500),
             'status' => self::STATUS_QUEUED,
             'provider' => $provider,
+            'created_at' => now(),
         ]);
     }
 }

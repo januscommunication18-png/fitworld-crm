@@ -11,6 +11,7 @@ use App\Models\HelpdeskTicket;
 use App\Models\Host;
 use App\Models\WaitlistEntry;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ClassRequestController extends Controller
@@ -57,12 +58,16 @@ class ClassRequestController extends Controller
             $host->booking_settings ?? []
         );
 
+        // Get logged-in member if authenticated
+        $member = Auth::guard('member')->user();
+
         return view('subdomain.class-request', [
             'host' => $host,
             'classPlans' => $classPlans,
             'selectedSession' => $selectedSession,
             'selectedClassPlan' => $selectedClassPlan,
             'bookingSettings' => $bookingSettings,
+            'member' => $member,
         ]);
     }
 

@@ -472,6 +472,64 @@ class SettingsController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────
+    // Member Portal
+    // ─────────────────────────────────────────────────────────────
+
+    public function memberPortal()
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        // Get current member portal settings or defaults
+        $settings = $host->member_portal_settings ?? $this->getDefaultMemberPortalSettings();
+
+        return view('host.settings.member-portal.index', compact('host', 'settings'));
+    }
+
+    public function updateMemberPortal(Request $request)
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        $validated = $request->validate([
+            'enabled' => 'boolean',
+            'login_method' => 'required|in:otp,password',
+            'session_timeout_days' => 'required|integer|min:1|max:90',
+            'require_email_verification' => 'boolean',
+            'activation_code_expiry_minutes' => 'required|integer|min:5|max:60',
+            'max_otp_resend_per_hour' => 'required|integer|min:1|max:10',
+            'max_login_attempts' => 'required|integer|min:3|max:20',
+            'lockout_duration_minutes' => 'required|integer|min:5|max:120',
+            'allowed_features' => 'nullable|array',
+            'allowed_features.*' => 'string|in:schedule,bookings,payments,invoices,profile,intake_forms',
+        ]);
+
+        // Ensure boolean fields are properly cast
+        $validated['enabled'] = $request->boolean('enabled');
+        $validated['require_email_verification'] = $request->boolean('require_email_verification');
+
+        $host->update(['member_portal_settings' => $validated]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Member portal settings updated successfully.',
+        ]);
+    }
+
+    protected function getDefaultMemberPortalSettings(): array
+    {
+        return [
+            'enabled' => false,
+            'login_method' => 'otp',
+            'session_timeout_days' => 30,
+            'require_email_verification' => false,
+            'activation_code_expiry_minutes' => 10,
+            'max_otp_resend_per_hour' => 3,
+            'max_login_attempts' => 10,
+            'lockout_duration_minutes' => 30,
+            'allowed_features' => ['schedule', 'bookings', 'payments', 'invoices', 'profile'],
+        ];
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // Payments
     // ─────────────────────────────────────────────────────────────
 
@@ -491,7 +549,22 @@ class SettingsController extends Controller
             'currency' => 'nullable|string|size:3',
             'send_receipts' => 'boolean',
             'receipt_footer' => 'nullable|string|max:500',
+            'manual_methods' => 'nullable|array',
+            'manual_methods.*.enabled' => 'boolean',
+            'manual_methods.*.instructions' => 'nullable|string|max:500',
         ]);
+
+        // Ensure boolean fields are properly cast
+        $validated['accept_cards'] = $request->boolean('accept_cards');
+        $validated['accept_cash'] = $request->boolean('accept_cash');
+        $validated['send_receipts'] = $request->boolean('send_receipts');
+
+        // Process manual methods to ensure proper boolean casting
+        if (isset($validated['manual_methods'])) {
+            foreach ($validated['manual_methods'] as $key => $method) {
+                $validated['manual_methods'][$key]['enabled'] = filter_var($method['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            }
+        }
 
         $host->update(['payment_settings' => $validated]);
 

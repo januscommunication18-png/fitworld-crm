@@ -44,23 +44,40 @@
 
                 {{-- Request Booking Button --}}
                 @if($servicePlans->isNotEmpty())
-                <button type="button" onclick="openServiceRequestModal({{ $servicePlans->first()->id }}, '{{ addslashes($servicePlans->first()->name) }}')"
-                        class="btn btn-primary btn-sm sm:btn-md">
+                <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain]) }}"
+                   class="btn btn-primary btn-sm sm:btn-md">
                     <span class="icon-[tabler--calendar-plus] size-5 hidden sm:inline"></span>
                     Request Booking
-                </button>
+                </a>
                 @endif
 
-                {{-- Member Login (Coming Soon) --}}
-                <div class="relative group">
-                    <button class="btn btn-ghost btn-sm sm:btn-md" disabled>
-                        <span class="icon-[tabler--login] size-5"></span>
-                        <span class="hidden sm:inline">Member Login</span>
-                    </button>
-                    <div class="absolute top-full right-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                        <span class="badge badge-sm badge-neutral whitespace-nowrap">Coming Soon</span>
+                {{-- Member Login --}}
+                @if($host->isMemberPortalEnabled())
+                    @if(auth('member')->check())
+                        {{-- Already logged in --}}
+                        <a href="{{ route('member.portal', ['subdomain' => $host->subdomain]) }}"
+                           class="btn btn-ghost btn-sm sm:btn-md">
+                            <span class="icon-[tabler--user] size-5"></span>
+                            <span class="hidden sm:inline">My Portal</span>
+                        </a>
+                    @else
+                        <a href="{{ route('member.login', ['subdomain' => $host->subdomain]) }}"
+                           class="btn btn-ghost btn-sm sm:btn-md">
+                            <span class="icon-[tabler--login] size-5"></span>
+                            <span class="hidden sm:inline">Member Login</span>
+                        </a>
+                    @endif
+                @else
+                    <div class="relative group">
+                        <button class="btn btn-ghost btn-sm sm:btn-md" disabled>
+                            <span class="icon-[tabler--login] size-5"></span>
+                            <span class="hidden sm:inline">Member Login</span>
+                        </button>
+                        <div class="absolute top-full right-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            <span class="badge badge-sm badge-neutral whitespace-nowrap">Coming Soon</span>
+                        </div>
                     </div>
-                </div>
+                @endif
             </div>
         </div>
     </div>
@@ -165,13 +182,18 @@
                         @endif
                     </div>
 
-                    {{-- Button --}}
-                    <div class="card-actions mt-4">
-                        <button type="button" class="btn btn-primary w-full"
-                                onclick="openServiceRequestModal({{ $service->id }}, '{{ addslashes($service->name) }}')">
+                    {{-- Buttons --}}
+                    <div class="card-actions mt-4 flex-col gap-2">
+                        <a href="{{ route('booking.select-service', ['subdomain' => $host->subdomain, 'servicePlanId' => $service->id]) }}"
+                           class="btn btn-primary w-full">
                             <span class="icon-[tabler--calendar-plus] size-5"></span>
-                            Request Booking
-                        </button>
+                            Book Now
+                        </a>
+                        <a href="{{ route('subdomain.service-request.plan', ['subdomain' => $host->subdomain, 'servicePlanId' => $service->id]) }}"
+                           class="btn btn-ghost btn-sm w-full">
+                            <span class="icon-[tabler--info-circle] size-4"></span>
+                            Request Info
+                        </a>
                     </div>
                 </div>
             </div>
@@ -240,21 +262,26 @@
                         @php $spotsLeft = $session->capacity - ($session->bookings_count ?? 0); @endphp
                         @if($spotsLeft <= 0)
                             <span class="badge badge-error">Full</span>
-                        @elseif($spotsLeft <= 3)
-                            <span class="badge badge-warning">{{ $spotsLeft }} left</span>
-                        @else
-                            <span class="text-xs text-base-content/40">{{ $spotsLeft }} spots</span>
-                        @endif
-                        @if($spotsLeft <= 0)
                             <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id, 'waitlist' => 1]) }}"
                                class="btn btn-warning btn-sm">
                                 Join Waitlist
                             </a>
                         @else
-                            <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id]) }}"
-                               class="btn btn-primary btn-sm">
-                                Request Info
-                            </a>
+                            @if($spotsLeft <= 3)
+                                <span class="badge badge-warning">{{ $spotsLeft }} left</span>
+                            @else
+                                <span class="text-xs text-base-content/40">{{ $spotsLeft }} spots</span>
+                            @endif
+                            <div class="flex gap-1">
+                                <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id]) }}"
+                                   class="btn btn-ghost btn-xs">
+                                    Info
+                                </a>
+                                <a href="{{ route('booking.select-class.filter', ['subdomain' => $host->subdomain, 'classPlanId' => $session->class_plan_id]) }}"
+                                   class="btn btn-primary btn-sm">
+                                    Book
+                                </a>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -367,112 +394,6 @@
     @endif
 
 </div>
-
-{{-- Simple Popup Modal --}}
-@if($servicePlans->isNotEmpty())
-<div id="serviceRequestModal" class="fixed inset-0 z-50 hidden">
-    {{-- Backdrop --}}
-    <div class="fixed inset-0 bg-black/50" onclick="closeModal()"></div>
-
-    {{-- Modal Content --}}
-    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div class="bg-base-100 rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto max-h-[90vh] overflow-y-auto">
-            {{-- Header --}}
-            <div class="flex items-center justify-between p-5 border-b border-base-200">
-                <h3 class="text-lg font-bold flex items-center gap-2">
-                    <span class="icon-[tabler--calendar-plus] size-6 text-primary"></span>
-                    Request Booking
-                </h3>
-                <button type="button" onclick="closeModal()" class="btn btn-ghost btn-sm btn-circle">
-                    <span class="icon-[tabler--x] size-5"></span>
-                </button>
-            </div>
-
-            {{-- Body --}}
-            <div class="p-5">
-                <p class="text-base-content/60 text-sm mb-5">Fill in your details and we'll get back to you</p>
-
-                <form action="{{ route('subdomain.request-service', ['subdomain' => $host->subdomain]) }}" method="POST" id="serviceRequestForm">
-                    @csrf
-                    <input type="hidden" name="service_plan_id" id="modal_service_plan_id">
-
-                    <div class="space-y-4">
-                        {{-- Service --}}
-                        <div class="bg-primary/10 text-primary rounded-lg px-4 py-3 flex items-center gap-2">
-                            <span class="icon-[tabler--sparkles] size-5"></span>
-                            <span class="font-medium" id="modal_service_name">Service</span>
-                        </div>
-
-                        {{-- Name & Phone --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1" for="modal_name">Name <span class="text-error">*</span></label>
-                                <input type="text" id="modal_name" name="name" class="input input-bordered w-full" placeholder="Your name" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1" for="modal_phone">Phone</label>
-                                <input type="tel" id="modal_phone" name="phone" class="input input-bordered w-full" placeholder="Phone number">
-                            </div>
-                        </div>
-
-                        {{-- Email --}}
-                        <div>
-                            <label class="block text-sm font-medium mb-1" for="modal_email">Email <span class="text-error">*</span></label>
-                            <input type="email" id="modal_email" name="email" class="input input-bordered w-full" placeholder="you@example.com" required>
-                        </div>
-
-                        {{-- Date & Time --}}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-1" for="modal_preferred_date">Preferred Date</label>
-                                <input type="date" id="modal_preferred_date" name="preferred_date" class="input input-bordered w-full" min="{{ date('Y-m-d') }}">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-1" for="modal_preferred_time">Preferred Time</label>
-                                <input type="time" id="modal_preferred_time" name="preferred_time" class="input input-bordered w-full">
-                            </div>
-                        </div>
-
-                        {{-- Message --}}
-                        <div>
-                            <label class="block text-sm font-medium mb-1" for="modal_message">Message</label>
-                            <textarea id="modal_message" name="message" class="textarea textarea-bordered w-full" rows="3" placeholder="Any questions or special requests..."></textarea>
-                        </div>
-                    </div>
-
-                    {{-- Footer --}}
-                    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-base-200">
-                        <button type="button" onclick="closeModal()" class="btn btn-ghost">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <span class="icon-[tabler--send] size-5"></span>
-                            Submit Request
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function openServiceRequestModal(serviceId, serviceName) {
-    document.getElementById('modal_service_plan_id').value = serviceId;
-    document.getElementById('modal_service_name').textContent = serviceName;
-    document.getElementById('serviceRequestModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeModal() {
-    document.getElementById('serviceRequestModal').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-// Close on Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeModal();
-});
-</script>
-@endif
 
 {{-- Toast --}}
 @if(session('success'))

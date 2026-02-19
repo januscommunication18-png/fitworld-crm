@@ -24,6 +24,17 @@ $currencies = [
 
 $paymentSettings = $host->payment_settings ?? [];
 $selectedCurrency = $paymentSettings['currency'] ?? ($host->currencies[0] ?? 'USD');
+
+// Manual payment methods configuration
+$manualMethods = [
+    'venmo' => ['label' => 'Venmo', 'icon' => 'brand-venmo', 'placeholder' => '@your-venmo-handle'],
+    'zelle' => ['label' => 'Zelle', 'icon' => 'cash', 'placeholder' => 'email@example.com or phone'],
+    'cash_app' => ['label' => 'Cash App', 'icon' => 'cash', 'placeholder' => '$YourCashTag'],
+    'paypal' => ['label' => 'PayPal', 'icon' => 'brand-paypal', 'placeholder' => 'email@example.com'],
+    'bank_transfer' => ['label' => 'Bank Transfer', 'icon' => 'building-bank', 'placeholder' => 'Account details or instructions'],
+    'cash' => ['label' => 'Cash (In Person)', 'icon' => 'cash-banknote', 'placeholder' => 'Pay at the studio'],
+];
+$enabledManualMethods = $paymentSettings['manual_methods'] ?? [];
 @endphp
 
 @section('settings-content')
@@ -60,7 +71,7 @@ $selectedCurrency = $paymentSettings['currency'] ?? ($host->currencies[0] ?? 'US
                     <input type="checkbox" class="checkbox checkbox-primary" disabled />
                 </div>
 
-                {{-- Cash Payments --}}
+                {{-- Cash Payments (Legacy - now in manual methods) --}}
                 <label class="flex items-center justify-between p-4 border border-base-content/10 rounded-lg cursor-pointer hover:bg-base-50 transition-colors">
                     <div class="flex items-center gap-4">
                         <span class="icon-[tabler--cash] size-8 text-success"></span>
@@ -71,6 +82,57 @@ $selectedCurrency = $paymentSettings['currency'] ?? ($host->currencies[0] ?? 'US
                     </div>
                     <input type="checkbox" class="checkbox checkbox-primary" id="accept_cash" name="accept_cash" {{ ($paymentSettings['accept_cash'] ?? false) ? 'checked' : '' }} />
                 </label>
+            </div>
+        </div>
+    </div>
+
+    {{-- Public Booking Manual Payment Methods --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold">Manual Payment Methods</h2>
+                    <p class="text-sm text-base-content/60 mt-1">Enable payment options for your public booking page. Clients can select these at checkout.</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                @foreach($manualMethods as $methodKey => $method)
+                @php
+                    $methodConfig = $enabledManualMethods[$methodKey] ?? [];
+                    $isEnabled = $methodConfig['enabled'] ?? false;
+                    $instructions = $methodConfig['instructions'] ?? '';
+                @endphp
+                <div class="border border-base-content/10 rounded-lg overflow-hidden manual-method-item" data-method="{{ $methodKey }}">
+                    <label class="flex items-center justify-between p-4 cursor-pointer hover:bg-base-50 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <span class="icon-[tabler--{{ $method['icon'] }}] size-8 text-base-content/70"></span>
+                            <div class="font-medium">{{ $method['label'] }}</div>
+                        </div>
+                        <input type="checkbox"
+                               class="checkbox checkbox-primary manual-method-toggle"
+                               id="manual_{{ $methodKey }}"
+                               data-method="{{ $methodKey }}"
+                               {{ $isEnabled ? 'checked' : '' }} />
+                    </label>
+                    <div class="manual-method-details px-4 pb-4 {{ $isEnabled ? '' : 'hidden' }}">
+                        <div class="pl-12">
+                            <label class="label-text text-sm" for="manual_{{ $methodKey }}_instructions">Payment Instructions</label>
+                            <input type="text"
+                                   id="manual_{{ $methodKey }}_instructions"
+                                   class="input input-bordered input-sm w-full mt-1"
+                                   placeholder="{{ $method['placeholder'] }}"
+                                   value="{{ $instructions }}" />
+                            <p class="text-xs text-base-content/50 mt-1">This will be shown to clients when they select this payment method</p>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+            <div class="mt-4 pt-4 border-t border-base-content/10">
+                <p class="text-xs text-base-content/50">
+                    <span class="icon-[tabler--info-circle] size-4 align-middle me-1"></span>
+                    Manual payments create a pending transaction. You'll need to mark them as paid in the admin dashboard when payment is received.
+                </p>
             </div>
         </div>
     </div>
@@ -170,12 +232,25 @@ function updateNumberFormat() {
     }
 }
 
-// Listen for currency select changes
+// Listen for currency select changes and manual method toggles
 document.addEventListener('DOMContentLoaded', function() {
     var currencySelect = document.getElementById('currency');
     if (currencySelect) {
         currencySelect.addEventListener('change', updateNumberFormat);
     }
+
+    // Manual payment method toggles
+    document.querySelectorAll('.manual-method-toggle').forEach(function(toggle) {
+        toggle.addEventListener('change', function() {
+            var item = this.closest('.manual-method-item');
+            var details = item.querySelector('.manual-method-details');
+            if (this.checked) {
+                details.classList.remove('hidden');
+            } else {
+                details.classList.add('hidden');
+            }
+        });
+    });
 });
 
 function showToast(message, type) {
@@ -197,12 +272,26 @@ function savePaymentSettings() {
     btn.disabled = true;
     spinner.classList.remove('hidden');
 
+    // Collect manual payment methods
+    var manualMethods = {};
+    document.querySelectorAll('.manual-method-item').forEach(function(item) {
+        var methodKey = item.dataset.method;
+        var toggle = item.querySelector('.manual-method-toggle');
+        var instructionsInput = item.querySelector('input[type="text"]');
+
+        manualMethods[methodKey] = {
+            enabled: toggle.checked,
+            instructions: instructionsInput ? instructionsInput.value : ''
+        };
+    });
+
     var data = {
         accept_cards: document.getElementById('accept_cards').checked,
         accept_cash: document.getElementById('accept_cash').checked,
         currency: document.getElementById('currency').value,
         send_receipts: document.getElementById('send_receipts').checked,
-        receipt_footer: document.getElementById('receipt_footer').value
+        receipt_footer: document.getElementById('receipt_footer').value,
+        manual_methods: manualMethods
     };
 
     fetch('{{ route("settings.payments.settings.update") }}', {

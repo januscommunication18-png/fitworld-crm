@@ -14,6 +14,7 @@ class Booking extends Model
 
     // Status constants
     const STATUS_CONFIRMED = 'confirmed';
+    const STATUS_WAITLISTED = 'waitlisted';
     const STATUS_CANCELLED = 'cancelled';
     const STATUS_NO_SHOW = 'no_show';
     const STATUS_COMPLETED = 'completed';
@@ -25,6 +26,15 @@ class Booking extends Model
     const PAYMENT_MANUAL = 'manual';
     const PAYMENT_CASH = 'cash';
     const PAYMENT_COMP = 'comp';
+
+    // Manual payment sub-types (used when booked via public booking flow)
+    const PAYMENT_VENMO = 'venmo';
+    const PAYMENT_ZELLE = 'zelle';
+    const PAYMENT_PAYPAL = 'paypal';
+    const PAYMENT_CASH_APP = 'cash_app';
+    const PAYMENT_BANK_TRANSFER = 'bank_transfer';
+    const PAYMENT_CHECK = 'check';
+    const PAYMENT_OTHER = 'other';
 
     // Booking source constants
     const SOURCE_ONLINE = 'online';
@@ -150,6 +160,7 @@ class Booking extends Model
     {
         return match ($this->status) {
             self::STATUS_CONFIRMED => 'badge-success',
+            self::STATUS_WAITLISTED => 'badge-warning',
             self::STATUS_COMPLETED => 'badge-info',
             self::STATUS_CANCELLED => 'badge-neutral',
             self::STATUS_NO_SHOW => 'badge-error',
@@ -168,6 +179,15 @@ class Booking extends Model
             self::PAYMENT_PACK => 'badge-accent',
             self::PAYMENT_MANUAL => 'badge-info',
             self::PAYMENT_CASH => 'badge-warning',
+            self::PAYMENT_COMP => 'badge-success',
+            // Manual payment sub-types use info badge
+            self::PAYMENT_VENMO,
+            self::PAYMENT_ZELLE,
+            self::PAYMENT_PAYPAL,
+            self::PAYMENT_CASH_APP,
+            self::PAYMENT_BANK_TRANSFER,
+            self::PAYMENT_CHECK,
+            self::PAYMENT_OTHER => 'badge-info',
             default => 'badge-neutral',
         };
     }
@@ -460,6 +480,7 @@ class Booking extends Model
     {
         return [
             self::STATUS_CONFIRMED => 'Confirmed',
+            self::STATUS_WAITLISTED => 'Waitlisted',
             self::STATUS_CANCELLED => 'Cancelled',
             self::STATUS_NO_SHOW => 'No Show',
             self::STATUS_COMPLETED => 'Completed',
@@ -476,8 +497,16 @@ class Booking extends Model
             self::PAYMENT_MEMBERSHIP => 'Membership',
             self::PAYMENT_PACK => 'Class Pack',
             self::PAYMENT_MANUAL => 'Manual',
-            self::PAYMENT_CASH => 'Cash',
+            self::PAYMENT_CASH => 'Pay at Studio (Cash)',
             self::PAYMENT_COMP => 'Complimentary',
+            // Manual payment sub-types from public booking flow
+            self::PAYMENT_VENMO => 'Venmo',
+            self::PAYMENT_ZELLE => 'Zelle',
+            self::PAYMENT_PAYPAL => 'PayPal',
+            self::PAYMENT_CASH_APP => 'Cash App',
+            self::PAYMENT_BANK_TRANSFER => 'Bank Transfer',
+            self::PAYMENT_CHECK => 'Check',
+            self::PAYMENT_OTHER => 'Other',
         ];
     }
 
