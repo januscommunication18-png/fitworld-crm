@@ -245,6 +245,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/class-sessions/{class_session}/cancel', [ClassSessionController::class, 'cancel'])->name('class-sessions.cancel');
     Route::patch('/class-sessions/{class_session}/promote-backup', [ClassSessionController::class, 'promoteBackup'])->name('class-sessions.promote-backup');
     Route::post('/class-sessions/{class_session}/duplicate', [ClassSessionController::class, 'duplicate'])->name('class-sessions.duplicate');
+    Route::patch('/class-sessions/{class_session}/resolve-conflict', [ClassSessionController::class, 'resolveConflict'])->name('class-sessions.resolve-conflict');
 
     // Walk-In Booking
     Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');

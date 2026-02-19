@@ -35,6 +35,10 @@ class ClassSession extends Model
         'capacity',
         'price',
         'status',
+        'has_scheduling_conflict',
+        'conflict_notes',
+        'conflict_resolved_at',
+        'conflict_resolved_by',
         'recurrence_rule',
         'recurrence_parent_id',
         'cancelled_at',
@@ -48,6 +52,8 @@ class ClassSession extends Model
             'start_time' => 'datetime',
             'end_time' => 'datetime',
             'cancelled_at' => 'datetime',
+            'conflict_resolved_at' => 'datetime',
+            'has_scheduling_conflict' => 'boolean',
             'price' => 'decimal:2',
         ];
     }
@@ -177,6 +183,18 @@ class ClassSession extends Model
     public function scopeForDateRange(Builder $query, $startDate, $endDate): Builder
     {
         return $query->whereBetween('start_time', [$startDate, $endDate]);
+    }
+
+    public function scopeWithConflicts(Builder $query): Builder
+    {
+        return $query->where('has_scheduling_conflict', true)
+            ->whereNull('conflict_resolved_at');
+    }
+
+    public function scopeConflictsResolved(Builder $query): Builder
+    {
+        return $query->where('has_scheduling_conflict', true)
+            ->whereNotNull('conflict_resolved_at');
     }
 
     public function scopeForWeek(Builder $query, $date = null): Builder
@@ -427,5 +445,53 @@ class ClassSession extends Model
     public function isRecurrenceChild(): bool
     {
         return $this->recurrence_parent_id !== null;
+    }
+
+    // Conflict management methods
+
+    /**
+     * Mark session as having a scheduling conflict
+     */
+    public function markAsConflict(?string $notes = null): bool
+    {
+        $this->has_scheduling_conflict = true;
+        $this->conflict_notes = $notes;
+        $this->conflict_resolved_at = null;
+        $this->conflict_resolved_by = null;
+        return $this->save();
+    }
+
+    /**
+     * Resolve the scheduling conflict
+     */
+    public function resolveConflict(?int $resolvedBy = null): bool
+    {
+        $this->conflict_resolved_at = now();
+        $this->conflict_resolved_by = $resolvedBy ?? auth()->id();
+        return $this->save();
+    }
+
+    /**
+     * Check if session has an unresolved conflict
+     */
+    public function hasUnresolvedConflict(): bool
+    {
+        return $this->has_scheduling_conflict && $this->conflict_resolved_at === null;
+    }
+
+    /**
+     * Check if conflict was resolved
+     */
+    public function isConflictResolved(): bool
+    {
+        return $this->has_scheduling_conflict && $this->conflict_resolved_at !== null;
+    }
+
+    /**
+     * Relationship to user who resolved the conflict
+     */
+    public function conflictResolver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'conflict_resolved_by');
     }
 }

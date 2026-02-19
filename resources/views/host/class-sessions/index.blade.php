@@ -36,6 +36,20 @@
         </a>
     </div>
 
+    {{-- Conflict Alert Banner --}}
+    @if($unresolvedConflictsCount > 0 && !request('conflicts_only'))
+    <div class="alert alert-error shadow-lg">
+        <span class="icon-[tabler--alert-triangle] size-6"></span>
+        <div class="flex-1">
+            <h3 class="font-bold">{{ $unresolvedConflictsCount }} Scheduling {{ Str::plural('Conflict', $unresolvedConflictsCount) }}</h3>
+            <p class="text-sm">Some sessions have scheduling conflicts that need to be resolved.</p>
+        </div>
+        <a href="{{ route('class-sessions.index', array_merge(request()->query(), ['conflicts_only' => 1])) }}" class="btn btn-sm btn-outline">
+            View Conflicts
+        </a>
+    </div>
+    @endif
+
     {{-- Filters --}}
     <div class="card bg-base-100">
         <div class="card-body py-3 px-4">
@@ -98,7 +112,21 @@
                     </select>
                 </div>
 
-                @if($classPlanId || $instructorId || $status)
+                {{-- Conflicts Filter --}}
+                <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2 cursor-pointer" for="conflicts_only">
+                        <input type="checkbox" id="conflicts_only" name="conflicts_only" value="1"
+                            class="checkbox checkbox-sm checkbox-error"
+                            {{ request('conflicts_only') ? 'checked' : '' }}
+                            onchange="submitFilters()">
+                        <span class="label-text text-error">
+                            <span class="icon-[tabler--alert-triangle] size-4 inline"></span>
+                            Conflicts Only
+                        </span>
+                    </label>
+                </div>
+
+                @if($classPlanId || $instructorId || $status || request('conflicts_only'))
                     <a href="{{ route('class-sessions.index', ['date' => $date, 'range' => $range]) }}" class="btn btn-ghost btn-sm">
                         <span class="icon-[tabler--x] size-4"></span>
                         Clear
@@ -309,9 +337,17 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge {{ $session->getStatusBadgeClass() }} badge-sm">
-                                                {{ $statuses[$session->status] ?? $session->status }}
-                                            </span>
+                                            <div class="flex flex-wrap gap-1">
+                                                <span class="badge {{ $session->getStatusBadgeClass() }} badge-sm">
+                                                    {{ $statuses[$session->status] ?? $session->status }}
+                                                </span>
+                                                @if($session->hasUnresolvedConflict())
+                                                    <span class="badge badge-error badge-sm gap-1" title="{{ $session->conflict_notes }}">
+                                                        <span class="icon-[tabler--alert-triangle] size-3"></span>
+                                                        Conflict
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </td>
                                         <td>
                                             <div class="flex items-center gap-1">
@@ -341,7 +377,19 @@
                                                     <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
                                                         <span class="icon-[tabler--dots-vertical] size-4"></span>
                                                     </summary>
-                                                    <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
+                                                    <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
+                                                        @if($session->hasUnresolvedConflict())
+                                                            <li>
+                                                                <form action="{{ route('class-sessions.resolve-conflict', $session) }}" method="POST" class="m-0">
+                                                                    @csrf
+                                                                    @method('PATCH')
+                                                                    <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
+                                                                        <span class="icon-[tabler--check] size-4"></span> Resolve Conflict
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            <li class="menu-title px-2 py-1 text-xs">Actions</li>
+                                                        @endif
                                                         <li>
                                                             <form action="{{ route('class-sessions.duplicate', $session) }}" method="POST" class="m-0">
                                                                 @csrf

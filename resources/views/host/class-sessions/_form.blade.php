@@ -386,8 +386,17 @@
                                 <div class="alert alert-soft alert-warning">
                                     <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
                                     <div class="flex-1">
-                                        <h4 class="font-semibold">Scheduling Warning</h4>
+                                        <h4 class="font-semibold">Scheduling Conflict</h4>
                                         <p id="realtime-warning-message" class="text-sm"></p>
+                                        <div class="mt-3 pt-3 border-t border-warning/30">
+                                            <label class="flex items-start gap-2 cursor-pointer" for="override_availability_warnings">
+                                                <input type="checkbox" id="override_availability_warnings" name="override_availability_warnings" value="1" class="checkbox checkbox-sm checkbox-warning mt-0.5">
+                                                <div>
+                                                    <span class="text-sm font-medium">Schedule anyway</span>
+                                                    <p class="text-xs text-base-content/60">Create session with conflict to resolve later</p>
+                                                </div>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1695,9 +1704,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        var overrideCheckbox = document.getElementById('override_availability_warnings');
+
         if (warnings.length > 0) {
             realtimeWarning.classList.remove('hidden');
             realtimeWarningMessage.innerHTML = warnings.map(function(w) { return '<span class="block">' + w + '</span>'; }).join('');
+            // Reset checkbox when new warnings appear
+            if (overrideCheckbox) {
+                overrideCheckbox.checked = false;
+            }
+        } else {
+            // No warnings - uncheck the override checkbox
+            if (overrideCheckbox) {
+                overrideCheckbox.checked = false;
+            }
         }
     }
 

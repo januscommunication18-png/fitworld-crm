@@ -196,13 +196,23 @@ class ScheduleController extends Controller
 
                 // Times in DB are stored as local times (host timezone), not UTC
                 // Just format them without timezone conversion
+                // Determine color based on status and conflict
+                $hasConflict = $session->hasUnresolvedConflict();
+                if ($hasConflict) {
+                    $bgColor = '#ef4444'; // Red for conflicts
+                } elseif ($session->status === ClassSession::STATUS_DRAFT) {
+                    $bgColor = '#f59e0b'; // Yellow for draft
+                } else {
+                    $bgColor = '#6366f1'; // Purple for published
+                }
+
                 $events[] = [
                     'id' => 'class_' . $session->id,
-                    'title' => $session->display_title,
+                    'title' => ($hasConflict ? '⚠️ ' : '') . $session->display_title,
                     'start' => $session->start_time->format('Y-m-d\TH:i:s'),
                     'end' => $session->end_time->format('Y-m-d\TH:i:s'),
-                    'backgroundColor' => $session->status === ClassSession::STATUS_DRAFT ? '#f59e0b' : '#6366f1',
-                    'borderColor' => $session->status === ClassSession::STATUS_DRAFT ? '#f59e0b' : '#6366f1',
+                    'backgroundColor' => $bgColor,
+                    'borderColor' => $bgColor,
                     'extendedProps' => [
                         'type' => 'class',
                         'instructor' => $session->primaryInstructor?->name ?? 'TBD',
@@ -212,6 +222,8 @@ class ScheduleController extends Controller
                         'checkedIn' => $checkedInCount,
                         'cancelled' => $cancelledCount,
                         'status' => $session->status,
+                        'hasConflict' => $hasConflict,
+                        'conflictNotes' => $session->conflict_notes,
                     ],
                 ];
             }

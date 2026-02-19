@@ -76,7 +76,16 @@ class ClassSessionController extends Controller
             $query->forLocation($request->location_id);
         }
 
+        if ($request->boolean('conflicts_only')) {
+            $query->withConflicts();
+        }
+
         $sessions = $query->orderBy('start_time')->get();
+
+        // Count unresolved conflicts for banner
+        $unresolvedConflictsCount = ClassSession::where('host_id', $host->id)
+            ->withConflicts()
+            ->count();
 
         // Group sessions by date
         $sessionsByDate = $sessions->groupBy(function ($session) {
@@ -98,6 +107,7 @@ class ClassSessionController extends Controller
             'classPlanId' => $request->class_plan_id,
             'instructorId' => $request->instructor_id,
             'locationId' => $request->location_id,
+            'unresolvedConflictsCount' => $unresolvedConflictsCount,
         ]);
     }
 
@@ -145,6 +155,15 @@ class ClassSessionController extends Controller
             );
         }
 
+        // Check if user acknowledged scheduling conflicts
+        $hasConflict = $request->boolean('override_availability_warnings');
+        $conflictNotes = null;
+        if ($hasConflict && !empty($request->availabilityWarnings)) {
+            $conflictNotes = collect($request->availabilityWarnings)
+                ->pluck('message')
+                ->implode('; ');
+        }
+
         // Create the session
         $session = ClassSession::create([
             'host_id' => $host->id,
@@ -160,6 +179,8 @@ class ClassSessionController extends Controller
             'capacity' => $request->capacity,
             'price' => $request->price,
             'status' => ClassSession::STATUS_DRAFT,
+            'has_scheduling_conflict' => $hasConflict,
+            'conflict_notes' => $conflictNotes,
             'recurrence_rule' => $recurrenceRule,
             'notes' => $request->notes,
         ]);
@@ -383,6 +404,22 @@ class ClassSessionController extends Controller
         return redirect()
             ->route('class-sessions.edit', $newSession)
             ->with('success', 'Session duplicated. Please adjust the date and time as needed.');
+    }
+
+    /**
+     * Resolve a scheduling conflict
+     */
+    public function resolveConflict(ClassSession $classSession)
+    {
+        $this->authorizeSession($classSession);
+
+        if (!$classSession->hasUnresolvedConflict()) {
+            return back()->with('error', 'This session does not have an unresolved conflict.');
+        }
+
+        $classSession->resolveConflict(auth()->id());
+
+        return back()->with('success', 'Conflict marked as resolved.');
     }
 
     protected function authorizeSession(ClassSession $classSession): void

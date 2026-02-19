@@ -26,6 +26,12 @@
                 <span class="badge {{ $classSession->getStatusBadgeClass() }} badge-soft capitalize">{{ $classSession->status }}</span>
             </div>
             <p class="text-base-content/60">{{ $classSession->formatted_date }} &bull; {{ $classSession->formatted_time_range }}</p>
+            @if($classSession->hasUnresolvedConflict())
+                <span class="badge badge-error badge-soft gap-1 mt-1">
+                    <span class="icon-[tabler--alert-triangle] size-3"></span>
+                    Has Scheduling Conflict
+                </span>
+            @endif
         </div>
         <div class="flex items-center gap-2">
             @if($classSession->isPublished() && !$classSession->isPast())
@@ -103,6 +109,38 @@
             </details>
         </div>
     </div>
+
+    {{-- Conflict Alert --}}
+    @if($classSession->hasUnresolvedConflict())
+    <div class="alert alert-error shadow-lg">
+        <span class="icon-[tabler--alert-triangle] size-6"></span>
+        <div class="flex-1">
+            <h3 class="font-bold">Scheduling Conflict</h3>
+            <p class="text-sm">{{ $classSession->conflict_notes ?? 'This session has a scheduling conflict that needs to be resolved.' }}</p>
+        </div>
+        <form action="{{ route('class-sessions.resolve-conflict', $classSession) }}" method="POST" class="inline">
+            @csrf
+            @method('PATCH')
+            <button type="submit" class="btn btn-sm">
+                <span class="icon-[tabler--check] size-4"></span>
+                Mark as Resolved
+            </button>
+        </form>
+    </div>
+    @elseif($classSession->isConflictResolved())
+    <div class="alert alert-success shadow-lg">
+        <span class="icon-[tabler--check] size-6"></span>
+        <div class="flex-1">
+            <h3 class="font-bold">Conflict Resolved</h3>
+            <p class="text-sm">
+                Resolved on {{ $classSession->conflict_resolved_at->format('M j, Y g:i A') }}
+                @if($classSession->conflictResolver)
+                    by {{ $classSession->conflictResolver->name }}
+                @endif
+            </p>
+        </div>
+    </div>
+    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Main Content --}}

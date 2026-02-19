@@ -124,6 +124,10 @@
                 <span class="w-3 h-3 rounded-full bg-warning shadow-sm"></span>
                 <span class="text-sm font-medium text-base-content">Draft</span>
             </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-error shadow-sm"></span>
+                <span class="text-sm font-medium text-base-content">Conflict</span>
+            </div>
         </div>
         @endif
     </div>
@@ -198,6 +202,8 @@
     #{{ $calendarId }} .fc-event-success * { color: #ffffff !important; }
     #{{ $calendarId }} .fc-event-warning { background-color: #f59e0b !important; border-color: #f59e0b !important; }
     #{{ $calendarId }} .fc-event-warning * { color: #000000 !important; }
+    #{{ $calendarId }} .fc-event-error { background-color: #ef4444 !important; border-color: #ef4444 !important; }
+    #{{ $calendarId }} .fc-event-error * { color: #ffffff !important; }
 
     #{{ $calendarId }} .fc .fc-daygrid-event-dot { display: none; }
     #{{ $calendarId }} .fc .fc-timegrid-event .fc-event-main { padding: 4px 6px; }
@@ -287,6 +293,7 @@
                         let colorClass = 'fc-event-primary';
                         if (event.extendedProps.type === 'service') colorClass = 'fc-event-success';
                         if (event.extendedProps.status === 'draft') colorClass = 'fc-event-warning';
+                        if (event.extendedProps.hasConflict) colorClass = 'fc-event-error';
                         return { ...event, backgroundColor: null, borderColor: null, classNames: [colorClass] };
                     });
                     successCallback(mappedEvents);
