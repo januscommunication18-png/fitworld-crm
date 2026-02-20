@@ -19,6 +19,7 @@ class Transaction extends Model
     const TYPE_SERVICE_BOOKING = 'service_booking';
     const TYPE_MEMBERSHIP_PURCHASE = 'membership_purchase';
     const TYPE_CLASS_PACK_PURCHASE = 'class_pack_purchase';
+    const TYPE_RENTAL = 'rental';
 
     // Status constants
     const STATUS_PENDING = 'pending';
@@ -342,6 +343,7 @@ class Transaction extends Model
             self::TYPE_SERVICE_BOOKING => 'Service Booking',
             self::TYPE_MEMBERSHIP_PURCHASE => 'Membership Purchase',
             self::TYPE_CLASS_PACK_PURCHASE => 'Class Pack Purchase',
+            self::TYPE_RENTAL => 'Rental',
         ];
     }
 

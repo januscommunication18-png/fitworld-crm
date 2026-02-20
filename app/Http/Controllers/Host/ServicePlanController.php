@@ -7,6 +7,7 @@ use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Http\Requests\Host\ServicePlanRequest;
 use App\Models\ServicePlan;
 use App\Models\Instructor;
+use App\Models\MembershipPlan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -40,7 +41,20 @@ class ServicePlanController extends Controller
         $instructors = $host->instructors()->active()->get();
         $questionnaires = $this->getPublishedQuestionnaires();
 
-        return view('host.service-plans.create', compact('categories', 'locationTypes', 'instructors', 'questionnaires'));
+        // Multi-currency support
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.service-plans.create', compact(
+            'categories',
+            'locationTypes',
+            'instructors',
+            'questionnaires',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
     }
 
     public function store(ServicePlanRequest $request)
@@ -53,6 +67,19 @@ class ServicePlanController extends Controller
         $counter = 1;
         while ($host->servicePlans()->where('slug', $data['slug'])->exists()) {
             $data['slug'] = Str::slug($data['name']) . '-' . $counter++;
+        }
+
+        // Handle multi-currency prices
+        if (isset($data['prices'])) {
+            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
+            $defaultCurrency = $host->default_currency ?? 'USD';
+            $data['price'] = $data['prices'][$defaultCurrency] ?? null;
+        }
+
+        if (isset($data['deposit_prices'])) {
+            $data['deposit_prices'] = array_filter($data['deposit_prices'], fn($price) => $price !== null && $price !== '');
+            $defaultCurrency = $host->default_currency ?? 'USD';
+            $data['deposit_amount'] = $data['deposit_prices'][$defaultCurrency] ?? 0;
         }
 
         // Handle image upload
@@ -98,23 +125,51 @@ class ServicePlanController extends Controller
         $questionnaires = $this->getPublishedQuestionnaires();
         $servicePlan->load('questionnaireAttachments');
 
-        return view('host.service-plans.edit', compact('servicePlan', 'categories', 'locationTypes', 'instructors', 'assignedInstructorIds', 'questionnaires'));
+        // Multi-currency support
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.service-plans.edit', compact(
+            'servicePlan',
+            'categories',
+            'locationTypes',
+            'instructors',
+            'assignedInstructorIds',
+            'questionnaires',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
     }
 
     public function update(ServicePlanRequest $request, ServicePlan $servicePlan)
     {
         $this->authorizeHost($servicePlan);
 
+        $host = auth()->user()->host;
         $data = $request->validated();
 
         // Update slug if name changed
         if ($data['name'] !== $servicePlan->name) {
-            $host = auth()->user()->host;
             $data['slug'] = Str::slug($data['name']);
             $counter = 1;
             while ($host->servicePlans()->where('slug', $data['slug'])->where('id', '!=', $servicePlan->id)->exists()) {
                 $data['slug'] = Str::slug($data['name']) . '-' . $counter++;
             }
+        }
+
+        // Handle multi-currency prices
+        if (isset($data['prices'])) {
+            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
+            $defaultCurrency = $host->default_currency ?? 'USD';
+            $data['price'] = $data['prices'][$defaultCurrency] ?? null;
+        }
+
+        if (isset($data['deposit_prices'])) {
+            $data['deposit_prices'] = array_filter($data['deposit_prices'], fn($price) => $price !== null && $price !== '');
+            $defaultCurrency = $host->default_currency ?? 'USD';
+            $data['deposit_amount'] = $data['deposit_prices'][$defaultCurrency] ?? 0;
         }
 
         // Handle image upload
@@ -127,8 +182,7 @@ class ServicePlanController extends Controller
                     // Ignore deletion errors
                 }
             }
-            $uploadHost = $host ?? auth()->user()->host;
-            $data['image_path'] = $request->file('image')->storePublicly($uploadHost->getStoragePath('service-plans'), config('filesystems.uploads'));
+            $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('service-plans'), config('filesystems.uploads'));
         }
 
         // Handle checkboxes

@@ -158,7 +158,9 @@
         {{-- Free Items / Amenities --}}
         @php
             $hostAmenities = $host->amenities ?? [];
-            $selectedAmenities = old('free_amenities', $membershipPlan?->free_amenities ?? []);
+            // Default to all amenities selected when creating new plan
+            $defaultAmenities = $membershipPlan ? ($membershipPlan->free_amenities ?? []) : $hostAmenities;
+            $selectedAmenities = old('free_amenities', $defaultAmenities);
         @endphp
         @if(count($hostAmenities) > 0)
         <div class="card bg-base-100">
@@ -195,6 +197,58 @@
                     <div>
                         <p class="text-sm">No amenities configured for your studio.</p>
                         <a href="{{ route('settings.studio.profile') }}" class="link link-primary text-sm">Configure amenities in Studio Settings</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Free Rentals --}}
+        @php
+            $rentalItems = $rentalItems ?? collect();
+            $selectedRentalIds = old('free_rental_ids', $membershipPlan?->free_rental_ids ?? []);
+        @endphp
+        @if($rentalItems->isNotEmpty())
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <h3 class="card-title">Free Rentals</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-sm text-base-content/60 mb-3">Select which rental items are included free with this membership</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    @foreach($rentalItems as $rental)
+                        <label class="custom-option flex flex-row items-center gap-3 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
+                            <input type="checkbox"
+                                   name="free_rental_ids[]"
+                                   value="{{ $rental->id }}"
+                                   class="checkbox checkbox-primary checkbox-sm"
+                                   {{ in_array($rental->id, $selectedRentalIds) ? 'checked' : '' }}>
+                            <div class="flex-1 min-w-0">
+                                <span class="label-text font-medium">{{ $rental->name }}</span>
+                                @if($rental->category)
+                                    <span class="badge badge-ghost badge-xs ml-1">{{ $rental->formatted_category }}</span>
+                                @endif
+                            </div>
+                            <span class="text-xs text-base-content/60">{{ $rental->getFormattedPriceForCurrency() }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('free_rental_ids')
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+        @else
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <h3 class="card-title">Free Rentals</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-soft alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <div>
+                        <p class="text-sm">No rental items configured.</p>
+                        <a href="{{ route('rentals.create') }}" class="link link-primary text-sm">Add rental items</a>
                     </div>
                 </div>
             </div>

@@ -34,6 +34,8 @@ class MembershipPlanRequest extends FormRequest
             'addon_members' => ['nullable', 'integer', 'min:0', 'max:10'],
             'free_amenities' => ['nullable', 'array'],
             'free_amenities.*' => ['string', 'max:255'],
+            'free_rental_ids' => ['nullable', 'array'],
+            'free_rental_ids.*' => ['integer', 'exists:rental_items,id'],
             'location_scope_type' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getLocationScopes()))],
             'location_ids' => ['nullable', 'array'],
             'location_ids.*' => ['exists:locations,id'],

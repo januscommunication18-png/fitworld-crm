@@ -47,6 +47,7 @@ class MembershipPlan extends Model
         'credits_per_cycle',
         'addon_members',
         'free_amenities',
+        'free_rental_ids',
         'eligibility_scope',
         'location_scope_type',
         'location_ids',
@@ -65,6 +66,7 @@ class MembershipPlan extends Model
             'prices' => 'array',
             'addon_members' => 'integer',
             'free_amenities' => 'array',
+            'free_rental_ids' => 'array',
             'location_ids' => 'array',
             'visibility_public' => 'boolean',
         ];

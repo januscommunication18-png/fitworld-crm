@@ -40,6 +40,7 @@ class MembershipPlanController extends Controller
         $locationScopes = MembershipPlan::getLocationScopes();
         $classPlans = $host->classPlans()->active()->orderBy('name')->get();
         $locations = $host->locations()->orderBy('name')->get();
+        $rentalItems = $host->rentalItems()->where('is_active', true)->orderBy('name')->get();
         $questionnaires = $this->getPublishedQuestionnaires();
 
         // Multi-currency support
@@ -56,6 +57,7 @@ class MembershipPlanController extends Controller
             'locationScopes',
             'classPlans',
             'locations',
+            'rentalItems',
             'questionnaires',
             'hostCurrencies',
             'defaultCurrency',
@@ -129,6 +131,7 @@ class MembershipPlanController extends Controller
         $locationScopes = MembershipPlan::getLocationScopes();
         $classPlans = $host->classPlans()->active()->orderBy('name')->get();
         $locations = $host->locations()->orderBy('name')->get();
+        $rentalItems = $host->rentalItems()->where('is_active', true)->orderBy('name')->get();
         $selectedClassPlanIds = $membershipPlan->classPlans->pluck('id')->toArray();
         $selectedLocationIds = $membershipPlan->location_ids ?? [];
         $questionnaires = $this->getPublishedQuestionnaires();
@@ -149,6 +152,7 @@ class MembershipPlanController extends Controller
             'locationScopes',
             'classPlans',
             'locations',
+            'rentalItems',
             'selectedClassPlanIds',
             'selectedLocationIds',
             'questionnaires',

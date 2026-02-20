@@ -135,30 +135,48 @@
                 <h3 class="card-title">Pricing</h3>
             </div>
             <div class="card-body space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="label-text" for="price">Price ($)</label>
-                        <input type="number" id="price" name="price"
-                            value="{{ old('price', $servicePlan?->price) }}"
-                            class="input w-full @error('price') input-error @enderror"
-                            min="0" max="9999.99" step="0.01"
-                            placeholder="0.00">
-                        <p class="text-xs text-base-content/60 mt-1">Leave empty for free services</p>
-                        @error('price')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
+                {{-- Service Price --}}
+                <div>
+                    <label class="label-text font-medium">Service Price</label>
+                    <p class="text-xs text-base-content/60 mb-2">Leave empty for free services</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        @foreach($hostCurrencies as $currency)
+                            <div class="form-control">
+                                <label class="label py-1 justify-start gap-2">
+                                    <span class="label-text text-sm">{{ $currency }}</span>
+                                    @if($currency === $defaultCurrency)
+                                        <span class="badge badge-primary badge-xs">Default</span>
+                                    @endif
+                                </label>
+                                <label class="input input-bordered flex items-center gap-2">
+                                    <span class="text-base-content/60">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                    <input type="number" name="prices[{{ $currency }}]" step="0.01" min="0"
+                                           value="{{ old('prices.' . $currency, $servicePlan?->prices[$currency] ?? '') }}"
+                                           class="grow w-full" placeholder="0.00">
+                                </label>
+                            </div>
+                        @endforeach
                     </div>
-                    <div>
-                        <label class="label-text" for="deposit_amount">Deposit Amount ($)</label>
-                        <input type="number" id="deposit_amount" name="deposit_amount"
-                            value="{{ old('deposit_amount', $servicePlan?->deposit_amount) }}"
-                            class="input w-full @error('deposit_amount') input-error @enderror"
-                            min="0" max="9999.99" step="0.01"
-                            placeholder="0.00">
-                        <p class="text-xs text-base-content/60 mt-1">Required deposit at booking (optional)</p>
-                        @error('deposit_amount')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
+                </div>
+
+                {{-- Deposit Amount --}}
+                <div>
+                    <label class="label-text font-medium">Deposit Amount</label>
+                    <p class="text-xs text-base-content/60 mb-2">Required deposit at booking (optional)</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        @foreach($hostCurrencies as $currency)
+                            <div class="form-control">
+                                <label class="label py-1 justify-start gap-2">
+                                    <span class="label-text text-sm">{{ $currency }}</span>
+                                </label>
+                                <label class="input input-bordered flex items-center gap-2">
+                                    <span class="text-base-content/60">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                    <input type="number" name="deposit_prices[{{ $currency }}]" step="0.01" min="0"
+                                           value="{{ old('deposit_prices.' . $currency, $servicePlan?->deposit_prices[$currency] ?? '') }}"
+                                           class="grow w-full" placeholder="0.00">
+                                </label>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>

@@ -27,6 +27,9 @@ use App\Http\Controllers\Host\WaitlistController;
 use App\Http\Controllers\Host\ServicePlanController;
 use App\Http\Controllers\Host\ServiceSlotController;
 use App\Http\Controllers\Host\MembershipPlanController;
+use App\Http\Controllers\Host\RentalItemController;
+use App\Http\Controllers\Host\RentalFulfillmentController;
+use App\Http\Controllers\Host\RentalInvoiceController;
 use App\Http\Controllers\Host\QuestionnaireController;
 use App\Http\Controllers\Host\WalkInController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
@@ -219,6 +222,29 @@ Route::middleware('auth')->group(function () {
     Route::resource('membership-plans', MembershipPlanController::class)->names('membership-plans');
     Route::patch('/membership-plans/{membershipPlan}/toggle-status', [MembershipPlanController::class, 'toggleStatus'])->name('membership-plans.toggle-status');
     Route::patch('/membership-plans/{membershipPlan}/archive', [MembershipPlanController::class, 'archive'])->name('membership-plans.archive');
+
+    // Rental Fulfillment (must be before resource route)
+    Route::prefix('rentals/fulfillment')->name('rentals.fulfillment.')->group(function () {
+        Route::get('/', [RentalFulfillmentController::class, 'index'])->name('index');
+        Route::get('/{booking}', [RentalFulfillmentController::class, 'show'])->name('show');
+        Route::post('/{booking}/update-status', [RentalFulfillmentController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{booking}/prepare', [RentalFulfillmentController::class, 'prepare'])->name('prepare');
+        Route::post('/{booking}/hand-out', [RentalFulfillmentController::class, 'handOut'])->name('hand-out');
+        Route::post('/{booking}/return', [RentalFulfillmentController::class, 'return'])->name('return');
+        Route::post('/{booking}/lost', [RentalFulfillmentController::class, 'lost'])->name('lost');
+    });
+
+    // Rental Invoice (must be before resource route)
+    Route::prefix('rentals/invoice')->name('rentals.invoice.')->group(function () {
+        Route::get('/create', [RentalInvoiceController::class, 'create'])->name('create');
+        Route::post('/', [RentalInvoiceController::class, 'store'])->name('store');
+        Route::get('/item-price/{rentalItem}', [RentalInvoiceController::class, 'getItemPrice'])->name('item-price');
+    });
+
+    // Rental Items
+    Route::resource('rentals', RentalItemController::class);
+    Route::patch('/rentals/{rental}/toggle-status', [RentalItemController::class, 'toggleStatus'])->name('rentals.toggle-status');
+    Route::post('/rentals/{rental}/adjust-inventory', [RentalItemController::class, 'adjustInventory'])->name('rentals.adjust-inventory');
 
     // Questionnaires
     Route::resource('questionnaires', QuestionnaireController::class)->names('questionnaires');

@@ -211,6 +211,26 @@
             </li>
             @endif
 
+            {{-- Rentals - Always visible --}}
+            <li class="nav-item {{ request()->is('rentals*') ? 'active' : '' }}" data-nav="rentals">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--package] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Rentals</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('rentals*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/rentals') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals') && !request()->is('rentals/*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--list] size-4 mr-2"></span>All Items
+                    </a></li>
+                    <li><a href="{{ url('/rentals/fulfillment') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals/fulfillment*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--clipboard-check] size-4 mr-2"></span>Fulfillment
+                    </a></li>
+                    <li><a href="{{ url('/rentals/invoice/create') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals/invoice*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--receipt] size-4 mr-2"></span>Create Invoice
+                    </a></li>
+                </ul>
+            </li>
+
             {{-- Section: Commerce - Only show if user has any commerce permissions --}}
             @if($canViewOffers || $canViewInsights || $canViewPayments)
             <li class="menu-title sidebar-section-label pt-4">

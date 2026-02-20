@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Http\Requests\Host\ClassPlanRequest;
 use App\Models\ClassPlan;
+use App\Models\MembershipPlan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -32,12 +33,26 @@ class ClassPlanController extends Controller
 
     public function create()
     {
+        $host = auth()->user()->host;
         $categories = ClassPlan::getCategories();
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
         $questionnaires = $this->getPublishedQuestionnaires();
 
-        return view('host.class-plans.create', compact('categories', 'types', 'difficultyLevels', 'questionnaires'));
+        // Multi-currency support
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.class-plans.create', compact(
+            'categories',
+            'types',
+            'difficultyLevels',
+            'questionnaires',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
     }
 
     public function store(ClassPlanRequest $request)
@@ -55,6 +70,18 @@ class ClassPlanController extends Controller
         // Handle equipment_needed as array
         if (isset($data['equipment_needed']) && is_string($data['equipment_needed'])) {
             $data['equipment_needed'] = array_filter(array_map('trim', explode(',', $data['equipment_needed'])));
+        }
+
+        // Handle multi-currency prices
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        if (isset($data['prices'])) {
+            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
+            $data['default_price'] = $data['prices'][$defaultCurrency] ?? null;
+        }
+
+        if (isset($data['drop_in_prices'])) {
+            $data['drop_in_prices'] = array_filter($data['drop_in_prices'], fn($price) => $price !== null && $price !== '');
+            $data['drop_in_price'] = $data['drop_in_prices'][$defaultCurrency] ?? null;
         }
 
         // Handle image upload
@@ -85,24 +112,39 @@ class ClassPlanController extends Controller
     {
         $this->authorizeHost($classPlan);
 
+        $host = auth()->user()->host;
         $categories = ClassPlan::getCategories();
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
         $questionnaires = $this->getPublishedQuestionnaires();
         $classPlan->load('questionnaireAttachments');
 
-        return view('host.class-plans.edit', compact('classPlan', 'categories', 'types', 'difficultyLevels', 'questionnaires'));
+        // Multi-currency support
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.class-plans.edit', compact(
+            'classPlan',
+            'categories',
+            'types',
+            'difficultyLevels',
+            'questionnaires',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
     }
 
     public function update(ClassPlanRequest $request, ClassPlan $classPlan)
     {
         $this->authorizeHost($classPlan);
 
+        $host = auth()->user()->host;
         $data = $request->validated();
 
         // Update slug if name changed
         if ($data['name'] !== $classPlan->name) {
-            $host = auth()->user()->host;
             $data['slug'] = Str::slug($data['name']);
             $counter = 1;
             while ($host->classPlans()->where('slug', $data['slug'])->where('id', '!=', $classPlan->id)->exists()) {
@@ -113,6 +155,18 @@ class ClassPlanController extends Controller
         // Handle equipment_needed as array
         if (isset($data['equipment_needed']) && is_string($data['equipment_needed'])) {
             $data['equipment_needed'] = array_filter(array_map('trim', explode(',', $data['equipment_needed'])));
+        }
+
+        // Handle multi-currency prices
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        if (isset($data['prices'])) {
+            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
+            $data['default_price'] = $data['prices'][$defaultCurrency] ?? null;
+        }
+
+        if (isset($data['drop_in_prices'])) {
+            $data['drop_in_prices'] = array_filter($data['drop_in_prices'], fn($price) => $price !== null && $price !== '');
+            $data['drop_in_price'] = $data['drop_in_prices'][$defaultCurrency] ?? null;
         }
 
         // Handle image upload
