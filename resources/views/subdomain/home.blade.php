@@ -41,6 +41,7 @@
                 {{ $defaultLocation->full_address }}
             </p>
             @endif
+            
         </div>
     </div>
 </section>
