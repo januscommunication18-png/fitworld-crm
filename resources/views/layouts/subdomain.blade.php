@@ -51,6 +51,26 @@
         .animate-fade-in {
             animation: fadeInUp 0.5s ease forwards;
         }
+
+        /* Gallery auto-scroll animation */
+        @keyframes scrollGallery {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .gallery-scroll-container {
+            mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        }
+        .animate-scroll {
+            animation: scrollGallery 30s linear infinite;
+        }
+        .animate-scroll:hover,
+        .animate-scroll.paused {
+            animation-play-state: paused;
+        }
+        .gallery-slide {
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-base-100 min-h-screen flex flex-col antialiased">

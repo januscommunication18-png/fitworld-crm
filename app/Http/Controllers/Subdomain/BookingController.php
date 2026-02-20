@@ -8,6 +8,7 @@ use App\Models\Host;
 use App\Models\Instructor;
 use App\Models\MembershipPlan;
 use App\Models\ServicePlan;
+use App\Models\StudioGalleryImage;
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -63,6 +64,11 @@ class BookingController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Get studio gallery images
+        $galleryImages = StudioGalleryImage::where('host_id', $host->id)
+            ->ordered()
+            ->get();
+
         // Get booking settings
         $bookingSettings = array_merge(
             Host::defaultBookingSettings(),
@@ -73,14 +79,19 @@ class BookingController extends Controller
         $clientSettings = $host->client_settings ?? [];
         $memberPortalEnabled = $clientSettings['enable_member_portal'] ?? false;
 
+        // Get default location for address display
+        $defaultLocation = $host->defaultLocation();
+
         return view('subdomain.home', [
             'host' => $host,
             'upcomingSessions' => $upcomingSessions,
             'instructors' => $instructors,
             'servicePlans' => $servicePlans,
             'membershipPlans' => $membershipPlans,
+            'galleryImages' => $galleryImages,
             'bookingSettings' => $bookingSettings,
             'memberPortalEnabled' => $memberPortalEnabled,
+            'defaultLocation' => $defaultLocation,
         ]);
     }
 

@@ -331,6 +331,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
     Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
 
+    // Gallery
+    Route::post('/settings/studio/gallery', [SettingsController::class, 'uploadGalleryImage'])->name('settings.studio.gallery.upload');
+    Route::put('/settings/studio/gallery/{id}', [SettingsController::class, 'updateGalleryImage'])->name('settings.studio.gallery.update');
+    Route::delete('/settings/studio/gallery/{id}', [SettingsController::class, 'deleteGalleryImage'])->name('settings.studio.gallery.delete');
+    Route::post('/settings/studio/gallery/reorder', [SettingsController::class, 'reorderGalleryImages'])->name('settings.studio.gallery.reorder');
+
     // Settings - Locations (specific routes first, then parameterized routes)
     Route::get('/settings/locations', [LocationController::class, 'index'])->name('settings.locations.index');
     Route::get('/settings/locations/create', [LocationController::class, 'create'])->name('settings.locations.create');

@@ -197,7 +197,8 @@ class SettingsController extends Controller
     public function studioProfile()
     {
         $host = auth()->user()->host;
-        return view('host.settings.studio.profile', compact('host'));
+        $defaultLocation = $host->defaultLocation();
+        return view('host.settings.studio.profile', compact('host', 'defaultLocation'));
     }
 
     public function updateStudioProfile(Request $request)
@@ -206,6 +207,7 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'studio_name' => 'required|string|max:255',
+            'short_description' => 'nullable|string|max:200',
             'city' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
             'timezone' => 'required|string|max:100',
@@ -770,5 +772,122 @@ class SettingsController extends Controller
         }
 
         return back()->with('success', 'Email logs cleared.');
+    }
+
+    /**
+     * Upload gallery images (supports multiple files).
+     */
+    public function uploadGalleryImage(Request $request)
+    {
+        $request->validate([
+            'images' => 'required|array|min:1|max:20',
+            'images.*' => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
+        ]);
+
+        $host = auth()->user()->host;
+
+        // Get max sort order
+        $maxSort = \App\Models\StudioGalleryImage::where('host_id', $host->id)->max('sort_order') ?? -1;
+
+        $uploadedImages = [];
+
+        foreach ($request->file('images') as $file) {
+            $maxSort++;
+
+            // Store the image
+            $path = $file->storePublicly($host->getStoragePath('gallery'), config('filesystems.uploads'));
+
+            // Create the gallery image record
+            $galleryImage = \App\Models\StudioGalleryImage::create([
+                'host_id' => $host->id,
+                'image_path' => $path,
+                'caption' => null,
+                'sort_order' => $maxSort,
+            ]);
+
+            $uploadedImages[] = [
+                'id' => $galleryImage->id,
+                'image_url' => $galleryImage->image_url,
+                'caption' => $galleryImage->caption,
+                'sort_order' => $galleryImage->sort_order,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => count($uploadedImages) . ' image(s) uploaded successfully',
+            'images' => $uploadedImages,
+        ]);
+    }
+
+    /**
+     * Update gallery image caption.
+     */
+    public function updateGalleryImage(Request $request, $id)
+    {
+        $host = auth()->user()->host;
+
+        $galleryImage = \App\Models\StudioGalleryImage::where('host_id', $host->id)
+            ->findOrFail($id);
+
+        $validated = $request->validate([
+            'caption' => 'nullable|string|max:255',
+        ]);
+
+        $galleryImage->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image updated successfully',
+        ]);
+    }
+
+    /**
+     * Delete a gallery image.
+     */
+    public function deleteGalleryImage($id)
+    {
+        $host = auth()->user()->host;
+
+        $galleryImage = \App\Models\StudioGalleryImage::where('host_id', $host->id)
+            ->findOrFail($id);
+
+        // Delete the file
+        try {
+            \Storage::disk(config('filesystems.uploads'))->delete($galleryImage->image_path);
+        } catch (\Exception $e) {
+            // Ignore deletion errors
+        }
+
+        $galleryImage->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image deleted successfully',
+        ]);
+    }
+
+    /**
+     * Reorder gallery images.
+     */
+    public function reorderGalleryImages(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'integer|exists:studio_gallery_images,id',
+        ]);
+
+        foreach ($request->order as $index => $id) {
+            \App\Models\StudioGalleryImage::where('host_id', $host->id)
+                ->where('id', $id)
+                ->update(['sort_order' => $index]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Gallery order updated',
+        ]);
     }
 }

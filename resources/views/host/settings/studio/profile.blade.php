@@ -63,6 +63,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
 
                 <div class="space-y-1">
+                    <label class="text-sm text-base-content/60">Short Description</label>
+                    <p class="font-medium" id="display-short-description">{{ $host->short_description ?: 'Not set' }}</p>
+                </div>
+
+                <div class="space-y-1">
                     <label class="text-sm text-base-content/60">Subdomain</label>
                     <p class="font-medium" id="display-subdomain">{{ $host->subdomain ? $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz') : 'Not set' }}</p>
                 </div>
@@ -86,8 +91,14 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">City</label>
-                    <p class="font-medium" id="display-city">{{ $host->city ?? 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">Location</label>
+                    @if($defaultLocation ?? null)
+                        <p class="font-medium" id="display-location">{{ $defaultLocation->full_address }}</p>
+                        <a href="{{ route('settings.locations.edit', $defaultLocation->id) }}" class="text-xs text-primary hover:underline">Edit in Location Settings</a>
+                    @else
+                        <p class="text-base-content/50" id="display-location">No location set</p>
+                        <a href="{{ route('settings.locations.create') }}" class="text-xs text-primary hover:underline">Add a location</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -182,6 +193,52 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         Cancel
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Studio Gallery Card --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold">Studio Gallery</h2>
+                    <p class="text-base-content/60 text-sm">Showcase your studio with photos (displays on booking page)</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('upload-gallery-drawer')">
+                    <span class="icon-[tabler--plus] size-4"></span> Add Image
+                </button>
+            </div>
+
+            {{-- Gallery Grid --}}
+            <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                @foreach($host->galleryImages as $image)
+                <div class="gallery-item relative group aspect-video bg-base-200 rounded-lg overflow-hidden" data-id="{{ $image->id }}">
+                    <img src="{{ $image->image_url }}" alt="{{ $image->caption ?? 'Gallery image' }}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button type="button" class="btn btn-circle btn-sm btn-ghost text-white gallery-drag-handle cursor-move" title="Drag to reorder">
+                            <span class="icon-[tabler--grip-vertical] size-4"></span>
+                        </button>
+                        <button type="button" class="btn btn-circle btn-sm btn-ghost text-white" onclick="editGalleryImage({{ $image->id }}, '{{ addslashes($image->caption ?? '') }}')" title="Edit caption">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                        </button>
+                        <button type="button" class="btn btn-circle btn-sm btn-ghost text-white hover:text-error" onclick="deleteGalleryImage({{ $image->id }})" title="Delete">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                    @if($image->caption)
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1">
+                        <p class="text-white text-xs truncate">{{ $image->caption }}</p>
+                    </div>
+                    @endif
+                </div>
+                @endforeach
+
+                {{-- Add More Card - Always visible --}}
+                <button type="button" id="gallery-add-more-btn" onclick="openDrawer('upload-gallery-drawer')" class="aspect-video bg-base-200 hover:bg-base-300 border-2 border-dashed border-base-content/20 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer">
+                    <span class="icon-[tabler--plus] size-8 text-base-content/40"></span>
+                    <span class="text-sm text-base-content/50">Add Images</span>
+                </button>
             </div>
         </div>
     </div>
@@ -375,6 +432,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <input id="studio_name" type="text" class="input w-full" value="{{ $host->studio_name ?? '' }}" required />
                 </div>
                 <div>
+                    <label class="label-text" for="short_description">Short Description</label>
+                    <input id="short_description" type="text" class="input w-full" value="{{ $host->short_description ?? '' }}" maxlength="200" placeholder="A brief tagline for your studio" />
+                    <p class="text-xs text-base-content/50 mt-1">Shown in the hero section of your booking page (max 200 characters)</p>
+                </div>
+                <div>
                     <label class="label-text" for="subdomain">Subdomain</label>
                     <div class="join w-full">
                         <input id="subdomain" type="text" class="input join-item flex-1 input-disabled bg-base-200 cursor-not-allowed" value="{{ $host->subdomain ?? '' }}" readonly />
@@ -417,10 +479,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         <option value="Europe/Paris" {{ ($host->timezone ?? '') == 'Europe/Paris' ? 'selected' : '' }}>Paris (CET)</option>
                         <option value="Australia/Sydney" {{ ($host->timezone ?? '') == 'Australia/Sydney' ? 'selected' : '' }}>Sydney (AEST)</option>
                     </select>
-                </div>
-                <div>
-                    <label class="label-text" for="city">City</label>
-                    <input id="city" type="text" class="input w-full" value="{{ $host->city ?? '' }}" placeholder="e.g. Austin, TX" />
                 </div>
             </div>
         </div>
@@ -735,10 +793,94 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </form>
 </div>
+
+{{-- Upload Gallery Image Drawer --}}
+<div id="upload-gallery-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Add Gallery Image</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('upload-gallery-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="upload-gallery-form" class="flex flex-col flex-1 overflow-hidden" enctype="multipart/form-data">
+        <div class="flex-1 overflow-y-auto p-4">
+            <div class="flex flex-col items-center justify-center border-2 border-dashed border-base-content/20 rounded-lg p-8 hover:border-primary transition-colors cursor-pointer" id="gallery-drop-zone">
+                <input type="file" id="gallery-input" name="images[]" class="hidden" accept="image/png,image/jpeg,image/webp" multiple />
+                <div id="gallery-upload-placeholder" class="text-center">
+                    <span class="icon-[tabler--cloud-upload] size-12 text-base-content/30 mb-2 block mx-auto"></span>
+                    <p class="text-sm text-base-content/60">Drag and drop images here, or</p>
+                    <button type="button" class="btn btn-soft btn-sm mt-2" id="gallery-browse-btn">Browse Files</button>
+                    <p class="text-xs text-base-content/40 mt-2">You can select multiple images</p>
+                </div>
+                <div id="gallery-upload-preview" class="hidden w-full">
+                    <div id="gallery-preview-grid" class="grid grid-cols-3 gap-2 mb-3"></div>
+                    <p id="gallery-file-count" class="text-sm text-base-content/60 text-center"></p>
+                    <button type="button" class="btn btn-ghost btn-xs mt-2 mx-auto block" id="gallery-remove-preview-btn">
+                        <span class="icon-[tabler--x] size-4"></span> Clear All
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs text-base-content/50 text-center mt-4">PNG, JPG, or WebP. Max 5MB each.</p>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="upload-gallery-btn" disabled>
+                <span class="loading loading-spinner loading-xs hidden" id="gallery-spinner"></span>
+                Upload Image
+            </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-gallery-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
+{{-- Edit Gallery Caption Modal --}}
+<dialog id="edit-gallery-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4">Edit Caption</h3>
+        <form id="edit-gallery-form">
+            <input type="hidden" id="edit-gallery-id" value="" />
+            <div class="form-control">
+                <label class="label" for="edit-gallery-caption">
+                    <span class="label-text">Caption</span>
+                </label>
+                <input type="text" id="edit-gallery-caption" class="input input-bordered w-full" placeholder="Describe this image..." maxlength="255" />
+            </div>
+            <div class="modal-action">
+                <button type="submit" class="btn btn-primary">
+                    <span class="loading loading-spinner loading-xs hidden" id="edit-gallery-spinner"></span>
+                    Save
+                </button>
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('edit-gallery-modal').close()">Cancel</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+{{-- Delete Gallery Confirmation Modal --}}
+<dialog id="delete-gallery-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete Image?</h3>
+        <p class="py-4 text-base-content/70">This image will be permanently removed from your gallery. This action cannot be undone.</p>
+        <input type="hidden" id="delete-gallery-id" value="" />
+        <div class="modal-action">
+            <button type="button" class="btn btn-error" id="confirm-delete-gallery-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="delete-gallery-spinner"></span>
+                Delete
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="document.getElementById('delete-gallery-modal').close()">Cancel</button>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
 @endsection
 
 @push('scripts')
 <script src="{{ asset('vendor/quill/quill.js') }}"></script>
+<script src="{{ asset('vendor/sortablejs/Sortable.min.js') }}"></script>
 <script>
 var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 var selectedTypes = {!! json_encode($host->studio_types ?? []) !!};
@@ -785,7 +927,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-cancellation-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -908,7 +1050,7 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
         body: JSON.stringify({
             studio_name: document.getElementById('studio_name').value,
-            city: document.getElementById('city').value,
+            short_description: document.getElementById('short_description').value,
             timezone: document.getElementById('timezone').value,
             studio_types: selectedTypes
         })
@@ -917,7 +1059,7 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
     .then(function(result) {
         if (result.success) {
             document.getElementById('display-studio-name').textContent = document.getElementById('studio_name').value || 'Not set';
-            document.getElementById('display-city').textContent = document.getElementById('city').value || 'Not set';
+            document.getElementById('display-short-description').textContent = document.getElementById('short_description').value || 'Not set';
             document.getElementById('display-timezone').textContent = document.getElementById('timezone').value || 'Not set';
             var typesHtml = selectedTypes.length > 0 ? selectedTypes.map(function(t) { return '<span class="badge badge-primary badge-soft badge-sm">' + t + '</span>'; }).join('') : '<span class="text-base-content/50">Not set</span>';
             document.getElementById('display-types').innerHTML = typesHtml;
@@ -1270,5 +1412,266 @@ function saveAbout() {
         spinner.classList.add('hidden');
     });
 }
+
+// ============================================
+// Gallery Management
+// ============================================
+
+// Initialize gallery upload (multi-file)
+(function() {
+    var dropZone = document.getElementById('gallery-drop-zone');
+    var input = document.getElementById('gallery-input');
+    var browseBtn = document.getElementById('gallery-browse-btn');
+    var removeBtn = document.getElementById('gallery-remove-preview-btn');
+    var placeholder = document.getElementById('gallery-upload-placeholder');
+    var preview = document.getElementById('gallery-upload-preview');
+    var previewGrid = document.getElementById('gallery-preview-grid');
+    var fileCount = document.getElementById('gallery-file-count');
+    var uploadBtn = document.getElementById('upload-gallery-btn');
+
+    if (!dropZone) return;
+
+    browseBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); input.click(); });
+    removeBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); clearGalleryPreview(); });
+    dropZone.addEventListener('click', function(e) { if (!e.target.closest('button')) input.click(); });
+    dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); });
+    dropZone.addEventListener('dragleave', function(e) { e.preventDefault(); dropZone.classList.remove('border-primary', 'bg-primary/5'); });
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-primary', 'bg-primary/5');
+        if (e.dataTransfer.files.length > 0) handleGalleryFiles(e.dataTransfer.files);
+    });
+    input.addEventListener('change', function() { if (this.files.length > 0) handleGalleryFiles(this.files); });
+
+    function handleGalleryFiles(files) {
+        previewGrid.innerHTML = '';
+        var validFiles = [];
+
+        Array.from(files).forEach(function(file) {
+            if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                showToast('Skipped: ' + file.name + ' (invalid type)', 'error');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Skipped: ' + file.name + ' (over 5MB)', 'error');
+                return;
+            }
+            validFiles.push(file);
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var div = document.createElement('div');
+                div.className = 'aspect-square rounded-lg overflow-hidden bg-base-200';
+                div.innerHTML = '<img src="' + e.target.result + '" class="w-full h-full object-cover" />';
+                previewGrid.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        if (validFiles.length > 0) {
+            fileCount.textContent = validFiles.length + ' image' + (validFiles.length > 1 ? 's' : '') + ' selected';
+            placeholder.classList.add('hidden');
+            preview.classList.remove('hidden');
+            uploadBtn.disabled = false;
+        }
+    }
+
+    window.clearGalleryPreview = function() {
+        input.value = '';
+        previewGrid.innerHTML = '';
+        fileCount.textContent = '';
+        placeholder.classList.remove('hidden');
+        preview.classList.add('hidden');
+        uploadBtn.disabled = true;
+    };
+})();
+
+// Upload gallery form (multi-file)
+document.getElementById('upload-gallery-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('upload-gallery-btn');
+    var spinner = document.getElementById('gallery-spinner');
+    var files = document.getElementById('gallery-input').files;
+
+    if (files.length === 0) return;
+
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    var formData = new FormData();
+    Array.from(files).forEach(function(file, index) {
+        formData.append('images[]', file);
+    });
+
+    fetch('{{ route("settings.studio.gallery.upload") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            // Hide empty state if present
+            var emptyState = document.getElementById('gallery-empty');
+            if (emptyState) emptyState.remove();
+
+            // Add new images to grid (before the "Add More" button)
+            var grid = document.getElementById('gallery-grid');
+            var addMoreBtn = document.getElementById('gallery-add-more-btn');
+            result.images.forEach(function(img) {
+                var div = document.createElement('div');
+                div.className = 'gallery-item relative group aspect-video bg-base-200 rounded-lg overflow-hidden';
+                div.setAttribute('data-id', img.id);
+                div.innerHTML = '<img src="' + img.image_url + '" alt="Gallery image" class="w-full h-full object-cover">' +
+                    '<div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">' +
+                    '<button type="button" class="btn btn-circle btn-sm btn-ghost text-white gallery-drag-handle cursor-move" title="Drag to reorder"><span class="icon-[tabler--grip-vertical] size-4"></span></button>' +
+                    '<button type="button" class="btn btn-circle btn-sm btn-ghost text-white" onclick="editGalleryImage(' + img.id + ', \'\')" title="Edit caption"><span class="icon-[tabler--edit] size-4"></span></button>' +
+                    '<button type="button" class="btn btn-circle btn-sm btn-ghost text-white hover:text-error" onclick="deleteGalleryImage(' + img.id + ')" title="Delete"><span class="icon-[tabler--trash] size-4"></span></button>' +
+                    '</div>';
+                grid.insertBefore(div, addMoreBtn);
+            });
+
+            // Re-initialize sortable
+            initGallerySortable();
+
+            clearGalleryPreview();
+            closeDrawer('upload-gallery-drawer');
+            setTimeout(function() { showToast(result.images.length + ' image' + (result.images.length > 1 ? 's' : '') + ' uploaded!'); }, 350);
+        } else {
+            showToast(result.message || 'Failed to upload', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Edit gallery image caption
+function editGalleryImage(id, caption) {
+    document.getElementById('edit-gallery-id').value = id;
+    document.getElementById('edit-gallery-caption').value = caption;
+    document.getElementById('edit-gallery-modal').showModal();
+}
+
+document.getElementById('edit-gallery-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = this.querySelector('button[type="submit"]');
+    var spinner = document.getElementById('edit-gallery-spinner');
+    var id = document.getElementById('edit-gallery-id').value;
+    var caption = document.getElementById('edit-gallery-caption').value;
+
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    fetch('{{ url("settings/studio/gallery") }}/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({ caption: caption })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            // Update caption display
+            var item = document.querySelector('.gallery-item[data-id="' + id + '"]');
+            if (item) {
+                var captionEl = item.querySelector('.absolute.bottom-0 p');
+                if (caption) {
+                    if (captionEl) {
+                        captionEl.textContent = caption;
+                    } else {
+                        var captionDiv = document.createElement('div');
+                        captionDiv.className = 'absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1';
+                        captionDiv.innerHTML = '<p class="text-white text-xs truncate">' + caption + '</p>';
+                        item.appendChild(captionDiv);
+                    }
+                } else if (captionEl) {
+                    captionEl.parentElement.remove();
+                }
+                // Update onclick handler
+                var editBtn = item.querySelector('button[onclick^="editGalleryImage"]');
+                if (editBtn) {
+                    editBtn.setAttribute('onclick', 'editGalleryImage(' + id + ', \'' + caption.replace(/'/g, "\\'") + '\')');
+                }
+            }
+            document.getElementById('edit-gallery-modal').close();
+            showToast('Caption updated!');
+        } else {
+            showToast(result.message || 'Failed to update', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Delete gallery image
+function deleteGalleryImage(id) {
+    document.getElementById('delete-gallery-id').value = id;
+    document.getElementById('delete-gallery-modal').showModal();
+}
+
+document.getElementById('confirm-delete-gallery-btn').addEventListener('click', function() {
+    var btn = this;
+    var spinner = document.getElementById('delete-gallery-spinner');
+    var id = document.getElementById('delete-gallery-id').value;
+
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    fetch('{{ url("settings/studio/gallery") }}/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var item = document.querySelector('.gallery-item[data-id="' + id + '"]');
+            if (item) item.remove();
+
+            document.getElementById('delete-gallery-modal').close();
+            showToast('Image deleted!');
+        } else {
+            showToast(result.message || 'Failed to delete', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Gallery sortable (drag to reorder)
+var gallerySortable = null;
+function initGallerySortable() {
+    var grid = document.getElementById('gallery-grid');
+    if (!grid || typeof Sortable === 'undefined') return;
+
+    if (gallerySortable) gallerySortable.destroy();
+
+    gallerySortable = Sortable.create(grid, {
+        animation: 150,
+        handle: '.gallery-drag-handle',
+        ghostClass: 'opacity-50',
+        filter: '#gallery-add-more-btn',
+        onEnd: function() {
+            var order = [];
+            grid.querySelectorAll('.gallery-item').forEach(function(item) {
+                order.push(parseInt(item.dataset.id));
+            });
+
+            fetch('{{ route("settings.studio.gallery.reorder") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify({ order: order })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (!result.success) showToast('Failed to save order', 'error');
+            })
+            .catch(function() { showToast('Failed to save order', 'error'); });
+        }
+    });
+}
+
+// Initialize sortable on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initGallerySortable();
+});
 </script>
 @endpush

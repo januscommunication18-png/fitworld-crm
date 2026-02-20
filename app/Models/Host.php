@@ -29,6 +29,7 @@ class Host extends Model
 
     protected $fillable = [
         'studio_name',
+        'short_description',
         'subdomain',
         'studio_types',
         'city',
@@ -405,6 +406,11 @@ class Host extends Model
     public function locations(): HasMany
     {
         return $this->hasMany(Location::class);
+    }
+
+    public function galleryImages(): HasMany
+    {
+        return $this->hasMany(StudioGalleryImage::class)->ordered();
     }
 
     public function defaultLocation()

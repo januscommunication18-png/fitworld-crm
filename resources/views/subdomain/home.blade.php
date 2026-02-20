@@ -27,18 +27,18 @@
                 {{ $bookingSettings['display_name'] ?? $host->studio_name }}
             </h1>
 
-            {{-- Tagline/About --}}
-            @if($bookingSettings['about_text'] ?? $host->about)
+            {{-- Tagline/Short Description --}}
+            @if($host->short_description)
             <p class="text-white/90 text-lg md:text-xl max-w-2xl mx-auto mb-6">
-                {{ Str::limit($bookingSettings['about_text'] ?? $host->about, 150) }}
+                {{ $host->short_description }}
             </p>
             @endif
 
             {{-- Location --}}
-            @if(($host->show_address ?? true) && $host->address)
+            @if(($host->show_address ?? true) && ($defaultLocation ?? null))
             <p class="text-white/80 text-base flex items-center justify-center gap-2">
                 <span class="icon-[tabler--map-pin] size-5"></span>
-                {{ is_array($host->address) ? ($host->address['city'] ?? $host->address['street'] ?? '') : $host->address }}
+                {{ $defaultLocation->full_address }}
             </p>
             @endif
         </div>
@@ -285,9 +285,9 @@
                     <span class="icon-[tabler--info-circle] size-6 text-primary"></span>
                     About Us
                 </h2>
-                <p class="text-base-content/80 leading-relaxed">
-                    {{ $bookingSettings['about_text'] ?? $host->about }}
-                </p>
+                <div class="prose prose-sm max-w-none text-base-content/80">
+                    {!! $bookingSettings['about_text'] ?? $host->about !!}
+                </div>
 
                 {{-- Instructors Preview --}}
                 @if(($bookingSettings['show_instructors'] ?? true) && $instructors->isNotEmpty())
@@ -331,8 +331,64 @@
     </section>
     @endif
 
+    {{-- 3.5 STUDIO GALLERY SECTION --}}
+    @if(isset($galleryImages) && $galleryImages->isNotEmpty())
+    <section class="mb-12">
+        <div class="card bg-base-100 shadow border border-base-200">
+            <div class="card-body">
+                <h2 class="card-title text-2xl mb-4">
+                    <span class="icon-[tabler--photo] size-6 text-primary"></span>
+                    Studio Gallery
+                </h2>
+
+                {{-- Auto-scrolling Gallery --}}
+                <div class="gallery-scroll-container relative overflow-hidden">
+                    <div class="gallery-scroll-track flex gap-4 animate-scroll" style="width: max-content;">
+                        {{-- First set of images --}}
+                        @foreach($galleryImages as $image)
+                        <div class="gallery-slide flex-shrink-0 w-72 h-48 rounded-xl overflow-hidden shadow-md">
+                            <img src="{{ $image->image_url }}"
+                                 alt="{{ $image->caption ?? 'Studio gallery' }}"
+                                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+                            @if($image->caption)
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                                <p class="text-white text-sm">{{ $image->caption }}</p>
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                        {{-- Duplicate for seamless loop --}}
+                        @foreach($galleryImages as $image)
+                        <div class="gallery-slide flex-shrink-0 w-72 h-48 rounded-xl overflow-hidden shadow-md">
+                            <img src="{{ $image->image_url }}"
+                                 alt="{{ $image->caption ?? 'Studio gallery' }}"
+                                 class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
+                            @if($image->caption)
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+                                <p class="text-white text-sm">{{ $image->caption }}</p>
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Gallery Navigation Dots (optional, for accessibility) --}}
+                @if($galleryImages->count() > 3)
+                <div class="flex justify-center gap-2 mt-4">
+                    <button class="btn btn-circle btn-sm btn-ghost gallery-pause-btn" onclick="toggleGalleryScroll()" title="Pause/Play">
+                        <span class="icon-[tabler--player-pause] size-4 pause-icon"></span>
+                        <span class="icon-[tabler--player-play] size-4 play-icon hidden"></span>
+                    </button>
+                </div>
+                @endif
+            </div>
+        </div>
+    </section>
+    @endif
+
     {{-- 4. LOCATION & ADDRESS SECTION --}}
-    @if($host->address)
+    @if($defaultLocation ?? null)
     <section class="mb-12">
         <div class="card bg-base-100 shadow border border-base-200">
             <div class="card-body">
@@ -344,27 +400,25 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Address Details --}}
                     <div class="space-y-4">
-                        @php
-                            $address = $host->address;
-                            $isArrayAddress = is_array($address);
-                        @endphp
-
                         <div class="flex items-start gap-4">
                             <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                 <span class="icon-[tabler--building] size-6 text-primary"></span>
                             </div>
                             <div>
                                 <p class="text-xs text-base-content/50 uppercase font-medium">Address</p>
-                                @if($isArrayAddress)
-                                    <p class="font-semibold">{{ $address['street'] ?? '' }}</p>
+                                @if($defaultLocation->address_line_1)
+                                    <p class="font-semibold">{{ $defaultLocation->address_line_1 }}</p>
+                                    @if($defaultLocation->address_line_2)
+                                        <p class="text-base-content/70">{{ $defaultLocation->address_line_2 }}</p>
+                                    @endif
                                     <p class="text-base-content/70">
-                                        {{ $address['city'] ?? '' }}@if(!empty($address['state'])), {{ $address['state'] }}@endif @if(!empty($address['zip'])){{ $address['zip'] }}@endif
+                                        {{ $defaultLocation->city }}@if($defaultLocation->state), {{ $defaultLocation->state }}@endif @if($defaultLocation->postal_code) {{ $defaultLocation->postal_code }}@endif
                                     </p>
-                                    @if(!empty($address['country']))
-                                    <p class="text-base-content/60">{{ $address['country'] }}</p>
+                                    @if($defaultLocation->country)
+                                        <p class="text-base-content/60">{{ $defaultLocation->country }}</p>
                                     @endif
                                 @else
-                                    <p class="font-semibold">{{ $address }}</p>
+                                    <p class="font-semibold">{{ $defaultLocation->full_address }}</p>
                                 @endif
                             </div>
                         </div>
@@ -393,9 +447,7 @@
                     <div class="bg-base-200 rounded-xl p-6 flex flex-col items-center justify-center min-h-[200px]">
                         <span class="icon-[tabler--map-2] size-12 text-base-content/20 mb-3"></span>
                         @php
-                            $mapQuery = $isArrayAddress
-                                ? urlencode(implode(', ', array_filter([$address['street'] ?? '', $address['city'] ?? '', $address['state'] ?? '', $address['zip'] ?? ''])))
-                                : urlencode($address);
+                            $mapQuery = urlencode($defaultLocation->full_address);
                         @endphp
                         <a href="https://www.google.com/maps/search/?api=1&query={{ $mapQuery }}"
                            target="_blank"
@@ -421,17 +473,65 @@
                 <p class="text-base-content/60 mb-6">Stay connected and follow our journey</p>
 
                 <div class="flex items-center justify-center gap-4 flex-wrap">
-                    @foreach(['instagram' => ['brand-instagram', 'Instagram', 'bg-gradient-to-br from-purple-500 to-pink-500'], 'facebook' => ['brand-facebook', 'Facebook', 'bg-blue-600'], 'tiktok' => ['brand-tiktok', 'TikTok', 'bg-black'], 'twitter' => ['brand-x', 'X / Twitter', 'bg-black'], 'youtube' => ['brand-youtube', 'YouTube', 'bg-red-600'], 'website' => ['world', 'Website', 'bg-primary']] as $key => [$icon, $label, $bgClass])
-                        @if(!empty($host->social_links[$key]))
-                        <a href="{{ $host->social_links[$key] }}" target="_blank" rel="noopener"
-                           class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
-                            <div class="w-14 h-14 rounded-full {{ $bgClass }} flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                                <span class="icon-[tabler--{{ $icon }}] size-7"></span>
-                            </div>
-                            <span class="text-sm font-medium">{{ $label }}</span>
-                        </a>
-                        @endif
-                    @endforeach
+                    @if(!empty($host->social_links['instagram']))
+                    <a href="{{ $host->social_links['instagram'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--brand-instagram] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">Instagram</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($host->social_links['facebook']))
+                    <a href="{{ $host->social_links['facebook'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--brand-facebook] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">Facebook</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($host->social_links['tiktok']))
+                    <a href="{{ $host->social_links['tiktok'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-black flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--brand-tiktok] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">TikTok</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($host->social_links['twitter']))
+                    <a href="{{ $host->social_links['twitter'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-black flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--brand-x] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">X / Twitter</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($host->social_links['youtube']))
+                    <a href="{{ $host->social_links['youtube'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-red-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--brand-youtube] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">YouTube</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($host->social_links['website']))
+                    <a href="{{ $host->social_links['website'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--world] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">Website</span>
+                    </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -449,3 +549,22 @@
 @endif
 
 @endsection
+
+@push('scripts')
+<script>
+// Gallery pause/play toggle
+function toggleGalleryScroll() {
+    var track = document.querySelector('.gallery-scroll-track');
+    var pauseIcon = document.querySelector('.pause-icon');
+    var playIcon = document.querySelector('.play-icon');
+
+    if (track) {
+        track.classList.toggle('paused');
+        if (pauseIcon && playIcon) {
+            pauseIcon.classList.toggle('hidden');
+            playIcon.classList.toggle('hidden');
+        }
+    }
+}
+</script>
+@endpush
