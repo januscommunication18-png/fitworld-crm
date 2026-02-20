@@ -42,6 +42,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'instructor_id',
         'profile_photo',
         'phone',
+        'bio',
+        'social_links',
     ];
 
     protected $hidden = [
@@ -57,6 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_instructor' => 'boolean',
             'last_login_at' => 'datetime',
             'permissions' => 'array',
+            'social_links' => 'array',
         ];
     }
 

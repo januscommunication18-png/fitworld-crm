@@ -184,6 +184,94 @@
                         </div>
                     </div>
 
+                    {{-- About --}}
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--info-circle] size-5"></span>
+                                    About
+                                </h2>
+                                @if($user->id !== auth()->id() && $userRole !== 'owner' || $user->id === auth()->id())
+                                    <button type="button" class="btn btn-ghost btn-sm" onclick="openDrawer('edit-bio-drawer')">
+                                        <span class="icon-[tabler--edit] size-4"></span>
+                                        Edit
+                                    </button>
+                                @endif
+                            </div>
+                            <div class="mt-4">
+                                @if($user->bio)
+                                    <p class="text-base-content/80 whitespace-pre-wrap">{{ $user->bio }}</p>
+                                @else
+                                    <p class="text-base-content/50 italic">No bio added yet.</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Social Links --}}
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--share] size-5"></span>
+                                    Social Links
+                                </h2>
+                                @if($user->id !== auth()->id() && $userRole !== 'owner' || $user->id === auth()->id())
+                                    <button type="button" class="btn btn-ghost btn-sm" onclick="openDrawer('edit-social-drawer')">
+                                        <span class="icon-[tabler--edit] size-4"></span>
+                                        Edit
+                                    </button>
+                                @endif
+                            </div>
+                            <div class="space-y-3 mt-4">
+                                @php
+                                    $socialLinks = $user->social_links ?? [];
+                                @endphp
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--brand-instagram] size-5 text-pink-500"></span>
+                                    @if(!empty($socialLinks['instagram']))
+                                        <a href="{{ $socialLinks['instagram'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['instagram'] }}</a>
+                                    @else
+                                        <span class="text-sm text-base-content/50">Not connected</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--brand-facebook] size-5 text-blue-600"></span>
+                                    @if(!empty($socialLinks['facebook']))
+                                        <a href="{{ $socialLinks['facebook'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['facebook'] }}</a>
+                                    @else
+                                        <span class="text-sm text-base-content/50">Not connected</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--brand-x] size-5 text-base-content"></span>
+                                    @if(!empty($socialLinks['twitter']))
+                                        <a href="{{ $socialLinks['twitter'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['twitter'] }}</a>
+                                    @else
+                                        <span class="text-sm text-base-content/50">Not connected</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--brand-linkedin] size-5 text-blue-700"></span>
+                                    @if(!empty($socialLinks['linkedin']))
+                                        <a href="{{ $socialLinks['linkedin'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['linkedin'] }}</a>
+                                    @else
+                                        <span class="text-sm text-base-content/50">Not connected</span>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--world] size-5 text-base-content/70"></span>
+                                    @if(!empty($socialLinks['website']))
+                                        <a href="{{ $socialLinks['website'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['website'] }}</a>
+                                    @else
+                                        <span class="text-sm text-base-content/50">Not connected</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Permissions --}}
                     <div class="card bg-base-100">
                         <div class="card-body">
@@ -652,6 +740,209 @@ function deleteNote(noteId) {
         }
     });
 }
+
+// Drawer functions
+function openDrawer(drawerId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(drawerId + '-backdrop');
+    if (drawer) {
+        drawer.classList.remove('translate-x-full');
+        backdrop?.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeDrawer(drawerId) {
+    const drawer = document.getElementById(drawerId);
+    const backdrop = document.getElementById(drawerId + '-backdrop');
+    if (drawer) {
+        drawer.classList.add('translate-x-full');
+        backdrop?.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+function saveBio() {
+    const bio = document.getElementById('user-bio').value;
+    const btn = document.getElementById('save-bio-btn');
+    const spinner = btn.querySelector('.loading');
+
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    fetch(`/settings/team/users/${userId}/profile`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ bio: bio })
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+
+        if (data.success) {
+            closeDrawer('edit-bio-drawer');
+            window.location.reload();
+        } else {
+            alert(data.message || 'An error occurred');
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+function saveSocialLinks() {
+    const socialLinks = {
+        instagram: document.getElementById('social-instagram').value,
+        facebook: document.getElementById('social-facebook').value,
+        twitter: document.getElementById('social-twitter').value,
+        linkedin: document.getElementById('social-linkedin').value,
+        website: document.getElementById('social-website').value
+    };
+
+    const btn = document.getElementById('save-social-btn');
+    const spinner = btn.querySelector('.loading');
+
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    fetch(`/settings/team/users/${userId}/profile`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ social_links: socialLinks })
+    })
+    .then(response => response.json())
+    .then(data => {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+
+        if (data.success) {
+            closeDrawer('edit-social-drawer');
+            window.location.reload();
+        } else {
+            alert(data.message || 'An error occurred');
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+
+// Close drawers on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDrawer('edit-bio-drawer');
+        closeDrawer('edit-social-drawer');
+    }
+});
 </script>
 @endpush
+
+{{-- Edit Bio Drawer --}}
+<div id="edit-bio-drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDrawer('edit-bio-drawer')"></div>
+<div id="edit-bio-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+            <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
+            Edit About
+        </h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-bio-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4">
+        <p class="text-sm text-base-content/60 mb-4">Add a bio or description for this team member</p>
+        <div>
+            <label class="label" for="user-bio">
+                <span class="label-text font-medium">Bio</span>
+            </label>
+            <textarea id="user-bio" class="textarea textarea-bordered w-full h-40" placeholder="Tell us about yourself...">{{ $user->bio }}</textarea>
+            <p class="text-xs text-base-content/50 mt-1">This will be visible on the team profile</p>
+        </div>
+    </div>
+    <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+        <button type="button" id="save-bio-btn" class="btn btn-primary gap-2" onclick="saveBio()">
+            <span class="loading loading-spinner loading-xs hidden"></span>
+            Save Changes
+        </button>
+        <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-bio-drawer')">Cancel</button>
+    </div>
+</div>
+
+{{-- Edit Social Links Drawer --}}
+<div id="edit-social-drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDrawer('edit-social-drawer')"></div>
+<div id="edit-social-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold flex items-center gap-2">
+            <span class="icon-[tabler--share] size-5 text-primary"></span>
+            Edit Social Links
+        </h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-social-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-4">
+        <p class="text-sm text-base-content/60 mb-4">Connect your social media profiles</p>
+
+        @php
+            $socialLinks = $user->social_links ?? [];
+        @endphp
+
+        <div class="space-y-4">
+            <div>
+                <label class="label-text flex items-center gap-2 mb-1" for="social-instagram">
+                    <span class="icon-[tabler--brand-instagram] size-4 text-pink-500"></span> Instagram
+                </label>
+                <input id="social-instagram" type="url" class="input input-bordered w-full" value="{{ $socialLinks['instagram'] ?? '' }}" placeholder="https://instagram.com/username" />
+            </div>
+            <div>
+                <label class="label-text flex items-center gap-2 mb-1" for="social-facebook">
+                    <span class="icon-[tabler--brand-facebook] size-4 text-blue-600"></span> Facebook
+                </label>
+                <input id="social-facebook" type="url" class="input input-bordered w-full" value="{{ $socialLinks['facebook'] ?? '' }}" placeholder="https://facebook.com/username" />
+            </div>
+            <div>
+                <label class="label-text flex items-center gap-2 mb-1" for="social-twitter">
+                    <span class="icon-[tabler--brand-x] size-4"></span> X (Twitter)
+                </label>
+                <input id="social-twitter" type="url" class="input input-bordered w-full" value="{{ $socialLinks['twitter'] ?? '' }}" placeholder="https://x.com/username" />
+            </div>
+            <div>
+                <label class="label-text flex items-center gap-2 mb-1" for="social-linkedin">
+                    <span class="icon-[tabler--brand-linkedin] size-4 text-blue-700"></span> LinkedIn
+                </label>
+                <input id="social-linkedin" type="url" class="input input-bordered w-full" value="{{ $socialLinks['linkedin'] ?? '' }}" placeholder="https://linkedin.com/in/username" />
+            </div>
+            <div>
+                <label class="label-text flex items-center gap-2 mb-1" for="social-website">
+                    <span class="icon-[tabler--world] size-4 text-base-content/70"></span> Website
+                </label>
+                <input id="social-website" type="url" class="input input-bordered w-full" value="{{ $socialLinks['website'] ?? '' }}" placeholder="https://yourwebsite.com" />
+            </div>
+        </div>
+    </div>
+    <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+        <button type="button" id="save-social-btn" class="btn btn-primary gap-2" onclick="saveSocialLinks()">
+            <span class="loading loading-spinner loading-xs hidden"></span>
+            Save Changes
+        </button>
+        <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-social-drawer')">Cancel</button>
+    </div>
+</div>
+
 @endsection

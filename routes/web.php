@@ -386,6 +386,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/team/users/{user}/reset-password', [TeamController::class, 'resetUserPassword'])->name('settings.team.users.reset-password');
     Route::post('/settings/team/users/{user}/send-invite', [TeamController::class, 'sendUserInvite'])->name('settings.team.users.send-invite');
     Route::post('/settings/team/users/{user}/notes', [TeamController::class, 'storeUserNote'])->name('settings.team.users.notes.store');
+    Route::put('/settings/team/users/{user}/profile', [TeamController::class, 'updateUserProfile'])->name('settings.team.users.profile.update');
     Route::delete('/settings/team/user-notes/{note}', [TeamController::class, 'deleteUserNote'])->name('settings.team.user-notes.delete');
     Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
 

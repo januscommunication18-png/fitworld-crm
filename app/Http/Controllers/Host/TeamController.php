@@ -218,6 +218,43 @@ class TeamController extends Controller
     }
 
     /**
+     * Update user profile (bio, social links)
+     */
+    public function updateUserProfile(Request $request, User $user)
+    {
+        $this->authorizeUser($user);
+
+        $validated = $request->validate([
+            'bio' => 'nullable|string|max:2000',
+            'social_links' => 'nullable|array',
+            'social_links.instagram' => 'nullable|url|max:255',
+            'social_links.facebook' => 'nullable|url|max:255',
+            'social_links.twitter' => 'nullable|url|max:255',
+            'social_links.linkedin' => 'nullable|url|max:255',
+            'social_links.website' => 'nullable|url|max:255',
+        ]);
+
+        // Update only the fields that were sent
+        $updateData = [];
+
+        if ($request->has('bio')) {
+            $updateData['bio'] = $validated['bio'];
+        }
+
+        if ($request->has('social_links')) {
+            // Filter out empty values
+            $socialLinks = array_filter($validated['social_links'] ?? [], fn($v) => !empty($v));
+            $updateData['social_links'] = !empty($socialLinks) ? $socialLinks : null;
+        }
+
+        if (!empty($updateData)) {
+            $user->update($updateData);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Show edit user form
      */
     public function editUser(User $user)
@@ -319,14 +356,14 @@ class TeamController extends Controller
     {
         $host = auth()->user()->currentHost();
         $sendInvite = $request->boolean('send_invite');
+        $isQuickInvite = $request->boolean('quick_invite');
 
         // Build validation rules based on whether we're sending invite or not
         $rules = [
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
             'role' => 'required|in:admin,staff,instructor',
             'permissions' => 'nullable|array',
             'send_invite' => 'boolean',
+            'quick_invite' => 'boolean',
             // Profile fields
             'phone' => 'nullable|string|max:50',
             'bio' => 'nullable|string|max:2000',
@@ -349,6 +386,15 @@ class TeamController extends Controller
             'availability_by_day' => 'nullable|array',
         ];
 
+        // For quick invites, first_name and last_name are optional (derived from email)
+        if ($isQuickInvite) {
+            $rules['first_name'] = 'nullable|string|max:255';
+            $rules['last_name'] = 'nullable|string|max:255';
+        } else {
+            $rules['first_name'] = 'required|string|max:255';
+            $rules['last_name'] = 'required|string|max:255';
+        }
+
         if ($sendInvite) {
             $rules['email'] = [
                 'required',
@@ -365,6 +411,17 @@ class TeamController extends Controller
         $validated = $request->validate($rules, [
             'email.unique' => 'This email is already registered or has a pending invitation.',
         ]);
+
+        // For quick invites, derive name from email if not provided
+        if ($isQuickInvite && empty($validated['first_name'])) {
+            $emailParts = explode('@', $validated['email']);
+            $namePart = $emailParts[0];
+            // Convert email prefix to name (e.g., "john.doe" -> "John Doe")
+            $namePart = str_replace(['.', '_', '-'], ' ', $namePart);
+            $nameParts = explode(' ', ucwords($namePart));
+            $validated['first_name'] = $nameParts[0] ?? 'Team';
+            $validated['last_name'] = $nameParts[1] ?? 'Member';
+        }
 
         $fullName = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $email = $validated['email'] ?? null;

@@ -51,6 +51,9 @@
                         </a>
                         @endif
                     </div>
+                    <button type="button" class="btn btn-soft btn-primary btn-sm" onclick="openQuickInviteModal()">
+                        <span class="icon-[tabler--bolt] size-4"></span> Quick Invite
+                    </button>
                     <a href="{{ route('settings.team.users.invite') }}" class="btn btn-primary btn-sm">
                         <span class="icon-[tabler--plus] size-4"></span> Add Team Member
                     </a>
@@ -142,19 +145,9 @@
                                 @endif
                             </td>
                             <td>
-                                @if($user->id === auth()->id())
-                                    <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </a>
-                                @elseif($userRole === 'owner')
-                                    <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </a>
-                                @else
-                                    <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </a>
-                                @endif
+                                <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                    <span class="icon-[tabler--eye] size-4"></span>
+                                </a>
                             </td>
                         </tr>
                         @endforeach
@@ -223,15 +216,23 @@
                                 Invited {{ $invitation->created_at->diffForHumans() }}
                             </td>
                             <td>
-                                @if($invitation->instructor_id && $invitation->instructor)
-                                    <a href="{{ route('instructors.show', $invitation->instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Instructor Profile">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </a>
-                                @else
-                                    <span class="btn btn-ghost btn-xs btn-square opacity-30" title="Profile not available until invitation is accepted">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </span>
-                                @endif
+                                <div class="flex items-center gap-1">
+                                    <form action="{{ route('settings.team.invite.resend', $invitation) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-primary" title="Resend Invitation">
+                                            <span class="icon-[tabler--mail-forward] size-4"></span>
+                                        </button>
+                                    </form>
+                                    @if($invitation->instructor_id && $invitation->instructor)
+                                        <a href="{{ route('instructors.show', $invitation->instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Instructor Profile">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
+                                    @else
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="View Invitation Details" onclick="showInvitationDetails('{{ $invitation->first_name }} {{ $invitation->last_name }}', '{{ $invitation->email }}', '{{ ucfirst($invitation->role) }}', '{{ $invitation->created_at->format('M d, Y') }}', '{{ $invitation->expires_at->format('M d, Y') }}')">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </button>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -296,17 +297,43 @@
 
             {{-- Pagination / Results Info --}}
             @php
+                $currentPageCount = $users->count() + $invitations->count() + $instructorsWithoutLogin->count();
                 $totalCount = $users->total() + $invitations->count() + $instructorsWithoutLogin->count();
             @endphp
             @if($totalCount > 0)
             <div class="mt-4 pt-4 border-t border-base-content/10">
-                @if($users->hasPages())
-                    {{ $users->links() }}
-                @else
-                    <div class="text-sm text-base-content/60 text-center">
-                        Showing <span class="font-medium text-base-content">{{ $totalCount }}</span> {{ Str::plural('member', $totalCount) }}
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-sm text-base-content/60">
+                        Showing <span class="font-medium text-base-content">{{ $currentPageCount }}</span> of <span class="font-medium text-base-content">{{ $totalCount }}</span> {{ Str::plural('member', $totalCount) }}
                     </div>
-                @endif
+                    @if($users->hasPages())
+                        <div class="join">
+                            @if($users->onFirstPage())
+                                <span class="join-item btn btn-sm btn-disabled">
+                                    <span class="icon-[tabler--chevron-left] size-4"></span>
+                                </span>
+                            @else
+                                <a href="{{ $users->previousPageUrl() }}" class="join-item btn btn-sm">
+                                    <span class="icon-[tabler--chevron-left] size-4"></span>
+                                </a>
+                            @endif
+
+                            <span class="join-item btn btn-sm btn-disabled">
+                                Page {{ $users->currentPage() }} of {{ $users->lastPage() }}
+                            </span>
+
+                            @if($users->hasMorePages())
+                                <a href="{{ $users->nextPageUrl() }}" class="join-item btn btn-sm">
+                                    <span class="icon-[tabler--chevron-right] size-4"></span>
+                                </a>
+                            @else
+                                <span class="join-item btn btn-sm btn-disabled">
+                                    <span class="icon-[tabler--chevron-right] size-4"></span>
+                                </span>
+                            @endif
+                        </div>
+                    @endif
+                </div>
             </div>
             @endif
         </div>
@@ -375,9 +402,172 @@
     </div>
 </div>
 
+{{-- Quick Invite Modal --}}
+<div id="quick-invite-modal" class="fixed inset-0 z-50 hidden">
+    {{-- Backdrop --}}
+    <div class="fixed inset-0 bg-black/50" onclick="closeQuickInviteModal()"></div>
+
+    {{-- Modal Content --}}
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-base-100 rounded-xl shadow-xl max-w-md w-full p-6 pointer-events-auto relative">
+            <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="closeQuickInviteModal()">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <span class="icon-[tabler--bolt] size-5 text-primary"></span>
+                Quick Invite
+            </h3>
+            <p class="text-sm text-base-content/60 mt-1">Send a quick invitation to join your team</p>
+
+            <form id="quick-invite-form" action="{{ route('settings.team.invite') }}" method="POST" class="mt-6 space-y-4">
+                @csrf
+                <input type="hidden" name="quick_invite" value="1" />
+
+                <div class="form-control">
+                    <label class="label" for="quick-email">
+                        <span class="label-text font-medium">Email Address <span class="text-error">*</span></span>
+                    </label>
+                    <div class="relative">
+                        <span class="icon-[tabler--mail] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
+                        <input type="email" id="quick-email" name="email" class="input input-bordered w-full pl-10" required placeholder="colleague@example.com" />
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Role <span class="text-error">*</span></span>
+                    </label>
+                    <div class="flex flex-col gap-2">
+                        <label class="cursor-pointer flex items-center gap-3 p-3 rounded-lg border border-base-content/10 has-[:checked]:border-secondary has-[:checked]:bg-secondary/5 hover:border-secondary/30 transition-all">
+                            <input type="radio" name="role" value="admin" class="radio radio-secondary radio-sm" />
+                            <div class="flex-1">
+                                <span class="font-medium text-sm flex items-center gap-2">
+                                    <span class="icon-[tabler--shield] size-4 text-secondary"></span>
+                                    Admin
+                                </span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer flex items-center gap-3 p-3 rounded-lg border border-base-content/10 has-[:checked]:border-info has-[:checked]:bg-info/5 hover:border-info/30 transition-all">
+                            <input type="radio" name="role" value="staff" class="radio radio-info radio-sm" checked />
+                            <div class="flex-1">
+                                <span class="font-medium text-sm flex items-center gap-2">
+                                    <span class="icon-[tabler--user] size-4 text-info"></span>
+                                    Staff
+                                </span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer flex items-center gap-3 p-3 rounded-lg border border-base-content/10 has-[:checked]:border-accent has-[:checked]:bg-accent/5 hover:border-accent/30 transition-all">
+                            <input type="radio" name="role" value="instructor" class="radio radio-accent radio-sm" />
+                            <div class="flex-1">
+                                <span class="font-medium text-sm flex items-center gap-2">
+                                    <span class="icon-[tabler--yoga] size-4 text-accent"></span>
+                                    Instructor
+                                </span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <label class="cursor-pointer flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-base-content/10 hover:border-primary/30 hover:bg-primary/5 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                    <input type="checkbox" name="send_invite" value="1" class="checkbox checkbox-primary" checked />
+                    <div class="flex-1">
+                        <span class="font-medium flex items-center gap-2">
+                            <span class="icon-[tabler--mail-forward] size-5 text-primary"></span>
+                            Grant Login Access
+                        </span>
+                        <span class="text-sm text-base-content/60 block mt-0.5">Team member will receive an email invitation to create their account</span>
+                    </div>
+                </label>
+
+                <div class="flex justify-end gap-2 pt-4">
+                    <button type="button" class="btn btn-ghost" onclick="closeQuickInviteModal()">Cancel</button>
+                    <button type="submit" id="quick-invite-submit-btn" class="btn btn-primary gap-2">
+                        <span id="quick-invite-btn-icon" class="icon-[tabler--send] size-4"></span>
+                        <span id="quick-invite-btn-text">Send Invite</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+// Quick Invite Modal Functions
+function openQuickInviteModal() {
+    document.getElementById('quick-invite-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    // Focus on email input
+    setTimeout(function() {
+        document.getElementById('quick-email').focus();
+    }, 100);
+}
+
+function closeQuickInviteModal() {
+    document.getElementById('quick-invite-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+    // Reset form
+    document.getElementById('quick-invite-form').reset();
+    // Reset staff as default
+    document.querySelector('input[name="role"][value="staff"]').checked = true;
+    document.querySelector('input[name="send_invite"]').checked = true;
+    // Reset button text
+    updateQuickInviteButton(true);
+}
+
+function updateQuickInviteButton(isInvite) {
+    var btnIcon = document.getElementById('quick-invite-btn-icon');
+    var btnText = document.getElementById('quick-invite-btn-text');
+
+    if (isInvite) {
+        btnIcon.className = 'icon-[tabler--send] size-4';
+        btnText.textContent = 'Send Invite';
+    } else {
+        btnIcon.className = 'icon-[tabler--user-plus] size-4';
+        btnText.textContent = 'Add Team Member';
+    }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        var quickInviteModal = document.getElementById('quick-invite-modal');
+        var invitationModal = document.getElementById('invitation-details-modal');
+        if (!quickInviteModal.classList.contains('hidden')) {
+            closeQuickInviteModal();
+        }
+        if (invitationModal && !invitationModal.classList.contains('hidden')) {
+            closeInvitationDetailsModal();
+        }
+    }
+});
+
+// Show Invitation Details Modal
+function showInvitationDetails(name, email, role, invitedAt, expiresAt) {
+    document.getElementById('inv-detail-name').textContent = name || email;
+    document.getElementById('inv-detail-email').textContent = email;
+    document.getElementById('inv-detail-role').textContent = role;
+    document.getElementById('inv-detail-invited').textContent = invitedAt;
+    document.getElementById('inv-detail-expires').textContent = expiresAt;
+    document.getElementById('invitation-details-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeInvitationDetailsModal() {
+    document.getElementById('invitation-details-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Grant Login Access checkbox listener
+    var sendInviteCheckbox = document.querySelector('input[name="send_invite"]');
+    if (sendInviteCheckbox) {
+        sendInviteCheckbox.addEventListener('change', function() {
+            updateQuickInviteButton(this.checked);
+        });
+    }
+
     var searchInput = document.getElementById('search-input');
     var searchTimeout = null;
 
@@ -422,4 +612,48 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
+
+{{-- Invitation Details Modal --}}
+<div id="invitation-details-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeInvitationDetailsModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-base-100 rounded-xl shadow-xl max-w-sm w-full p-6 pointer-events-auto relative">
+            <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="closeInvitationDetailsModal()">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+
+            <h3 class="font-bold text-lg flex items-center gap-2">
+                <span class="icon-[tabler--mail] size-5 text-primary"></span>
+                Invitation Details
+            </h3>
+
+            <div class="mt-4 space-y-3">
+                <div>
+                    <label class="text-sm text-base-content/60">Name</label>
+                    <p id="inv-detail-name" class="font-medium"></p>
+                </div>
+                <div>
+                    <label class="text-sm text-base-content/60">Email</label>
+                    <p id="inv-detail-email" class="font-medium"></p>
+                </div>
+                <div>
+                    <label class="text-sm text-base-content/60">Role</label>
+                    <p id="inv-detail-role" class="font-medium"></p>
+                </div>
+                <div>
+                    <label class="text-sm text-base-content/60">Invited On</label>
+                    <p id="inv-detail-invited" class="font-medium"></p>
+                </div>
+                <div>
+                    <label class="text-sm text-base-content/60">Expires On</label>
+                    <p id="inv-detail-expires" class="font-medium"></p>
+                </div>
+            </div>
+
+            <div class="flex justify-end mt-6">
+                <button type="button" class="btn btn-ghost" onclick="closeInvitationDetailsModal()">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
