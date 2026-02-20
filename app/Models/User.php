@@ -165,6 +165,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(UserNote::class, 'subject_user_id')->orderBy('created_at', 'desc');
     }
 
+    /**
+     * Certifications for this user
+     */
+    public function certifications()
+    {
+        return $this->hasMany(StudioCertification::class);
+    }
+
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";

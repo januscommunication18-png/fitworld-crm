@@ -72,6 +72,7 @@ class PaymentController extends Controller
     public function confirmPayment(Request $request, Transaction $transaction)
     {
         $host = $this->getHost();
+        $user = Auth::user();
 
         // Ensure transaction belongs to this host
         if ($transaction->host_id !== $host->id) {
@@ -82,6 +83,24 @@ class PaymentController extends Controller
         if ($transaction->status !== Transaction::STATUS_PENDING) {
             return back()->with('error', 'This transaction is not pending.');
         }
+
+        // Store who confirmed the payment and notes
+        $metadata = $transaction->metadata ?? [];
+        $metadata['confirmed_by'] = $user->id;
+        $metadata['confirmed_by_name'] = $user->full_name;
+        $metadata['confirmed_at'] = now()->toISOString();
+        $transaction->metadata = $metadata;
+
+        // Add confirmation notes if provided
+        $notes = $request->input('notes');
+        if ($notes) {
+            $existingNotes = $transaction->notes ?? '';
+            $timestamp = now()->format('M j, Y g:i A');
+            $newNote = "[{$timestamp}] Confirmed by {$user->full_name}: {$notes}";
+            $transaction->notes = $existingNotes ? $existingNotes . "\n" . $newNote : $newNote;
+        }
+
+        $transaction->save();
 
         // Process the successful payment (this will create booking/membership/etc)
         $this->transactionService->processSuccessfulPayment($transaction);
@@ -95,6 +114,7 @@ class PaymentController extends Controller
     public function cancelTransaction(Request $request, Transaction $transaction)
     {
         $host = $this->getHost();
+        $user = Auth::user();
 
         // Ensure transaction belongs to this host
         if ($transaction->host_id !== $host->id) {
@@ -106,12 +126,29 @@ class PaymentController extends Controller
             return back()->with('error', 'Only pending transactions can be cancelled.');
         }
 
-        $reason = $request->input('reason', 'Cancelled by admin');
-        $transaction->markCancelled($reason);
+        // Validate reason is provided
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        $reason = $request->input('reason');
+
+        // Store who cancelled the transaction in metadata
+        $metadata = $transaction->metadata ?? [];
+        $metadata['cancelled_by'] = $user->id;
+        $metadata['cancelled_by_name'] = $user->full_name;
+        $metadata['cancelled_at'] = now()->toISOString();
+        $metadata['cancellation_reason'] = $reason;
+        $transaction->metadata = $metadata;
+        $transaction->save();
+
+        // Mark as cancelled with formatted reason
+        $formattedReason = "Cancelled by {$user->full_name}: {$reason}";
+        $transaction->markCancelled($formattedReason);
 
         // Cancel associated booking if exists
         if ($transaction->booking) {
-            $transaction->booking->cancel('Transaction cancelled', $reason, Auth::id());
+            $transaction->booking->cancel('Transaction cancelled', $reason, $user->id);
         }
 
         return back()->with('success', 'Transaction cancelled.');
@@ -147,6 +184,34 @@ class PaymentController extends Controller
             Transaction::TYPE_CLASS_PACK_PURCHASE => 'Class pack activated.',
             default => '',
         };
+    }
+
+    /**
+     * Toggle hide from books status for cash transactions
+     */
+    public function toggleHideFromBooks(Transaction $transaction)
+    {
+        $host = $this->getHost();
+        $user = Auth::user();
+
+        // Ensure transaction belongs to this host
+        if ($transaction->host_id !== $host->id) {
+            abort(403);
+        }
+
+        // Only allow hiding cash transactions
+        if (!$transaction->canHideFromBooks()) {
+            return back()->with('error', 'Only cash transactions can be hidden from books.');
+        }
+
+        // Toggle the hide status
+        $transaction->toggleHideFromBooks($user->id);
+
+        $message = $transaction->hide_from_books
+            ? 'Transaction hidden from books.'
+            : 'Transaction restored to books.';
+
+        return back()->with('success', $message);
     }
 
     public function memberships()

@@ -2,6 +2,11 @@
 
 @section('title', $host->studio_name . ' — Book a Class')
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 
 @include('subdomain.partials.navbar')
@@ -41,7 +46,6 @@
                 {{ $defaultLocation->full_address }}
             </p>
             @endif
-            
         </div>
     </div>
 </section>
@@ -171,6 +175,10 @@
             {{-- Membership Plans --}}
             @if(isset($membershipPlans) && $membershipPlans->isNotEmpty())
                 @foreach($membershipPlans as $plan)
+                @php
+                    $planPrice = $plan->getPriceForCurrency($selectedCurrency);
+                    $hasPriceInCurrency = $planPrice !== null;
+                @endphp
                 <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-200">
                     <div class="card-body">
                         {{-- Icon & Price --}}
@@ -179,10 +187,16 @@
                                 <span class="icon-[tabler--id-badge-2] size-7 text-success"></span>
                             </div>
                             <div class="text-right">
+                                @if($hasPriceInCurrency)
                                 <div class="text-2xl font-bold text-success">
-                                    ${{ number_format($plan->price, 0) }}
+                                    {{ $currencySymbol }}{{ number_format($planPrice, 0) }}
                                 </div>
                                 <div class="text-xs text-base-content/50">/ {{ $plan->interval }}</div>
+                                @else
+                                <div class="text-sm text-base-content/50">
+                                    Not available in {{ $selectedCurrency }}
+                                </div>
+                                @endif
                             </div>
                         </div>
 
@@ -194,7 +208,7 @@
                         @endif
 
                         {{-- Benefits --}}
-                        <div class="text-sm text-base-content/50 mt-2">
+                        <div class="text-sm text-base-content/50 mt-2 space-y-1">
                             @if($plan->type === 'unlimited')
                                 <span class="flex items-center gap-1">
                                     <span class="icon-[tabler--infinity] size-4 text-success"></span>
@@ -206,17 +220,43 @@
                                     {{ $plan->credits_per_cycle }} classes per {{ $plan->interval }}
                                 </span>
                             @endif
+
+                            @if($plan->addon_members > 0)
+                                <span class="flex items-center gap-1">
+                                    <span class="icon-[tabler--users-plus] size-4 text-primary"></span>
+                                    Bring +{{ $plan->addon_members }} {{ Str::plural('guest', $plan->addon_members) }}
+                                </span>
+                            @endif
                         </div>
+
+                        {{-- Free Amenities --}}
+                        @if($plan->free_amenities && count($plan->free_amenities) > 0)
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            @foreach(array_slice($plan->free_amenities, 0, 3) as $amenity)
+                                <span class="badge badge-ghost badge-xs">{{ $amenity }}</span>
+                            @endforeach
+                            @if(count($plan->free_amenities) > 3)
+                                <span class="badge badge-ghost badge-xs">+{{ count($plan->free_amenities) - 3 }} more</span>
+                            @endif
+                        </div>
+                        @endif
 
                         {{-- Button --}}
                         <div class="card-actions mt-4">
+                            @if($hasPriceInCurrency)
                             <form action="{{ route('booking.select-membership-plan', ['subdomain' => $host->subdomain, 'plan' => $plan->id]) }}" method="POST" class="w-full">
                                 @csrf
+                                <input type="hidden" name="currency" value="{{ $selectedCurrency }}">
                                 <button type="submit" class="btn btn-success w-full">
                                     <span class="icon-[tabler--shopping-cart] size-5"></span>
                                     Get Started
                                 </button>
                             </form>
+                            @else
+                            <button type="button" class="btn btn-disabled w-full" disabled>
+                                Unavailable
+                            </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -232,9 +272,12 @@
                         <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background-color: {{ $service->color ?? '#6366f1' }}15;">
                             <span class="icon-[tabler--sparkles] size-7" style="color: {{ $service->color ?? '#6366f1' }};"></span>
                         </div>
-                        @if($service->price)
+                        @php
+                            $servicePrice = $service->getPriceForCurrency($selectedCurrency);
+                        @endphp
+                        @if($servicePrice)
                         <div class="text-2xl font-bold" style="color: {{ $service->color ?? '#6366f1' }};">
-                            ${{ number_format($service->price, 0) }}
+                            {{ $currencySymbol }}{{ number_format($servicePrice, 0) }}
                         </div>
                         @endif
                     </div>

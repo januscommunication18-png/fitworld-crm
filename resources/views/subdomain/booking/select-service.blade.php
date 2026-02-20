@@ -2,6 +2,11 @@
 
 @section('title', 'Select a Service — ' . $host->studio_name)
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 <div class="min-h-screen flex flex-col bg-base-200">
     {{-- Header --}}
@@ -62,7 +67,7 @@
                                         <span class="font-medium {{ $selectedPlanId == $plan->id ? 'text-primary' : '' }}">{{ $plan->name }}</span>
                                         <span class="text-sm text-base-content/60">
                                             {{ $plan->duration_minutes ?? 60 }} min •
-                                            ${{ number_format($plan->price ?? 0, 2) }}
+                                            {{ $plan->getFormattedPriceForCurrency($selectedCurrency) }}
                                         </span>
                                     </a>
                                 </li>
@@ -86,7 +91,7 @@
                                     {{ $selectedPlan->duration_minutes ?? 60 }} minutes
                                 </span>
                                 <span class="text-lg font-bold text-primary">
-                                    ${{ number_format($selectedPlan->price ?? 0, 2) }}
+                                    {{ $selectedPlan->getFormattedPriceForCurrency($selectedCurrency) }}
                                 </span>
                             </div>
                         </div>

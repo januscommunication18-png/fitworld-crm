@@ -2,6 +2,11 @@
 
 @section('title', 'Memberships — ' . $host->studio_name)
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 <div class="min-h-screen flex flex-col">
     @include('subdomain.member.portal._nav')
@@ -100,19 +105,40 @@
                             @endif
 
                             <div class="mt-3">
-                                <span class="text-3xl font-bold text-primary">${{ number_format($plan->price, 2) }}</span>
+                                @php $membershipPrice = $plan->getPriceForCurrency($selectedCurrency); @endphp
+                                <span class="text-3xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($membershipPrice ?? 0, 2) }}</span>
                                 <span class="text-base-content/60">{{ $plan->formatted_interval }}</span>
                             </div>
 
-                            @if($plan->credits_per_cycle)
-                            <div class="text-sm text-base-content/60 mt-2">
-                                <span class="icon-[tabler--check] size-4 text-success inline-block"></span>
-                                {{ $plan->credits_per_cycle }} classes {{ $plan->formatted_interval }}
+                            <div class="space-y-1 mt-2">
+                                @if($plan->credits_per_cycle)
+                                <div class="text-sm text-base-content/60">
+                                    <span class="icon-[tabler--check] size-4 text-success inline-block"></span>
+                                    {{ $plan->credits_per_cycle }} classes {{ $plan->formatted_interval }}
+                                </div>
+                                @elseif($plan->type === 'unlimited')
+                                <div class="text-sm text-base-content/60">
+                                    <span class="icon-[tabler--check] size-4 text-success inline-block"></span>
+                                    Unlimited classes
+                                </div>
+                                @endif
+
+                                @if($plan->addon_members > 0)
+                                <div class="text-sm text-base-content/60">
+                                    <span class="icon-[tabler--users-plus] size-4 text-primary inline-block"></span>
+                                    Bring +{{ $plan->addon_members }} {{ Str::plural('guest', $plan->addon_members) }}
+                                </div>
+                                @endif
                             </div>
-                            @elseif($plan->type === 'unlimited')
-                            <div class="text-sm text-base-content/60 mt-2">
-                                <span class="icon-[tabler--check] size-4 text-success inline-block"></span>
-                                Unlimited classes
+
+                            @if($plan->free_amenities && count($plan->free_amenities) > 0)
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                @foreach(array_slice($plan->free_amenities, 0, 2) as $amenity)
+                                    <span class="badge badge-ghost badge-xs">{{ $amenity }}</span>
+                                @endforeach
+                                @if(count($plan->free_amenities) > 2)
+                                    <span class="badge badge-ghost badge-xs">+{{ count($plan->free_amenities) - 2 }} more</span>
+                                @endif
                             </div>
                             @endif
 
@@ -146,7 +172,8 @@
                             @endif
 
                             <div class="mt-3">
-                                <span class="text-3xl font-bold text-primary">${{ number_format($pack->price, 2) }}</span>
+                                @php $packPrice = $pack->getPriceForCurrency($selectedCurrency); @endphp
+                                <span class="text-3xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($packPrice ?? 0, 2) }}</span>
                             </div>
 
                             <div class="text-sm text-base-content/60 mt-2 space-y-1">

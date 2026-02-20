@@ -2,6 +2,11 @@
 
 @section('title', 'Request Booking — ' . $host->studio_name)
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 
 @include('subdomain.partials.navbar')
@@ -96,7 +101,8 @@
                                            data-name="{{ strtolower($plan->name) }}">
                                             <span>{{ $plan->name }}</span>
                                             <span class="text-sm text-base-content/60">
-                                                @if($plan->price)${{ number_format($plan->price, 0) }}@endif
+                                                @php $servicePrice = $plan->getPriceForCurrency($selectedCurrency); @endphp
+                                                @if($servicePrice){{ $currencySymbol }}{{ number_format($servicePrice, 0) }}@endif
                                                 @if($plan->duration_minutes) · {{ $plan->duration_minutes }}min @endif
                                             </span>
                                         </a>

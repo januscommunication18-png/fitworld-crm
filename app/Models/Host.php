@@ -35,6 +35,7 @@ class Host extends Model
         'city',
         'country',
         'currencies',
+        'default_currency',
         'phone',
         'studio_email',
         'timezone',
@@ -411,6 +412,11 @@ class Host extends Model
     public function galleryImages(): HasMany
     {
         return $this->hasMany(StudioGalleryImage::class)->ordered();
+    }
+
+    public function certifications(): HasMany
+    {
+        return $this->hasMany(StudioCertification::class);
     }
 
     public function defaultLocation()

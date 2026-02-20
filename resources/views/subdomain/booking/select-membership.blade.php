@@ -2,6 +2,11 @@
 
 @section('title', 'Memberships & Packs — ' . $host->studio_name)
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 <div class="min-h-screen flex flex-col bg-base-200">
     {{-- Header --}}
@@ -97,15 +102,26 @@
                             @endif
 
                             {{-- Price --}}
+                            @php
+                                $planPrice = $plan->getPriceForCurrency($selectedCurrency);
+                                $hasPriceInCurrency = $planPrice !== null;
+                            @endphp
                             <div class="py-4 border-y border-base-200">
-                                <div class="flex items-baseline gap-1">
-                                    <span class="text-4xl font-bold" style="color: {{ $cardColor }};">${{ number_format($plan->price, 0) }}</span>
-                                    <span class="text-base-content/60">/ {{ $plan->interval }}</span>
-                                </div>
-                                @if($plan->type === 'credits' && $plan->credits_per_cycle > 0)
-                                <p class="text-sm text-base-content/50 mt-1">
-                                    ${{ number_format($plan->price / $plan->credits_per_cycle, 2) }} per class
-                                </p>
+                                @if($hasPriceInCurrency)
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-4xl font-bold" style="color: {{ $cardColor }};">{{ $currencySymbol }}{{ number_format($planPrice, 0) }}</span>
+                                        <span class="text-base-content/60">/ {{ $plan->interval }}</span>
+                                    </div>
+                                    @if($plan->type === 'credits' && $plan->credits_per_cycle > 0)
+                                    <p class="text-sm text-base-content/50 mt-1">
+                                        {{ $currencySymbol }}{{ number_format($planPrice / $plan->credits_per_cycle, 2) }} per class
+                                    </p>
+                                    @endif
+                                @else
+                                    <div class="text-base-content/50 italic">
+                                        <span class="icon-[tabler--currency-off] size-5 inline-block mr-1"></span>
+                                        Not available in {{ $selectedCurrency }}
+                                    </div>
                                 @endif
                             </div>
 
@@ -145,13 +161,21 @@
 
                             {{-- CTA Button --}}
                             <div class="card-actions mt-auto pt-2">
-                                <form action="{{ route('booking.select-membership-plan', ['subdomain' => $host->subdomain, 'plan' => $plan->id]) }}" method="POST" class="w-full">
-                                    @csrf
-                                    <button type="submit" class="btn w-full {{ $isPopular ? 'btn-success' : 'btn-outline' }}" style="{{ !$isPopular ? 'border-color: ' . $cardColor . '; color: ' . $cardColor . ';' : '' }}">
-                                        <span class="icon-[tabler--shopping-cart] size-5"></span>
-                                        Get Started
+                                @if($hasPriceInCurrency)
+                                    <form action="{{ route('booking.select-membership-plan', ['subdomain' => $host->subdomain, 'plan' => $plan->id]) }}" method="POST" class="w-full">
+                                        @csrf
+                                        <input type="hidden" name="currency" value="{{ $selectedCurrency }}">
+                                        <button type="submit" class="btn w-full {{ $isPopular ? 'btn-success' : 'btn-outline' }}" style="{{ !$isPopular ? 'border-color: ' . $cardColor . '; color: ' . $cardColor . ';' : '' }}">
+                                            <span class="icon-[tabler--shopping-cart] size-5"></span>
+                                            Get Started
+                                        </button>
+                                    </form>
+                                @else
+                                    <button type="button" class="btn btn-outline btn-disabled w-full" disabled>
+                                        <span class="icon-[tabler--currency-off] size-5"></span>
+                                        Unavailable in {{ $selectedCurrency }}
                                     </button>
-                                </form>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -202,17 +226,26 @@
                             @endif
 
                             {{-- Price --}}
+                            @php
+                                $packPrice = $pack->getPriceForCurrency($selectedCurrency);
+                                $hasPackPriceInCurrency = $packPrice !== null;
+                                $classCount = $pack->class_count ?? $pack->credits ?? 1;
+                            @endphp
                             <div class="py-4 border-y border-base-200">
-                                <div class="flex items-baseline gap-1">
-                                    <span class="text-4xl font-bold" style="color: {{ $packColor }};">${{ number_format($pack->price, 0) }}</span>
-                                    <span class="text-base-content/60">one-time</span>
-                                </div>
-                                @php
-                                    $classCount = $pack->class_count ?? $pack->credits ?? 1;
-                                @endphp
-                                <p class="text-sm text-base-content/50 mt-1">
-                                    ${{ number_format($pack->price / max($classCount, 1), 2) }} per class
-                                </p>
+                                @if($hasPackPriceInCurrency)
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-4xl font-bold" style="color: {{ $packColor }};">{{ $currencySymbol }}{{ number_format($packPrice, 0) }}</span>
+                                        <span class="text-base-content/60">one-time</span>
+                                    </div>
+                                    <p class="text-sm text-base-content/50 mt-1">
+                                        {{ $currencySymbol }}{{ number_format($packPrice / max($classCount, 1), 2) }} per class
+                                    </p>
+                                @else
+                                    <div class="text-base-content/50 italic">
+                                        <span class="icon-[tabler--currency-off] size-5 inline-block mr-1"></span>
+                                        Not available in {{ $selectedCurrency }}
+                                    </div>
+                                @endif
                             </div>
 
                             {{-- Details --}}
@@ -240,13 +273,21 @@
 
                             {{-- CTA Button --}}
                             <div class="card-actions mt-auto pt-2">
-                                <form action="{{ route('booking.select-class-pack', ['subdomain' => $host->subdomain, 'pack' => $pack->id]) }}" method="POST" class="w-full">
-                                    @csrf
-                                    <button type="submit" class="btn btn-outline w-full" style="border-color: {{ $packColor }}; color: {{ $packColor }};">
-                                        <span class="icon-[tabler--shopping-cart] size-5"></span>
-                                        Buy Pack
+                                @if($hasPackPriceInCurrency)
+                                    <form action="{{ route('booking.select-class-pack', ['subdomain' => $host->subdomain, 'pack' => $pack->id]) }}" method="POST" class="w-full">
+                                        @csrf
+                                        <input type="hidden" name="currency" value="{{ $selectedCurrency }}">
+                                        <button type="submit" class="btn btn-outline w-full" style="border-color: {{ $packColor }}; color: {{ $packColor }};">
+                                            <span class="icon-[tabler--shopping-cart] size-5"></span>
+                                            Buy Pack
+                                        </button>
+                                    </form>
+                                @else
+                                    <button type="button" class="btn btn-outline btn-disabled w-full" disabled>
+                                        <span class="icon-[tabler--currency-off] size-5"></span>
+                                        Unavailable in {{ $selectedCurrency }}
                                     </button>
-                                </form>
+                                @endif
                             </div>
                         </div>
                     </div>

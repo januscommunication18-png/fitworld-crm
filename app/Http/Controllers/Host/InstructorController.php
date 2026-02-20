@@ -757,4 +757,211 @@ class InstructorController extends Controller
             default => null,
         };
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // Certifications
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Store a new certification for an instructor
+     */
+    public function storeCertification(Request $request, Instructor $instructor)
+    {
+        $this->authorizeInstructor($instructor);
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'certification_name' => 'nullable|string|max:255',
+            'expire_date' => 'nullable|date',
+            'reminder_days' => 'nullable|integer|min:1|max:365',
+            'notes' => 'nullable|string|max:1000',
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+        ]);
+
+        $certification = new \App\Models\StudioCertification([
+            'host_id' => $host->id,
+            'instructor_id' => $instructor->id,
+            'name' => $validated['name'],
+            'certification_name' => $validated['certification_name'] ?? null,
+            'expire_date' => $validated['expire_date'] ?? null,
+            'reminder_days' => $validated['reminder_days'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->storePublicly($host->getStoragePath('certifications'), config('filesystems.uploads'));
+            $certification->file_path = $path;
+            $certification->file_name = $file->getClientOriginalName();
+        }
+
+        $certification->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Certification added successfully',
+            'certification' => $this->formatCertification($certification),
+        ]);
+    }
+
+    /**
+     * Get a certification for editing
+     */
+    public function getCertification(Instructor $instructor, $certificationId)
+    {
+        $this->authorizeInstructor($instructor);
+
+        $certification = \App\Models\StudioCertification::where('instructor_id', $instructor->id)
+            ->findOrFail($certificationId);
+
+        return response()->json([
+            'success' => true,
+            'certification' => [
+                'id' => $certification->id,
+                'name' => $certification->name,
+                'certification_name' => $certification->certification_name,
+                'expire_date' => $certification->expire_date?->format('Y-m-d'),
+                'reminder_days' => $certification->reminder_days,
+                'notes' => $certification->notes,
+                'file_url' => $certification->file_url,
+                'file_name' => $certification->file_name,
+            ],
+        ]);
+    }
+
+    /**
+     * Update an instructor certification
+     */
+    public function updateCertification(Request $request, Instructor $instructor, $certificationId)
+    {
+        $this->authorizeInstructor($instructor);
+        $host = auth()->user()->host;
+
+        $certification = \App\Models\StudioCertification::where('instructor_id', $instructor->id)
+            ->findOrFail($certificationId);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'certification_name' => 'nullable|string|max:255',
+            'expire_date' => 'nullable|date',
+            'reminder_days' => 'nullable|integer|min:1|max:365',
+            'notes' => 'nullable|string|max:1000',
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+            'remove_file' => 'nullable|boolean',
+        ]);
+
+        $certification->name = $validated['name'];
+        $certification->certification_name = $validated['certification_name'] ?? null;
+        $certification->expire_date = $validated['expire_date'] ?? null;
+        $certification->reminder_days = $validated['reminder_days'] ?? null;
+        $certification->notes = $validated['notes'] ?? null;
+
+        if ($certification->isDirty('expire_date')) {
+            $certification->reminder_sent = false;
+        }
+
+        if ($request->boolean('remove_file') && $certification->file_path) {
+            try {
+                Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+            } catch (\Exception $e) {
+                // Ignore
+            }
+            $certification->file_path = null;
+            $certification->file_name = null;
+        }
+
+        if ($request->hasFile('file')) {
+            if ($certification->file_path) {
+                try {
+                    Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+                } catch (\Exception $e) {
+                    // Ignore
+                }
+            }
+
+            $file = $request->file('file');
+            $path = $file->storePublicly($host->getStoragePath('certifications'), config('filesystems.uploads'));
+            $certification->file_path = $path;
+            $certification->file_name = $file->getClientOriginalName();
+        }
+
+        $certification->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Certification updated successfully',
+            'certification' => $this->formatCertification($certification),
+        ]);
+    }
+
+    /**
+     * Delete an instructor certification
+     */
+    public function deleteCertification(Instructor $instructor, $certificationId)
+    {
+        $this->authorizeInstructor($instructor);
+
+        $certification = \App\Models\StudioCertification::where('instructor_id', $instructor->id)
+            ->findOrFail($certificationId);
+
+        if ($certification->file_path) {
+            try {
+                Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+            } catch (\Exception $e) {
+                // Ignore
+            }
+        }
+
+        $certification->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Certification deleted successfully',
+        ]);
+    }
+
+    /**
+     * Format certification for JSON response
+     */
+    private function formatCertification(\App\Models\StudioCertification $certification): array
+    {
+        return [
+            'id' => $certification->id,
+            'name' => $certification->name,
+            'certification_name' => $certification->certification_name,
+            'expire_date' => $certification->expire_date?->format('Y-m-d'),
+            'expire_date_formatted' => $certification->expire_date?->format('M j, Y'),
+            'reminder_days' => $certification->reminder_days,
+            'notes' => $certification->notes,
+            'file_url' => $certification->file_url,
+            'file_name' => $certification->file_name,
+            'status_label' => $certification->status_label,
+            'status_badge_class' => $certification->status_badge_class,
+            'is_expired' => $certification->isExpired(),
+        ];
+    }
+
+    /**
+     * Toggle social links visibility for instructor public profile
+     */
+    public function toggleSocialVisibility(Request $request, Instructor $instructor)
+    {
+        $this->authorizeInstructor($instructor);
+
+        $validated = $request->validate([
+            'show_social_links' => 'required|boolean',
+        ]);
+
+        $instructor->update([
+            'show_social_links' => $validated['show_social_links'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $validated['show_social_links']
+                ? 'Social links will be shown on public profile'
+                : 'Social links hidden from public profile',
+        ]);
+    }
 }

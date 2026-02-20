@@ -2,6 +2,11 @@
 
 @section('title', 'Select a Class — ' . $host->studio_name)
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 <div class="min-h-screen flex flex-col bg-base-200">
     {{-- Header --}}
@@ -156,10 +161,10 @@
                                                             <span class="text-sm text-base-content/60">{{ $spotsLeft }} spots</span>
                                                         @endif
                                                         @php
-                                                            $price = $session->price ?? $session->classPlan?->drop_in_price ?? 0;
+                                                            $price = $session->price ?? $session->classPlan?->getDropInPriceForCurrency($selectedCurrency) ?? 0;
                                                         @endphp
                                                         @if($price > 0)
-                                                        <p class="text-lg font-bold text-primary mt-1">${{ number_format($price, 2) }}</p>
+                                                        <p class="text-lg font-bold text-primary mt-1">{{ $currencySymbol }}{{ number_format($price, 2) }}</p>
                                                         @else
                                                         <p class="text-lg font-bold text-success mt-1">Free</p>
                                                         @endif

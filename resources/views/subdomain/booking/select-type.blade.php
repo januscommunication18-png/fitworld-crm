@@ -2,6 +2,11 @@
 
 @section('title', 'Book Now — ' . $host->studio_name)
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 <div class="min-h-screen flex flex-col bg-base-200">
     {{-- Header --}}
@@ -105,8 +110,9 @@
                                         <span class="icon-[tabler--clock] size-4"></span>
                                         {{ $plan->duration_minutes ?? 60 }} min
                                     </div>
-                                    @if($plan->drop_in_price)
-                                    <span class="text-lg font-bold text-primary">${{ number_format($plan->drop_in_price, 2) }}</span>
+                                    @php $dropInPrice = $plan->getDropInPriceForCurrency($selectedCurrency); @endphp
+                                    @if($dropInPrice)
+                                    <span class="text-lg font-bold text-primary">{{ $currencySymbol }}{{ number_format($dropInPrice, 2) }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -146,8 +152,9 @@
                                         <span class="icon-[tabler--clock] size-4"></span>
                                         {{ $plan->duration_minutes ?? 60 }} min
                                     </div>
-                                    @if($plan->price)
-                                    <span class="text-lg font-bold text-primary">${{ number_format($plan->price, 2) }}</span>
+                                    @php $servicePrice = $plan->getPriceForCurrency($selectedCurrency); @endphp
+                                    @if($servicePrice)
+                                    <span class="text-lg font-bold text-primary">{{ $currencySymbol }}{{ number_format($servicePrice, 2) }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -171,19 +178,44 @@
                                 <p class="text-sm text-base-content/60">{{ $plan->description }}</p>
                                 @endif
                                 <div class="mt-4">
-                                    <span class="text-2xl font-bold text-primary">${{ number_format($plan->price, 2) }}</span>
+                                    @php $membershipPrice = $plan->getPriceForCurrency($selectedCurrency); @endphp
+                                    <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($membershipPrice ?? 0, 2) }}</span>
                                     <span class="text-base-content/60">/{{ $plan->billing_period ?? 'month' }}</span>
                                 </div>
-                                @if($plan->features)
+                                {{-- Benefits --}}
                                 <ul class="mt-4 space-y-2">
-                                    @foreach($plan->features as $feature)
+                                    @if($plan->type === 'unlimited')
                                     <li class="flex items-center gap-2 text-sm">
-                                        <span class="icon-[tabler--check] size-4 text-success"></span>
-                                        {{ $feature }}
+                                        <span class="icon-[tabler--infinity] size-4 text-success"></span>
+                                        Unlimited classes
                                     </li>
-                                    @endforeach
+                                    @elseif($plan->credits_per_cycle)
+                                    <li class="flex items-center gap-2 text-sm">
+                                        <span class="icon-[tabler--ticket] size-4 text-success"></span>
+                                        {{ $plan->credits_per_cycle }} classes per {{ $plan->interval }}
+                                    </li>
+                                    @endif
+
+                                    @if($plan->addon_members > 0)
+                                    <li class="flex items-center gap-2 text-sm">
+                                        <span class="icon-[tabler--users-plus] size-4 text-primary"></span>
+                                        Bring +{{ $plan->addon_members }} {{ Str::plural('guest', $plan->addon_members) }}
+                                    </li>
+                                    @endif
                                 </ul>
+
+                                {{-- Free Amenities --}}
+                                @if($plan->free_amenities && count($plan->free_amenities) > 0)
+                                <div class="flex flex-wrap gap-1 mt-3">
+                                    @foreach(array_slice($plan->free_amenities, 0, 2) as $amenity)
+                                        <span class="badge badge-ghost badge-xs">{{ $amenity }}</span>
+                                    @endforeach
+                                    @if(count($plan->free_amenities) > 2)
+                                        <span class="badge badge-ghost badge-xs">+{{ count($plan->free_amenities) - 2 }} more</span>
+                                    @endif
+                                </div>
                                 @endif
+
                                 <div class="card-actions mt-4">
                                     <form action="{{ route('booking.select-membership-plan', ['subdomain' => $host->subdomain, 'plan' => $plan->id]) }}" method="POST" class="w-full">
                                         @csrf
@@ -212,9 +244,10 @@
                                     @endif
                                 </p>
                                 <div class="mt-4">
-                                    <span class="text-2xl font-bold text-primary">${{ number_format($pack->price, 2) }}</span>
+                                    @php $packPrice = $pack->getPriceForCurrency($selectedCurrency); @endphp
+                                    <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($packPrice ?? 0, 2) }}</span>
                                     <span class="text-sm text-base-content/60 ml-2">
-                                        (${{ number_format($pack->price / $pack->class_count, 2) }}/class)
+                                        ({{ $currencySymbol }}{{ number_format(($packPrice ?? 0) / $pack->class_count, 2) }}/class)
                                     </span>
                                 </div>
                                 <div class="card-actions mt-4">

@@ -41,6 +41,8 @@ class ClassPlan extends Model
         'min_capacity',
         'default_price',
         'drop_in_price',
+        'prices',
+        'drop_in_prices',
         'color',
         'difficulty_level',
         'equipment_needed',
@@ -56,6 +58,8 @@ class ClassPlan extends Model
             'equipment_needed' => 'array',
             'default_price' => 'decimal:2',
             'drop_in_price' => 'decimal:2',
+            'prices' => 'array',
+            'drop_in_prices' => 'array',
             'is_active' => 'boolean',
             'is_visible_on_booking_page' => 'boolean',
         ];
@@ -109,25 +113,101 @@ class ClassPlan extends Model
     }
 
     /**
-     * Get formatted default price
+     * Get price for a specific currency
      */
-    public function getFormattedPriceAttribute(): string
+    public function getPriceForCurrency(?string $currency = null): ?float
     {
-        if ($this->default_price === null) {
-            return 'Free';
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
         }
-        return '$' . number_format($this->default_price, 2);
+
+        // Check prices JSON first
+        if (!empty($this->prices) && isset($this->prices[$currency])) {
+            return (float) $this->prices[$currency];
+        }
+
+        // Fall back to legacy default_price field
+        return $this->default_price !== null ? (float) $this->default_price : null;
     }
 
     /**
-     * Get formatted drop-in price
+     * Get drop-in price for a specific currency
+     */
+    public function getDropInPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        // Check drop_in_prices JSON first
+        if (!empty($this->drop_in_prices) && isset($this->drop_in_prices[$currency])) {
+            return (float) $this->drop_in_prices[$currency];
+        }
+
+        // Fall back to legacy drop_in_price field
+        return $this->drop_in_price !== null ? (float) $this->drop_in_price : null;
+    }
+
+    /**
+     * Get formatted price for a specific currency
+     */
+    public function getFormattedPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'Free';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Get formatted drop-in price for a specific currency
+     */
+    public function getFormattedDropInPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getDropInPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'N/A';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Check if price is set for a currency
+     */
+    public function hasPriceForCurrency(string $currency): bool
+    {
+        return !empty($this->prices) && isset($this->prices[$currency]) && $this->prices[$currency] !== null;
+    }
+
+    /**
+     * Get formatted default price (uses default currency)
+     */
+    public function getFormattedPriceAttribute(): string
+    {
+        return $this->getFormattedPriceForCurrency();
+    }
+
+    /**
+     * Get formatted drop-in price (uses default currency)
      */
     public function getFormattedDropInPriceAttribute(): string
     {
-        if ($this->drop_in_price === null) {
-            return 'N/A';
-        }
-        return '$' . number_format($this->drop_in_price, 2);
+        return $this->getFormattedDropInPriceForCurrency();
     }
 
     /**

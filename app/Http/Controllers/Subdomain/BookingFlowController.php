@@ -137,6 +137,9 @@ class BookingFlowController extends Controller
             }
         }
 
+        // Get selected currency from session
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+
         // Store in booking state
         $this->bookingService->setBookingType($request, 'class_session');
         $this->bookingService->setSelectedItem($request, [
@@ -144,6 +147,8 @@ class BookingFlowController extends Controller
             'id' => $session->id,
             'name' => $session->display_title,
             'price' => $price,
+            'currency' => $currency,
+            'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
             'original_price' => $session->price ?? $session->classPlan?->drop_in_price ?? 0,
             'datetime' => $session->start_time->format('M j, Y g:i A'),
             'instructor' => $session->primaryInstructor?->name,
@@ -250,6 +255,9 @@ class BookingFlowController extends Controller
             return back()->with('error', 'This time slot is no longer available.');
         }
 
+        // Get selected currency from session
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+
         // Store in booking state
         $this->bookingService->setBookingType($request, 'service_slot');
         $this->bookingService->setSelectedItem($request, [
@@ -257,6 +265,8 @@ class BookingFlowController extends Controller
             'id' => $slot->id,
             'name' => $slot->servicePlan?->name ?? 'Service',
             'price' => $slot->price ?? $slot->servicePlan?->price ?? 0,
+            'currency' => $currency,
+            'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
             'datetime' => $slot->start_time->format('M j, Y g:i A'),
             'duration' => $slot->duration_minutes ?? $slot->servicePlan?->duration_minutes,
             'instructor' => $slot->instructor?->name,
@@ -278,6 +288,9 @@ class BookingFlowController extends Controller
             abort(404);
         }
 
+        // Get selected currency from session
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+
         // Store in booking state
         $this->bookingService->setBookingType($request, 'service_booking');
         $this->bookingService->setSelectedItem($request, [
@@ -285,6 +298,8 @@ class BookingFlowController extends Controller
             'id' => $servicePlan->id,
             'name' => $servicePlan->name,
             'price' => $servicePlan->price ?? 0,
+            'currency' => $currency,
+            'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
             'duration' => $servicePlan->duration_minutes,
             'description' => $servicePlan->description,
         ]);
@@ -317,6 +332,29 @@ class BookingFlowController extends Controller
     }
 
     /**
+     * Show a specific membership plan details page
+     */
+    public function showMembershipPlan(Request $request, $plan)
+    {
+        $host = $this->getHost($request);
+
+        $membershipPlan = MembershipPlan::where('id', $plan)
+            ->where('host_id', $host->id)
+            ->where('status', 'active')
+            ->first();
+
+        // If plan doesn't exist or isn't active, redirect to membership list
+        if (!$membershipPlan) {
+            return redirect()->route('booking.select-membership', ['subdomain' => $host->subdomain]);
+        }
+
+        return view('subdomain.booking.membership-plan-details', [
+            'host' => $host,
+            'plan' => $membershipPlan,
+        ]);
+    }
+
+    /**
      * Select a membership plan and proceed
      */
     public function selectMembershipPlan(Request $request)
@@ -330,12 +368,29 @@ class BookingFlowController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
+        // Get selected currency from form or session
+        $currency = $request->input('currency') ?? $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+
+        // Get price for selected currency
+        $price = $plan->getPriceForCurrency($currency);
+
+        // If price not available in this currency, redirect back
+        if ($price === null) {
+            return redirect()->route('booking.select-membership', ['subdomain' => $host->subdomain])
+                ->with('error', "This plan is not available in {$currency}. Please select a different plan or currency.");
+        }
+
+        // Store currency in session
+        $request->session()->put("currency_{$host->id}", $currency);
+
         $this->bookingService->setBookingType($request, 'membership_plan');
         $this->bookingService->setSelectedItem($request, [
             'type' => 'membership_plan',
             'id' => $plan->id,
             'name' => $plan->name,
-            'price' => $plan->price,
+            'price' => $price,
+            'currency' => $currency,
+            'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
             'billing_period' => $plan->interval === 'monthly' ? 'per month' : 'per year',
             'interval' => $plan->interval,
             'membership_type' => $plan->type, // unlimited or credits
@@ -360,12 +415,29 @@ class BookingFlowController extends Controller
             ->where('status', 'active')
             ->firstOrFail();
 
+        // Get selected currency from form or session
+        $currency = $request->input('currency') ?? $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+
+        // Get price for selected currency
+        $price = $pack->getPriceForCurrency($currency);
+
+        // If price not available in this currency, redirect back
+        if ($price === null) {
+            return redirect()->route('booking.select-membership', ['subdomain' => $host->subdomain])
+                ->with('error', "This class pack is not available in {$currency}. Please select a different pack or currency.");
+        }
+
+        // Store currency in session
+        $request->session()->put("currency_{$host->id}", $currency);
+
         $this->bookingService->setBookingType($request, 'class_pack');
         $this->bookingService->setSelectedItem($request, [
             'type' => 'class_pack',
             'id' => $pack->id,
             'name' => $pack->name,
-            'price' => $pack->price,
+            'price' => $price,
+            'currency' => $currency,
+            'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
             'class_count' => $pack->class_count,
             'validity_days' => $pack->validity_days,
         ]);
@@ -718,10 +790,14 @@ class BookingFlowController extends Controller
             Stripe::setApiKey(config('services.stripe.secret'));
 
             $selectedItem = $bookingState['selected_item'];
+
+            // Get currency from selected item or fall back to host default
+            $currency = strtolower($selectedItem['currency'] ?? $host->default_currency ?? 'USD');
+
             $lineItems = [
                 [
                     'price_data' => [
-                        'currency' => 'usd',
+                        'currency' => $currency,
                         'unit_amount' => (int) ($transaction->total_amount * 100), // Stripe uses cents
                         'product_data' => [
                             'name' => $selectedItem['name'] ?? 'Booking',

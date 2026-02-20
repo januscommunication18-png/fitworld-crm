@@ -16,6 +16,7 @@ use App\Http\Controllers\Host\ScheduleController;
 use App\Http\Controllers\Host\SettingsController;
 use App\Http\Controllers\Host\SignupController;
 use App\Http\Controllers\Host\TeamController;
+use App\Http\Controllers\Host\EmailTemplateController;
 use App\Http\Controllers\Host\ClientController;
 use App\Http\Controllers\Host\TagController;
 use App\Http\Controllers\Host\CatalogController;
@@ -187,6 +188,19 @@ Route::middleware('auth')->group(function () {
     Route::put('/instructor-notes/{note}', [InstructorController::class, 'updateNote'])->name('instructors.notes.update');
     Route::delete('/instructor-notes/{note}', [InstructorController::class, 'deleteNote'])->name('instructors.notes.delete');
 
+    // Instructor Certifications
+    Route::post('/instructors/{instructor}/certifications', [InstructorController::class, 'storeCertification'])->name('instructors.certifications.store');
+    Route::get('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'getCertification'])->name('instructors.certifications.show');
+    Route::post('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'updateCertification'])->name('instructors.certifications.update');
+    Route::delete('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'deleteCertification'])->name('instructors.certifications.delete');
+
+    // Settings team instructors certification routes (alias for drawer AJAX)
+    Route::post('/settings/team/instructors/{instructor}/certifications', [InstructorController::class, 'storeCertification'])->name('settings.team.instructors.certifications.store');
+    Route::get('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'getCertification'])->name('settings.team.instructors.certifications.show');
+    Route::post('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'updateCertification'])->name('settings.team.instructors.certifications.update');
+    Route::delete('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'deleteCertification'])->name('settings.team.instructors.certifications.delete');
+    Route::patch('/settings/team/instructors/{instructor}/toggle-social-visibility', [InstructorController::class, 'toggleSocialVisibility'])->name('settings.team.instructors.toggle-social-visibility');
+
     // Catalog (Classes & Services)
     Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog.index');
 
@@ -291,6 +305,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments/transactions/{transaction}', [PaymentController::class, 'showTransaction'])->name('payments.transactions.show');
     Route::post('/payments/transactions/{transaction}/confirm', [PaymentController::class, 'confirmPayment'])->name('payments.transactions.confirm');
     Route::post('/payments/transactions/{transaction}/cancel', [PaymentController::class, 'cancelTransaction'])->name('payments.transactions.cancel');
+    Route::post('/payments/transactions/{transaction}/toggle-hide', [PaymentController::class, 'toggleHideFromBooks'])->name('payments.transactions.toggle-hide');
     Route::get('/payments/memberships', [PaymentController::class, 'memberships'])->name('payments.memberships');
     Route::get('/payments/class-packs', [PaymentController::class, 'classPacks'])->name('payments.class-packs');
 
@@ -336,6 +351,12 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/studio/gallery/{id}', [SettingsController::class, 'updateGalleryImage'])->name('settings.studio.gallery.update');
     Route::delete('/settings/studio/gallery/{id}', [SettingsController::class, 'deleteGalleryImage'])->name('settings.studio.gallery.delete');
     Route::post('/settings/studio/gallery/reorder', [SettingsController::class, 'reorderGalleryImages'])->name('settings.studio.gallery.reorder');
+
+    // Certifications
+    Route::post('/settings/studio/certifications', [SettingsController::class, 'storeCertification'])->name('settings.studio.certifications.store');
+    Route::get('/settings/studio/certifications/{id}', [SettingsController::class, 'getCertification'])->name('settings.studio.certifications.show');
+    Route::post('/settings/studio/certifications/{id}', [SettingsController::class, 'updateCertification'])->name('settings.studio.certifications.update');
+    Route::delete('/settings/studio/certifications/{id}', [SettingsController::class, 'deleteCertification'])->name('settings.studio.certifications.delete');
 
     // Settings - Locations (specific routes first, then parameterized routes)
     Route::get('/settings/locations', [LocationController::class, 'index'])->name('settings.locations.index');
@@ -390,6 +411,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/team/user-notes/{note}', [TeamController::class, 'deleteUserNote'])->name('settings.team.user-notes.delete');
     Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
 
+    // User Certifications
+    Route::post('/settings/team/users/{user}/certifications', [TeamController::class, 'storeUserCertification'])->name('settings.team.users.certifications.store');
+    Route::get('/settings/team/users/{user}/certifications/{certification}', [TeamController::class, 'getUserCertification'])->name('settings.team.users.certifications.show');
+    Route::delete('/settings/team/users/{user}/certifications/{certification}', [TeamController::class, 'deleteUserCertification'])->name('settings.team.users.certifications.delete');
+
     // Redirect old settings instructor routes to main instructors module
     Route::get('/settings/team/instructors', fn() => redirect()->route('instructors.index'))->name('settings.team.instructors');
     Route::get('/settings/team/instructors/create', fn() => redirect()->route('instructors.create'))->name('settings.team.instructors.create');
@@ -417,6 +443,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/notifications/email', [SettingsController::class, 'emailNotifications'])->name('settings.notifications.email');
     Route::get('/settings/notifications/sms', [SettingsController::class, 'smsNotifications'])->name('settings.notifications.sms');
     Route::get('/settings/notifications/automation', [SettingsController::class, 'automationRules'])->name('settings.notifications.automation');
+
+    // Settings - Communication / Email Templates
+    Route::get('/settings/communication/email-templates', [EmailTemplateController::class, 'index'])->name('settings.communication.email-templates');
+    Route::get('/settings/communication/email-templates/{key}/edit', [EmailTemplateController::class, 'edit'])->name('settings.communication.email-templates.edit');
+    Route::put('/settings/communication/email-templates/{key}', [EmailTemplateController::class, 'update'])->name('settings.communication.email-templates.update');
+    Route::post('/settings/communication/email-templates/{key}/preview', [EmailTemplateController::class, 'preview'])->name('settings.communication.email-templates.preview');
+    Route::post('/settings/communication/email-templates/{key}/test', [EmailTemplateController::class, 'sendTest'])->name('settings.communication.email-templates.test');
+    Route::post('/settings/communication/email-templates/{key}/reset', [EmailTemplateController::class, 'reset'])->name('settings.communication.email-templates.reset');
 
     // Settings - Integrations
     Route::get('/settings/integrations/stripe', [SettingsController::class, 'stripeIntegration'])->name('settings.integrations.stripe');

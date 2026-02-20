@@ -42,7 +42,13 @@ class MembershipPlanController extends Controller
         $locations = $host->locations()->orderBy('name')->get();
         $questionnaires = $this->getPublishedQuestionnaires();
 
+        // Multi-currency support
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
         return view('host.membership-plans.create', compact(
+            'host',
             'types',
             'intervals',
             'statuses',
@@ -50,7 +56,10 @@ class MembershipPlanController extends Controller
             'locationScopes',
             'classPlans',
             'locations',
-            'questionnaires'
+            'questionnaires',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
         ));
     }
 
@@ -75,6 +84,15 @@ class MembershipPlanController extends Controller
         // Clear credits_per_cycle if not a credits-based plan
         if ($data['type'] !== MembershipPlan::TYPE_CREDITS) {
             $data['credits_per_cycle'] = null;
+        }
+
+        // Handle multi-currency prices
+        if (isset($data['prices'])) {
+            // Filter out null/empty prices and keep only numeric values
+            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
+            // Set legacy price field to default currency price
+            $defaultCurrency = $host->default_currency ?? 'USD';
+            $data['price'] = $data['prices'][$defaultCurrency] ?? 0;
         }
 
         $membershipPlan = $host->membershipPlans()->create($data);
@@ -116,7 +134,13 @@ class MembershipPlanController extends Controller
         $questionnaires = $this->getPublishedQuestionnaires();
         $membershipPlan->load('questionnaireAttachments');
 
+        // Multi-currency support
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
         return view('host.membership-plans.edit', compact(
+            'host',
             'membershipPlan',
             'types',
             'intervals',
@@ -127,7 +151,10 @@ class MembershipPlanController extends Controller
             'locations',
             'selectedClassPlanIds',
             'selectedLocationIds',
-            'questionnaires'
+            'questionnaires',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
         ));
     }
 
@@ -135,11 +162,11 @@ class MembershipPlanController extends Controller
     {
         $this->authorizeHost($membershipPlan);
 
+        $host = auth()->user()->host;
         $data = $request->validated();
 
         // Update slug if name changed
         if ($data['name'] !== $membershipPlan->name) {
-            $host = auth()->user()->host;
             $data['slug'] = Str::slug($data['name']);
             $counter = 1;
             while ($host->membershipPlans()->where('slug', $data['slug'])->where('id', '!=', $membershipPlan->id)->exists()) {
@@ -153,6 +180,15 @@ class MembershipPlanController extends Controller
         // Clear credits_per_cycle if not a credits-based plan
         if ($data['type'] !== MembershipPlan::TYPE_CREDITS) {
             $data['credits_per_cycle'] = null;
+        }
+
+        // Handle multi-currency prices
+        if (isset($data['prices'])) {
+            // Filter out null/empty prices and keep only numeric values
+            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
+            // Set legacy price field to default currency price
+            $defaultCurrency = $host->default_currency ?? 'USD';
+            $data['price'] = $data['prices'][$defaultCurrency] ?? 0;
         }
 
         $membershipPlan->update($data);

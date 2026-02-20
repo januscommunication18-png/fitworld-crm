@@ -42,8 +42,11 @@ class MembershipPlan extends Model
         'description',
         'type',
         'price',
+        'prices',
         'interval',
         'credits_per_cycle',
+        'addon_members',
+        'free_amenities',
         'eligibility_scope',
         'location_scope_type',
         'location_ids',
@@ -59,6 +62,9 @@ class MembershipPlan extends Model
     {
         return [
             'price' => 'decimal:2',
+            'prices' => 'array',
+            'addon_members' => 'integer',
+            'free_amenities' => 'array',
             'location_ids' => 'array',
             'visibility_public' => 'boolean',
         ];
@@ -104,14 +110,105 @@ class MembershipPlan extends Model
     }
 
     /**
-     * Get formatted price
+     * Currency symbols
+     */
+    public static function getCurrencySymbols(): array
+    {
+        return [
+            'USD' => '$',
+            'CAD' => 'CA$',
+            'GBP' => '£',
+            'EUR' => '€',
+            'AUD' => 'A$',
+            'INR' => '₹',
+            'JPY' => '¥',
+            'CNY' => '¥',
+            'BRL' => 'R$',
+            'MXN' => 'MX$',
+        ];
+    }
+
+    /**
+     * Get currency symbol
+     */
+    public static function getCurrencySymbol(string $currency): string
+    {
+        return self::getCurrencySymbols()[$currency] ?? $currency;
+    }
+
+    /**
+     * Get price for a specific currency
+     */
+    public function getPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        // Check prices JSON first
+        if (!empty($this->prices) && isset($this->prices[$currency])) {
+            return (float) $this->prices[$currency];
+        }
+
+        // Fall back to legacy price field
+        return $this->price !== null ? (float) $this->price : null;
+    }
+
+    /**
+     * Get formatted price for a specific currency
+     */
+    public function getFormattedPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'Free';
+        }
+
+        $symbol = self::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Get formatted price (uses default currency)
      */
     public function getFormattedPriceAttribute(): string
     {
-        if ($this->price === null) {
-            return 'Free';
+        return $this->getFormattedPriceForCurrency();
+    }
+
+    /**
+     * Check if price is set for a currency
+     */
+    public function hasPriceForCurrency(string $currency): bool
+    {
+        return !empty($this->prices) && isset($this->prices[$currency]) && $this->prices[$currency] !== null;
+    }
+
+    /**
+     * Get all prices as formatted array
+     */
+    public function getAllFormattedPrices(): array
+    {
+        $formatted = [];
+        $currencies = $this->host?->currencies ?? ['USD'];
+
+        foreach ($currencies as $currency) {
+            $price = $this->getPriceForCurrency($currency);
+            if ($price !== null) {
+                $formatted[$currency] = [
+                    'amount' => $price,
+                    'formatted' => $this->getFormattedPriceForCurrency($currency),
+                    'symbol' => self::getCurrencySymbol($currency),
+                ];
+            }
         }
-        return '$' . number_format($this->price, 2);
+
+        return $formatted;
     }
 
     /**
@@ -128,6 +225,14 @@ class MembershipPlan extends Model
     public function getFormattedPriceWithIntervalAttribute(): string
     {
         return $this->formatted_price . $this->formatted_interval;
+    }
+
+    /**
+     * Get formatted price with interval for a specific currency
+     */
+    public function getFormattedPriceWithIntervalForCurrency(?string $currency = null): string
+    {
+        return $this->getFormattedPriceForCurrency($currency) . $this->formatted_interval;
     }
 
     /**

@@ -349,20 +349,41 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </button>
             </div>
 
-            <div class="flex flex-wrap gap-2" id="display-currencies">
-                @if($host->currencies && count($host->currencies) > 0)
-                    @foreach($host->currencies as $code)
-                        @if(isset($currencies[$code]))
-                            <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">
-                                <span class="text-lg font-bold text-primary">{{ $currencies[$code]['symbol'] }}</span>
-                                <span class="text-sm font-medium">{{ $code }}</span>
-                                <span class="text-xs text-base-content/60">{{ $currencies[$code]['name'] }}</span>
-                            </div>
-                        @endif
-                    @endforeach
-                @else
-                    <span class="text-base-content/50 text-sm">No currencies selected</span>
-                @endif
+            {{-- Default Currency --}}
+            <div class="mb-4">
+                <label class="text-sm text-base-content/60">Default Currency</label>
+                <p class="font-medium text-lg" id="display-default-currency">
+                    @php $defaultCurrency = $host->default_currency ?? 'USD'; @endphp
+                    @if(isset($currencies[$defaultCurrency]))
+                        <span class="text-primary">{{ $currencies[$defaultCurrency]['symbol'] }}</span>
+                        {{ $defaultCurrency }} - {{ $currencies[$defaultCurrency]['name'] }}
+                    @else
+                        {{ $defaultCurrency }}
+                    @endif
+                </p>
+            </div>
+
+            {{-- All Currencies --}}
+            <div>
+                <label class="text-sm text-base-content/60 mb-2 block">Accepted Currencies</label>
+                <div class="flex flex-wrap gap-2" id="display-currencies">
+                    @if($host->currencies && count($host->currencies) > 0)
+                        @foreach($host->currencies as $code)
+                            @if(isset($currencies[$code]))
+                                <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg {{ $code === $defaultCurrency ? 'ring-2 ring-primary' : '' }}">
+                                    <span class="text-lg font-bold text-primary">{{ $currencies[$code]['symbol'] }}</span>
+                                    <span class="text-sm font-medium">{{ $code }}</span>
+                                    <span class="text-xs text-base-content/60">{{ $currencies[$code]['name'] }}</span>
+                                    @if($code === $defaultCurrency)
+                                        <span class="badge badge-primary badge-xs">Default</span>
+                                    @endif
+                                </div>
+                            @endif
+                        @endforeach
+                    @else
+                        <span class="text-base-content/50 text-sm">No currencies selected</span>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -407,6 +428,80 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         <p class="text-sm text-base-content/60">Clients must cancel at least this far in advance</p>
                     @endif
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Assets & Certifications Card --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold">Assets & Certifications</h2>
+                    <p class="text-sm text-base-content/60">Manage studio licenses, certifications, and important documents</p>
+                </div>
+                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('add-certification-drawer')">
+                    <span class="icon-[tabler--plus] size-4"></span>
+                    Add
+                </button>
+            </div>
+
+            @php
+                $studioCertifications = $host->certifications()->studioLevel()->get();
+            @endphp
+            <div id="certifications-list">
+                @if($studioCertifications->isEmpty())
+                    <div class="text-center py-8">
+                        <span class="icon-[tabler--certificate] size-12 text-base-content/20 mx-auto"></span>
+                        <p class="text-base-content/50 mt-2">No certifications added yet</p>
+                        <button type="button" class="btn btn-primary btn-sm mt-4" onclick="openDrawer('add-certification-drawer')">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            Add Certification
+                        </button>
+                    </div>
+                @else
+                    <div class="space-y-3">
+                        @foreach($studioCertifications as $cert)
+                        <div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="{{ $cert->id }}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <span class="icon-[tabler--certificate] size-5 text-primary"></span>
+                                </div>
+                                <div>
+                                    <div class="font-medium">{{ $cert->name }}</div>
+                                    @if($cert->certification_name)
+                                        <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div>
+                                    @endif
+                                    @if($cert->expire_date)
+                                        <div class="text-xs mt-1">
+                                            <span class="badge {{ $cert->status_badge_class }} badge-xs">
+                                                @if($cert->isExpired())
+                                                    Expired {{ $cert->expire_date->format('M j, Y') }}
+                                                @else
+                                                    Expires {{ $cert->expire_date->format('M j, Y') }}
+                                                @endif
+                                            </span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                @if($cert->file_path)
+                                <a href="{{ $cert->file_url }}" target="_blank" class="btn btn-ghost btn-sm btn-square" data-tooltip="View File">
+                                    <span class="icon-[tabler--file-download] size-4"></span>
+                                </a>
+                                @endif
+                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editCertification({{ $cert->id }})" data-tooltip="Edit">
+                                    <span class="icon-[tabler--pencil] size-4"></span>
+                                </button>
+                                <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteCertification({{ $cert->id }})" data-tooltip="Delete">
+                                    <span class="icon-[tabler--trash] size-4"></span>
+                                </button>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -699,7 +794,22 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     </div>
     <form id="edit-currency-form" class="flex flex-col flex-1 overflow-hidden">
         <div class="flex-1 overflow-y-auto p-4">
-            <p class="text-sm text-base-content/60 mb-4">Select all currencies you accept for payments</p>
+            {{-- Default Currency --}}
+            <div class="mb-6">
+                <label class="label-text font-medium mb-2 block">Default Currency <span class="text-error">*</span></label>
+                <p class="text-sm text-base-content/60 mb-3">Primary currency for pricing. Other currencies require manual price entry.</p>
+                <select id="default-currency-select" class="select w-full">
+                    @foreach($currencies as $code => $info)
+                        <option value="{{ $code }}" {{ ($host->default_currency ?? 'USD') === $code ? 'selected' : '' }}>
+                            {{ $info['symbol'] }} {{ $code }} - {{ $info['name'] }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="divider text-xs text-base-content/50">ACCEPTED CURRENCIES</div>
+
+            <p class="text-sm text-base-content/60 mb-4">Select all currencies you accept for payments. You'll need to set prices for each currency in your catalog.</p>
             <div class="space-y-2">
                 @foreach($currencies as $code => $info)
                 <label class="custom-option flex flex-row items-center gap-3 px-3 py-2 cursor-pointer">
@@ -713,7 +823,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
             <div class="alert alert-soft alert-info mt-4">
                 <span class="icon-[tabler--info-circle] size-5"></span>
                 <div class="text-sm">
-                    Selected currencies will be available for pricing on your booking page.
+                    For each selected currency, you'll need to set prices manually in your memberships and class packs.
                 </div>
             </div>
         </div>
@@ -793,6 +903,103 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </form>
 </div>
+
+{{-- Add/Edit Certification Drawer --}}
+<div id="add-certification-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold" id="certification-drawer-title">Add Certification</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('add-certification-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="certification-form" class="flex flex-col flex-1 overflow-hidden" enctype="multipart/form-data">
+        <input type="hidden" id="certification-id" name="certification_id" value="" />
+        <input type="hidden" id="cert_remove_file" name="remove_file" value="" />
+        <div class="flex-1 overflow-y-auto p-4">
+            <div class="space-y-4">
+                <div>
+                    <label class="label-text font-medium" for="cert_name">Name <span class="text-error">*</span></label>
+                    <input type="text" id="cert_name" name="name" class="input w-full" placeholder="e.g., Business License, Insurance Policy" required />
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="cert_certification_name">Certification / Credential Name</label>
+                    <input type="text" id="cert_certification_name" name="certification_name" class="input w-full" placeholder="e.g., ACE Certified, State License #12345" />
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="cert_expire_date">Expiration Date</label>
+                    <input type="date" id="cert_expire_date" name="expire_date" class="input w-full" />
+                    <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="cert_reminder_days">Reminder</label>
+                    <select id="cert_reminder_days" name="reminder_days" class="select w-full">
+                        <option value="">No reminder</option>
+                        <option value="7">7 days before expiry</option>
+                        <option value="14">14 days before expiry</option>
+                        <option value="30">30 days before expiry</option>
+                        <option value="60">60 days before expiry</option>
+                        <option value="90">90 days before expiry</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label-text font-medium">Upload Document</label>
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-base-content/20 rounded-lg p-6 hover:border-primary transition-colors cursor-pointer" id="cert-drop-zone">
+                        <input type="file" id="cert_file" name="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                        <div id="cert-upload-placeholder">
+                            <span class="icon-[tabler--cloud-upload] size-8 text-base-content/30 mb-2 block mx-auto"></span>
+                            <p class="text-sm text-base-content/60 text-center">Drag and drop file here, or</p>
+                            <button type="button" class="btn btn-soft btn-sm mt-2 mx-auto block" id="cert-browse-btn">Browse Files</button>
+                        </div>
+                        <div id="cert-upload-preview" class="hidden w-full text-center">
+                            <span class="icon-[tabler--file-check] size-8 text-success mb-2 block mx-auto"></span>
+                            <p id="cert-preview-name" class="text-sm font-medium"></p>
+                            <button type="button" class="btn btn-ghost btn-xs mt-2" id="cert-remove-preview-btn">
+                                <span class="icon-[tabler--x] size-4"></span> Remove
+                            </button>
+                        </div>
+                        <div id="cert-existing-file" class="hidden w-full text-center">
+                            <span class="icon-[tabler--file-check] size-8 text-primary mb-2 block mx-auto"></span>
+                            <p id="cert-existing-file-name" class="text-sm font-medium"></p>
+                            <button type="button" class="btn btn-ghost btn-xs mt-2" id="cert-remove-existing-btn">
+                                <span class="icon-[tabler--x] size-4"></span> Remove
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-base-content/50 text-center mt-2">PDF, JPG, PNG, WebP. Max 10MB</p>
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="cert_notes">Notes</label>
+                    <textarea id="cert_notes" name="notes" class="textarea w-full" rows="2" placeholder="Additional notes..."></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-certification-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="certification-spinner"></span>
+                Save
+            </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('add-certification-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
+{{-- Delete Certification Modal --}}
+<dialog id="delete-certification-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete Certification</h3>
+        <p class="py-4">Are you sure you want to delete this certification? This action cannot be undone.</p>
+        <input type="hidden" id="delete-certification-id" value="" />
+        <div class="modal-action">
+            <button type="button" class="btn btn-error" id="confirm-delete-certification-btn">Delete</button>
+            <button type="button" class="btn" onclick="document.getElementById('delete-certification-modal').close()">Cancel</button>
+        </div>
+    </div>
+</dialog>
 
 {{-- Upload Gallery Image Drawer --}}
 <div id="upload-gallery-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
@@ -927,7 +1134,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -1171,29 +1378,48 @@ document.getElementById('edit-currency-form').addEventListener('submit', functio
     var selectedCurrencies = [];
     document.querySelectorAll('.currency-checkbox:checked').forEach(function(cb) { selectedCurrencies.push(cb.value); });
 
+    var defaultCurrency = document.getElementById('default-currency-select').value;
+
+    // Ensure default currency is in the selected currencies
+    if (!selectedCurrencies.includes(defaultCurrency)) {
+        selectedCurrencies.push(defaultCurrency);
+        // Also check the checkbox
+        var checkbox = document.querySelector('.currency-checkbox[value="' + defaultCurrency + '"]');
+        if (checkbox) checkbox.checked = true;
+    }
+
     fetch('{{ route("settings.studio.currency.update") }}', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-        body: JSON.stringify({ currencies: selectedCurrencies })
+        body: JSON.stringify({ currencies: selectedCurrencies, default_currency: defaultCurrency })
     })
     .then(function(r) { return r.json(); })
     .then(function(result) {
         if (result.success) {
-            // Update display
+            // Update currencies display
             var currenciesHtml = '';
             if (selectedCurrencies.length > 0) {
                 currenciesHtml = selectedCurrencies.map(function(code) {
                     var info = currencies[code];
-                    return '<div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">' +
+                    var isDefault = code === defaultCurrency;
+                    return '<div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg' + (isDefault ? ' ring-2 ring-primary' : '') + '">' +
                         '<span class="text-lg font-bold text-primary">' + info.symbol + '</span>' +
                         '<span class="text-sm font-medium">' + code + '</span>' +
                         '<span class="text-xs text-base-content/60">' + info.name + '</span>' +
+                        (isDefault ? '<span class="badge badge-primary badge-xs ml-auto">Default</span>' : '') +
                     '</div>';
                 }).join('');
             } else {
                 currenciesHtml = '<span class="text-base-content/50 text-sm">No currencies selected</span>';
             }
             document.getElementById('display-currencies').innerHTML = currenciesHtml;
+
+            // Update default currency display
+            var defaultInfo = currencies[defaultCurrency];
+            document.getElementById('display-default-currency').innerHTML =
+                '<span class="text-primary">' + defaultInfo.symbol + '</span> ' +
+                defaultCurrency + ' - ' + defaultInfo.name;
+
             closeDrawer('edit-currency-drawer');
             setTimeout(function() { showToast('Currencies updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
@@ -1673,5 +1899,325 @@ function initGallerySortable() {
 document.addEventListener('DOMContentLoaded', function() {
     initGallerySortable();
 });
+
+// ============================================
+// Certifications Management
+// ============================================
+
+var editingCertificationId = null;
+
+// Reset certification form
+function resetCertificationForm() {
+    editingCertificationId = null;
+    document.getElementById('certification-drawer-title').textContent = 'Add Certification';
+    document.getElementById('certification-id').value = '';
+    document.getElementById('cert_name').value = '';
+    document.getElementById('cert_certification_name').value = '';
+    document.getElementById('cert_expire_date').value = '';
+    document.getElementById('cert_reminder_days').value = '';
+    document.getElementById('cert_notes').value = '';
+    document.getElementById('cert_file').value = '';
+
+    // Reset file preview
+    var placeholder = document.getElementById('cert-upload-placeholder');
+    var preview = document.getElementById('cert-upload-preview');
+    var existingFile = document.getElementById('cert-existing-file');
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (preview) preview.classList.add('hidden');
+    if (existingFile) existingFile.classList.add('hidden');
+}
+
+// Edit certification - load data into form
+function editCertification(id) {
+    editingCertificationId = id;
+    document.getElementById('certification-drawer-title').textContent = 'Edit Certification';
+
+    // Show loading state
+    var spinner = document.getElementById('certification-spinner');
+    spinner.classList.remove('hidden');
+
+    fetch('{{ url("settings/studio/certifications") }}/' + id, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var cert = result.certification;
+            document.getElementById('certification-id').value = cert.id;
+            document.getElementById('cert_name').value = cert.name || '';
+            document.getElementById('cert_certification_name').value = cert.certification_name || '';
+            document.getElementById('cert_expire_date').value = cert.expire_date || '';
+            document.getElementById('cert_reminder_days').value = cert.reminder_days || '';
+            document.getElementById('cert_notes').value = cert.notes || '';
+
+            // Handle existing file display
+            var placeholder = document.getElementById('cert-upload-placeholder');
+            var preview = document.getElementById('cert-upload-preview');
+            var existingFile = document.getElementById('cert-existing-file');
+            var existingFileName = document.getElementById('cert-existing-file-name');
+
+            if (cert.file_name) {
+                if (existingFile && existingFileName) {
+                    existingFileName.textContent = cert.file_name;
+                    existingFile.classList.remove('hidden');
+                    if (placeholder) placeholder.classList.add('hidden');
+                }
+            } else {
+                if (existingFile) existingFile.classList.add('hidden');
+                if (placeholder) placeholder.classList.remove('hidden');
+            }
+            if (preview) preview.classList.add('hidden');
+
+            openDrawer('add-certification-drawer');
+        } else {
+            showToast(result.message || 'Failed to load certification', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { spinner.classList.add('hidden'); });
+}
+
+// Delete certification
+function deleteCertification(id) {
+    document.getElementById('delete-certification-id').value = id;
+    document.getElementById('delete-certification-modal').showModal();
+}
+
+// Confirm delete certification
+document.getElementById('confirm-delete-certification-btn').addEventListener('click', function() {
+    var btn = this;
+    var id = document.getElementById('delete-certification-id').value;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Deleting...';
+
+    fetch('{{ url("settings/studio/certifications") }}/' + id, {
+        method: 'DELETE',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            // Remove item from list
+            var item = document.querySelector('[data-cert-id="' + id + '"]');
+            if (item) item.remove();
+
+            // Show empty state if no more certifications
+            var list = document.getElementById('certifications-list');
+            if (list && list.querySelectorAll('[data-cert-id]').length === 0) {
+                list.innerHTML = '<div class="text-center py-8">' +
+                    '<span class="icon-[tabler--certificate] size-12 text-base-content/20 mx-auto"></span>' +
+                    '<p class="text-base-content/50 mt-2">No certifications added yet</p>' +
+                    '<button type="button" class="btn btn-primary btn-sm mt-4" onclick="openDrawer(\'add-certification-drawer\')">' +
+                    '<span class="icon-[tabler--plus] size-4"></span> Add Certification</button></div>';
+            }
+
+            document.getElementById('delete-certification-modal').close();
+            showToast('Certification deleted!');
+        } else {
+            showToast(result.message || 'Failed to delete', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = 'Delete';
+    });
+});
+
+// Handle file input change for certification
+(function() {
+    var fileInput = document.getElementById('cert_file');
+    var browseBtn = document.getElementById('cert-browse-btn');
+    var dropZone = document.getElementById('cert-drop-zone');
+    var placeholder = document.getElementById('cert-upload-placeholder');
+    var preview = document.getElementById('cert-upload-preview');
+    var previewName = document.getElementById('cert-preview-name');
+    var removeBtn = document.getElementById('cert-remove-preview-btn');
+    var existingFile = document.getElementById('cert-existing-file');
+
+    if (!fileInput) return;
+
+    if (browseBtn) {
+        browseBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
+    }
+
+    if (dropZone) {
+        dropZone.addEventListener('click', function(e) { if (!e.target.closest('button')) fileInput.click(); });
+        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); });
+        dropZone.addEventListener('dragleave', function(e) { e.preventDefault(); dropZone.classList.remove('border-primary', 'bg-primary/5'); });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            dropZone.classList.remove('border-primary', 'bg-primary/5');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleCertFile(e.dataTransfer.files[0]);
+            }
+        });
+    }
+
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) handleCertFile(this.files[0]);
+    });
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fileInput.value = '';
+            if (preview) preview.classList.add('hidden');
+            if (placeholder) placeholder.classList.remove('hidden');
+        });
+    }
+
+    function handleCertFile(file) {
+        var validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            showToast('Please upload PDF, JPG, PNG, or WebP', 'error');
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('File must be under 10MB', 'error');
+            return;
+        }
+
+        if (previewName) previewName.textContent = file.name;
+        if (placeholder) placeholder.classList.add('hidden');
+        if (existingFile) existingFile.classList.add('hidden');
+        if (preview) preview.classList.remove('hidden');
+    }
+
+    // Remove existing file button
+    var removeExistingBtn = document.getElementById('cert-remove-existing-btn');
+    if (removeExistingBtn) {
+        removeExistingBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (existingFile) existingFile.classList.add('hidden');
+            if (placeholder) placeholder.classList.remove('hidden');
+            // Mark for removal
+            var removeInput = document.getElementById('cert_remove_file');
+            if (removeInput) removeInput.value = '1';
+        });
+    }
+})();
+
+// Certification form submit
+document.getElementById('certification-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-certification-btn');
+    var spinner = document.getElementById('certification-spinner');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    var formData = new FormData(this);
+    var certId = document.getElementById('certification-id').value;
+    var isEdit = certId && certId !== '';
+
+    var url = isEdit
+        ? '{{ url("settings/studio/certifications") }}/' + certId
+        : '{{ route("settings.studio.certifications.store") }}';
+
+    // Add remove_file flag if applicable
+    var removeFileInput = document.getElementById('cert_remove_file');
+    if (removeFileInput && removeFileInput.value === '1') {
+        formData.append('remove_file', '1');
+    }
+
+    fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var cert = result.certification;
+            var list = document.getElementById('certifications-list');
+
+            // Build certification item HTML
+            var itemHtml = '<div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="' + cert.id + '">' +
+                '<div class="flex items-center gap-3">' +
+                '<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">' +
+                '<span class="icon-[tabler--certificate] size-5 text-primary"></span></div>' +
+                '<div><div class="font-medium">' + escapeHtml(cert.name) + '</div>';
+
+            if (cert.certification_name) {
+                itemHtml += '<div class="text-xs text-base-content/60">' + escapeHtml(cert.certification_name) + '</div>';
+            }
+
+            if (cert.expire_date_formatted) {
+                itemHtml += '<div class="text-xs mt-1"><span class="badge ' + cert.status_badge_class + ' badge-xs">' +
+                    (cert.is_expired ? 'Expired ' : 'Expires ') + cert.expire_date_formatted + '</span></div>';
+            }
+
+            itemHtml += '</div></div><div class="flex items-center gap-1">';
+
+            if (cert.file_url) {
+                itemHtml += '<a href="' + cert.file_url + '" target="_blank" class="btn btn-ghost btn-sm btn-square" data-tooltip="View File">' +
+                    '<span class="icon-[tabler--file-download] size-4"></span></a>';
+            }
+
+            itemHtml += '<button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editCertification(' + cert.id + ')" data-tooltip="Edit">' +
+                '<span class="icon-[tabler--pencil] size-4"></span></button>' +
+                '<button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteCertification(' + cert.id + ')" data-tooltip="Delete">' +
+                '<span class="icon-[tabler--trash] size-4"></span></button></div></div>';
+
+            if (isEdit) {
+                // Update existing item
+                var existingItem = document.querySelector('[data-cert-id="' + cert.id + '"]');
+                if (existingItem) {
+                    existingItem.outerHTML = itemHtml;
+                }
+            } else {
+                // Check if empty state exists and remove it
+                var emptyState = list.querySelector('.text-center');
+                if (emptyState) {
+                    list.innerHTML = '<div class="space-y-3">' + itemHtml + '</div>';
+                } else {
+                    // Append to existing list
+                    var spaceY = list.querySelector('.space-y-3');
+                    if (spaceY) {
+                        spaceY.insertAdjacentHTML('beforeend', itemHtml);
+                    } else {
+                        list.innerHTML = '<div class="space-y-3">' + itemHtml + '</div>';
+                    }
+                }
+            }
+
+            resetCertificationForm();
+            closeDrawer('add-certification-drawer');
+            setTimeout(function() { showToast(isEdit ? 'Certification updated!' : 'Certification added!'); }, 350);
+        } else {
+            showToast(result.message || 'Failed to save', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        // Reset remove file flag
+        var removeFileInput = document.getElementById('cert_remove_file');
+        if (removeFileInput) removeFileInput.value = '';
+    });
+});
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Reset form when drawer opens for new certification
+var originalOpenDrawer = openDrawer;
+openDrawer = function(id) {
+    if (id === 'add-certification-drawer' && !editingCertificationId) {
+        resetCertificationForm();
+    }
+    originalOpenDrawer(id);
+};
 </script>
 @endpush

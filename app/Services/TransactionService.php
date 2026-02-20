@@ -42,9 +42,12 @@ class TransactionService
         $discountAmount = 0;
         $totalAmount = $subtotal + $taxAmount - $discountAmount;
 
+        // Get currency from selected item or fall back to host default
+        $currency = strtoupper($selectedItem['currency'] ?? $host->default_currency ?? 'USD');
+
         return DB::transaction(function () use (
             $host, $client, $type, $purchasableModel, $selectedItem,
-            $paymentMethod, $manualMethod, $subtotal, $taxAmount, $discountAmount, $totalAmount
+            $paymentMethod, $manualMethod, $subtotal, $taxAmount, $discountAmount, $totalAmount, $currency
         ) {
             // Determine initial status
             $status = $paymentMethod === Transaction::METHOD_STRIPE
@@ -61,7 +64,7 @@ class TransactionService
                 'tax_amount' => $taxAmount,
                 'discount_amount' => $discountAmount,
                 'total_amount' => $totalAmount,
-                'currency' => 'USD',
+                'currency' => $currency,
                 'status' => $status,
                 'payment_method' => $paymentMethod,
                 'manual_method' => $manualMethod,

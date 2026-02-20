@@ -29,6 +29,7 @@ class Instructor extends Model
         'specialties',
         'certifications',
         'social_links',
+        'show_social_links',
         'is_visible',
         'is_active',
         'status',
@@ -53,6 +54,7 @@ class Instructor extends Model
         return [
             'specialties' => 'array',
             'social_links' => 'array',
+            'show_social_links' => 'boolean',
             'is_visible' => 'boolean',
             'is_active' => 'boolean',
             'rate_amount' => 'decimal:2',
@@ -123,6 +125,14 @@ class Instructor extends Model
     public function actionLogs(): HasMany
     {
         return $this->hasMany(InstructorActionLog::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get the certifications for this instructor
+     */
+    public function studioCertifications(): HasMany
+    {
+        return $this->hasMany(StudioCertification::class);
     }
 
     /**

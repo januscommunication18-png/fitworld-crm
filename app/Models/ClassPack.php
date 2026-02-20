@@ -22,6 +22,7 @@ class ClassPack extends Model
         'description',
         'class_count',
         'price',
+        'prices',
         'expires_after_days',
         'eligible_class_plan_ids',
         'stripe_product_id',
@@ -36,6 +37,7 @@ class ClassPack extends Model
         return [
             'class_count' => 'integer',
             'price' => 'decimal:2',
+            'prices' => 'array',
             'expires_after_days' => 'integer',
             'eligible_class_plan_ids' => 'array',
             'visibility_public' => 'boolean',
@@ -54,6 +56,51 @@ class ClassPack extends Model
     public function purchases(): HasMany
     {
         return $this->hasMany(ClassPackPurchase::class);
+    }
+
+    /**
+     * Get price for a specific currency
+     */
+    public function getPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        // Check prices JSON first
+        if (!empty($this->prices) && isset($this->prices[$currency])) {
+            return (float) $this->prices[$currency];
+        }
+
+        // Fall back to legacy price field
+        return $this->price !== null ? (float) $this->price : null;
+    }
+
+    /**
+     * Get formatted price for a specific currency
+     */
+    public function getFormattedPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'N/A';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Check if price is set for a currency
+     */
+    public function hasPriceForCurrency(string $currency): bool
+    {
+        return !empty($this->prices) && isset($this->prices[$currency]) && $this->prices[$currency] !== null;
     }
 
     /**

@@ -357,9 +357,21 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'currencies' => 'nullable|array',
             'currencies.*' => 'string|size:3',
+            'default_currency' => 'nullable|string|size:3',
         ]);
 
-        $host->update(['currencies' => $validated['currencies'] ?? []]);
+        $currencies = $validated['currencies'] ?? [];
+        $defaultCurrency = $validated['default_currency'] ?? 'USD';
+
+        // Ensure default currency is in the currencies array
+        if (!in_array($defaultCurrency, $currencies)) {
+            $currencies[] = $defaultCurrency;
+        }
+
+        $host->update([
+            'currencies' => $currencies,
+            'default_currency' => $defaultCurrency,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -888,6 +900,198 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Gallery order updated',
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Studio Certifications
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Store a new certification.
+     */
+    public function storeCertification(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'certification_name' => 'nullable|string|max:255',
+            'expire_date' => 'nullable|date',
+            'reminder_days' => 'nullable|integer|min:1|max:365',
+            'notes' => 'nullable|string|max:1000',
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+        ]);
+
+        $certification = new \App\Models\StudioCertification([
+            'host_id' => $host->id,
+            'name' => $validated['name'],
+            'certification_name' => $validated['certification_name'] ?? null,
+            'expire_date' => $validated['expire_date'] ?? null,
+            'reminder_days' => $validated['reminder_days'] ?? null,
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        // Handle file upload
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->storePublicly($host->getStoragePath('certifications'), config('filesystems.uploads'));
+            $certification->file_path = $path;
+            $certification->file_name = $file->getClientOriginalName();
+        }
+
+        $certification->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Certification added successfully',
+            'certification' => [
+                'id' => $certification->id,
+                'name' => $certification->name,
+                'certification_name' => $certification->certification_name,
+                'expire_date' => $certification->expire_date?->format('Y-m-d'),
+                'expire_date_formatted' => $certification->expire_date?->format('M j, Y'),
+                'reminder_days' => $certification->reminder_days,
+                'notes' => $certification->notes,
+                'file_url' => $certification->file_url,
+                'file_name' => $certification->file_name,
+                'status_label' => $certification->status_label,
+                'status_badge_class' => $certification->status_badge_class,
+                'is_expired' => $certification->isExpired(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get a single certification for editing.
+     */
+    public function getCertification($id)
+    {
+        $host = auth()->user()->host;
+
+        $certification = \App\Models\StudioCertification::where('host_id', $host->id)
+            ->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'certification' => [
+                'id' => $certification->id,
+                'name' => $certification->name,
+                'certification_name' => $certification->certification_name,
+                'expire_date' => $certification->expire_date?->format('Y-m-d'),
+                'reminder_days' => $certification->reminder_days,
+                'notes' => $certification->notes,
+                'file_url' => $certification->file_url,
+                'file_name' => $certification->file_name,
+            ],
+        ]);
+    }
+
+    /**
+     * Update a certification.
+     */
+    public function updateCertification(Request $request, $id)
+    {
+        $host = auth()->user()->host;
+
+        $certification = \App\Models\StudioCertification::where('host_id', $host->id)
+            ->findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'certification_name' => 'nullable|string|max:255',
+            'expire_date' => 'nullable|date',
+            'reminder_days' => 'nullable|integer|min:1|max:365',
+            'notes' => 'nullable|string|max:1000',
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,webp|max:10240',
+            'remove_file' => 'nullable|boolean',
+        ]);
+
+        $certification->name = $validated['name'];
+        $certification->certification_name = $validated['certification_name'] ?? null;
+        $certification->expire_date = $validated['expire_date'] ?? null;
+        $certification->reminder_days = $validated['reminder_days'] ?? null;
+        $certification->notes = $validated['notes'] ?? null;
+
+        // Reset reminder if expiry date changed
+        if ($certification->isDirty('expire_date')) {
+            $certification->reminder_sent = false;
+        }
+
+        // Handle file removal
+        if ($request->boolean('remove_file') && $certification->file_path) {
+            try {
+                \Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+            } catch (\Exception $e) {
+                // Ignore deletion errors
+            }
+            $certification->file_path = null;
+            $certification->file_name = null;
+        }
+
+        // Handle file upload
+        if ($request->hasFile('file')) {
+            // Delete old file if exists
+            if ($certification->file_path) {
+                try {
+                    \Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+                } catch (\Exception $e) {
+                    // Ignore deletion errors
+                }
+            }
+
+            $file = $request->file('file');
+            $path = $file->storePublicly($host->getStoragePath('certifications'), config('filesystems.uploads'));
+            $certification->file_path = $path;
+            $certification->file_name = $file->getClientOriginalName();
+        }
+
+        $certification->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Certification updated successfully',
+            'certification' => [
+                'id' => $certification->id,
+                'name' => $certification->name,
+                'certification_name' => $certification->certification_name,
+                'expire_date' => $certification->expire_date?->format('Y-m-d'),
+                'expire_date_formatted' => $certification->expire_date?->format('M j, Y'),
+                'reminder_days' => $certification->reminder_days,
+                'notes' => $certification->notes,
+                'file_url' => $certification->file_url,
+                'file_name' => $certification->file_name,
+                'status_label' => $certification->status_label,
+                'status_badge_class' => $certification->status_badge_class,
+                'is_expired' => $certification->isExpired(),
+            ],
+        ]);
+    }
+
+    /**
+     * Delete a certification.
+     */
+    public function deleteCertification($id)
+    {
+        $host = auth()->user()->host;
+
+        $certification = \App\Models\StudioCertification::where('host_id', $host->id)
+            ->findOrFail($id);
+
+        // Delete associated file
+        if ($certification->file_path) {
+            try {
+                \Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+            } catch (\Exception $e) {
+                // Ignore deletion errors
+            }
+        }
+
+        $certification->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Certification deleted successfully',
         ]);
     }
 }

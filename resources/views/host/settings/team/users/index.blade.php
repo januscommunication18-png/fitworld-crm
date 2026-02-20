@@ -154,6 +154,16 @@
 
                         {{-- Pending Invitations (shown as team members) --}}
                         @foreach($invitations as $invitation)
+                        @php
+                            // Check if a user exists with this email (for linking to profile)
+                            $hostId = auth()->user()->currentHost()?->id;
+                            $invitationUser = \App\Models\User::where('email', $invitation->email)
+                                ->where(function($q) use ($hostId) {
+                                    $q->where('host_id', $hostId)
+                                      ->orWhereHas('hosts', fn($q) => $q->where('hosts.id', $hostId));
+                                })
+                                ->first();
+                        @endphp
                         <tr>
                             <td>
                                 <div class="flex items-center gap-3">
@@ -225,6 +235,10 @@
                                     </form>
                                     @if($invitation->instructor_id && $invitation->instructor)
                                         <a href="{{ route('instructors.show', $invitation->instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Instructor Profile">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
+                                    @elseif($invitationUser)
+                                        <a href="{{ route('settings.team.users.show', $invitationUser) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
                                     @else

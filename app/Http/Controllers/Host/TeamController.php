@@ -127,10 +127,15 @@ class TeamController extends Controller
             $user = $userWithPivot;
         }
 
-        // Eager load notes with author
-        $user->load(['notes' => function ($query) use ($host) {
-            $query->where('host_id', $host->id)->with('author')->orderBy('created_at', 'desc');
-        }]);
+        // Eager load notes with author and certifications
+        $user->load([
+            'notes' => function ($query) use ($host) {
+                $query->where('host_id', $host->id)->with('author')->orderBy('created_at', 'desc');
+            },
+            'certifications' => function ($query) use ($host) {
+                $query->where('host_id', $host->id)->orderBy('expire_date');
+            }
+        ]);
 
         // Get permissions labels
         $allPermissions = [];
@@ -266,10 +271,34 @@ class TeamController extends Controller
                 ->with('error', 'Cannot edit the owner.');
         }
 
+        $host = auth()->user()->currentHost();
+
+        // Get the instructor record if this user is an instructor
+        $instructor = null;
+        if ($user->role === User::ROLE_INSTRUCTOR || $user->is_instructor) {
+            $instructor = Instructor::where('host_id', $host->id)
+                ->where(function($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                      ->orWhere('email', $user->email);
+                })
+                ->first();
+        }
+
+        // Load certifications
+        $certifications = \App\Models\StudioCertification::where('host_id', $host->id)
+            ->where('user_id', $user->id)
+            ->get();
+
         return view('host.settings.team.users.edit', [
             'user' => $user,
+            'instructor' => $instructor,
+            'certifications' => $certifications,
             'roles' => User::getRoles(),
             'groupedPermissions' => User::getAllPermissions(),
+            'specialties' => Instructor::getCommonSpecialties(),
+            'employmentTypes' => Instructor::getEmploymentTypes(),
+            'rateTypes' => Instructor::getRateTypes(),
+            'dayOptions' => Instructor::getDayOptions(),
         ]);
     }
 
@@ -289,6 +318,26 @@ class TeamController extends Controller
         $validated = $request->validate([
             'role' => 'required|in:admin,staff,instructor',
             'permissions' => 'nullable|array',
+            // Profile fields
+            'phone' => 'nullable|string|max:50',
+            'bio' => 'nullable|string|max:2000',
+            'specialties' => 'nullable|array',
+            'certifications_text' => 'nullable|string|max:1000',
+            // Employment Details
+            'employment_type' => ['nullable', Rule::in(array_keys(Instructor::getEmploymentTypes()))],
+            'rate_type' => ['nullable', Rule::in(array_keys(Instructor::getRateTypes()))],
+            'rate_amount' => 'nullable|numeric|min:0|max:99999.99',
+            'compensation_notes' => 'nullable|string|max:1000',
+            // Workload
+            'hours_per_week' => 'nullable|numeric|min:0|max:168',
+            'max_classes_per_week' => 'nullable|integer|min:0|max:100',
+            // Working Days
+            'working_days' => 'nullable|array',
+            'working_days.*' => 'integer|between:0,6',
+            // Availability
+            'availability_default_from' => 'nullable|date_format:H:i',
+            'availability_default_to' => 'nullable|date_format:H:i',
+            'availability_by_day' => 'nullable|array',
         ]);
 
         $instructorId = $user->instructor_id;
@@ -321,12 +370,14 @@ class TeamController extends Controller
             }
         }
 
-        // Update user
+        // Update user profile fields
         $user->update([
             'role' => $validated['role'],
             'permissions' => $validated['permissions'] ?? null,
             'instructor_id' => $instructorId,
             'is_instructor' => $isNowInstructor,
+            'phone' => $validated['phone'] ?? $user->phone,
+            'bio' => $validated['bio'] ?? $user->bio,
         ]);
 
         // Update host_user pivot table
@@ -340,7 +391,34 @@ class TeamController extends Controller
                 'updated_at' => now(),
             ]);
 
-        $successMessage = 'User updated successfully.';
+        // If user has instructor role, update their instructor profile
+        if ($instructorId) {
+            $instructor = Instructor::find($instructorId);
+            if ($instructor && $instructor->host_id === $host->id) {
+                $profileComplete = !empty($validated['employment_type']) && !empty($validated['rate_type']);
+
+                $instructor->update([
+                    'phone' => $validated['phone'] ?? $instructor->phone,
+                    'bio' => $validated['bio'] ?? $instructor->bio,
+                    'specialties' => $validated['specialties'] ?? $instructor->specialties,
+                    'certifications' => $validated['certifications_text'] ?? $instructor->certifications,
+                    'employment_type' => $validated['employment_type'] ?? $instructor->employment_type,
+                    'rate_type' => $validated['rate_type'] ?? $instructor->rate_type,
+                    'rate_amount' => $validated['rate_amount'] ?? $instructor->rate_amount,
+                    'compensation_notes' => $validated['compensation_notes'] ?? $instructor->compensation_notes,
+                    'hours_per_week' => $validated['hours_per_week'] ?? $instructor->hours_per_week,
+                    'max_classes_per_week' => $validated['max_classes_per_week'] ?? $instructor->max_classes_per_week,
+                    'working_days' => $validated['working_days'] ?? $instructor->working_days,
+                    'availability_default_from' => $validated['availability_default_from'] ?? $instructor->availability_default_from,
+                    'availability_default_to' => $validated['availability_default_to'] ?? $instructor->availability_default_to,
+                    'availability_by_day' => $validated['availability_by_day'] ?? $instructor->availability_by_day,
+                    'is_active' => $profileComplete ? true : $instructor->is_active,
+                    'status' => $profileComplete ? Instructor::STATUS_ACTIVE : $instructor->status,
+                ]);
+            }
+        }
+
+        $successMessage = 'Team member updated successfully.';
         if ($isNowInstructor && !$wasInstructor) {
             $successMessage .= ' Instructor profile needs to be completed before they can be assigned to classes.';
         }
@@ -1324,5 +1402,134 @@ class TeamController extends Controller
         if (!$currentHost || $instructor->host_id !== $currentHost->id) {
             abort(403);
         }
+    }
+
+    /**
+     * Store a certification for a user
+     */
+    public function storeUserCertification(Request $request, User $user)
+    {
+        $this->authorizeUser($user);
+
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'id' => 'nullable|integer',
+            'name' => 'required|string|max:255',
+            'certification_name' => 'nullable|string|max:255',
+            'expire_date' => 'nullable|date',
+            'reminder_days' => 'nullable|integer|min:1|max:365',
+            'notes' => 'nullable|string|max:1000',
+            'file' => 'nullable|file|mimes:pdf,jpg,jpeg,png,doc,docx|max:10240',
+            'remove_file' => 'nullable|boolean',
+        ]);
+
+        // Update existing or create new
+        if (!empty($validated['id'])) {
+            $certification = \App\Models\StudioCertification::where('id', $validated['id'])
+                ->where('host_id', $host->id)
+                ->where('user_id', $user->id)
+                ->firstOrFail();
+        } else {
+            $certification = new \App\Models\StudioCertification();
+            $certification->host_id = $host->id;
+            $certification->user_id = $user->id;
+        }
+
+        $certification->name = $validated['name'];
+        $certification->certification_name = $validated['certification_name'] ?? null;
+        $certification->expire_date = $validated['expire_date'] ?? null;
+        $certification->reminder_days = $validated['reminder_days'] ?? null;
+        $certification->notes = $validated['notes'] ?? null;
+
+        // Handle file removal
+        if ($request->boolean('remove_file') && $certification->file_path) {
+            Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+            $certification->file_path = null;
+            $certification->file_name = null;
+        }
+
+        // Handle file upload
+        if ($request->hasFile('file')) {
+            // Delete old file if exists
+            if ($certification->file_path) {
+                Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+            }
+
+            $file = $request->file('file');
+            $path = $file->storePublicly($host->getStoragePath('certifications/users'), config('filesystems.uploads'));
+            $certification->file_path = $path;
+            $certification->file_name = $file->getClientOriginalName();
+        }
+
+        $certification->save();
+
+        return response()->json([
+            'success' => true,
+            'certification' => $this->formatUserCertification($certification),
+        ]);
+    }
+
+    /**
+     * Get a certification for a user
+     */
+    public function getUserCertification(User $user, \App\Models\StudioCertification $certification)
+    {
+        $this->authorizeUser($user);
+
+        $host = auth()->user()->currentHost();
+
+        if ($certification->host_id !== $host->id || $certification->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'certification' => $this->formatUserCertification($certification),
+        ]);
+    }
+
+    /**
+     * Delete a certification for a user
+     */
+    public function deleteUserCertification(User $user, \App\Models\StudioCertification $certification)
+    {
+        $this->authorizeUser($user);
+
+        $host = auth()->user()->currentHost();
+
+        if ($certification->host_id !== $host->id || $certification->user_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // Delete file if exists
+        if ($certification->file_path) {
+            Storage::disk(config('filesystems.uploads'))->delete($certification->file_path);
+        }
+
+        $certification->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Format certification for JSON response
+     */
+    protected function formatUserCertification(\App\Models\StudioCertification $certification): array
+    {
+        return [
+            'id' => $certification->id,
+            'name' => $certification->name,
+            'certification_name' => $certification->certification_name,
+            'expire_date' => $certification->expire_date?->format('Y-m-d'),
+            'expire_date_formatted' => $certification->expire_date?->format('M d, Y'),
+            'reminder_days' => $certification->reminder_days,
+            'notes' => $certification->notes,
+            'file_name' => $certification->file_name,
+            'file_url' => $certification->file_url,
+            'status_label' => $certification->status_label,
+            'status_badge_class' => $certification->status_badge_class,
+            'days_until_expiry' => $certification->days_until_expiry,
+        ];
     }
 }

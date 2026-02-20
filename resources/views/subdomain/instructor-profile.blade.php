@@ -119,8 +119,8 @@
                         </div>
                     @endif
 
-                    {{-- Social Links --}}
-                    @if($instructor->social_links && count(array_filter((array)$instructor->social_links)))
+                    {{-- Social Links (only show if toggle is enabled) --}}
+                    @if(($instructor->show_social_links ?? true) && $instructor->social_links && count(array_filter((array)$instructor->social_links)))
                         <div class="flex justify-center md:justify-start gap-2 mt-4">
                             @foreach(['instagram' => 'brand-instagram', 'facebook' => 'brand-facebook', 'twitter' => 'brand-x', 'website' => 'world'] as $key => $icon)
                                 @if(!empty($instructor->social_links[$key]))
@@ -136,6 +136,79 @@
             </div>
         </div>
     </div>
+
+    {{-- Additional Info Section --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {{-- Specialties & Expertise --}}
+        @if($instructor->specialties && count((array)$instructor->specialties) > 0)
+        <div class="card bg-base-100 border border-base-200">
+            <div class="card-body">
+                <h3 class="font-semibold text-base-content flex items-center gap-2 mb-3">
+                    <span class="icon-[tabler--star] size-5 text-primary"></span>
+                    Specialties & Expertise
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    @foreach((array)$instructor->specialties as $specialty)
+                        <span class="badge badge-primary badge-outline">{{ $specialty }}</span>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Contact Info (if has email or phone and chooses to display) --}}
+        @if($instructor->email || $instructor->phone)
+        <div class="card bg-base-100 border border-base-200">
+            <div class="card-body">
+                <h3 class="font-semibold text-base-content flex items-center gap-2 mb-3">
+                    <span class="icon-[tabler--address-book] size-5 text-primary"></span>
+                    Contact
+                </h3>
+                <div class="space-y-2">
+                    @if($instructor->email)
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="icon-[tabler--mail] size-4 text-base-content/60"></span>
+                        <a href="mailto:{{ $instructor->email }}" class="link link-hover">{{ $instructor->email }}</a>
+                    </div>
+                    @endif
+                    @if($instructor->phone)
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="icon-[tabler--phone] size-4 text-base-content/60"></span>
+                        <a href="tel:{{ $instructor->phone }}" class="link link-hover">{{ $instructor->phone }}</a>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+
+    {{-- Studio Certifications (from StudioCertification model) --}}
+    @if($instructor->studioCertifications && $instructor->studioCertifications->count() > 0)
+    <div class="card bg-base-100 border border-base-200">
+        <div class="card-body">
+            <h3 class="font-semibold text-base-content flex items-center gap-2 mb-4">
+                <span class="icon-[tabler--certificate-2] size-5 text-primary"></span>
+                Certifications & Qualifications
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                @foreach($instructor->studioCertifications->where('expire_date', '>', now())->merge($instructor->studioCertifications->whereNull('expire_date')) as $cert)
+                    <div class="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg">
+                        <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--certificate] size-5 text-success"></span>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="font-medium text-sm truncate">{{ $cert->name }}</div>
+                            @if($cert->certification_name)
+                                <div class="text-xs text-base-content/60 truncate">{{ $cert->certification_name }}</div>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Upcoming Classes --}}
     @if($upcomingSessions->isNotEmpty())

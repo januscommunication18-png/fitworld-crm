@@ -2,6 +2,11 @@
 
 @section('title', 'Services — ' . $host->studio_name)
 
+@php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+@endphp
+
 @section('content')
 <div class="min-h-screen flex flex-col">
     @include('subdomain.member.portal._nav')
@@ -42,9 +47,10 @@
                                 <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background-color: {{ $service->color ?? '#6366f1' }}15;">
                                     <span class="icon-[tabler--sparkles] size-7" style="color: {{ $service->color ?? '#6366f1' }};"></span>
                                 </div>
-                                @if($service->price)
+                                @php $servicePrice = $service->getPriceForCurrency($selectedCurrency); @endphp
+                                @if($servicePrice)
                                 <div class="text-2xl font-bold" style="color: {{ $service->color ?? '#6366f1' }};">
-                                    ${{ number_format($service->price, 0) }}
+                                    {{ $currencySymbol }}{{ number_format($servicePrice, 0) }}
                                 </div>
                                 @endif
                             </div>

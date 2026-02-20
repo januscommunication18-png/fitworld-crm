@@ -43,7 +43,7 @@
                 <h3 class="card-title">Plan Type & Pricing</h3>
             </div>
             <div class="card-body space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="type">Plan Type</label>
                         <select id="type" name="type" class="select w-full @error('type') input-error @enderror" required>
@@ -53,18 +53,6 @@
                         </select>
                         <p class="text-xs text-base-content/60 mt-1">Unlimited = full access, Credits = limited bookings</p>
                         @error('type')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="label-text" for="price">Price ($)</label>
-                        <input type="number" id="price" name="price"
-                            value="{{ old('price', $membershipPlan?->price ?? '0') }}"
-                            class="input w-full @error('price') input-error @enderror"
-                            min="0" max="99999.99" step="0.01"
-                            placeholder="0.00"
-                            required>
-                        @error('price')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -81,6 +69,61 @@
                     </div>
                 </div>
 
+                {{-- Multi-Currency Pricing --}}
+                <div>
+                    <label class="label-text mb-2 block">Pricing by Currency</label>
+                    <p class="text-sm text-base-content/60 mb-3">Set prices for each currency your studio accepts. Default currency price is required.</p>
+
+                    @php
+                        $existingPrices = $membershipPlan?->prices ?? [];
+                        $legacyPrice = $membershipPlan?->price;
+                    @endphp
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        @foreach($hostCurrencies as $currency)
+                            @php
+                                $isDefault = $currency === $defaultCurrency;
+                                $symbol = $currencySymbols[$currency] ?? $currency;
+                                // Get price from existing prices, or fall back to legacy price for default currency
+                                $currentPrice = old("prices.{$currency}",
+                                    $existingPrices[$currency] ??
+                                    ($isDefault && $legacyPrice !== null ? $legacyPrice : '')
+                                );
+                            @endphp
+                            <div class="relative">
+                                <label class="label-text text-xs flex items-center gap-1" for="prices_{{ $currency }}">
+                                    <span class="font-bold text-primary">{{ $symbol }}</span>
+                                    {{ $currency }}
+                                    @if($isDefault)
+                                        <span class="badge badge-primary badge-xs">Default</span>
+                                    @endif
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60 font-medium">{{ $symbol }}</span>
+                                    <input type="number"
+                                        id="prices_{{ $currency }}"
+                                        name="prices[{{ $currency }}]"
+                                        value="{{ $currentPrice }}"
+                                        class="input w-full pl-10 @error("prices.{$currency}") input-error @enderror"
+                                        min="0" max="99999.99" step="0.01"
+                                        placeholder="0.00"
+                                        {{ $isDefault ? 'required' : '' }}>
+                                </div>
+                                @error("prices.{$currency}")
+                                    <p class="text-error text-xs mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if(count($hostCurrencies) > 1)
+                        <div class="alert alert-soft alert-info mt-3">
+                            <span class="icon-[tabler--info-circle] size-4"></span>
+                            <span class="text-sm">Leave a currency blank if you don't want to offer this plan in that currency.</span>
+                        </div>
+                    @endif
+                </div>
+
                 {{-- Credits per cycle (shown when type is credits) --}}
                 <div id="credits-section" class="{{ old('type', $membershipPlan?->type ?? 'unlimited') !== 'credits' ? 'hidden' : '' }}">
                     <label class="label-text" for="credits_per_cycle">Credits per Billing Cycle</label>
@@ -93,8 +136,70 @@
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+
+                {{-- Addon Members --}}
+                <div>
+                    <label class="label-text" for="addon_members">Addon Members</label>
+                    <select id="addon_members" name="addon_members" class="select w-full max-w-xs @error('addon_members') input-error @enderror">
+                        <option value="0" {{ old('addon_members', $membershipPlan?->addon_members ?? 0) == 0 ? 'selected' : '' }}>Individual (no guests)</option>
+                        <option value="1" {{ old('addon_members', $membershipPlan?->addon_members ?? 0) == 1 ? 'selected' : '' }}>+1 Guest</option>
+                        <option value="2" {{ old('addon_members', $membershipPlan?->addon_members ?? 0) == 2 ? 'selected' : '' }}>+2 Guests</option>
+                        <option value="3" {{ old('addon_members', $membershipPlan?->addon_members ?? 0) == 3 ? 'selected' : '' }}>+3 Guests</option>
+                        <option value="4" {{ old('addon_members', $membershipPlan?->addon_members ?? 0) == 4 ? 'selected' : '' }}>+4 Guests</option>
+                    </select>
+                    <p class="text-xs text-base-content/60 mt-1">How many additional people can the member bring to classes</p>
+                    @error('addon_members')
+                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
         </div>
+
+        {{-- Free Items / Amenities --}}
+        @php
+            $hostAmenities = $host->amenities ?? [];
+            $selectedAmenities = old('free_amenities', $membershipPlan?->free_amenities ?? []);
+        @endphp
+        @if(count($hostAmenities) > 0)
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <h3 class="card-title">Free Items / Amenities</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-sm text-base-content/60 mb-3">Select which amenities are included free with this membership</p>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    @foreach($hostAmenities as $amenity)
+                        <label class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
+                            <input type="checkbox"
+                                   name="free_amenities[]"
+                                   value="{{ $amenity }}"
+                                   class="checkbox checkbox-primary checkbox-sm"
+                                   {{ in_array($amenity, $selectedAmenities) ? 'checked' : '' }}>
+                            <span class="label-text text-sm">{{ $amenity }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('free_amenities')
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+        @else
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <h3 class="card-title">Free Items / Amenities</h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-soft alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <div>
+                        <p class="text-sm">No amenities configured for your studio.</p>
+                        <a href="{{ route('settings.studio.profile') }}" class="link link-primary text-sm">Configure amenities in Studio Settings</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
 
         {{-- Eligibility --}}
         <div class="card bg-base-100">

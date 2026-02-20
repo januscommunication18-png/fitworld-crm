@@ -33,6 +33,10 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         // Public booking page - landing/home
         Route::get('/', [BookingController::class, 'index'])->name('subdomain.home');
 
+        // Currency preference
+        Route::post('/set-currency', [BookingController::class, 'setCurrency'])->name('subdomain.set-currency');
+        Route::get('/get-currency', [BookingController::class, 'getCurrency'])->name('subdomain.get-currency');
+
         // Schedule view
         Route::get('/schedule', [BookingController::class, 'schedule'])->name('subdomain.schedule');
 
@@ -80,6 +84,7 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::post('/book/service/{slot}', [BookingFlowController::class, 'selectServiceSlot'])->name('booking.select-service-slot');
         Route::post('/book/service-plan/{servicePlan}', [BookingFlowController::class, 'selectServicePlanDirect'])->name('booking.select-service-plan');
         Route::get('/book/membership', [BookingFlowController::class, 'selectMembership'])->name('booking.select-membership');
+        Route::get('/book/membership/{plan}', [BookingFlowController::class, 'showMembershipPlan'])->name('booking.show-membership-plan');
         Route::post('/book/membership/{plan}', [BookingFlowController::class, 'selectMembershipPlan'])->name('booking.select-membership-plan');
         Route::post('/book/class-pack/{pack}', [BookingFlowController::class, 'selectClassPack'])->name('booking.select-class-pack');
 

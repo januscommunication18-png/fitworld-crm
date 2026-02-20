@@ -5,6 +5,7 @@
 @section('content')
 @php
     $item = $bookingState['selected_item'] ?? [];
+    $currencySymbol = $item['currency_symbol'] ?? \App\Models\MembershipPlan::getCurrencySymbol($item['currency'] ?? $host->default_currency ?? 'USD');
 @endphp
 
 <div class="min-h-screen flex flex-col bg-gradient-to-br from-base-200 via-base-100 to-base-200">
@@ -144,7 +145,7 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-2xl font-bold text-primary">${{ number_format($item['price'] ?? 0, 2) }}</span>
+                                <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
                                 @if(($item['type'] ?? '') === 'membership_plan')
                                     <div class="text-sm text-base-content/60">{{ $item['billing_period'] ?? 'per month' }}</div>
                                 @endif

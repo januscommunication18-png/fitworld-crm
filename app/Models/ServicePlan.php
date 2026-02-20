@@ -33,7 +33,9 @@ class ServicePlan extends Model
         'duration_minutes',
         'buffer_minutes',
         'price',
+        'prices',
         'deposit_amount',
+        'deposit_prices',
         'location_type',
         'max_participants',
         'image_path',
@@ -49,7 +51,9 @@ class ServicePlan extends Model
     {
         return [
             'price' => 'decimal:2',
+            'prices' => 'array',
             'deposit_amount' => 'decimal:2',
+            'deposit_prices' => 'array',
             'is_active' => 'boolean',
             'is_visible_on_booking_page' => 'boolean',
         ];
@@ -105,14 +109,93 @@ class ServicePlan extends Model
     }
 
     /**
-     * Get formatted price
+     * Get price for a specific currency
+     */
+    public function getPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        // Check prices JSON first
+        if (!empty($this->prices) && isset($this->prices[$currency])) {
+            return (float) $this->prices[$currency];
+        }
+
+        // Fall back to legacy price field
+        return $this->price !== null ? (float) $this->price : null;
+    }
+
+    /**
+     * Get deposit for a specific currency
+     */
+    public function getDepositForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        // Check deposit_prices JSON first
+        if (!empty($this->deposit_prices) && isset($this->deposit_prices[$currency])) {
+            return (float) $this->deposit_prices[$currency];
+        }
+
+        // Fall back to legacy deposit_amount field
+        return $this->deposit_amount !== null ? (float) $this->deposit_amount : null;
+    }
+
+    /**
+     * Get formatted price for a specific currency
+     */
+    public function getFormattedPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'Free';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Get formatted deposit for a specific currency
+     */
+    public function getFormattedDepositForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $deposit = $this->getDepositForCurrency($currency);
+
+        if ($deposit === null) {
+            return 'No deposit';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($deposit, 2);
+    }
+
+    /**
+     * Check if price is set for a currency
+     */
+    public function hasPriceForCurrency(string $currency): bool
+    {
+        return !empty($this->prices) && isset($this->prices[$currency]) && $this->prices[$currency] !== null;
+    }
+
+    /**
+     * Get formatted price (uses default currency)
      */
     public function getFormattedPriceAttribute(): string
     {
-        if ($this->price === null) {
-            return 'Free';
-        }
-        return '$' . number_format($this->price, 2);
+        return $this->getFormattedPriceForCurrency();
     }
 
     /**

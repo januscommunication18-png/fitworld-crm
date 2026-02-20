@@ -4,6 +4,9 @@
 
 @section('content')
 @php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+
     // Helper function to check if a class plan is covered by any active membership
     $isCoveredByMembership = function($classPlan) use ($activeMemberships) {
         if (!$classPlan) return null;
@@ -146,8 +149,9 @@
                                     @if($service->duration_minutes)
                                         <span class="text-sm text-base-content/60">{{ $service->duration_minutes }} min</span>
                                     @endif
-                                    @if($service->price)
-                                        <span class="font-semibold text-primary ml-2">${{ number_format($service->price, 2) }}</span>
+                                    @php $servicePrice = $service->getPriceForCurrency($selectedCurrency); @endphp
+                                    @if($servicePrice)
+                                        <span class="font-semibold text-primary ml-2">{{ $currencySymbol }}{{ number_format($servicePrice, 2) }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -192,9 +196,18 @@
                                 <p class="text-sm text-base-content/60 line-clamp-2">{{ $plan->description }}</p>
                             @endif
                             <div class="mt-2">
-                                <span class="text-2xl font-bold text-primary">${{ number_format($plan->price, 2) }}</span>
+                                @php $membershipPrice = $plan->getPriceForCurrency($selectedCurrency); @endphp
+                                <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($membershipPrice ?? 0, 2) }}</span>
                                 <span class="text-base-content/60">{{ $plan->formatted_interval }}</span>
                             </div>
+
+                            @if($plan->addon_members > 0)
+                            <div class="text-xs text-base-content/50 mt-1">
+                                <span class="icon-[tabler--users-plus] size-3 inline-block"></span>
+                                +{{ $plan->addon_members }} {{ Str::plural('guest', $plan->addon_members) }}
+                            </div>
+                            @endif
+
                             <form action="{{ route('booking.select-membership-plan', ['subdomain' => $host->subdomain, 'plan' => $plan->id]) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="btn btn-primary btn-sm mt-3">
@@ -221,7 +234,8 @@
                                 @endif
                             </p>
                             <div class="mt-2">
-                                <span class="text-2xl font-bold text-primary">${{ number_format($pack->price, 2) }}</span>
+                                @php $packPrice = $pack->getPriceForCurrency($selectedCurrency); @endphp
+                                <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($packPrice ?? 0, 2) }}</span>
                             </div>
                             <form action="{{ route('booking.select-class-pack', ['subdomain' => $host->subdomain, 'pack' => $pack->id]) }}" method="POST">
                                 @csrf

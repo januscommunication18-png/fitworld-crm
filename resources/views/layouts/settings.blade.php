@@ -134,10 +134,13 @@
                     </ul>
                 </div>
 
-                {{-- Notifications --}}
+                {{-- Communication --}}
                 <div>
-                    <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Notifications</div>
+                    <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Communication</div>
                     <ul class="menu menu-sm p-0">
+                        <li><a href="{{ route('settings.communication.email-templates') }}" class="{{ request()->routeIs('settings.communication.email-templates*') ? 'active' : '' }}">
+                            <span class="icon-[tabler--mail-cog] size-4"></span> Email Templates
+                        </a></li>
                         <li><a href="{{ route('settings.notifications.email') }}" class="{{ request()->routeIs('settings.notifications.email') ? 'active' : '' }}">
                             <span class="icon-[tabler--mail] size-4"></span> Email Notifications
                         </a></li>

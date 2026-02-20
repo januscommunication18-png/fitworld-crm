@@ -72,6 +72,9 @@ class Transaction extends Model
         'notes',
         'paid_at',
         'cancelled_at',
+        'hide_from_books',
+        'hidden_at',
+        'hidden_by',
     ];
 
     protected function casts(): array
@@ -86,6 +89,8 @@ class Transaction extends Model
             'paid_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'refunded_at' => 'datetime',
+            'hide_from_books' => 'boolean',
+            'hidden_at' => 'datetime',
         ];
     }
 
@@ -144,19 +149,14 @@ class Transaction extends Model
      */
     public function getFormattedTotalAttribute(): string
     {
-        $symbol = match ($this->currency) {
-            'USD', 'CAD', 'AUD' => '$',
-            'GBP' => '£',
-            'EUR' => '€',
-            'INR' => '₹',
-            default => '$',
-        };
+        $symbol = MembershipPlan::getCurrencySymbol($this->currency ?? 'USD');
         return $symbol . number_format($this->total_amount, 2);
     }
 
     public function getFormattedSubtotalAttribute(): string
     {
-        return '$' . number_format($this->subtotal, 2);
+        $symbol = MembershipPlan::getCurrencySymbol($this->currency ?? 'USD');
+        return $symbol . number_format($this->subtotal, 2);
     }
 
     public function getIsPaidAttribute(): bool
@@ -298,6 +298,38 @@ class Transaction extends Model
     public function scopeByPaymentMethod(Builder $query, string $method): Builder
     {
         return $query->where('payment_method', $method);
+    }
+
+    public function scopeVisibleInBooks(Builder $query): Builder
+    {
+        return $query->where('hide_from_books', false);
+    }
+
+    public function scopeHiddenFromBooks(Builder $query): Builder
+    {
+        return $query->where('hide_from_books', true);
+    }
+
+    /**
+     * Toggle hide from books status
+     */
+    public function toggleHideFromBooks(int $userId): self
+    {
+        $this->hide_from_books = !$this->hide_from_books;
+        $this->hidden_at = $this->hide_from_books ? now() : null;
+        $this->hidden_by = $this->hide_from_books ? $userId : null;
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * Check if this is a cash transaction that can be hidden
+     */
+    public function canHideFromBooks(): bool
+    {
+        return $this->payment_method === self::METHOD_MANUAL
+            && in_array($this->manual_method, ['cash', 'cash_app']);
     }
 
     /**

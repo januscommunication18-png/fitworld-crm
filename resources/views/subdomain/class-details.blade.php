@@ -4,6 +4,8 @@
 
 @section('content')
 @php
+    $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+    $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
     $instructorPhotoUrl = $session->primaryInstructor?->photo_path
         ? Storage::disk(config('filesystems.uploads'))->url($session->primaryInstructor->photo_path)
         : null;
@@ -72,10 +74,13 @@
                             @endif
                         </div>
 
-                        @if($session->price && $session->price > 0)
+                        @php
+                            $classPrice = $session->price ?? $session->classPlan?->getPriceForCurrency($selectedCurrency);
+                        @endphp
+                        @if($classPrice && $classPrice > 0)
                         <div class="flex items-center gap-2 text-base-content/60">
                             <span class="icon-[tabler--currency-dollar] size-5"></span>
-                            <span class="font-semibold">${{ number_format($session->price, 2) }}</span>
+                            <span class="font-semibold">{{ $currencySymbol }}{{ number_format($classPrice, 2) }}</span>
                         </div>
                         @endif
                     </div>

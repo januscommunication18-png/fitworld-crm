@@ -175,6 +175,9 @@ class BookingController extends Controller
             abort(404);
         }
 
+        // Load certifications for public display
+        $instructor->load('studioCertifications');
+
         // Get instructor's upcoming classes
         $upcomingSessions = ClassSession::where('host_id', $host->id)
             ->where('primary_instructor_id', $instructor->id)
@@ -190,5 +193,62 @@ class BookingController extends Controller
             'instructor' => $instructor,
             'upcomingSessions' => $upcomingSessions,
         ]);
+    }
+
+    /**
+     * Set the user's preferred currency in session
+     */
+    public function setCurrency(Request $request)
+    {
+        $host = $this->getHost($request);
+
+        $validated = $request->validate([
+            'currency' => 'required|string|size:3',
+        ]);
+
+        $currency = strtoupper($validated['currency']);
+
+        // Verify this currency is accepted by the host
+        $hostCurrencies = $host->currencies ?? [$host->default_currency ?? 'USD'];
+        if (!in_array($currency, $hostCurrencies)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This currency is not accepted.',
+            ], 400);
+        }
+
+        // Store in session with host-specific key
+        $request->session()->put("currency_{$host->id}", $currency);
+
+        return response()->json([
+            'success' => true,
+            'currency' => $currency,
+            'symbol' => MembershipPlan::getCurrencySymbol($currency),
+        ]);
+    }
+
+    /**
+     * Get the user's preferred currency from session
+     */
+    public function getCurrency(Request $request)
+    {
+        $host = $this->getHost($request);
+
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $hostCurrencies = $host->currencies ?? [$host->default_currency ?? 'USD'];
+
+        return response()->json([
+            'currency' => $currency,
+            'symbol' => MembershipPlan::getCurrencySymbol($currency),
+            'available_currencies' => $hostCurrencies,
+        ]);
+    }
+
+    /**
+     * Get selected currency for a host (static helper)
+     */
+    public static function getSelectedCurrency(Request $request, Host $host): string
+    {
+        return $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
     }
 }

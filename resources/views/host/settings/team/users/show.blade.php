@@ -269,6 +269,81 @@
                                     @endif
                                 </div>
                             </div>
+
+                            {{-- Public Visibility Toggle (for instructors only) --}}
+                            @if($userRole === 'instructor' && $instructor)
+                                <div class="divider my-3"></div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <label class="font-medium text-sm">Show on Public Profile</label>
+                                        <p class="text-xs text-base-content/60">Display social links on the public instructor page</p>
+                                    </div>
+                                    <input type="checkbox"
+                                           class="toggle toggle-primary toggle-sm"
+                                           id="toggle-social-visibility"
+                                           {{ $instructor->show_social_links ? 'checked' : '' }}
+                                           onchange="toggleSocialVisibility(this.checked)">
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Certifications --}}
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--certificate] size-5"></span>
+                                    Certifications
+                                </h2>
+                                <a href="{{ route('settings.team.users.edit', $user) }}?step=7" class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] size-4"></span>
+                                    Manage
+                                </a>
+                            </div>
+                            @php
+                                $userCertifications = $user->certifications;
+                            @endphp
+                            @if($userCertifications->count() > 0)
+                                <div class="space-y-3 mt-4">
+                                    @foreach($userCertifications as $cert)
+                                        <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-lg {{ $cert->isExpired() ? 'bg-error/10' : ($cert->isExpiringSoon() ? 'bg-warning/10' : 'bg-success/10') }} flex items-center justify-center">
+                                                    <span class="icon-[tabler--certificate] size-5 {{ $cert->isExpired() ? 'text-error' : ($cert->isExpiringSoon() ? 'text-warning' : 'text-success') }}"></span>
+                                                </div>
+                                                <div>
+                                                    <div class="font-medium">{{ $cert->name }}</div>
+                                                    @if($cert->certification_name)
+                                                        <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="text-right">
+                                                @if($cert->expire_date)
+                                                    <span class="badge {{ $cert->status_badge_class }} badge-sm">
+                                                        {{ $cert->status_label }}
+                                                    </span>
+                                                    <div class="text-xs text-base-content/60 mt-1">
+                                                        {{ $cert->expire_date->format('M d, Y') }}
+                                                    </div>
+                                                @else
+                                                    <span class="badge badge-neutral badge-soft badge-sm">No Expiry</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="text-center py-6 mt-4">
+                                    <span class="icon-[tabler--certificate] size-10 text-base-content/20 block mx-auto"></span>
+                                    <p class="text-base-content/50 mt-2">No certifications added</p>
+                                    <a href="{{ route('settings.team.users.edit', $user) }}?step=7" class="btn btn-primary btn-sm mt-3">
+                                        <span class="icon-[tabler--plus] size-4"></span>
+                                        Add Certification
+                                    </a>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -850,6 +925,43 @@ document.addEventListener('keydown', function(e) {
         closeDrawer('edit-social-drawer');
     }
 });
+
+// Toggle social links visibility for instructors
+@if($userRole === 'instructor' && $instructor)
+const instructorId = {{ $instructor->id }};
+
+function toggleSocialVisibility(checked) {
+    const toggle = document.getElementById('toggle-social-visibility');
+
+    fetch(`/settings/team/instructors/${instructorId}/toggle-social-visibility`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ show_social_links: checked })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show toast notification
+            if (typeof showToast === 'function') {
+                showToast(checked ? 'Social links visible on public profile' : 'Social links hidden from public profile');
+            }
+        } else {
+            // Revert toggle on error
+            toggle.checked = !checked;
+            alert(data.message || 'Failed to update');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        toggle.checked = !checked;
+        alert('An error occurred. Please try again.');
+    });
+}
+@endif
 </script>
 @endpush
 

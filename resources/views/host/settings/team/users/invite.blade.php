@@ -68,6 +68,10 @@
                             <span class="icon-[tabler--shield-cog] size-5 mr-2 inline-block align-middle"></span>
                             <span class="hidden sm:inline">6.</span> Permissions
                         </button>
+                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="7" onclick="goToStep(7)">
+                            <span class="icon-[tabler--certificate] size-5 mr-2 inline-block align-middle"></span>
+                            <span class="hidden sm:inline">7.</span> Certifications
+                        </button>
                     </nav>
                 </div>
             </div>
@@ -566,6 +570,49 @@
                 </div>
             </div>
 
+            {{-- Step 7: Certifications --}}
+            <div id="step-7" class="step-content hidden mt-6">
+                <div class="card bg-base-100 shadow-sm">
+                    <div class="card-header border-b border-base-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                                <span class="icon-[tabler--certificate] size-5 text-warning"></span>
+                            </div>
+                            <div>
+                                <h3 class="card-title text-lg">Certifications & Credentials</h3>
+                                <p class="text-base-content/60 text-sm">Track certifications, licenses, and credentials</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                                <span class="icon-[tabler--certificate] size-8 text-primary"></span>
+                            </div>
+                            <h4 class="text-lg font-medium mb-2">Add Certifications After Creation</h4>
+                            <p class="text-base-content/60 max-w-md mx-auto mb-6">
+                                Certifications can be added after the team member is created. Once you save this team member,
+                                you can edit their profile to add certifications with expiration dates and reminder notifications.
+                            </p>
+                            <div class="flex flex-wrap justify-center gap-3">
+                                <div class="flex items-center gap-2 px-4 py-2 bg-base-200/50 rounded-lg text-sm">
+                                    <span class="icon-[tabler--file-check] size-5 text-success"></span>
+                                    <span>Upload Documents</span>
+                                </div>
+                                <div class="flex items-center gap-2 px-4 py-2 bg-base-200/50 rounded-lg text-sm">
+                                    <span class="icon-[tabler--calendar-event] size-5 text-warning"></span>
+                                    <span>Track Expiry Dates</span>
+                                </div>
+                                <div class="flex items-center gap-2 px-4 py-2 bg-base-200/50 rounded-lg text-sm">
+                                    <span class="icon-[tabler--bell] size-5 text-info"></span>
+                                    <span>Get Reminders</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {{-- Navigation --}}
             <div class="flex items-center justify-between pt-6">
                 <button type="button" id="prev-step-btn" class="btn btn-ghost gap-2 hidden" onclick="prevStep()">
@@ -590,7 +637,7 @@
     @push('scripts')
         <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
         <script>
-            const totalSteps = 6;
+            const totalSteps = 7;
             let currentStep = 1;
 
             // Role default permissions

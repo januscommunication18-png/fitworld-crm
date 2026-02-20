@@ -6,6 +6,7 @@
 @php
     $item = $bookingState['selected_item'] ?? [];
     $contact = $bookingState['contact_info'] ?? [];
+    $currencySymbol = $item['currency_symbol'] ?? \App\Models\MembershipPlan::getCurrencySymbol($item['currency'] ?? $host->default_currency ?? 'USD');
 @endphp
 
 <div class="min-h-screen flex flex-col bg-gradient-to-br from-base-200 via-base-100 to-base-200">
@@ -141,7 +142,7 @@
                                         Membership
                                     </div>
                                 @else
-                                    <span class="text-2xl font-bold text-primary">${{ number_format($item['price'] ?? 0, 2) }}</span>
+                                    <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
                                     @if(($item['type'] ?? '') === 'membership_plan' && !empty($item['billing_period']))
                                         <div class="text-sm text-base-content/60">{{ $item['billing_period'] }}</div>
                                     @endif
@@ -259,7 +260,7 @@
                                     <button type="submit" class="btn btn-primary btn-lg w-full gap-2">
                                         <span class="icon-[tabler--lock] size-5"></span>
                                         Complete Booking
-                                        <span class="ml-auto font-bold">${{ number_format($item['price'] ?? 0, 2) }}</span>
+                                        <span class="ml-auto font-bold">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
                                     </button>
                                     <p class="text-center text-xs text-base-content/50 mt-3">
                                         <span class="icon-[tabler--shield-check] size-4 inline-block align-text-bottom mr-1"></span>
@@ -318,12 +319,12 @@
                                         @if(!empty($item['using_membership']))
                                             <div class="text-right">
                                                 @if(!empty($item['original_price']) && $item['original_price'] > 0)
-                                                <span class="text-sm text-base-content/50 line-through">${{ number_format($item['original_price'], 2) }}</span>
+                                                <span class="text-sm text-base-content/50 line-through">{{ $currencySymbol }}{{ number_format($item['original_price'], 2) }}</span>
                                                 @endif
-                                                <span class="text-2xl font-bold text-success">$0.00</span>
+                                                <span class="text-2xl font-bold text-success">{{ $currencySymbol }}0.00</span>
                                             </div>
                                         @else
-                                            <span class="text-2xl font-bold text-primary">${{ number_format($item['price'] ?? 0, 2) }}</span>
+                                            <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
                                         @endif
                                     </div>
 

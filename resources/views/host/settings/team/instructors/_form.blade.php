@@ -66,6 +66,12 @@
                     <span class="icon-[tabler--clock] size-5 mr-2 inline-block align-middle"></span>
                     <span class="hidden sm:inline">5.</span> Hours
                 </button>
+                @if($instructor)
+                <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="6" onclick="goToStep(6)">
+                    <span class="icon-[tabler--certificate] size-5 mr-2 inline-block align-middle"></span>
+                    <span class="hidden sm:inline">6.</span> Certifications
+                </button>
+                @endif
             </nav>
         </div>
     </div>
@@ -378,6 +384,80 @@
         </div>
     </div>
 
+    @if($instructor)
+    {{-- Step 6: Certifications --}}
+    <div id="step-6" class="step-content hidden">
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center justify-between w-full">
+                    <div>
+                        <h3 class="card-title">Certifications & Credentials</h3>
+                        <p class="text-base-content/60 text-sm">Track certifications, licenses, and credentials for this instructor</p>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openInstructorCertDrawer()">
+                        <span class="icon-[tabler--plus] size-4"></span> Add
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="instructor-certifications-list">
+                    @if($instructor->studioCertifications->isEmpty())
+                        <div class="text-center py-8" id="no-certs-message">
+                            <span class="icon-[tabler--certificate] size-12 text-base-content/20 mx-auto block"></span>
+                            <p class="text-base-content/50 mt-2">No certifications added yet</p>
+                            <button type="button" class="btn btn-primary btn-sm mt-4" onclick="openInstructorCertDrawer()">
+                                <span class="icon-[tabler--plus] size-4"></span> Add Certification
+                            </button>
+                        </div>
+                    @else
+                        <div class="space-y-3" id="certs-container">
+                            @foreach($instructor->studioCertifications as $cert)
+                            <div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="{{ $cert->id }}">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <span class="icon-[tabler--certificate] size-5 text-primary"></span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">{{ $cert->name }}</div>
+                                        @if($cert->certification_name)
+                                            <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div>
+                                        @endif
+                                        @if($cert->expire_date)
+                                            <div class="text-xs mt-1">
+                                                <span class="badge {{ $cert->status_badge_class }} badge-xs">
+                                                    @if($cert->isExpired())
+                                                        Expired {{ $cert->expire_date->format('M j, Y') }}
+                                                    @else
+                                                        Expires {{ $cert->expire_date->format('M j, Y') }}
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    @if($cert->file_path)
+                                    <a href="{{ $cert->file_url }}" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File">
+                                        <span class="icon-[tabler--file-download] size-4"></span>
+                                    </a>
+                                    @endif
+                                    <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editInstructorCert({{ $cert->id }})" title="Edit">
+                                        <span class="icon-[tabler--pencil] size-4"></span>
+                                    </button>
+                                    <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteInstructorCert({{ $cert->id }})" title="Delete">
+                                        <span class="icon-[tabler--trash] size-4"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Navigation --}}
     <div class="flex items-center justify-between">
         <button type="button" id="prev-step-btn" class="btn btn-ghost hidden" onclick="prevStep()">
@@ -396,12 +476,114 @@
     </div>
 </div>
 
+@if($instructor)
+{{-- Instructor Certification Drawer --}}
+<div id="instructor-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold" id="instructor-cert-drawer-title">Add Certification</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeInstructorCertDrawer()">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="instructor-cert-form" class="flex flex-col flex-1 overflow-hidden" enctype="multipart/form-data">
+        <input type="hidden" id="instructor-cert-id" value="" />
+        <input type="hidden" id="instructor-cert-remove-file" value="" />
+        <div class="flex-1 overflow-y-auto p-4">
+            <div class="space-y-4">
+                <div>
+                    <label class="label-text font-medium" for="instr_cert_name">Name <span class="text-error">*</span></label>
+                    <input type="text" id="instr_cert_name" name="name" class="input w-full" placeholder="e.g., Yoga Teacher Training, CPR Certification" required />
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="instr_cert_certification_name">Certification / Credential Name</label>
+                    <input type="text" id="instr_cert_certification_name" name="certification_name" class="input w-full" placeholder="e.g., RYT 200, ACE Certified" />
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="instr_cert_expire_date">Expiration Date</label>
+                    <input type="date" id="instr_cert_expire_date" name="expire_date" class="input w-full" />
+                    <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="instr_cert_reminder_days">Reminder</label>
+                    <select id="instr_cert_reminder_days" name="reminder_days" class="select w-full">
+                        <option value="">No reminder</option>
+                        <option value="7">7 days before expiry</option>
+                        <option value="14">14 days before expiry</option>
+                        <option value="30">30 days before expiry</option>
+                        <option value="60">60 days before expiry</option>
+                        <option value="90">90 days before expiry</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="label-text font-medium">Upload Document</label>
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-base-content/20 rounded-lg p-6 hover:border-primary transition-colors cursor-pointer" id="instr-cert-drop-zone">
+                        <input type="file" id="instr_cert_file" name="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                        <div id="instr-cert-upload-placeholder">
+                            <span class="icon-[tabler--cloud-upload] size-8 text-base-content/30 mb-2 block mx-auto"></span>
+                            <p class="text-sm text-base-content/60 text-center">Drag and drop file here, or</p>
+                            <button type="button" class="btn btn-soft btn-sm mt-2 mx-auto block" id="instr-cert-browse-btn">Browse Files</button>
+                        </div>
+                        <div id="instr-cert-upload-preview" class="hidden w-full text-center">
+                            <span class="icon-[tabler--file-check] size-8 text-success mb-2 block mx-auto"></span>
+                            <p id="instr-cert-preview-name" class="text-sm font-medium"></p>
+                            <button type="button" class="btn btn-ghost btn-xs mt-2" id="instr-cert-remove-preview-btn">
+                                <span class="icon-[tabler--x] size-4"></span> Remove
+                            </button>
+                        </div>
+                        <div id="instr-cert-existing-file" class="hidden w-full text-center">
+                            <span class="icon-[tabler--file-check] size-8 text-primary mb-2 block mx-auto"></span>
+                            <p id="instr-cert-existing-file-name" class="text-sm font-medium"></p>
+                            <button type="button" class="btn btn-ghost btn-xs mt-2" id="instr-cert-remove-existing-btn">
+                                <span class="icon-[tabler--x] size-4"></span> Remove
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-base-content/50 text-center mt-2">PDF, JPG, PNG, WebP. Max 10MB</p>
+                </div>
+
+                <div>
+                    <label class="label-text font-medium" for="instr_cert_notes">Notes</label>
+                    <textarea id="instr_cert_notes" name="notes" class="textarea w-full" rows="2" placeholder="Additional notes..."></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-instructor-cert-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="instructor-cert-spinner"></span>
+                Save
+            </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeInstructorCertDrawer()">Cancel</button>
+        </div>
+    </form>
+</div>
+
+{{-- Instructor Cert Delete Modal --}}
+<dialog id="delete-instructor-cert-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete Certification</h3>
+        <p class="py-4">Are you sure you want to delete this certification? This action cannot be undone.</p>
+        <input type="hidden" id="delete-instructor-cert-id" value="" />
+        <div class="modal-action">
+            <button type="button" class="btn btn-error" id="confirm-delete-instructor-cert-btn">Delete</button>
+            <button type="button" class="btn" onclick="document.getElementById('delete-instructor-cert-modal').close()">Cancel</button>
+        </div>
+    </div>
+</dialog>
+
+{{-- Drawer Backdrop --}}
+<div id="instructor-cert-backdrop" class="fixed inset-0 bg-black/50 z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeInstructorCertDrawer()"></div>
+@endif
+
 @push('scripts')
 <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
 <script>
 // Multi-step form navigation
 let currentStep = 1;
-const totalSteps = 5;
+const totalSteps = {{ $instructor ? 6 : 5 }};
 
 function showStep(step) {
     // Hide all steps
@@ -543,6 +725,345 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => console.error('Remove failed:', error));
     });
+
+    // ============================================
+    // Instructor Certifications Management
+    // ============================================
+    var editingInstrCertId = null;
+    var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+    function showToast(message, type) {
+        type = type || 'success';
+        var toast = document.createElement('div');
+        toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] alert alert-' + type + ' shadow-lg max-w-sm';
+        toast.innerHTML = '<span class="icon-[tabler--' + (type === 'success' ? 'check' : 'alert-circle') + '] size-5"></span><span>' + message + '</span>';
+        document.body.appendChild(toast);
+        setTimeout(function() {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(function() { toast.remove(); }, 300);
+        }, 3000);
+    }
+
+    function openInstructorCertDrawer() {
+        resetInstrCertForm();
+        var drawer = document.getElementById('instructor-cert-drawer');
+        var backdrop = document.getElementById('instructor-cert-backdrop');
+        if (drawer && backdrop) {
+            backdrop.classList.remove('opacity-0', 'pointer-events-none');
+            backdrop.classList.add('opacity-100', 'pointer-events-auto');
+            drawer.classList.remove('translate-x-full');
+            drawer.classList.add('translate-x-0');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeInstructorCertDrawer() {
+        var drawer = document.getElementById('instructor-cert-drawer');
+        var backdrop = document.getElementById('instructor-cert-backdrop');
+        if (drawer && backdrop) {
+            drawer.classList.remove('translate-x-0');
+            drawer.classList.add('translate-x-full');
+            backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+            backdrop.classList.add('opacity-0', 'pointer-events-none');
+            document.body.style.overflow = '';
+        }
+    }
+
+    function resetInstrCertForm() {
+        editingInstrCertId = null;
+        document.getElementById('instructor-cert-drawer-title').textContent = 'Add Certification';
+        document.getElementById('instructor-cert-id').value = '';
+        document.getElementById('instr_cert_name').value = '';
+        document.getElementById('instr_cert_certification_name').value = '';
+        document.getElementById('instr_cert_expire_date').value = '';
+        document.getElementById('instr_cert_reminder_days').value = '';
+        document.getElementById('instr_cert_notes').value = '';
+        document.getElementById('instr_cert_file').value = '';
+        document.getElementById('instructor-cert-remove-file').value = '';
+
+        var placeholder = document.getElementById('instr-cert-upload-placeholder');
+        var preview = document.getElementById('instr-cert-upload-preview');
+        var existingFile = document.getElementById('instr-cert-existing-file');
+        if (placeholder) placeholder.classList.remove('hidden');
+        if (preview) preview.classList.add('hidden');
+        if (existingFile) existingFile.classList.add('hidden');
+    }
+
+    function editInstructorCert(id) {
+        editingInstrCertId = id;
+        document.getElementById('instructor-cert-drawer-title').textContent = 'Edit Certification';
+
+        var spinner = document.getElementById('instructor-cert-spinner');
+        spinner.classList.remove('hidden');
+
+        fetch('{{ url("settings/team/instructors") }}/{{ $instructor->id }}/certifications/' + id, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+            if (result.success) {
+                var cert = result.certification;
+                document.getElementById('instructor-cert-id').value = cert.id;
+                document.getElementById('instr_cert_name').value = cert.name || '';
+                document.getElementById('instr_cert_certification_name').value = cert.certification_name || '';
+                document.getElementById('instr_cert_expire_date').value = cert.expire_date || '';
+                document.getElementById('instr_cert_reminder_days').value = cert.reminder_days || '';
+                document.getElementById('instr_cert_notes').value = cert.notes || '';
+
+                var placeholder = document.getElementById('instr-cert-upload-placeholder');
+                var preview = document.getElementById('instr-cert-upload-preview');
+                var existingFile = document.getElementById('instr-cert-existing-file');
+                var existingFileName = document.getElementById('instr-cert-existing-file-name');
+
+                if (cert.file_name) {
+                    if (existingFile && existingFileName) {
+                        existingFileName.textContent = cert.file_name;
+                        existingFile.classList.remove('hidden');
+                        if (placeholder) placeholder.classList.add('hidden');
+                    }
+                } else {
+                    if (existingFile) existingFile.classList.add('hidden');
+                    if (placeholder) placeholder.classList.remove('hidden');
+                }
+                if (preview) preview.classList.add('hidden');
+
+                openInstructorCertDrawer();
+            } else {
+                showToast(result.message || 'Failed to load certification', 'error');
+            }
+        })
+        .catch(function() { showToast('An error occurred', 'error'); })
+        .finally(function() { spinner.classList.add('hidden'); });
+    }
+
+    function deleteInstructorCert(id) {
+        document.getElementById('delete-instructor-cert-id').value = id;
+        document.getElementById('delete-instructor-cert-modal').showModal();
+    }
+
+    // Confirm delete
+    document.getElementById('confirm-delete-instructor-cert-btn').addEventListener('click', function() {
+        var btn = this;
+        var id = document.getElementById('delete-instructor-cert-id').value;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Deleting...';
+
+        fetch('{{ url("settings/team/instructors") }}/{{ $instructor->id }}/certifications/' + id, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+            if (result.success) {
+                var item = document.querySelector('[data-cert-id="' + id + '"]');
+                if (item) item.remove();
+
+                var container = document.getElementById('certs-container');
+                if (container && container.querySelectorAll('[data-cert-id]').length === 0) {
+                    document.getElementById('instructor-certifications-list').innerHTML =
+                        '<div class="text-center py-8" id="no-certs-message">' +
+                        '<span class="icon-[tabler--certificate] size-12 text-base-content/20 mx-auto block"></span>' +
+                        '<p class="text-base-content/50 mt-2">No certifications added yet</p>' +
+                        '<button type="button" class="btn btn-primary btn-sm mt-4" onclick="openInstructorCertDrawer()">' +
+                        '<span class="icon-[tabler--plus] size-4"></span> Add Certification</button></div>';
+                }
+
+                document.getElementById('delete-instructor-cert-modal').close();
+                showToast('Certification deleted!');
+            } else {
+                showToast(result.message || 'Failed to delete', 'error');
+            }
+        })
+        .catch(function() { showToast('An error occurred', 'error'); })
+        .finally(function() {
+            btn.disabled = false;
+            btn.innerHTML = 'Delete';
+        });
+    });
+
+    // File input handling
+    (function() {
+        var fileInput = document.getElementById('instr_cert_file');
+        var browseBtn = document.getElementById('instr-cert-browse-btn');
+        var dropZone = document.getElementById('instr-cert-drop-zone');
+        var placeholder = document.getElementById('instr-cert-upload-placeholder');
+        var preview = document.getElementById('instr-cert-upload-preview');
+        var previewName = document.getElementById('instr-cert-preview-name');
+        var removeBtn = document.getElementById('instr-cert-remove-preview-btn');
+        var existingFile = document.getElementById('instr-cert-existing-file');
+
+        if (!fileInput) return;
+
+        if (browseBtn) {
+            browseBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
+        }
+
+        if (dropZone) {
+            dropZone.addEventListener('click', function(e) { if (!e.target.closest('button')) fileInput.click(); });
+            dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); });
+            dropZone.addEventListener('dragleave', function(e) { e.preventDefault(); dropZone.classList.remove('border-primary', 'bg-primary/5'); });
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('border-primary', 'bg-primary/5');
+                if (e.dataTransfer.files.length > 0) {
+                    fileInput.files = e.dataTransfer.files;
+                    handleInstrCertFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) handleInstrCertFile(this.files[0]);
+        });
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.value = '';
+                if (preview) preview.classList.add('hidden');
+                if (placeholder) placeholder.classList.remove('hidden');
+            });
+        }
+
+        function handleInstrCertFile(file) {
+            var validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                showToast('Please upload PDF, JPG, PNG, or WebP', 'error');
+                return;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('File must be under 10MB', 'error');
+                return;
+            }
+
+            if (previewName) previewName.textContent = file.name;
+            if (placeholder) placeholder.classList.add('hidden');
+            if (existingFile) existingFile.classList.add('hidden');
+            if (preview) preview.classList.remove('hidden');
+        }
+
+        var removeExistingBtn = document.getElementById('instr-cert-remove-existing-btn');
+        if (removeExistingBtn) {
+            removeExistingBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (existingFile) existingFile.classList.add('hidden');
+                if (placeholder) placeholder.classList.remove('hidden');
+                document.getElementById('instructor-cert-remove-file').value = '1';
+            });
+        }
+    })();
+
+    // Form submit
+    document.getElementById('instructor-cert-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var btn = document.getElementById('save-instructor-cert-btn');
+        var spinner = document.getElementById('instructor-cert-spinner');
+        btn.disabled = true;
+        spinner.classList.remove('hidden');
+
+        var formData = new FormData();
+        formData.append('name', document.getElementById('instr_cert_name').value);
+        formData.append('certification_name', document.getElementById('instr_cert_certification_name').value);
+        formData.append('expire_date', document.getElementById('instr_cert_expire_date').value);
+        formData.append('reminder_days', document.getElementById('instr_cert_reminder_days').value);
+        formData.append('notes', document.getElementById('instr_cert_notes').value);
+
+        var fileInput = document.getElementById('instr_cert_file');
+        if (fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
+        }
+
+        var removeFile = document.getElementById('instructor-cert-remove-file').value;
+        if (removeFile === '1') {
+            formData.append('remove_file', '1');
+        }
+
+        var certId = document.getElementById('instructor-cert-id').value;
+        var isEdit = certId && certId !== '';
+        var url = '{{ url("settings/team/instructors") }}/{{ $instructor->id }}/certifications' + (isEdit ? '/' + certId : '');
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: formData
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(result) {
+            if (result.success) {
+                var cert = result.certification;
+                var list = document.getElementById('instructor-certifications-list');
+
+                var itemHtml = '<div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="' + cert.id + '">' +
+                    '<div class="flex items-center gap-3">' +
+                    '<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">' +
+                    '<span class="icon-[tabler--certificate] size-5 text-primary"></span></div>' +
+                    '<div><div class="font-medium">' + escapeHtml(cert.name) + '</div>';
+
+                if (cert.certification_name) {
+                    itemHtml += '<div class="text-xs text-base-content/60">' + escapeHtml(cert.certification_name) + '</div>';
+                }
+
+                if (cert.expire_date_formatted) {
+                    itemHtml += '<div class="text-xs mt-1"><span class="badge ' + cert.status_badge_class + ' badge-xs">' +
+                        (cert.is_expired ? 'Expired ' : 'Expires ') + cert.expire_date_formatted + '</span></div>';
+                }
+
+                itemHtml += '</div></div><div class="flex items-center gap-1">';
+
+                if (cert.file_url) {
+                    itemHtml += '<a href="' + cert.file_url + '" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File">' +
+                        '<span class="icon-[tabler--file-download] size-4"></span></a>';
+                }
+
+                itemHtml += '<button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editInstructorCert(' + cert.id + ')" title="Edit">' +
+                    '<span class="icon-[tabler--pencil] size-4"></span></button>' +
+                    '<button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteInstructorCert(' + cert.id + ')" title="Delete">' +
+                    '<span class="icon-[tabler--trash] size-4"></span></button></div></div>';
+
+                if (isEdit) {
+                    var existingItem = document.querySelector('[data-cert-id="' + cert.id + '"]');
+                    if (existingItem) {
+                        existingItem.outerHTML = itemHtml;
+                    }
+                } else {
+                    var emptyState = document.getElementById('no-certs-message');
+                    if (emptyState) {
+                        list.innerHTML = '<div class="space-y-3" id="certs-container">' + itemHtml + '</div>';
+                    } else {
+                        var container = document.getElementById('certs-container');
+                        if (container) {
+                            container.insertAdjacentHTML('beforeend', itemHtml);
+                        } else {
+                            list.innerHTML = '<div class="space-y-3" id="certs-container">' + itemHtml + '</div>';
+                        }
+                    }
+                }
+
+                resetInstrCertForm();
+                closeInstructorCertDrawer();
+                setTimeout(function() { showToast(isEdit ? 'Certification updated!' : 'Certification added!'); }, 350);
+            } else {
+                showToast(result.message || 'Failed to save', 'error');
+            }
+        })
+        .catch(function() { showToast('An error occurred', 'error'); })
+        .finally(function() {
+            btn.disabled = false;
+            spinner.classList.add('hidden');
+        });
+    });
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
     @endif
 });
 </script>
