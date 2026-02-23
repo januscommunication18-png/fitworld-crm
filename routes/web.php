@@ -10,6 +10,7 @@ use App\Http\Controllers\Host\RoomController;
 use App\Http\Controllers\Host\BookingPageController;
 use App\Http\Controllers\Host\PoliciesController;
 use App\Http\Controllers\Host\OfferController;
+use App\Http\Controllers\Host\SegmentController;
 use App\Http\Controllers\Host\PaymentController;
 use App\Http\Controllers\Host\ReportController;
 use App\Http\Controllers\Host\ScheduleController;
@@ -344,8 +345,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
     Route::post('/bookings/{booking}/resend-intake', [BookingController::class, 'resendIntake'])->name('bookings.resend-intake');
 
-    // Offers
-    Route::get('/offers', [OfferController::class, 'index'])->name('offers.index');
+    // Marketing - Segments
+    Route::resource('segments', SegmentController::class);
+    Route::post('/segments/{segment}/add-client', [SegmentController::class, 'addClient'])->name('segments.add-client');
+    Route::post('/segments/{segment}/remove-client', [SegmentController::class, 'removeClient'])->name('segments.remove-client');
+    Route::post('/segments/{segment}/refresh', [SegmentController::class, 'refresh'])->name('segments.refresh');
+    Route::post('/segments/preview', [SegmentController::class, 'preview'])->name('segments.preview');
+
+    // Marketing - Offers
+    Route::resource('offers', OfferController::class);
+    Route::post('/offers/{offer}/duplicate', [OfferController::class, 'duplicate'])->name('offers.duplicate');
+    Route::post('/offers/{offer}/toggle-status', [OfferController::class, 'toggleStatus'])->name('offers.toggle-status');
+    Route::post('/offers/validate-code', [OfferController::class, 'validateCode'])->name('offers.validate-code');
 
     // Reports
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

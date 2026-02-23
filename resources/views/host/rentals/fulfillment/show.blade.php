@@ -163,7 +163,7 @@
                                 </div>
                                 <div>
                                     <p class="text-sm text-base-content/60">Unit Price</p>
-                                    <p class="font-semibold">{{ MembershipPlan::getCurrencySymbol($booking->currency) }}{{ number_format($booking->unit_price, 2) }}</p>
+                                    <p class="font-semibold">{{ \App\Models\MembershipPlan::getCurrencySymbol($booking->currency) }}{{ number_format($booking->unit_price, 2) }}</p>
                                 </div>
                                 <div>
                                     <p class="text-sm text-base-content/60">Total Price</p>
@@ -227,7 +227,7 @@
                                 <div>
                                     <p class="text-sm text-base-content/60">Damage Charge</p>
                                     <p class="font-semibold text-error">
-                                        {{ MembershipPlan::getCurrencySymbol($booking->currency) }}{{ number_format($booking->damage_charge, 2) }}
+                                        {{ \App\Models\MembershipPlan::getCurrencySymbol($booking->currency) }}{{ number_format($booking->damage_charge, 2) }}
                                     </p>
                                 </div>
                             @endif

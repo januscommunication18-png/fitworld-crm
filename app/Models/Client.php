@@ -221,6 +221,28 @@ class Client extends Model implements AuthenticatableContract
         return $this->hasMany(Payment::class);
     }
 
+    public function segments(): BelongsToMany
+    {
+        return $this->belongsToMany(Segment::class, 'client_segment')
+            ->withPivot(['added_by', 'matched_at'])
+            ->withTimestamps();
+    }
+
+    public function score(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(ClientScore::class);
+    }
+
+    public function scoreEvents(): HasMany
+    {
+        return $this->hasMany(ScoreEvent::class);
+    }
+
+    public function offerRedemptions(): HasMany
+    {
+        return $this->hasMany(OfferRedemption::class);
+    }
+
     // Accessors
 
     public function getFullNameAttribute(): string

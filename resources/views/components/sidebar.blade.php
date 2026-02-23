@@ -237,35 +237,29 @@
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Commerce</span>
             </li>
 
-            {{-- Offers - Requires any offer permission --}}
+            {{-- Marketing - Segments & Offers --}}
             @if($canViewOffers)
-            <li class="nav-item {{ request()->is('offers*') ? 'active' : '' }}" data-nav="offers">
+            <li class="nav-item {{ request()->is('segments*') || request()->is('offers*') ? 'active' : '' }}" data-nav="marketing">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
-                    <span class="icon-[tabler--gift] size-5 shrink-0"></span>
-                    <span class="sidebar-label flex-1 text-left">Offers</span>
+                    <span class="icon-[tabler--speakerphone] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">Marketing</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('offers*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    @if($user->hasPermission('offers.intro'))
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--star] size-4 mr-2"></span>Intro Offers
+                <ul class="sidebar-submenu {{ request()->is('segments*') || request()->is('offers*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ route('segments.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('segments*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--users-group] size-4 mr-2"></span>Segments
                     </a></li>
-                    @endif
-                    @if($user->hasPermission('offers.packs'))
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--package] size-4 mr-2"></span>Class Packs
+                    <li><a href="{{ route('offers.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('offers*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--tag] size-4 mr-2"></span>Offers
                     </a></li>
-                    @endif
-                    @if($user->hasPermission('offers.memberships'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--id-badge] size-4 mr-2"></span>Memberships
+                        <span class="icon-[tabler--mail size-4 mr-2 opacity-50"></span><span class="opacity-50">Campaigns</span>
+                        <span class="badge badge-xs badge-soft badge-neutral ml-1">Soon</span>
                     </a></li>
-                    @endif
-                    @if($user->hasPermission('offers.promos'))
                     <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
-                        <span class="icon-[tabler--percentage] size-4 mr-2"></span>Promo Codes
+                        <span class="icon-[tabler--share] size-4 mr-2 opacity-50"></span><span class="opacity-50">Referrals</span>
+                        <span class="badge badge-xs badge-soft badge-neutral ml-1">Soon</span>
                     </a></li>
-                    @endif
                 </ul>
             </li>
             @endif

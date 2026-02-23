@@ -515,7 +515,9 @@ class InstructorController extends Controller
     {
         $this->authorizeInstructor($instructor);
 
-        $instructor->load(['user', 'invitation', 'servicePlans', 'notes.author']);
+        $instructor->load(['user', 'invitation', 'servicePlans', 'notes.author', 'studioCertifications', 'actionLogs' => function ($q) {
+            $q->latest()->limit(10);
+        }]);
 
         $tab = $request->get('tab', 'overview');
 
@@ -529,6 +531,18 @@ class InstructorController extends Controller
             ->with(['classPlan', 'location'])
             ->orderBy('start_time')
             ->limit(10)
+            ->get();
+
+        // Get recent past sessions
+        $recentSessions = ClassSession::where(function ($q) use ($instructor) {
+            $q->where('primary_instructor_id', $instructor->id)
+                ->orWhere('backup_instructor_id', $instructor->id);
+        })
+            ->where('start_time', '<', now())
+            ->where('status', ClassSession::STATUS_PUBLISHED)
+            ->with(['classPlan', 'location'])
+            ->orderBy('start_time', 'desc')
+            ->limit(5)
             ->get();
 
         // Get class plans this instructor is assigned to (via sessions)
@@ -556,12 +570,41 @@ class InstructorController extends Controller
         // Calculate estimated earnings
         $monthlyStats['estimated_earnings'] = $this->calculateEstimatedEarnings($instructor, $monthlyStats);
 
+        // All-time stats
+        $allTimeStats = [
+            'total_classes' => ClassSession::where('primary_instructor_id', $instructor->id)
+                ->where('status', ClassSession::STATUS_PUBLISHED)
+                ->where('start_time', '<', now())
+                ->count(),
+            'total_services' => $instructor->serviceSlots()
+                ->where('start_time', '<', now())
+                ->count(),
+            'total_clients' => \DB::table('class_bookings')
+                ->join('class_sessions', 'class_bookings.class_session_id', '=', 'class_sessions.id')
+                ->where('class_sessions.primary_instructor_id', $instructor->id)
+                ->distinct('class_bookings.client_id')
+                ->count('class_bookings.client_id'),
+            'years_teaching' => $instructor->created_at ? now()->diffInYears($instructor->created_at) : 0,
+        ];
+
+        // Upcoming service bookings
+        $upcomingServiceBookings = \App\Models\ServiceBooking::where('instructor_id', $instructor->id)
+            ->where('start_time', '>', now())
+            ->whereIn('status', ['confirmed', 'pending'])
+            ->with(['servicePlan', 'client'])
+            ->orderBy('start_time')
+            ->limit(5)
+            ->get();
+
         return view('host.instructors.show', [
             'instructor' => $instructor,
             'tab' => $tab,
             'upcomingSessions' => $upcomingSessions,
+            'recentSessions' => $recentSessions,
             'classPlans' => $classPlans,
             'monthlyStats' => $monthlyStats,
+            'allTimeStats' => $allTimeStats,
+            'upcomingServiceBookings' => $upcomingServiceBookings,
             'noteTypes' => InstructorNote::getNoteTypes(),
         ]);
     }
