@@ -100,6 +100,12 @@ Route::middleware('auth')->group(function () {
 
         // Check if user is in onboarding (host exists but onboarding not complete)
         $host = $user->host;
+
+        // Mark the host as verified/active if owner verifies email
+        if ($host && !$host->isVerified() && $user->role === 'owner') {
+            $host->markVerified();
+        }
+
         if ($host && !$host->onboarding_completed_at) {
             return redirect('/signup?verified=1');
         }
