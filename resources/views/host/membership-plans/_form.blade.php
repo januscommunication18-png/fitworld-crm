@@ -69,6 +69,32 @@
                     </div>
                 </div>
 
+                {{-- Scheduled Class Toggle --}}
+                <div>
+                    <label class="label-text mb-2 block" for="has_scheduled_class">Is there scheduled class for membership?</label>
+                    <div class="flex gap-4">
+                        <label class="custom-option flex items-center gap-2 px-4 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                            <input type="radio" name="has_scheduled_class" value="1"
+                                class="radio radio-primary radio-sm"
+                                {{ old('has_scheduled_class', $membershipPlan?->has_scheduled_class ?? false) ? 'checked' : '' }}>
+                            <span class="label-text font-medium">Yes</span>
+                        </label>
+                        <label class="custom-option flex items-center gap-2 px-4 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                            <input type="radio" name="has_scheduled_class" value="0"
+                                class="radio radio-primary radio-sm"
+                                {{ !old('has_scheduled_class', $membershipPlan?->has_scheduled_class ?? false) ? 'checked' : '' }}>
+                            <span class="label-text font-medium">No</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-base-content/60 mt-2">
+                        <strong>Yes:</strong> Members attend classes at specific scheduled times (e.g., yoga, fitness classes)<br>
+                        <strong>No:</strong> Members can visit anytime for self-workout (e.g., gym access)
+                    </p>
+                    @error('has_scheduled_class')
+                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 {{-- Multi-Currency Pricing --}}
                 <div>
                     <label class="label-text mb-2 block">Pricing by Currency</label>

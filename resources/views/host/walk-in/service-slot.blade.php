@@ -286,7 +286,50 @@
             </div>
 
             {{-- Right Column: Summary --}}
-            <div class="lg:col-span-1">
+            <div class="lg:col-span-1 space-y-4">
+                {{-- Promo Code Card --}}
+                <div class="card bg-base-100 border border-base-200">
+                    <div class="card-body py-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
+                            <span class="font-semibold">Promo Code</span>
+                        </div>
+
+                        {{-- Hidden fields for form submission --}}
+                        <input type="hidden" name="offer_id" id="offer_id" value="">
+                        <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
+                        <input type="hidden" name="discount_amount" id="discount_amount" value="0">
+
+                        {{-- Applied Offer Display --}}
+                        <div id="applied-offer" class="hidden mb-3">
+                            <div class="alert bg-success/10 border-success/20">
+                                <span class="icon-[tabler--discount-check] size-5 text-success"></span>
+                                <div class="flex-1">
+                                    <span class="font-semibold text-success" id="applied-offer-name"></span>
+                                    <p class="text-sm text-success/80" id="applied-offer-discount"></p>
+                                </div>
+                                <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
+                                    <span class="icon-[tabler--x] size-4"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Promo Code Input (always visible) --}}
+                        <div id="promo-input-section">
+                            <div class="join w-full">
+                                <input type="text" id="promo_code_input" placeholder="Enter promo code"
+                                       class="input input-bordered join-item flex-1 uppercase" maxlength="20">
+                                <button type="button" onclick="applyPromoCode()" id="apply-promo-btn"
+                                        class="btn btn-primary join-item">
+                                    Apply
+                                </button>
+                            </div>
+                            <p id="promo-error" class="text-error text-sm mt-2 hidden"></p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Booking Summary Card --}}
                 <div class="card bg-base-100 border border-base-200 sticky top-4">
                     <div class="card-header">
                         <h3 class="card-title">Booking Summary</h3>
@@ -320,9 +363,24 @@
                             <span class="font-medium">{{ $slot->location->name }}</span>
                         </div>
                         @endif
-                        <div class="flex justify-between">
+                        <div class="flex justify-between" id="price-row">
                             <span class="text-base-content/60">Price</span>
-                            <span class="font-medium">{{ $slot->formatted_price }}</span>
+                            <span class="font-medium" id="original-price">{{ $slot->formatted_price }}</span>
+                        </div>
+
+                        {{-- Discount Row (hidden by default) --}}
+                        <div class="flex justify-between text-success hidden" id="discount-row">
+                            <span class="flex items-center gap-1">
+                                <span class="icon-[tabler--discount-2] size-4"></span>
+                                Discount
+                            </span>
+                            <span id="discount-value">-$0.00</span>
+                        </div>
+
+                        {{-- Final Price Row (hidden by default) --}}
+                        <div class="flex justify-between font-bold hidden" id="final-price-row">
+                            <span>Total</span>
+                            <span class="text-success" id="final-price">{{ $slot->formatted_price }}</span>
                         </div>
 
                         <div class="divider my-2"></div>
@@ -523,6 +581,177 @@ function createClient() {
         }
     });
 }
+
+// Promo code functionality
+const originalPrice = {{ $slot->getEffectivePrice() ?? 0 }};
+let appliedOfferId = null;
+let appliedDiscount = 0;
+
+function applyPromoCode() {
+    const codeInput = document.getElementById('promo_code_input');
+    const code = codeInput.value.trim().toUpperCase();
+    const applyBtn = document.getElementById('apply-promo-btn');
+    const errorEl = document.getElementById('promo-error');
+
+    if (!code) {
+        showPromoError('Please enter a promo code.');
+        return;
+    }
+
+    // Show loading state
+    applyBtn.disabled = true;
+    applyBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+    errorEl.classList.add('hidden');
+
+    // Make AJAX request
+    fetch('/walk-in/validate-promo', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            code: code,
+            type: 'services',
+            original_price: originalPrice,
+            client_id: selectedClientId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = 'Apply';
+
+        if (data.valid) {
+            applyOffer(data);
+        } else {
+            showPromoError(data.error || 'Invalid promo code.');
+        }
+    })
+    .catch(error => {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = 'Apply';
+        showPromoError('Unable to validate promo code. Please try again.');
+        console.error('Promo validation error:', error);
+    });
+}
+
+function applyOffer(data) {
+    appliedOfferId = data.offer_id;
+    appliedDiscount = data.discount_amount;
+
+    const promoInput = document.getElementById('promo_code_input');
+    const appliedCode = promoInput.value.toUpperCase();
+
+    // Update hidden fields
+    document.getElementById('offer_id').value = data.offer_id;
+    document.getElementById('promo_code_hidden').value = appliedCode;
+    document.getElementById('discount_amount').value = data.discount_amount;
+
+    // Update applied offer display
+    document.getElementById('applied-offer-name').textContent = data.offer_name;
+    document.getElementById('applied-offer-discount').textContent = data.discount_display + ' applied!';
+
+    // Show applied offer banner
+    document.getElementById('applied-offer').classList.remove('hidden');
+
+    // Update input to show applied state
+    promoInput.value = appliedCode;
+    promoInput.readOnly = true;
+    promoInput.classList.add('bg-base-200');
+
+    // Change Apply button to Applied
+    const applyBtn = document.getElementById('apply-promo-btn');
+    applyBtn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Applied';
+    applyBtn.classList.remove('btn-primary');
+    applyBtn.classList.add('btn-success');
+    applyBtn.disabled = true;
+
+    // Update price display
+    updatePriceDisplay(data.original_price, data.discount_amount, data.final_price);
+
+    // Update manual payment amount if selected
+    const manualAmountInput = document.querySelector('input[name="price_paid"]');
+    if (manualAmountInput) {
+        manualAmountInput.value = data.final_price.toFixed(2);
+    }
+}
+
+function removePromoCode() {
+    appliedOfferId = null;
+    appliedDiscount = 0;
+
+    // Clear hidden fields
+    document.getElementById('offer_id').value = '';
+    document.getElementById('promo_code_hidden').value = '';
+    document.getElementById('discount_amount').value = '0';
+
+    // Hide applied offer banner
+    document.getElementById('applied-offer').classList.add('hidden');
+
+    // Reset the promo input field
+    const promoInput = document.getElementById('promo_code_input');
+    promoInput.value = '';
+    promoInput.readOnly = false;
+    promoInput.classList.remove('bg-base-200');
+
+    // Reset the Apply button
+    const applyBtn = document.getElementById('apply-promo-btn');
+    applyBtn.innerHTML = 'Apply';
+    applyBtn.classList.add('btn-primary');
+    applyBtn.classList.remove('btn-success');
+    applyBtn.disabled = false;
+
+    // Show input section and clear error
+    document.getElementById('promo-input-section').classList.remove('hidden');
+    document.getElementById('promo-error').classList.add('hidden');
+
+    // Reset price display
+    updatePriceDisplay(originalPrice, 0, originalPrice);
+
+    // Reset manual payment amount
+    const manualAmountInput = document.querySelector('input[name="price_paid"]');
+    if (manualAmountInput) {
+        manualAmountInput.value = originalPrice.toFixed(2);
+    }
+}
+
+function updatePriceDisplay(subtotal, discount, total) {
+    const discountRow = document.getElementById('discount-row');
+    const finalPriceRow = document.getElementById('final-price-row');
+    const originalPriceEl = document.getElementById('original-price');
+
+    if (discount > 0) {
+        // Show discount and final price rows
+        discountRow.classList.remove('hidden');
+        finalPriceRow.classList.remove('hidden');
+        document.getElementById('discount-value').textContent = '-$' + discount.toFixed(2);
+        document.getElementById('final-price').textContent = '$' + total.toFixed(2);
+
+        // Strike through original price
+        originalPriceEl.classList.add('line-through', 'text-base-content/50');
+    } else {
+        // Hide discount and final price rows
+        discountRow.classList.add('hidden');
+        finalPriceRow.classList.add('hidden');
+        originalPriceEl.classList.remove('line-through', 'text-base-content/50');
+    }
+}
+
+function showPromoError(message) {
+    const errorEl = document.getElementById('promo-error');
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+}
+
+// Handle Enter key in promo code input
+document.getElementById('promo_code_input')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        applyPromoCode();
+    }
+});
 </script>
 @endpush
 @endsection

@@ -583,6 +583,7 @@ class BookingFlowController extends Controller
 
         // Check for auto-apply offers (if not using membership and has a price)
         $autoAppliedOffer = null;
+        $prefilledPromoCode = null;
         $price = $selectedItem['price'] ?? 0;
 
         if (!$usingMembership && $price > 0) {
@@ -592,13 +593,40 @@ class BookingFlowController extends Controller
             // Determine the applies_to type based on booking type
             $appliesTo = $this->getOfferAppliesTo($selectedItem['type'] ?? null);
 
-            // Check for auto-apply offers
-            $autoAppliedOffer = $this->offerService->getBestAutoApplyOffer(
-                $host,
-                $member,
-                $appliesTo,
-                $price
-            );
+            // Check for promo code from URL parameter
+            $urlPromoCode = $request->query('promo') ?? $request->query('code') ?? $request->query('coupon');
+
+            if ($urlPromoCode) {
+                // Validate the URL promo code
+                $result = $this->offerService->validatePromoCode(
+                    $host,
+                    $urlPromoCode,
+                    $member,
+                    $appliesTo,
+                    $price
+                );
+
+                if ($result['valid']) {
+                    $prefilledPromoCode = strtoupper($urlPromoCode);
+                    $autoAppliedOffer = [
+                        'offer' => $result['offer'],
+                        'discount_amount' => $result['discount_amount'],
+                    ];
+                } else {
+                    // Invalid code - still prefill but don't auto-apply
+                    $prefilledPromoCode = strtoupper($urlPromoCode);
+                }
+            }
+
+            // If no URL promo code, check for auto-apply offers
+            if (!$autoAppliedOffer) {
+                $autoAppliedOffer = $this->offerService->getBestAutoApplyOffer(
+                    $host,
+                    $member,
+                    $appliesTo,
+                    $price
+                );
+            }
         }
 
         return view('subdomain.booking.payment', [
@@ -608,6 +636,7 @@ class BookingFlowController extends Controller
             'termsUrl' => $termsUrl,
             'usingMembership' => $usingMembership,
             'autoAppliedOffer' => $autoAppliedOffer,
+            'prefilledPromoCode' => $prefilledPromoCode,
         ]);
     }
 

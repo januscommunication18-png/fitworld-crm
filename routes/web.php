@@ -310,6 +310,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in/available-slots', [WalkInController::class, 'getAvailableSlots'])->name('walk-in.available-slots');
     Route::get('/walk-in/class-plan-questionnaires', [WalkInController::class, 'getClassPlanQuestionnaires'])->name('walk-in.class-plan-questionnaires');
     Route::post('/walk-in/validate-promo', [WalkInController::class, 'validatePromoCode'])->name('walk-in.validate-promo');
+    Route::get('/walk-in/applicable-offers', [WalkInController::class, 'getApplicableOffers'])->name('walk-in.applicable-offers');
 
     // Walk-In Service Slot Booking
     Route::get('/walk-in/services', [WalkInController::class, 'selectServiceSlot'])->name('walk-in.select-service');

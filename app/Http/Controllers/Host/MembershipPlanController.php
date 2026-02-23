@@ -83,6 +83,9 @@ class MembershipPlanController extends Controller
         // Handle visibility checkbox
         $data['visibility_public'] = $request->boolean('visibility_public');
 
+        // Handle scheduled class checkbox
+        $data['has_scheduled_class'] = $request->boolean('has_scheduled_class');
+
         // Clear credits_per_cycle if not a credits-based plan
         if ($data['type'] !== MembershipPlan::TYPE_CREDITS) {
             $data['credits_per_cycle'] = null;
@@ -180,6 +183,9 @@ class MembershipPlanController extends Controller
 
         // Handle visibility checkbox
         $data['visibility_public'] = $request->boolean('visibility_public');
+
+        // Handle scheduled class checkbox
+        $data['has_scheduled_class'] = $request->boolean('has_scheduled_class');
 
         // Clear credits_per_cycle if not a credits-based plan
         if ($data['type'] !== MembershipPlan::TYPE_CREDITS) {

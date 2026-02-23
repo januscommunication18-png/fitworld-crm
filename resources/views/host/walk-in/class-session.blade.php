@@ -282,7 +282,50 @@
             </div>
 
             {{-- Right Column: Summary --}}
-            <div class="lg:col-span-1">
+            <div class="lg:col-span-1 space-y-4">
+                {{-- Promo Code Card --}}
+                <div class="card bg-base-100 border border-base-200">
+                    <div class="card-body py-4">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
+                            <span class="font-semibold">Promo Code</span>
+                        </div>
+
+                        {{-- Hidden fields for form submission --}}
+                        <input type="hidden" name="offer_id" id="offer_id" value="">
+                        <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
+                        <input type="hidden" name="discount_amount" id="discount_amount" value="0">
+
+                        {{-- Applied Offer Display --}}
+                        <div id="applied-offer" class="hidden mb-3">
+                            <div class="alert bg-success/10 border-success/20">
+                                <span class="icon-[tabler--discount-check] size-5 text-success"></span>
+                                <div class="flex-1">
+                                    <span class="font-semibold text-success" id="applied-offer-name"></span>
+                                    <p class="text-sm text-success/80" id="applied-offer-discount"></p>
+                                </div>
+                                <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
+                                    <span class="icon-[tabler--x] size-4"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Promo Code Input (always visible) --}}
+                        <div id="promo-input-section">
+                            <div class="join w-full">
+                                <input type="text" id="promo_code_input" placeholder="Enter promo code"
+                                       class="input input-bordered join-item flex-1 uppercase" maxlength="20">
+                                <button type="button" onclick="applyPromoCode()" id="apply-promo-btn"
+                                        class="btn btn-primary join-item">
+                                    Apply
+                                </button>
+                            </div>
+                            <p id="promo-error" class="text-error text-sm mt-2 hidden"></p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Booking Summary Card --}}
                 <div class="card bg-base-100 border border-base-200 sticky top-4">
                     <div class="card-header">
                         <h3 class="card-title">Booking Summary</h3>
@@ -318,51 +361,6 @@
                         <div class="flex justify-between font-bold hidden" id="final-price-row">
                             <span>Total</span>
                             <span class="text-success" id="final-price">${{ number_format($session->price ?? $session->classPlan->default_price ?? 0, 2) }}</span>
-                        </div>
-
-                        <div class="divider my-2"></div>
-
-                        {{-- Promo Code Section --}}
-                        <div id="promo-section">
-                            {{-- Applied Offer Display --}}
-                            <div id="applied-offer" class="hidden mb-2">
-                                <div class="alert bg-success/10 border-success/20 py-2 px-3">
-                                    <span class="icon-[tabler--discount-check] size-4 text-success"></span>
-                                    <div class="flex-1">
-                                        <span class="font-medium text-success text-sm" id="applied-offer-name"></span>
-                                    </div>
-                                    <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
-                                        <span class="icon-[tabler--x] size-4"></span>
-                                    </button>
-                                </div>
-                                <input type="hidden" name="offer_id" id="offer_id" value="">
-                                <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
-                                <input type="hidden" name="discount_amount" id="discount_amount" value="0">
-                            </div>
-
-                            {{-- Use Promo Code Checkbox --}}
-                            <div id="promo-toggle-section">
-                                <label class="flex items-center gap-2 cursor-pointer group">
-                                    <input type="checkbox" id="use_promo_checkbox" class="checkbox checkbox-primary checkbox-xs" onchange="togglePromoInput()">
-                                    <span class="text-sm text-base-content/70 group-hover:text-primary transition-colors flex items-center gap-1">
-                                        <span class="icon-[tabler--discount-2] size-4 text-warning"></span>
-                                        Use promo code
-                                    </span>
-                                </label>
-                            </div>
-
-                            {{-- Promo Code Input (hidden by default) --}}
-                            <div id="promo-input-section" class="hidden mt-2">
-                                <div class="join w-full">
-                                    <input type="text" id="promo_code_input" placeholder="Enter code"
-                                           class="input input-bordered input-sm join-item flex-1 uppercase" maxlength="20">
-                                    <button type="button" onclick="applyPromoCode()" id="apply-promo-btn"
-                                            class="btn btn-sm btn-primary join-item">
-                                        Apply
-                                    </button>
-                                </div>
-                                <p id="promo-error" class="text-error text-xs mt-1 hidden"></p>
-                            </div>
                         </div>
 
                         <div class="divider my-2"></div>
@@ -624,21 +622,6 @@ const originalPrice = {{ $session->price ?? $session->classPlan->default_price ?
 let appliedOfferId = null;
 let appliedDiscount = 0;
 
-// Toggle promo code input visibility
-function togglePromoInput() {
-    const checkbox = document.getElementById('use_promo_checkbox');
-    const inputSection = document.getElementById('promo-input-section');
-
-    if (checkbox.checked) {
-        inputSection.classList.remove('hidden');
-        document.getElementById('promo_code_input').focus();
-    } else {
-        inputSection.classList.add('hidden');
-        document.getElementById('promo_code_input').value = '';
-        document.getElementById('promo-error').classList.add('hidden');
-    }
-}
-
 function applyPromoCode() {
     const codeInput = document.getElementById('promo_code_input');
     const code = codeInput.value.trim().toUpperCase();
@@ -693,18 +676,32 @@ function applyOffer(data) {
     appliedOfferId = data.offer_id;
     appliedDiscount = data.discount_amount;
 
+    const promoInput = document.getElementById('promo_code_input');
+    const appliedCode = promoInput.value.toUpperCase();
+
     // Update hidden fields
     document.getElementById('offer_id').value = data.offer_id;
-    document.getElementById('promo_code_hidden').value = document.getElementById('promo_code_input').value.toUpperCase();
+    document.getElementById('promo_code_hidden').value = appliedCode;
     document.getElementById('discount_amount').value = data.discount_amount;
 
     // Update applied offer display
-    document.getElementById('applied-offer-name').textContent = data.offer_name + ' (' + data.discount_display + ')';
+    document.getElementById('applied-offer-name').textContent = data.offer_name;
+    document.getElementById('applied-offer-discount').textContent = data.discount_display + ' applied!';
 
-    // Show applied offer, hide toggle and input sections
+    // Show applied offer banner
     document.getElementById('applied-offer').classList.remove('hidden');
-    document.getElementById('promo-toggle-section').classList.add('hidden');
-    document.getElementById('promo-input-section').classList.add('hidden');
+
+    // Update input to show applied state
+    promoInput.value = appliedCode;
+    promoInput.readOnly = true;
+    promoInput.classList.add('bg-base-200');
+
+    // Change Apply button to Applied
+    const applyBtn = document.getElementById('apply-promo-btn');
+    applyBtn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Applied';
+    applyBtn.classList.remove('btn-primary');
+    applyBtn.classList.add('btn-success');
+    applyBtn.disabled = true;
 
     // Update price display
     updatePriceDisplay(data.original_price, data.discount_amount, data.final_price);
@@ -725,16 +722,25 @@ function removePromoCode() {
     document.getElementById('promo_code_hidden').value = '';
     document.getElementById('discount_amount').value = '0';
 
-    // Hide applied offer, show toggle section
+    // Hide applied offer banner
     document.getElementById('applied-offer').classList.add('hidden');
-    document.getElementById('promo-toggle-section').classList.remove('hidden');
-    document.getElementById('promo-input-section').classList.add('hidden');
-    document.getElementById('promo_code_input').value = '';
-    document.getElementById('promo-error').classList.add('hidden');
 
-    // Uncheck the checkbox
-    const checkbox = document.getElementById('use_promo_checkbox');
-    if (checkbox) checkbox.checked = false;
+    // Reset the promo input field
+    const promoInput = document.getElementById('promo_code_input');
+    promoInput.value = '';
+    promoInput.readOnly = false;
+    promoInput.classList.remove('bg-base-200');
+
+    // Reset the Apply button
+    const applyBtn = document.getElementById('apply-promo-btn');
+    applyBtn.innerHTML = 'Apply';
+    applyBtn.classList.add('btn-primary');
+    applyBtn.classList.remove('btn-success');
+    applyBtn.disabled = false;
+
+    // Show input section and clear error
+    document.getElementById('promo-input-section').classList.remove('hidden');
+    document.getElementById('promo-error').classList.add('hidden');
 
     // Reset price display
     updatePriceDisplay(originalPrice, 0, originalPrice);

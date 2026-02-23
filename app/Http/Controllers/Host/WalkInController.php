@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\ClassPlan;
 use App\Models\ServicePlan;
 use App\Models\Instructor;
+use App\Models\Offer;
 use App\Models\QuestionnaireAttachment;
 use App\Services\BookingService;
 use App\Services\OfferService;
@@ -262,6 +263,98 @@ class WalkInController extends Controller
             'discount_amount' => $discountAmount,
             'original_price' => $validated['original_price'],
             'final_price' => $finalPrice,
+        ]);
+    }
+
+    /**
+     * Get applicable promo codes for walk-in booking (AJAX)
+     */
+    public function getApplicableOffers(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'type' => 'nullable|string|in:classes,services,memberships,class_packs,all',
+            'original_price' => 'nullable|numeric|min:0',
+            'client_id' => 'required|integer|exists:clients,id',
+        ]);
+
+        // Client is required - only show offers for the selected client
+        $client = Client::where('host_id', $host->id)
+            ->where('id', $validated['client_id'])
+            ->first();
+
+        if (!$client) {
+            return response()->json([
+                'offers' => [],
+                'message' => 'Client not found',
+            ]);
+        }
+
+        $appliesTo = $validated['type'] ?? null;
+        $originalPrice = $validated['original_price'] ?? 0;
+
+        // Get all active offers that can be used at front desk
+        $offers = Offer::where('host_id', $host->id)
+            ->where('status', 'active')
+            ->where(function ($query) {
+                // Allow front desk use - not online only, not app only
+                $query->where('online_booking_only', false)
+                    ->orWhereNull('online_booking_only');
+            })
+            ->where(function ($query) {
+                $query->where('app_only', false)
+                    ->orWhereNull('app_only');
+            })
+            ->where(function ($query) {
+                // Date validity
+                $query->whereNull('start_date')
+                    ->orWhere('start_date', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->where(function ($query) {
+                // Usage limit not reached
+                $query->whereNull('total_usage_limit')
+                    ->orWhereColumn('total_redemptions', '<', 'total_usage_limit');
+            })
+            ->orderBy('name')
+            ->get();
+
+        $applicableOffers = [];
+
+        foreach ($offers as $offer) {
+            // Check if offer applies to this type
+            if ($appliesTo && $offer->applies_to !== 'all' && $offer->applies_to !== $appliesTo) {
+                continue;
+            }
+
+            // Check client eligibility - this is now required
+            if (!$this->offerService->isClientEligible($offer, $client)) {
+                continue;
+            }
+
+            // Calculate discount for display
+            $discountAmount = $this->offerService->calculateDiscount($offer, $originalPrice);
+
+            $applicableOffers[] = [
+                'id' => $offer->id,
+                'name' => $offer->name,
+                'code' => $offer->code,
+                'discount_display' => $offer->getFormattedDiscount(),
+                'discount_amount' => $discountAmount,
+                'final_price' => max(0, $originalPrice - $discountAmount),
+                'description' => $offer->description,
+                'auto_apply' => $offer->auto_apply,
+                'require_code' => $offer->require_code,
+            ];
+        }
+
+        return response()->json([
+            'offers' => $applicableOffers,
+            'client_name' => $client->full_name,
         ]);
     }
 

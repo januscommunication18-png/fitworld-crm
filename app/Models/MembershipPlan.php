@@ -41,6 +41,7 @@ class MembershipPlan extends Model
         'slug',
         'description',
         'type',
+        'has_scheduled_class',
         'price',
         'prices',
         'interval',
@@ -64,6 +65,7 @@ class MembershipPlan extends Model
         return [
             'price' => 'decimal:2',
             'prices' => 'array',
+            'has_scheduled_class' => 'boolean',
             'addon_members' => 'integer',
             'free_amenities' => 'array',
             'free_rental_ids' => 'array',
@@ -292,6 +294,14 @@ class MembershipPlan extends Model
     public function isCredits(): bool
     {
         return $this->type === self::TYPE_CREDITS;
+    }
+
+    /**
+     * Check if this membership has scheduled classes
+     */
+    public function hasScheduledClass(): bool
+    {
+        return $this->has_scheduled_class;
     }
 
     /**

@@ -22,6 +22,7 @@ class MembershipPlanRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
             'type' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getTypes()))],
+            'has_scheduled_class' => ['nullable', 'boolean'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:99999.99'], // Legacy field, kept for compatibility
             'prices' => ['nullable', 'array'],
             'prices.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],

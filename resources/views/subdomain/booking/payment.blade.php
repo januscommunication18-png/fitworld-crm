@@ -184,59 +184,51 @@
                             @if(empty($usingMembership) && ($item['price'] ?? 0) > 0)
                             <div class="card bg-base-100 shadow-lg border border-base-200">
                                 <div class="card-body py-5">
-                                    {{-- Applied Offer Display --}}
-                                    <div id="applied-offer" class="hidden">
-                                        <div class="alert bg-success/10 border-success/20">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
+                                        <span class="font-medium">Promo Code</span>
+                                    </div>
+
+                                    {{-- Hidden fields for form submission --}}
+                                    <input type="hidden" name="offer_id" id="offer_id" value="{{ $autoAppliedOffer['offer']->id ?? '' }}">
+                                    <input type="hidden" name="promo_code" id="promo_code_hidden" value="{{ $prefilledPromoCode ?? '' }}">
+                                    <input type="hidden" name="discount_amount" id="discount_amount" value="{{ $autoAppliedOffer['discount_amount'] ?? 0 }}">
+
+                                    {{-- Applied Offer Display (shown when a code is applied) --}}
+                                    <div id="applied-offer" class="{{ empty($autoAppliedOffer) ? 'hidden' : '' }}">
+                                        <div class="alert bg-success/10 border-success/20 mb-3">
                                             <span class="icon-[tabler--discount-check] size-5 text-success"></span>
                                             <div class="flex-1">
-                                                <span class="font-semibold text-success" id="applied-offer-name"></span>
-                                                <p class="text-sm text-success/80" id="applied-offer-discount"></p>
+                                                <span class="font-semibold text-success" id="applied-offer-name">{{ $autoAppliedOffer['offer']->name ?? '' }}</span>
+                                                <p class="text-sm text-success/80" id="applied-offer-discount">{{ !empty($autoAppliedOffer) ? $autoAppliedOffer['offer']->getFormattedDiscount() . ' applied!' : '' }}</p>
                                             </div>
                                             <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
                                                 <span class="icon-[tabler--x] size-4"></span>
                                             </button>
                                         </div>
-                                        <input type="hidden" name="offer_id" id="offer_id" value="">
-                                        <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
-                                        <input type="hidden" name="discount_amount" id="discount_amount" value="0">
                                     </div>
 
-                                    {{-- Auto-Applied Offer --}}
-                                    @if(!empty($autoAppliedOffer))
-                                    <div class="alert bg-success/10 border-success/20" id="auto-applied-offer">
-                                        <span class="icon-[tabler--sparkles] size-5 text-success"></span>
-                                        <div class="flex-1">
-                                            <span class="font-semibold text-success">{{ $autoAppliedOffer['offer']->name }}</span>
-                                            <p class="text-sm text-success/80">{{ $autoAppliedOffer['offer']->getFormattedDiscount() }} automatically applied!</p>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" name="offer_id" value="{{ $autoAppliedOffer['offer']->id }}">
-                                    <input type="hidden" name="discount_amount" value="{{ $autoAppliedOffer['discount_amount'] }}">
-                                    @else
-                                    {{-- Use Promo Code Checkbox --}}
-                                    <div id="promo-toggle-section">
-                                        <label class="flex items-center gap-3 cursor-pointer group">
-                                            <input type="checkbox" id="use_promo_checkbox" class="checkbox checkbox-primary checkbox-sm" onchange="togglePromoInput()">
-                                            <div class="flex items-center gap-2">
-                                                <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
-                                                <span class="font-medium group-hover:text-primary transition-colors">I have a promo code</span>
-                                            </div>
-                                        </label>
-                                    </div>
-
-                                    {{-- Promo Code Input (hidden by default) --}}
-                                    <div id="promo-input-section" class="hidden mt-4">
+                                    {{-- Promo Code Input (always in DOM) --}}
+                                    <div id="promo-input-section">
                                         <div class="join w-full">
                                             <input type="text" id="promo_code_input" placeholder="Enter promo code"
-                                                   class="input input-bordered join-item flex-1 uppercase" maxlength="20">
+                                                   value="{{ $prefilledPromoCode ?? $autoAppliedOffer['offer']->code ?? '' }}"
+                                                   class="input input-bordered join-item flex-1 uppercase {{ !empty($autoAppliedOffer) ? 'bg-base-200' : '' }}"
+                                                   maxlength="20"
+                                                   {{ !empty($autoAppliedOffer) ? 'readonly' : '' }}>
                                             <button type="button" onclick="applyPromoCode()" id="apply-promo-btn"
-                                                    class="btn btn-primary join-item">
-                                                Apply
+                                                    class="btn join-item {{ !empty($autoAppliedOffer) ? 'btn-success' : 'btn-primary' }}"
+                                                    {{ !empty($autoAppliedOffer) ? 'disabled' : '' }}>
+                                                @if(!empty($autoAppliedOffer))
+                                                    <span class="icon-[tabler--check] size-4"></span>
+                                                    Applied
+                                                @else
+                                                    Apply
+                                                @endif
                                             </button>
                                         </div>
                                         <p id="promo-error" class="text-error text-sm mt-2 hidden"></p>
                                     </div>
-                                    @endif
                                 </div>
                             </div>
                             @endif
@@ -460,8 +452,8 @@
 // Store original price for calculations
 const originalPrice = {{ $item['price'] ?? 0 }};
 const currencySymbol = '{{ $currencySymbol }}';
-let appliedOfferId = null;
-let appliedDiscount = 0;
+let appliedOfferId = {{ !empty($autoAppliedOffer) ? $autoAppliedOffer['offer']->id : 'null' }};
+let appliedDiscount = {{ $autoAppliedOffer['discount_amount'] ?? 0 }};
 
 // Form submission handler
 document.getElementById('payment-form').addEventListener('submit', function(e) {
@@ -473,20 +465,14 @@ document.getElementById('payment-form').addEventListener('submit', function(e) {
     });
 });
 
-// Toggle promo code input visibility
-function togglePromoInput() {
-    const checkbox = document.getElementById('use_promo_checkbox');
-    const inputSection = document.getElementById('promo-input-section');
-
-    if (checkbox.checked) {
-        inputSection.classList.remove('hidden');
-        document.getElementById('promo_code_input').focus();
-    } else {
-        inputSection.classList.add('hidden');
-        document.getElementById('promo_code_input').value = '';
-        document.getElementById('promo-error').classList.add('hidden');
+// Auto-apply promo code from URL if present
+document.addEventListener('DOMContentLoaded', function() {
+    const promoInput = document.getElementById('promo_code_input');
+    if (promoInput && promoInput.value && !promoInput.readOnly) {
+        // If there's a prefilled code and it's not already applied, auto-apply it
+        applyPromoCode();
     }
-}
+});
 
 // Apply promo code
 function applyPromoCode() {
@@ -539,19 +525,32 @@ function applyOffer(data) {
     appliedOfferId = data.offer_id;
     appliedDiscount = data.discount_amount;
 
+    const promoInput = document.getElementById('promo_code_input');
+    const appliedCode = promoInput.value.toUpperCase();
+
     // Update hidden fields
     document.getElementById('offer_id').value = data.offer_id;
-    document.getElementById('promo_code_hidden').value = document.getElementById('promo_code_input').value.toUpperCase();
+    document.getElementById('promo_code_hidden').value = appliedCode;
     document.getElementById('discount_amount').value = data.discount_amount;
 
     // Update applied offer display
     document.getElementById('applied-offer-name').textContent = data.offer_name;
     document.getElementById('applied-offer-discount').textContent = data.discount_display + ' applied!';
 
-    // Show applied offer, hide toggle and input sections
+    // Show applied offer banner
     document.getElementById('applied-offer').classList.remove('hidden');
-    document.getElementById('promo-toggle-section').classList.add('hidden');
-    document.getElementById('promo-input-section').classList.add('hidden');
+
+    // Update input to show applied state
+    promoInput.value = appliedCode;
+    promoInput.readOnly = true;
+    promoInput.classList.add('bg-base-200');
+
+    // Change Apply button to Applied
+    const applyBtn = document.getElementById('apply-promo-btn');
+    applyBtn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Applied';
+    applyBtn.classList.remove('btn-primary');
+    applyBtn.classList.add('btn-success');
+    applyBtn.disabled = true;
 
     // Update order summary
     updateOrderSummary(data.original_price, data.discount_amount, data.final_price);
@@ -567,16 +566,25 @@ function removePromoCode() {
     document.getElementById('promo_code_hidden').value = '';
     document.getElementById('discount_amount').value = '0';
 
-    // Hide applied offer, show toggle section
+    // Hide applied offer banner
     document.getElementById('applied-offer').classList.add('hidden');
-    document.getElementById('promo-toggle-section').classList.remove('hidden');
-    document.getElementById('promo-input-section').classList.add('hidden');
-    document.getElementById('promo_code_input').value = '';
-    document.getElementById('promo-error').classList.add('hidden');
 
-    // Uncheck the checkbox
-    const checkbox = document.getElementById('use_promo_checkbox');
-    if (checkbox) checkbox.checked = false;
+    // Reset the promo input field
+    const promoInput = document.getElementById('promo_code_input');
+    promoInput.value = '';
+    promoInput.readOnly = false;
+    promoInput.classList.remove('bg-base-200');
+
+    // Reset the Apply button
+    const applyBtn = document.getElementById('apply-promo-btn');
+    applyBtn.innerHTML = 'Apply';
+    applyBtn.classList.add('btn-primary');
+    applyBtn.classList.remove('btn-success');
+    applyBtn.disabled = false;
+
+    // Show input section (in case it was hidden)
+    document.getElementById('promo-input-section').classList.remove('hidden');
+    document.getElementById('promo-error').classList.add('hidden');
 
     // Reset order summary
     updateOrderSummary(originalPrice, 0, originalPrice);

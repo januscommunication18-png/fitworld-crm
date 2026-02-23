@@ -192,6 +192,183 @@
                     </select>
                 </div>
 
+                @php
+                    $existingItems = old('applicable_item_ids', $offer->applicable_item_ids ?? []);
+                @endphp
+
+                {{-- Classes Selection --}}
+                <div id="classes-items" class="mt-4 {{ $offer->applies_to !== 'classes' ? 'hidden' : '' }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="label-text">Select Classes</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="checkbox checkbox-xs checkbox-primary" onchange="toggleAllItems('classes')">
+                            <span>Select All</span>
+                        </label>
+                    </div>
+                    @if($classPlans->isEmpty())
+                        <p class="text-sm text-base-content/60 bg-base-200/50 rounded-lg p-3">No active classes found.</p>
+                    @else
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-base-200/50 rounded-lg p-3">
+                            @foreach($classPlans as $classPlan)
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                    <input type="checkbox" name="applicable_item_ids[]" value="class_{{ $classPlan->id }}"
+                                           class="checkbox checkbox-xs checkbox-primary item-checkbox-classes"
+                                           {{ in_array('class_' . $classPlan->id, $existingItems) ? 'checked' : '' }}>
+                                    <span class="text-sm">{{ $classPlan->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Services Selection --}}
+                <div id="services-items" class="mt-4 {{ $offer->applies_to !== 'services' ? 'hidden' : '' }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="label-text">Select Services</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="checkbox checkbox-xs checkbox-primary" onchange="toggleAllItems('services')">
+                            <span>Select All</span>
+                        </label>
+                    </div>
+                    @if($servicePlans->isEmpty())
+                        <p class="text-sm text-base-content/60 bg-base-200/50 rounded-lg p-3">No active services found.</p>
+                    @else
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-base-200/50 rounded-lg p-3">
+                            @foreach($servicePlans as $servicePlan)
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                    <input type="checkbox" name="applicable_item_ids[]" value="service_{{ $servicePlan->id }}"
+                                           class="checkbox checkbox-xs checkbox-primary item-checkbox-services"
+                                           {{ in_array('service_' . $servicePlan->id, $existingItems) ? 'checked' : '' }}>
+                                    <span class="text-sm">{{ $servicePlan->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Memberships Selection --}}
+                <div id="memberships-items" class="mt-4 {{ $offer->applies_to !== 'memberships' ? 'hidden' : '' }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="label-text">Select Membership Plans</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="checkbox checkbox-xs checkbox-primary" onchange="toggleAllItems('memberships')">
+                            <span>Select All</span>
+                        </label>
+                    </div>
+                    @if($membershipPlans->isEmpty())
+                        <p class="text-sm text-base-content/60 bg-base-200/50 rounded-lg p-3">No active membership plans found.</p>
+                    @else
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-base-200/50 rounded-lg p-3">
+                            @foreach($membershipPlans as $plan)
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                    <input type="checkbox" name="applicable_item_ids[]" value="membership_{{ $plan->id }}"
+                                           class="checkbox checkbox-xs checkbox-primary item-checkbox-memberships"
+                                           {{ in_array('membership_' . $plan->id, $existingItems) ? 'checked' : '' }}>
+                                    <span class="text-sm">{{ $plan->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Class Packs Selection --}}
+                <div id="class_packs-items" class="mt-4 {{ $offer->applies_to !== 'class_packs' ? 'hidden' : '' }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="label-text">Select Class Packs</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="checkbox checkbox-xs checkbox-primary" onchange="toggleAllItems('class_packs')">
+                            <span>Select All</span>
+                        </label>
+                    </div>
+                    @if($classPacks->isEmpty())
+                        <p class="text-sm text-base-content/60 bg-base-200/50 rounded-lg p-3">No active class packs found.</p>
+                    @else
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto bg-base-200/50 rounded-lg p-3">
+                            @foreach($classPacks as $pack)
+                                <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                    <input type="checkbox" name="applicable_item_ids[]" value="pack_{{ $pack->id }}"
+                                           class="checkbox checkbox-xs checkbox-primary item-checkbox-class_packs"
+                                           {{ in_array('pack_' . $pack->id, $existingItems) ? 'checked' : '' }}>
+                                    <span class="text-sm">{{ $pack->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Specific Items Selection (all types) --}}
+                <div id="specific-items" class="mt-4 {{ $offer->applies_to !== 'specific' ? 'hidden' : '' }}">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="label-text">Select Specific Items</label>
+                        <label class="flex items-center gap-2 cursor-pointer text-sm">
+                            <input type="checkbox" class="checkbox checkbox-xs checkbox-primary" onchange="toggleAllItems('specific')">
+                            <span>Select All</span>
+                        </label>
+                    </div>
+                    <div class="max-h-64 overflow-y-auto bg-base-200/50 rounded-lg p-3 space-y-4">
+                        @if($classPlans->isNotEmpty())
+                            <div>
+                                <h4 class="text-xs font-semibold text-base-content/70 uppercase mb-2">Classes</h4>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    @foreach($classPlans as $classPlan)
+                                        <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                            <input type="checkbox" name="applicable_item_ids[]" value="class_{{ $classPlan->id }}"
+                                                   class="checkbox checkbox-xs checkbox-primary item-checkbox-specific"
+                                                   {{ in_array('class_' . $classPlan->id, $existingItems) ? 'checked' : '' }}>
+                                            <span class="text-sm">{{ $classPlan->name }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                        @if($servicePlans->isNotEmpty())
+                            <div>
+                                <h4 class="text-xs font-semibold text-base-content/70 uppercase mb-2">Services</h4>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    @foreach($servicePlans as $servicePlan)
+                                        <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                            <input type="checkbox" name="applicable_item_ids[]" value="service_{{ $servicePlan->id }}"
+                                                   class="checkbox checkbox-xs checkbox-primary item-checkbox-specific"
+                                                   {{ in_array('service_' . $servicePlan->id, $existingItems) ? 'checked' : '' }}>
+                                            <span class="text-sm">{{ $servicePlan->name }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                        @if($membershipPlans->isNotEmpty())
+                            <div>
+                                <h4 class="text-xs font-semibold text-base-content/70 uppercase mb-2">Memberships</h4>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    @foreach($membershipPlans as $plan)
+                                        <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                            <input type="checkbox" name="applicable_item_ids[]" value="membership_{{ $plan->id }}"
+                                                   class="checkbox checkbox-xs checkbox-primary item-checkbox-specific"
+                                                   {{ in_array('membership_' . $plan->id, $existingItems) ? 'checked' : '' }}>
+                                            <span class="text-sm">{{ $plan->name }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                        @if($classPacks->isNotEmpty())
+                            <div>
+                                <h4 class="text-xs font-semibold text-base-content/70 uppercase mb-2">Class Packs</h4>
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    @foreach($classPacks as $pack)
+                                        <label class="flex items-center gap-2 cursor-pointer hover:bg-base-300/50 p-1 rounded">
+                                            <input type="checkbox" name="applicable_item_ids[]" value="pack_{{ $pack->id }}"
+                                                   class="checkbox checkbox-xs checkbox-primary item-checkbox-specific"
+                                                   {{ in_array('pack_' . $pack->id, $existingItems) ? 'checked' : '' }}>
+                                            <span class="text-sm">{{ $pack->name }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
                 <div class="mt-4">
                     <label class="label-text" for="plan_scope">Plan Applicability</label>
                     <select id="plan_scope" name="plan_scope" class="select w-full">
@@ -368,10 +545,43 @@
 
     function toggleApplicableItems() {
         const appliesTo = document.getElementById('applies_to').value;
-        const container = document.getElementById('applicable-items');
-        if (container) {
-            container.classList.toggle('hidden', appliesTo !== 'specific');
+
+        // Hide all item sections first
+        document.getElementById('classes-items').classList.add('hidden');
+        document.getElementById('services-items').classList.add('hidden');
+        document.getElementById('memberships-items').classList.add('hidden');
+        document.getElementById('class_packs-items').classList.add('hidden');
+        document.getElementById('specific-items').classList.add('hidden');
+
+        // Show the appropriate section based on selection
+        switch (appliesTo) {
+            case 'classes':
+                document.getElementById('classes-items').classList.remove('hidden');
+                break;
+            case 'services':
+                document.getElementById('services-items').classList.remove('hidden');
+                break;
+            case 'memberships':
+                document.getElementById('memberships-items').classList.remove('hidden');
+                break;
+            case 'class_packs':
+                document.getElementById('class_packs-items').classList.remove('hidden');
+                break;
+            case 'specific':
+                document.getElementById('specific-items').classList.remove('hidden');
+                break;
+            // 'all' and 'retail' don't show any items
         }
+    }
+
+    function toggleAllItems(type) {
+        const checkboxes = document.querySelectorAll(`.item-checkbox-${type}`);
+        const selectAllCheckbox = event.target;
+        const isChecked = selectAllCheckbox.checked;
+
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = isChecked;
+        });
     }
 
     function toggleSegmentField() {

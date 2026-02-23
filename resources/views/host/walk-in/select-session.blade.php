@@ -362,7 +362,87 @@
                     <label class="label">
                         <span class="label-text font-medium">Class Price</span>
                     </label>
-                    <div class="text-3xl font-bold text-primary" id="display-price">$0.00</div>
+                    <div class="flex items-center gap-3">
+                        <div class="text-3xl font-bold text-primary" id="display-price">$0.00</div>
+                        <span id="original-price-display" class="text-xl text-base-content/50 line-through hidden">$0.00</span>
+                    </div>
+                    {{-- Discount Badge --}}
+                    <div id="discount-badge" class="hidden mt-2">
+                        <span class="badge badge-success gap-1">
+                            <span class="icon-[tabler--discount-check] size-4"></span>
+                            <span id="discount-badge-text">Discount Applied</span>
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Promo Code Section --}}
+                <div class="card bg-base-200/50 border border-base-300 mb-4">
+                    <div class="card-body py-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
+                                <span class="font-semibold">Promo Code</span>
+                            </div>
+                            <button type="button" onclick="refreshAvailableOffers()" class="btn btn-ghost btn-xs" title="Refresh offers">
+                                <span class="icon-[tabler--refresh] size-4" id="refresh-offers-icon"></span>
+                            </button>
+                        </div>
+                        <p class="text-xs text-base-content/60 mb-3" id="offers-client-info">
+                            Showing offers available for <span class="font-medium" id="offers-client-name">selected client</span>
+                        </p>
+
+                        {{-- Hidden fields for form submission --}}
+                        <input type="hidden" name="offer_id" id="offer_id" value="">
+                        <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
+                        <input type="hidden" name="discount_amount" id="discount_amount" value="0">
+
+                        {{-- Applied Offer Display --}}
+                        <div id="applied-offer" class="hidden mb-3">
+                            <div class="alert bg-success/10 border-success/20">
+                                <span class="icon-[tabler--discount-check] size-5 text-success"></span>
+                                <div class="flex-1">
+                                    <span class="font-semibold text-success" id="applied-offer-name"></span>
+                                    <p class="text-sm text-success/80" id="applied-offer-discount"></p>
+                                </div>
+                                <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
+                                    <span class="icon-[tabler--x] size-4"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Available Offers List --}}
+                        <div id="available-offers-section">
+                            {{-- Loading state --}}
+                            <div id="offers-loading" class="hidden py-4 text-center">
+                                <span class="loading loading-spinner loading-sm"></span>
+                                <span class="text-sm text-base-content/60 ml-2">Loading offers...</span>
+                            </div>
+
+                            {{-- No offers --}}
+                            <div id="offers-empty" class="hidden text-center py-3 text-base-content/50 text-sm">
+                                No promo codes available
+                            </div>
+
+                            {{-- Offers grid --}}
+                            <div id="offers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                                {{-- Offers will be loaded here --}}
+                            </div>
+                        </div>
+
+                        {{-- Manual Promo Code Input --}}
+                        <div id="promo-input-section">
+                            <div class="divider text-xs text-base-content/50 my-2">OR ENTER CODE</div>
+                            <div class="join w-full">
+                                <input type="text" id="promo_code_input" placeholder="Enter promo code"
+                                       class="input input-bordered input-sm join-item flex-1 uppercase" maxlength="20">
+                                <button type="button" onclick="applyPromoCode()" id="apply-promo-btn"
+                                        class="btn btn-primary btn-sm join-item">
+                                    Apply
+                                </button>
+                            </div>
+                            <p id="promo-error" class="text-error text-sm mt-2 hidden"></p>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Price Input --}}
@@ -1324,6 +1404,319 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Promo code functionality
+    let appliedOfferId = null;
+    let appliedDiscount = 0;
+    let originalClassPrice = 0;
+    let availableOffers = [];
+
+    // Fetch available offers when entering step 2
+    function fetchAvailableOffers() {
+        const offersLoading = document.getElementById('offers-loading');
+        const offersEmpty = document.getElementById('offers-empty');
+        const offersList = document.getElementById('offers-list');
+        const availableOffersSection = document.getElementById('available-offers-section');
+
+        // Client must be selected (and not a new client) to fetch offers
+        const clientInfoEl = document.getElementById('offers-client-info');
+        if (!selectedClientId || selectedClientId === 'new') {
+            offersLoading.classList.add('hidden');
+            offersEmpty.classList.remove('hidden');
+            offersEmpty.innerHTML = '<span class="icon-[tabler--info-circle] size-4 inline-block mr-1"></span>Save new client first to see applicable offers';
+            offersList.innerHTML = '';
+            availableOffers = [];
+            clientInfoEl.classList.add('hidden');
+            return;
+        }
+
+        clientInfoEl.classList.remove('hidden');
+        document.getElementById('offers-client-name').textContent = selectedClientName;
+
+        offersLoading.classList.remove('hidden');
+        offersEmpty.classList.add('hidden');
+        offersEmpty.textContent = 'No promo codes available for this client';
+        offersList.innerHTML = '';
+
+        const params = new URLSearchParams({
+            type: 'classes',
+            original_price: originalClassPrice,
+            client_id: selectedClientId,
+        });
+
+        fetch(`/walk-in/applicable-offers?${params.toString()}`)
+            .then(res => res.json())
+            .then(data => {
+                offersLoading.classList.add('hidden');
+                availableOffers = data.offers || [];
+
+                // Update client name in the info text
+                if (data.client_name) {
+                    document.getElementById('offers-client-name').textContent = data.client_name;
+                }
+
+                if (availableOffers.length === 0) {
+                    offersEmpty.classList.remove('hidden');
+                    return;
+                }
+
+                renderAvailableOffers();
+            })
+            .catch(err => {
+                console.error('Error fetching offers:', err);
+                offersLoading.classList.add('hidden');
+                offersEmpty.classList.remove('hidden');
+            });
+    }
+
+    function renderAvailableOffers() {
+        const offersList = document.getElementById('offers-list');
+
+        offersList.innerHTML = availableOffers.map(offer => `
+            <button type="button"
+                    class="offer-card flex items-center gap-3 p-3 border border-base-300 rounded-lg hover:border-primary hover:bg-primary/5 transition-all text-left ${appliedOfferId === offer.id ? 'border-success bg-success/10' : ''}"
+                    onclick="selectOffer(${offer.id})"
+                    ${appliedOfferId === offer.id ? 'disabled' : ''}>
+                <div class="size-10 rounded-lg bg-warning/20 flex items-center justify-center shrink-0">
+                    <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-medium text-sm truncate">${offer.name}</div>
+                    <div class="text-xs text-base-content/60">${offer.discount_display}</div>
+                    ${offer.code ? `<div class="text-xs font-mono text-primary">${offer.code}</div>` : ''}
+                </div>
+                ${appliedOfferId === offer.id
+                    ? '<span class="icon-[tabler--check] size-5 text-success shrink-0"></span>'
+                    : `<span class="text-sm font-bold text-success shrink-0">-$${offer.discount_amount.toFixed(2)}</span>`
+                }
+            </button>
+        `).join('');
+    }
+
+    window.selectOffer = function(offerId) {
+        const offer = availableOffers.find(o => o.id === offerId);
+        if (!offer) return;
+
+        // Apply the offer directly
+        appliedOfferId = offer.id;
+        appliedDiscount = offer.discount_amount;
+
+        // Update hidden fields
+        document.getElementById('offer_id').value = offer.id;
+        document.getElementById('promo_code_hidden').value = offer.code || '';
+        document.getElementById('discount_amount').value = offer.discount_amount;
+
+        // Update applied offer display
+        document.getElementById('applied-offer-name').textContent = offer.name;
+        document.getElementById('applied-offer-discount').textContent = offer.discount_display + ' applied!';
+        document.getElementById('applied-offer').classList.remove('hidden');
+
+        // Hide the manual input section when offer is applied
+        document.getElementById('promo-input-section').classList.add('hidden');
+
+        // Update price display
+        updatePriceWithDiscount(offer.final_price, offer.discount_display);
+
+        // Update price input if not trial
+        if (!document.getElementById('trial-class').checked) {
+            document.getElementById('price-input').value = offer.final_price.toFixed(2);
+        }
+
+        // Re-render offers to show selected state
+        renderAvailableOffers();
+    };
+
+    window.refreshAvailableOffers = function() {
+        const icon = document.getElementById('refresh-offers-icon');
+        icon.classList.add('animate-spin');
+        fetchAvailableOffers();
+        setTimeout(() => icon.classList.remove('animate-spin'), 500);
+    };
+
+    window.applyPromoCode = function() {
+        const codeInput = document.getElementById('promo_code_input');
+        const code = codeInput.value.trim().toUpperCase();
+        const applyBtn = document.getElementById('apply-promo-btn');
+        const errorEl = document.getElementById('promo-error');
+
+        if (!code) {
+            showPromoError('Please enter a promo code.');
+            return;
+        }
+
+        if (!selectedSessionData || originalClassPrice <= 0) {
+            showPromoError('Please select a class first.');
+            return;
+        }
+
+        // Show loading state
+        applyBtn.disabled = true;
+        applyBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+        errorEl.classList.add('hidden');
+
+        // Make AJAX request
+        fetch('/walk-in/validate-promo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                code: code,
+                type: 'classes',
+                original_price: originalClassPrice,
+                client_id: selectedClientId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = 'Apply';
+
+            if (data.valid) {
+                applyOffer(data);
+            } else {
+                showPromoError(data.error || 'Invalid promo code.');
+            }
+        })
+        .catch(error => {
+            applyBtn.disabled = false;
+            applyBtn.innerHTML = 'Apply';
+            showPromoError('Unable to validate promo code. Please try again.');
+            console.error('Promo validation error:', error);
+        });
+    };
+
+    function applyOffer(data) {
+        appliedOfferId = data.offer_id;
+        appliedDiscount = data.discount_amount;
+
+        const promoInput = document.getElementById('promo_code_input');
+        const appliedCode = promoInput.value.toUpperCase();
+
+        // Update hidden fields
+        document.getElementById('offer_id').value = data.offer_id;
+        document.getElementById('promo_code_hidden').value = appliedCode;
+        document.getElementById('discount_amount').value = data.discount_amount;
+
+        // Update applied offer display
+        document.getElementById('applied-offer-name').textContent = data.offer_name;
+        document.getElementById('applied-offer-discount').textContent = data.discount_display + ' applied!';
+
+        // Show applied offer banner
+        document.getElementById('applied-offer').classList.remove('hidden');
+
+        // Update input to show applied state
+        promoInput.value = appliedCode;
+        promoInput.readOnly = true;
+        promoInput.classList.add('bg-base-200');
+
+        // Change Apply button to Applied
+        const applyBtn = document.getElementById('apply-promo-btn');
+        applyBtn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Applied';
+        applyBtn.classList.remove('btn-primary');
+        applyBtn.classList.add('btn-success');
+        applyBtn.disabled = true;
+
+        // Update price display
+        updatePriceWithDiscount(data.final_price, data.discount_display);
+
+        // Update price input if not trial
+        if (!document.getElementById('trial-class').checked) {
+            document.getElementById('price-input').value = data.final_price.toFixed(2);
+        }
+    }
+
+    window.removePromoCode = function() {
+        appliedOfferId = null;
+        appliedDiscount = 0;
+
+        // Clear hidden fields
+        document.getElementById('offer_id').value = '';
+        document.getElementById('promo_code_hidden').value = '';
+        document.getElementById('discount_amount').value = '0';
+
+        // Hide applied offer banner
+        document.getElementById('applied-offer').classList.add('hidden');
+
+        // Show the manual input section again
+        document.getElementById('promo-input-section').classList.remove('hidden');
+
+        // Reset the promo input field
+        const promoInput = document.getElementById('promo_code_input');
+        promoInput.value = '';
+        promoInput.readOnly = false;
+        promoInput.classList.remove('bg-base-200');
+
+        // Reset the Apply button
+        const applyBtn = document.getElementById('apply-promo-btn');
+        applyBtn.innerHTML = 'Apply';
+        applyBtn.classList.add('btn-primary');
+        applyBtn.classList.remove('btn-success');
+        applyBtn.disabled = false;
+
+        // Clear error
+        document.getElementById('promo-error').classList.add('hidden');
+
+        // Reset price display
+        resetPriceDisplay();
+
+        // Update price input if not trial
+        if (!document.getElementById('trial-class').checked) {
+            document.getElementById('price-input').value = originalClassPrice.toFixed(2);
+        }
+
+        // Re-render offers to remove selected state
+        renderAvailableOffers();
+    };
+
+    function updatePriceWithDiscount(finalPrice, discountDisplay) {
+        const displayPriceEl = document.getElementById('display-price');
+        const originalPriceEl = document.getElementById('original-price-display');
+        const discountBadge = document.getElementById('discount-badge');
+        const discountBadgeText = document.getElementById('discount-badge-text');
+
+        // Show original price crossed out
+        originalPriceEl.textContent = '$' + originalClassPrice.toFixed(2);
+        originalPriceEl.classList.remove('hidden');
+
+        // Show discounted price
+        displayPriceEl.textContent = '$' + finalPrice.toFixed(2);
+
+        // Show discount badge
+        discountBadgeText.textContent = discountDisplay + ' Off';
+        discountBadge.classList.remove('hidden');
+    }
+
+    function resetPriceDisplay() {
+        const displayPriceEl = document.getElementById('display-price');
+        const originalPriceEl = document.getElementById('original-price-display');
+        const discountBadge = document.getElementById('discount-badge');
+
+        // Hide original price
+        originalPriceEl.classList.add('hidden');
+
+        // Reset display price
+        displayPriceEl.textContent = '$' + originalClassPrice.toFixed(2);
+
+        // Hide discount badge
+        discountBadge.classList.add('hidden');
+    }
+
+    function showPromoError(message) {
+        const errorEl = document.getElementById('promo-error');
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+    }
+
+    // Handle Enter key in promo code input
+    document.getElementById('promo_code_input')?.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            applyPromoCode();
+        }
+    });
+
     // Trial class toggle
     const trialCheckbox = document.getElementById('trial-class');
     const trialAmountInput = document.getElementById('trial-amount');
@@ -1413,15 +1806,24 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('summary-class').textContent = selectedClassPlanName;
         document.getElementById('summary-datetime').textContent = datePicker.altInput.value + ' at ' + selectedSessionData.time;
 
-        // Set price
+        // Set price and store original
         const price = selectedSessionData.price;
+        originalClassPrice = price;
         document.getElementById('display-price').textContent = '$' + price.toFixed(2);
         document.getElementById('price-input').value = price.toFixed(2);
+
+        // Reset promo code when session changes
+        if (appliedOfferId) {
+            removePromoCode();
+        }
 
         // Update form action
         document.getElementById('booking-form').action = `/walk-in/class/${selectedSessionId}`;
 
         goToStep(2);
+
+        // Fetch available offers for step 2
+        fetchAvailableOffers();
     });
 
     document.getElementById('step2-back').addEventListener('click', () => goToStep(1));
