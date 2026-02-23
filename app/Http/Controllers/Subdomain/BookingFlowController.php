@@ -13,6 +13,7 @@ use App\Models\MembershipPlan;
 use App\Models\ServicePlan;
 use App\Models\ServiceSlot;
 use App\Services\BookingFlowService;
+use App\Services\OfferService;
 use App\Services\TransactionService;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
@@ -24,11 +25,13 @@ use Stripe\Checkout\Session as StripeSession;
 class BookingFlowController extends Controller
 {
     protected BookingFlowService $bookingService;
+    protected OfferService $offerService;
     protected TransactionService $transactionService;
 
-    public function __construct(BookingFlowService $bookingService, TransactionService $transactionService)
+    public function __construct(BookingFlowService $bookingService, OfferService $offerService, TransactionService $transactionService)
     {
         $this->bookingService = $bookingService;
+        $this->offerService = $offerService;
         $this->transactionService = $transactionService;
     }
 
@@ -578,12 +581,105 @@ class BookingFlowController extends Controller
         // Get terms URL
         $termsUrl = $host->getPolicy('liability_waiver_url') ?? null;
 
+        // Check for auto-apply offers (if not using membership and has a price)
+        $autoAppliedOffer = null;
+        $price = $selectedItem['price'] ?? 0;
+
+        if (!$usingMembership && $price > 0) {
+            // Get logged in member (client) if available
+            $member = Auth::guard('member')->user();
+
+            // Determine the applies_to type based on booking type
+            $appliesTo = $this->getOfferAppliesTo($selectedItem['type'] ?? null);
+
+            // Check for auto-apply offers
+            $autoAppliedOffer = $this->offerService->getBestAutoApplyOffer(
+                $host,
+                $member,
+                $appliesTo,
+                $price
+            );
+        }
+
         return view('subdomain.booking.payment', [
             'host' => $host,
             'bookingState' => $bookingState,
             'paymentMethods' => $enabledMethods,
             'termsUrl' => $termsUrl,
             'usingMembership' => $usingMembership,
+            'autoAppliedOffer' => $autoAppliedOffer,
+        ]);
+    }
+
+    /**
+     * Map booking type to offer applies_to value
+     */
+    protected function getOfferAppliesTo(?string $bookingType): ?string
+    {
+        return match ($bookingType) {
+            'class_session' => 'classes',
+            'service_slot', 'service_plan' => 'services',
+            'membership_plan' => 'memberships',
+            'class_pack' => 'class_packs',
+            default => null,
+        };
+    }
+
+    /**
+     * AJAX: Validate a promo code
+     */
+    public function validatePromoCode(Request $request)
+    {
+        $host = $this->getHost($request);
+        $bookingState = $this->bookingService->getState($request);
+
+        $validated = $request->validate([
+            'code' => 'required|string|max:50',
+        ]);
+
+        $selectedItem = $bookingState['selected_item'] ?? [];
+        $price = $selectedItem['price'] ?? 0;
+
+        if ($price <= 0) {
+            return response()->json([
+                'valid' => false,
+                'error' => 'Promo codes cannot be applied to free items.',
+            ]);
+        }
+
+        // Get logged in member (client) if available
+        $member = Auth::guard('member')->user();
+        $appliesTo = $this->getOfferAppliesTo($selectedItem['type'] ?? null);
+
+        // Validate the promo code
+        $result = $this->offerService->validatePromoCode(
+            $host,
+            $validated['code'],
+            $member,
+            $appliesTo,
+            $price
+        );
+
+        if (!$result['valid']) {
+            return response()->json([
+                'valid' => false,
+                'error' => $result['error'],
+            ]);
+        }
+
+        $offer = $result['offer'];
+        $discountAmount = $result['discount_amount'];
+        $finalPrice = max(0, $price - $discountAmount);
+
+        return response()->json([
+            'valid' => true,
+            'offer_id' => $offer->id,
+            'offer_name' => $offer->name,
+            'discount_display' => $result['discount_display'],
+            'discount_amount' => $discountAmount,
+            'original_price' => $price,
+            'final_price' => $finalPrice,
+            'currency_symbol' => $selectedItem['currency_symbol'] ?? '$',
         ]);
     }
 
@@ -632,9 +728,15 @@ class BookingFlowController extends Controller
         $validated = $request->validate([
             'payment_method' => 'required|string',
             'terms_accepted' => 'sometimes|accepted',
+            'offer_id' => 'nullable|integer|exists:offers,id',
+            'promo_code' => 'nullable|string|max:50',
+            'discount_amount' => 'nullable|numeric|min:0',
         ]);
 
         $paymentMethod = $validated['payment_method'];
+        $offerId = $validated['offer_id'] ?? null;
+        $promoCode = $validated['promo_code'] ?? null;
+        $discountAmount = (float) ($validated['discount_amount'] ?? 0);
 
         // Get or create client
         $client = $this->bookingService->getOrCreateClient($request, $host);
@@ -643,6 +745,35 @@ class BookingFlowController extends Controller
         }
 
         $selectedItem = $bookingState['selected_item'];
+        $originalPrice = $selectedItem['price'] ?? 0;
+
+        // Verify and apply offer discount if provided
+        $offer = null;
+        $verifiedDiscount = 0;
+
+        if ($offerId && $originalPrice > 0) {
+            $offer = \App\Models\Offer::where('id', $offerId)
+                ->where('host_id', $host->id)
+                ->first();
+
+            if ($offer) {
+                $appliesTo = $this->getOfferAppliesTo($selectedItem['type'] ?? null);
+                $validation = $this->offerService->validateOffer($offer, $client, $appliesTo, $originalPrice);
+
+                if ($validation['valid']) {
+                    $verifiedDiscount = $validation['discount_amount'];
+                    // Update the selected item price with discount
+                    $selectedItem['original_price'] = $originalPrice;
+                    $selectedItem['price'] = max(0, $originalPrice - $verifiedDiscount);
+                    $selectedItem['discount_amount'] = $verifiedDiscount;
+                    $selectedItem['offer_id'] = $offer->id;
+                    $selectedItem['offer_name'] = $offer->name;
+                } else {
+                    // Offer is no longer valid, continue without discount
+                    $offer = null;
+                }
+            }
+        }
 
         // Handle membership-based booking
         if ($paymentMethod === 'membership') {
@@ -663,6 +794,15 @@ class BookingFlowController extends Controller
         );
 
         if ($isStripe) {
+            // Store offer info in booking state for Stripe success handler
+            if ($offer) {
+                $this->bookingService->setOfferInfo($request, [
+                    'offer_id' => $offer->id,
+                    'original_price' => $originalPrice,
+                    'discount_amount' => $verifiedDiscount,
+                    'promo_code' => $promoCode,
+                ]);
+            }
             // Create Stripe Checkout Session
             return $this->createStripeCheckoutSession($request, $host, $transaction, $bookingState);
         }
@@ -670,6 +810,21 @@ class BookingFlowController extends Controller
         // For manual payments, create booking/membership/etc but leave transaction as pending
         // The booking is created but payment confirmation is pending
         $booking = $this->createPendingBookingFromTransaction($transaction);
+
+        // Record offer redemption if applicable
+        if ($offer && $verifiedDiscount > 0) {
+            $this->offerService->recordRedemption(
+                $offer,
+                $client,
+                $originalPrice,
+                $verifiedDiscount,
+                'online',
+                $promoCode,
+                null,
+                $booking ? get_class($booking) : null,
+                $booking?->id
+            );
+        }
 
         // Create invoice for manual payment (as draft/pending)
         $this->createPendingInvoice($transaction);
@@ -901,7 +1056,26 @@ class BookingFlowController extends Controller
                         'stripe_payment_intent_id' => $session->payment_intent,
                     ]);
 
-                    $this->transactionService->processSuccessfulPayment($transaction);
+                    $booking = $this->transactionService->processSuccessfulPayment($transaction);
+
+                    // Record offer redemption if applicable
+                    $offerInfo = $this->bookingService->getOfferInfo($request);
+                    if ($offerInfo && !empty($offerInfo['offer_id'])) {
+                        $offer = \App\Models\Offer::find($offerInfo['offer_id']);
+                        if ($offer && $transaction->client) {
+                            $this->offerService->recordRedemption(
+                                $offer,
+                                $transaction->client,
+                                $offerInfo['original_price'],
+                                $offerInfo['discount_amount'],
+                                'online',
+                                $offerInfo['promo_code'] ?? null,
+                                null,
+                                $booking ? get_class($booking) : null,
+                                $booking?->id
+                            );
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 Log::error('Stripe session verification failed', [

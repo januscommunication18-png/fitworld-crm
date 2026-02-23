@@ -12,6 +12,7 @@ use App\Models\ServicePlan;
 use App\Models\Instructor;
 use App\Models\QuestionnaireAttachment;
 use App\Services\BookingService;
+use App\Services\OfferService;
 use App\Services\PaymentService;
 use App\Services\MembershipService;
 use App\Services\ClassPackService;
@@ -20,17 +21,20 @@ use Illuminate\Http\Request;
 class WalkInController extends Controller
 {
     protected BookingService $bookingService;
+    protected OfferService $offerService;
     protected PaymentService $paymentService;
     protected MembershipService $membershipService;
     protected ClassPackService $classPackService;
 
     public function __construct(
         BookingService $bookingService,
+        OfferService $offerService,
         PaymentService $paymentService,
         MembershipService $membershipService,
         ClassPackService $classPackService
     ) {
         $this->bookingService = $bookingService;
+        $this->offerService = $offerService;
         $this->paymentService = $paymentService;
         $this->membershipService = $membershipService;
         $this->classPackService = $classPackService;
@@ -211,6 +215,57 @@ class WalkInController extends Controller
     }
 
     /**
+     * Validate promo code (AJAX)
+     */
+    public function validatePromoCode(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'code' => 'required|string|max:50',
+            'type' => 'nullable|string|in:classes,services,memberships,class_packs,all',
+            'original_price' => 'required|numeric|min:0',
+            'client_id' => 'nullable|integer|exists:clients,id',
+        ]);
+
+        $client = null;
+        if (!empty($validated['client_id'])) {
+            $client = Client::where('host_id', $host->id)
+                ->where('id', $validated['client_id'])
+                ->first();
+        }
+
+        $result = $this->offerService->validatePromoCode(
+            $host,
+            $validated['code'],
+            $client,
+            $validated['type'] ?? null,
+            $validated['original_price']
+        );
+
+        if (!$result['valid']) {
+            return response()->json([
+                'valid' => false,
+                'error' => $result['error'],
+            ]);
+        }
+
+        $offer = $result['offer'];
+        $discountAmount = $result['discount_amount'];
+        $finalPrice = max(0, $validated['original_price'] - $discountAmount);
+
+        return response()->json([
+            'valid' => true,
+            'offer_id' => $offer->id,
+            'offer_name' => $offer->name,
+            'discount_display' => $result['discount_display'],
+            'discount_amount' => $discountAmount,
+            'original_price' => $validated['original_price'],
+            'final_price' => $finalPrice,
+        ]);
+    }
+
+    /**
      * Get payment methods for a client (AJAX)
      */
     public function getPaymentMethods(Request $request, Client $client)
@@ -251,9 +306,30 @@ class WalkInController extends Controller
             'send_intake_form' => 'boolean',
             'questionnaire_ids' => 'nullable|array',
             'questionnaire_ids.*' => 'exists:questionnaires,id',
+            'offer_id' => 'nullable|integer|exists:offers,id',
+            'promo_code' => 'nullable|string|max:50',
+            'discount_amount' => 'nullable|numeric|min:0',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
+
+        // Handle offer/discount
+        $offer = null;
+        $discountAmount = 0;
+        $originalPrice = $classSession->price ?? $classSession->classPlan?->default_price ?? 0;
+
+        if (!empty($validated['offer_id'])) {
+            $offer = \App\Models\Offer::where('id', $validated['offer_id'])
+                ->where('host_id', $host->id)
+                ->first();
+
+            if ($offer) {
+                $validation = $this->offerService->validateOffer($offer, $client, 'classes', $originalPrice);
+                if ($validation['valid']) {
+                    $discountAmount = $validation['discount_amount'];
+                }
+            }
+        }
 
         try {
             $booking = $this->bookingService->createWalkInClassBooking(
@@ -273,6 +349,21 @@ class WalkInController extends Controller
                     'send_confirmation_email' => !empty($validated['send_intake_form']),
                 ]
             );
+
+            // Record offer redemption if applicable
+            if ($offer && $discountAmount > 0) {
+                $this->offerService->recordRedemption(
+                    $offer,
+                    $client,
+                    $originalPrice,
+                    $discountAmount,
+                    'front_desk',
+                    $validated['promo_code'] ?? null,
+                    auth()->id(),
+                    get_class($booking),
+                    $booking->id
+                );
+            }
 
             return redirect()
                 ->route('schedule.calendar')
@@ -304,9 +395,30 @@ class WalkInController extends Controller
             'price_paid' => 'nullable|numeric|min:0',
             'check_in_now' => 'boolean',
             'notes' => 'nullable|string|max:500',
+            'offer_id' => 'nullable|integer|exists:offers,id',
+            'promo_code' => 'nullable|string|max:50',
+            'discount_amount' => 'nullable|numeric|min:0',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
+
+        // Handle offer/discount
+        $offer = null;
+        $discountAmount = 0;
+        $originalPrice = $serviceSlot->price ?? $serviceSlot->servicePlan?->price ?? 0;
+
+        if (!empty($validated['offer_id'])) {
+            $offer = \App\Models\Offer::where('id', $validated['offer_id'])
+                ->where('host_id', $host->id)
+                ->first();
+
+            if ($offer) {
+                $validation = $this->offerService->validateOffer($offer, $client, 'services', $originalPrice);
+                if ($validation['valid']) {
+                    $discountAmount = $validation['discount_amount'];
+                }
+            }
+        }
 
         try {
             $booking = $this->bookingService->createWalkInServiceBooking(
@@ -321,6 +433,21 @@ class WalkInController extends Controller
                     'payment_notes' => $validated['notes'] ?? null,
                 ]
             );
+
+            // Record offer redemption if applicable
+            if ($offer && $discountAmount > 0) {
+                $this->offerService->recordRedemption(
+                    $offer,
+                    $client,
+                    $originalPrice,
+                    $discountAmount,
+                    'front_desk',
+                    $validated['promo_code'] ?? null,
+                    auth()->id(),
+                    get_class($booking),
+                    $booking->id
+                );
+            }
 
             return redirect()
                 ->route('service-slots.index')

@@ -180,6 +180,67 @@
                         {{-- Payment Options --}}
                         <div class="lg:col-span-3 space-y-6">
 
+                            {{-- Promo Code Section --}}
+                            @if(empty($usingMembership) && ($item['price'] ?? 0) > 0)
+                            <div class="card bg-base-100 shadow-lg border border-base-200">
+                                <div class="card-body py-5">
+                                    {{-- Applied Offer Display --}}
+                                    <div id="applied-offer" class="hidden">
+                                        <div class="alert bg-success/10 border-success/20">
+                                            <span class="icon-[tabler--discount-check] size-5 text-success"></span>
+                                            <div class="flex-1">
+                                                <span class="font-semibold text-success" id="applied-offer-name"></span>
+                                                <p class="text-sm text-success/80" id="applied-offer-discount"></p>
+                                            </div>
+                                            <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
+                                                <span class="icon-[tabler--x] size-4"></span>
+                                            </button>
+                                        </div>
+                                        <input type="hidden" name="offer_id" id="offer_id" value="">
+                                        <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
+                                        <input type="hidden" name="discount_amount" id="discount_amount" value="0">
+                                    </div>
+
+                                    {{-- Auto-Applied Offer --}}
+                                    @if(!empty($autoAppliedOffer))
+                                    <div class="alert bg-success/10 border-success/20" id="auto-applied-offer">
+                                        <span class="icon-[tabler--sparkles] size-5 text-success"></span>
+                                        <div class="flex-1">
+                                            <span class="font-semibold text-success">{{ $autoAppliedOffer['offer']->name }}</span>
+                                            <p class="text-sm text-success/80">{{ $autoAppliedOffer['offer']->getFormattedDiscount() }} automatically applied!</p>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="offer_id" value="{{ $autoAppliedOffer['offer']->id }}">
+                                    <input type="hidden" name="discount_amount" value="{{ $autoAppliedOffer['discount_amount'] }}">
+                                    @else
+                                    {{-- Use Promo Code Checkbox --}}
+                                    <div id="promo-toggle-section">
+                                        <label class="flex items-center gap-3 cursor-pointer group">
+                                            <input type="checkbox" id="use_promo_checkbox" class="checkbox checkbox-primary checkbox-sm" onchange="togglePromoInput()">
+                                            <div class="flex items-center gap-2">
+                                                <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
+                                                <span class="font-medium group-hover:text-primary transition-colors">I have a promo code</span>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    {{-- Promo Code Input (hidden by default) --}}
+                                    <div id="promo-input-section" class="hidden mt-4">
+                                        <div class="join w-full">
+                                            <input type="text" id="promo_code_input" placeholder="Enter promo code"
+                                                   class="input input-bordered join-item flex-1 uppercase" maxlength="20">
+                                            <button type="button" onclick="applyPromoCode()" id="apply-promo-btn"
+                                                    class="btn btn-primary join-item">
+                                                Apply
+                                            </button>
+                                        </div>
+                                        <p id="promo-error" class="text-error text-sm mt-2 hidden"></p>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
+
                             {{-- Terms Agreement --}}
                             @if($termsUrl)
                             <div class="card bg-base-100 shadow-lg border border-base-200">
@@ -257,10 +318,10 @@
                                         One credit will be deducted from your membership
                                     </p>
                                     @else
-                                    <button type="submit" class="btn btn-primary btn-lg w-full gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg w-full gap-2" id="submit-btn">
                                         <span class="icon-[tabler--lock] size-5"></span>
                                         Complete Booking
-                                        <span class="ml-auto font-bold">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
+                                        <span class="ml-auto font-bold" id="btn-price">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
                                     </button>
                                     <p class="text-center text-xs text-base-content/50 mt-3">
                                         <span class="icon-[tabler--shield-check] size-4 inline-block align-text-bottom mr-1"></span>
@@ -313,6 +374,23 @@
 
                                     <div class="divider my-3"></div>
 
+                                    {{-- Subtotal --}}
+                                    <div class="flex justify-between items-center" id="subtotal-row">
+                                        <span class="text-base-content/70">Subtotal</span>
+                                        <span id="subtotal-amount">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
+                                    </div>
+
+                                    {{-- Discount Row (hidden by default) --}}
+                                    <div class="flex justify-between items-center text-success hidden" id="discount-row">
+                                        <span class="flex items-center gap-1">
+                                            <span class="icon-[tabler--discount-2] size-4"></span>
+                                            <span id="discount-label">Discount</span>
+                                        </span>
+                                        <span id="discount-value">-{{ $currencySymbol }}0.00</span>
+                                    </div>
+
+                                    <div class="divider my-2"></div>
+
                                     {{-- Total --}}
                                     <div class="flex justify-between items-center">
                                         <span class="text-lg font-bold">Total</span>
@@ -324,7 +402,10 @@
                                                 <span class="text-2xl font-bold text-success">{{ $currencySymbol }}0.00</span>
                                             </div>
                                         @else
-                                            <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
+                                            <div class="text-right" id="total-display">
+                                                <span class="text-sm text-base-content/50 line-through hidden" id="original-price-display"></span>
+                                                <span class="text-2xl font-bold text-primary" id="final-price-display">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
+                                            </div>
                                         @endif
                                     </div>
 
@@ -376,6 +457,13 @@
 
 @push('scripts')
 <script>
+// Store original price for calculations
+const originalPrice = {{ $item['price'] ?? 0 }};
+const currencySymbol = '{{ $currencySymbol }}';
+let appliedOfferId = null;
+let appliedDiscount = 0;
+
+// Form submission handler
 document.getElementById('payment-form').addEventListener('submit', function(e) {
     const submitBtns = this.querySelectorAll('button[type="submit"]');
 
@@ -384,6 +472,188 @@ document.getElementById('payment-form').addEventListener('submit', function(e) {
         btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Processing...';
     });
 });
+
+// Toggle promo code input visibility
+function togglePromoInput() {
+    const checkbox = document.getElementById('use_promo_checkbox');
+    const inputSection = document.getElementById('promo-input-section');
+
+    if (checkbox.checked) {
+        inputSection.classList.remove('hidden');
+        document.getElementById('promo_code_input').focus();
+    } else {
+        inputSection.classList.add('hidden');
+        document.getElementById('promo_code_input').value = '';
+        document.getElementById('promo-error').classList.add('hidden');
+    }
+}
+
+// Apply promo code
+function applyPromoCode() {
+    const codeInput = document.getElementById('promo_code_input');
+    const code = codeInput.value.trim().toUpperCase();
+    const applyBtn = document.getElementById('apply-promo-btn');
+    const errorEl = document.getElementById('promo-error');
+
+    if (!code) {
+        showPromoError('Please enter a promo code.');
+        return;
+    }
+
+    // Show loading state
+    applyBtn.disabled = true;
+    applyBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+    errorEl.classList.add('hidden');
+
+    // Make AJAX request
+    fetch('{{ route("booking.validate-promo", ["subdomain" => $host->subdomain]) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ code: code })
+    })
+    .then(response => response.json())
+    .then(data => {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = 'Apply';
+
+        if (data.valid) {
+            applyOffer(data);
+        } else {
+            showPromoError(data.error || 'Invalid promo code.');
+        }
+    })
+    .catch(error => {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = 'Apply';
+        showPromoError('Unable to validate promo code. Please try again.');
+        console.error('Promo validation error:', error);
+    });
+}
+
+// Apply the offer to the UI
+function applyOffer(data) {
+    appliedOfferId = data.offer_id;
+    appliedDiscount = data.discount_amount;
+
+    // Update hidden fields
+    document.getElementById('offer_id').value = data.offer_id;
+    document.getElementById('promo_code_hidden').value = document.getElementById('promo_code_input').value.toUpperCase();
+    document.getElementById('discount_amount').value = data.discount_amount;
+
+    // Update applied offer display
+    document.getElementById('applied-offer-name').textContent = data.offer_name;
+    document.getElementById('applied-offer-discount').textContent = data.discount_display + ' applied!';
+
+    // Show applied offer, hide toggle and input sections
+    document.getElementById('applied-offer').classList.remove('hidden');
+    document.getElementById('promo-toggle-section').classList.add('hidden');
+    document.getElementById('promo-input-section').classList.add('hidden');
+
+    // Update order summary
+    updateOrderSummary(data.original_price, data.discount_amount, data.final_price);
+}
+
+// Remove promo code
+function removePromoCode() {
+    appliedOfferId = null;
+    appliedDiscount = 0;
+
+    // Clear hidden fields
+    document.getElementById('offer_id').value = '';
+    document.getElementById('promo_code_hidden').value = '';
+    document.getElementById('discount_amount').value = '0';
+
+    // Hide applied offer, show toggle section
+    document.getElementById('applied-offer').classList.add('hidden');
+    document.getElementById('promo-toggle-section').classList.remove('hidden');
+    document.getElementById('promo-input-section').classList.add('hidden');
+    document.getElementById('promo_code_input').value = '';
+    document.getElementById('promo-error').classList.add('hidden');
+
+    // Uncheck the checkbox
+    const checkbox = document.getElementById('use_promo_checkbox');
+    if (checkbox) checkbox.checked = false;
+
+    // Reset order summary
+    updateOrderSummary(originalPrice, 0, originalPrice);
+}
+
+// Update order summary display
+function updateOrderSummary(subtotal, discount, total) {
+    const discountRow = document.getElementById('discount-row');
+    const originalPriceDisplay = document.getElementById('original-price-display');
+    const finalPriceDisplay = document.getElementById('final-price-display');
+    const btnPrice = document.getElementById('btn-price');
+
+    if (discount > 0) {
+        // Show discount row
+        discountRow.classList.remove('hidden');
+        document.getElementById('discount-value').textContent = '-' + currencySymbol + discount.toFixed(2);
+
+        // Show original price strikethrough
+        if (originalPriceDisplay) {
+            originalPriceDisplay.textContent = currencySymbol + subtotal.toFixed(2);
+            originalPriceDisplay.classList.remove('hidden');
+        }
+
+        // Update final price with success color
+        if (finalPriceDisplay) {
+            finalPriceDisplay.textContent = currencySymbol + total.toFixed(2);
+            finalPriceDisplay.classList.remove('text-primary');
+            finalPriceDisplay.classList.add('text-success');
+        }
+    } else {
+        // Hide discount row
+        discountRow.classList.add('hidden');
+
+        // Hide original price
+        if (originalPriceDisplay) {
+            originalPriceDisplay.classList.add('hidden');
+        }
+
+        // Reset final price color
+        if (finalPriceDisplay) {
+            finalPriceDisplay.textContent = currencySymbol + total.toFixed(2);
+            finalPriceDisplay.classList.add('text-primary');
+            finalPriceDisplay.classList.remove('text-success');
+        }
+    }
+
+    // Update button price
+    if (btnPrice) {
+        btnPrice.textContent = currencySymbol + total.toFixed(2);
+    }
+}
+
+// Show promo error
+function showPromoError(message) {
+    const errorEl = document.getElementById('promo-error');
+    errorEl.textContent = message;
+    errorEl.classList.remove('hidden');
+}
+
+// Handle Enter key in promo code input
+document.getElementById('promo_code_input')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        applyPromoCode();
+    }
+});
+
+@if(!empty($autoAppliedOffer))
+// Auto-apply offer on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateOrderSummary(
+        {{ $item['price'] ?? 0 }},
+        {{ $autoAppliedOffer['discount_amount'] ?? 0 }},
+        {{ max(0, ($item['price'] ?? 0) - ($autoAppliedOffer['discount_amount'] ?? 0)) }}
+    );
+});
+@endif
 </script>
 @endpush
 @endsection

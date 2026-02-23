@@ -81,6 +81,25 @@ class BookingFlowService
     }
 
     /**
+     * Set offer info (for Stripe checkout flow)
+     */
+    public function setOfferInfo(Request $request, array $offerInfo): void
+    {
+        $state = $this->getState($request);
+        $state['offer_info'] = $offerInfo;
+        $request->session()->put(self::SESSION_KEY, $state);
+    }
+
+    /**
+     * Get offer info
+     */
+    public function getOfferInfo(Request $request): ?array
+    {
+        $state = $this->getState($request);
+        return $state['offer_info'] ?? null;
+    }
+
+    /**
      * Clear the booking state
      */
     public function clearState(Request $request): void

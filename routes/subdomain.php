@@ -96,6 +96,9 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::get('/book/payment', [BookingFlowController::class, 'payment'])->name('booking.payment');
         Route::post('/book/payment', [BookingFlowController::class, 'processPayment'])->name('booking.payment.process');
 
+        // Promo Code Validation (AJAX)
+        Route::post('/book/validate-promo', [BookingFlowController::class, 'validatePromoCode'])->name('booking.validate-promo');
+
         // Stripe callbacks
         Route::get('/book/stripe/success/{transaction}', [BookingFlowController::class, 'stripeSuccess'])->name('booking.stripe-success');
         Route::get('/book/stripe/cancel/{transaction}', [BookingFlowController::class, 'stripeCancel'])->name('booking.stripe-cancel');
