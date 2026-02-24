@@ -668,6 +668,34 @@
         </div>
         @endif
 
+        {{-- Status --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">6</span>
+                    <h3 class="card-title">Status</h3>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="flex flex-wrap gap-3">
+                    @foreach($statuses as $value => $label)
+                        @if($value !== 'completed' && $value !== 'cancelled')
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="status" value="{{ $value }}"
+                                class="radio radio-primary"
+                                {{ old('status', $classSession?->status ?? 'draft') === $value ? 'checked' : '' }}>
+                            <span class="label-text">{{ $label }}</span>
+                            @if($value === 'published')
+                                <span class="badge badge-success badge-sm">Live</span>
+                            @endif
+                        </label>
+                        @endif
+                    @endforeach
+                </div>
+                <p class="text-xs text-base-content/60 mt-2">Published sessions are visible to clients and open for booking.</p>
+            </div>
+        </div>
+
         {{-- Actions --}}
         <div class="flex items-center gap-4 pt-4">
             <button type="submit" class="btn btn-primary">

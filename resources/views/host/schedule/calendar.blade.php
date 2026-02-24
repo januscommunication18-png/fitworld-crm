@@ -55,20 +55,36 @@
             <div class="relative">
                 <button type="button" class="btn btn-primary" onclick="toggleDropdown('schedule-dropdown')">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Add Class
+                    Add Schedule
                     <span class="icon-[tabler--chevron-down] size-4"></span>
                 </button>
-                <ul id="schedule-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
+                <ul id="schedule-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-72 p-2 shadow-lg border border-base-300 z-50">
+                    <li class="menu-title text-xs uppercase tracking-wider text-base-content/50 px-2 pt-2">Schedule Type</li>
                     <li>
-                        <a href="{{ route('class-sessions.create') }}">
-                            <span class="icon-[tabler--yoga] size-5 text-primary"></span>
-                            Class Session
+                        <a href="{{ route('class-sessions.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                            <span class="flex items-center gap-2">
+                                <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                                <span class="font-medium">Class</span>
+                            </span>
+                            <span class="text-xs text-base-content/60 ml-7">Single or recurring class session</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('service-slots.create') }}">
-                            <span class="icon-[tabler--massage] size-5 text-success"></span>
-                            Service Slot
+                        <a href="{{ route('service-slots.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                            <span class="flex items-center gap-2">
+                                <span class="icon-[tabler--massage] size-5 text-success"></span>
+                                <span class="font-medium">Service</span>
+                            </span>
+                            <span class="text-xs text-base-content/60 ml-7">1-on-1 appointment slot</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('scheduled-membership.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                            <span class="flex items-center gap-2">
+                                <span class="icon-[tabler--calendar-user] size-5 text-warning"></span>
+                                <span class="font-medium">Membership Schedule</span>
+                            </span>
+                            <span class="text-xs text-base-content/60 ml-7">Recurring classes for membership holders</span>
                         </a>
                     </li>
                 </ul>
@@ -83,10 +99,11 @@
                 {{-- Type Filter --}}
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--category] size-4 text-base-content/60"></span>
-                    <select id="filter-type" class="select select-sm w-40 select-bordered">
+                    <select id="filter-type" class="select select-sm w-44 select-bordered">
                         <option value="all">All Types</option>
                         <option value="class">Classes Only</option>
                         <option value="service">Services Only</option>
+                        <option value="membership">Membership Only</option>
                     </select>
                 </div>
 
@@ -137,15 +154,19 @@
                 {{-- Legend --}}
                 <div class="flex items-center gap-4 ml-auto">
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-primary shadow-sm"></span>
+                        <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #6366f1;"></span>
                         <span class="text-sm font-medium text-base-content">Class</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-success shadow-sm"></span>
+                        <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #10b981;"></span>
                         <span class="text-sm font-medium text-base-content">Service</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full bg-warning shadow-sm"></span>
+                        <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #8b5cf6;"></span>
+                        <span class="text-sm font-medium text-base-content">Membership</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #f59e0b;"></span>
                         <span class="text-sm font-medium text-base-content">Draft</span>
                     </div>
                 </div>
@@ -290,6 +311,20 @@
         color: #ffffff !important;
     }
 
+    /* Membership Sessions - Violet */
+    #studio-calendar .fc-event-secondary,
+    #studio-calendar .fc .fc-event.fc-event-secondary,
+    #studio-calendar .fc-event.fc-event-secondary {
+        background-color: #8b5cf6 !important;
+        border-color: #8b5cf6 !important;
+        color: #ffffff !important;
+    }
+    #studio-calendar .fc-event-secondary *,
+    #studio-calendar .fc .fc-event.fc-event-secondary *,
+    #studio-calendar .fc-event.fc-event-secondary * {
+        color: #ffffff !important;
+    }
+
     #studio-calendar .fc-event-warning,
     #studio-calendar .fc .fc-event.fc-event-warning,
     #studio-calendar .fc-event.fc-event-warning {
@@ -375,6 +410,17 @@
         color: #ffffff !important;
     }
 
+    #studio-calendar .fc .fc-daygrid-event.fc-event-secondary,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-secondary {
+        background-color: #8b5cf6 !important;
+    }
+    #studio-calendar .fc .fc-daygrid-event.fc-event-secondary .fc-event-title,
+    #studio-calendar .fc .fc-daygrid-event.fc-event-secondary .fc-event-time,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-secondary .fc-event-title,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-secondary .fc-event-time {
+        color: #ffffff !important;
+    }
+
     #studio-calendar .fc .fc-daygrid-event.fc-event-warning,
     #studio-calendar .fc .fc-daygrid-dot-event.fc-event-warning {
         background-color: #f59e0b !important;
@@ -430,6 +476,16 @@
     #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-time,
     #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-title,
     #studio-calendar .fc .fc-timegrid-event.fc-event-success .fc-event-title-container {
+        color: #ffffff !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-secondary,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-secondary *,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-secondary .fc-event-main,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-secondary .fc-event-main-frame,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-secondary .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-secondary .fc-event-title,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-secondary .fc-event-title-container {
         color: #ffffff !important;
     }
 
@@ -700,6 +756,9 @@
     #studio-calendar .fc .fc-list-event.fc-event-success .fc-list-event-dot {
         border-color: #10b981 !important;
     }
+    #studio-calendar .fc .fc-list-event.fc-event-secondary .fc-list-event-dot {
+        border-color: #8b5cf6 !important;
+    }
     #studio-calendar .fc .fc-list-event.fc-event-warning .fc-list-event-dot {
         border-color: #f59e0b !important;
     }
@@ -904,6 +963,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         let colorClass = 'fc-event-primary';
                         if (event.extendedProps.type === 'service') {
                             colorClass = 'fc-event-success';
+                        } else if (event.extendedProps.type === 'membership' || event.extendedProps.isMembershipSession) {
+                            colorClass = 'fc-event-secondary';
                         }
                         if (event.extendedProps.status === 'draft') {
                             colorClass = 'fc-event-warning';

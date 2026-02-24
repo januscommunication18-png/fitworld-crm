@@ -55,6 +55,8 @@ class ClassSession extends Model
             'conflict_resolved_at' => 'datetime',
             'has_scheduling_conflict' => 'boolean',
             'price' => 'decimal:2',
+            'duration_minutes' => 'integer',
+            'capacity' => 'integer',
         ];
     }
 
@@ -121,6 +123,15 @@ class ClassSession extends Model
     {
         return $this->morphMany(Booking::class, 'bookable')
             ->where('status', Booking::STATUS_CONFIRMED);
+    }
+
+    /**
+     * Membership plans linked to this session for scheduled auto-enrollment
+     */
+    public function membershipPlans(): BelongsToMany
+    {
+        return $this->belongsToMany(MembershipPlan::class, 'class_session_membership_plan')
+            ->withTimestamps();
     }
 
     // Scopes

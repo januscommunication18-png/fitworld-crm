@@ -356,15 +356,15 @@ class TeamController extends Controller
                 // Link user to instructor
                 $existingInstructor->update(['user_id' => $user->id]);
             } else {
-                // Create new instructor record - inactive until employment details are filled
+                // Create new instructor record
                 $instructor = Instructor::create([
                     'host_id' => $host->id,
                     'user_id' => $user->id,
                     'name' => $user->full_name,
                     'email' => $user->email,
-                    'is_active' => false, // Inactive until employment details are filled
+                    'is_active' => true,
                     'is_visible' => false,
-                    'status' => Instructor::STATUS_PENDING,
+                    'status' => Instructor::STATUS_ACTIVE,
                 ]);
                 $instructorId = $instructor->id;
             }
@@ -562,8 +562,6 @@ class TeamController extends Controller
      */
     protected function extractInstructorData(array $validated, string $fullName, ?string $email): array
     {
-        $profileComplete = !empty($validated['employment_type']) && !empty($validated['rate_type']);
-
         return [
             'name' => $fullName,
             'email' => $email,
@@ -581,9 +579,9 @@ class TeamController extends Controller
             'availability_default_from' => $validated['availability_default_from'] ?? null,
             'availability_default_to' => $validated['availability_default_to'] ?? null,
             'availability_by_day' => $validated['availability_by_day'] ?? null,
-            'is_active' => $profileComplete,
+            'is_active' => true,
             'is_visible' => false,
-            'status' => $profileComplete ? Instructor::STATUS_ACTIVE : Instructor::STATUS_PENDING,
+            'status' => Instructor::STATUS_ACTIVE,
         ];
     }
 
@@ -727,15 +725,15 @@ class TeamController extends Controller
                 // Link user to instructor
                 $existingInstructor->update(['user_id' => $user->id]);
             } else {
-                // Create new instructor record - inactive until employment details are filled
+                // Create new instructor record
                 $instructor = Instructor::create([
                     'host_id' => $host->id,
                     'user_id' => $user->id,
                     'name' => $user->full_name,
                     'email' => $user->email,
-                    'is_active' => false, // Inactive until employment details are filled
+                    'is_active' => true,
                     'is_visible' => false,
-                    'status' => Instructor::STATUS_PENDING,
+                    'status' => Instructor::STATUS_ACTIVE,
                 ]);
                 $instructorId = $instructor->id;
             }

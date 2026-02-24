@@ -69,82 +69,6 @@
                     </div>
                 </div>
 
-                {{-- Scheduled Class Toggle --}}
-                <div>
-                    <label class="label-text mb-2 block" for="has_scheduled_class">Is there scheduled class for membership?</label>
-                    <div class="flex gap-4">
-                        <label class="custom-option flex items-center gap-2 px-4 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                            <input type="radio" name="has_scheduled_class" value="1"
-                                class="radio radio-primary radio-sm"
-                                {{ old('has_scheduled_class', $membershipPlan?->has_scheduled_class ?? false) ? 'checked' : '' }}
-                                onchange="toggleScheduledClassSection()">
-                            <span class="label-text font-medium">Yes</span>
-                        </label>
-                        <label class="custom-option flex items-center gap-2 px-4 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                            <input type="radio" name="has_scheduled_class" value="0"
-                                class="radio radio-primary radio-sm"
-                                {{ !old('has_scheduled_class', $membershipPlan?->has_scheduled_class ?? false) ? 'checked' : '' }}
-                                onchange="toggleScheduledClassSection()">
-                            <span class="label-text font-medium">No</span>
-                        </label>
-                    </div>
-                    <p class="text-xs text-base-content/60 mt-2">
-                        <strong>Yes:</strong> Members attend classes at specific scheduled times (e.g., yoga, fitness classes)<br>
-                        <strong>No:</strong> Members can visit anytime for self-workout (e.g., gym access)
-                    </p>
-                    @error('has_scheduled_class')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Scheduled Classes Selection (shown when has_scheduled_class = YES) --}}
-                <div id="scheduled-classes-section" class="{{ old('has_scheduled_class', $membershipPlan?->has_scheduled_class ?? false) ? '' : 'hidden' }}">
-                    <div class="alert alert-soft alert-info mb-3">
-                        <span class="icon-[tabler--calendar-event] size-5"></span>
-                        <div>
-                            <p class="font-medium">Scheduled Class Membership</p>
-                            <p class="text-sm">Members will be automatically enrolled into upcoming sessions of the selected classes.</p>
-                        </div>
-                    </div>
-
-                    <label class="label-text mb-2 block">Select Classes for Auto-Enrollment</label>
-                    @if($classPlans->isEmpty())
-                        <p class="text-base-content/60 text-sm">No active class plans available. <a href="{{ route('class-plans.create') }}" class="link link-primary">Create one first</a>.</p>
-                    @else
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-base-content/60">{{ $classPlans->count() }} classes available</span>
-                            <label class="flex items-center gap-2 cursor-pointer text-sm">
-                                <input type="checkbox" class="checkbox checkbox-xs checkbox-primary" onchange="toggleAllScheduledClasses(this)">
-                                <span>Select All</span>
-                            </label>
-                        </div>
-                        <div class="max-h-64 overflow-y-auto border border-base-300 rounded-lg p-3 space-y-2 bg-base-200/30">
-                            @foreach($classPlans as $classPlan)
-                                <label class="flex items-center gap-3 cursor-pointer hover:bg-base-200 p-2 rounded transition-colors">
-                                    <input type="checkbox" name="scheduled_class_plan_ids[]" value="{{ $classPlan->id }}"
-                                        class="checkbox checkbox-primary checkbox-sm scheduled-class-checkbox"
-                                        {{ in_array($classPlan->id, old('scheduled_class_plan_ids', $selectedClassPlanIds)) ? 'checked' : '' }}>
-                                    <div class="flex items-center gap-2 flex-1">
-                                        <span class="w-3 h-3 rounded-full shrink-0" style="background-color: {{ $classPlan->color }}"></span>
-                                        <span class="font-medium">{{ $classPlan->name }}</span>
-                                        <span class="badge badge-ghost badge-xs">{{ ucfirst($classPlan->category) }}</span>
-                                    </div>
-                                    @if($classPlan->default_duration)
-                                        <span class="text-xs text-base-content/60">{{ $classPlan->default_duration }} min</span>
-                                    @endif
-                                </label>
-                            @endforeach
-                        </div>
-                        <p class="text-xs text-base-content/60 mt-2">
-                            <span class="icon-[tabler--info-circle] size-3 inline-block"></span>
-                            When a member subscribes, they will be auto-booked into all upcoming sessions of selected classes.
-                        </p>
-                    @endif
-                    @error('scheduled_class_plan_ids')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
                 {{-- Multi-Currency Pricing --}}
                 <div>
                     <label class="label-text mb-2 block">Pricing by Currency</label>
@@ -331,51 +255,8 @@
         </div>
         @endif
 
-        {{-- Eligibility --}}
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <h3 class="card-title">Class Eligibility</h3>
-            </div>
-            <div class="card-body space-y-4">
-                <div>
-                    <label class="label-text" for="eligibility_scope">Which classes does this membership cover?</label>
-                    <select id="eligibility_scope" name="eligibility_scope" class="select w-full @error('eligibility_scope') input-error @enderror" required>
-                        @foreach($eligibilityScopes as $value => $label)
-                            <option value="{{ $value }}" {{ old('eligibility_scope', $membershipPlan?->eligibility_scope ?? 'all_classes') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    @error('eligibility_scope')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                {{-- Class Plans selection (shown when eligibility is selected) --}}
-                <div id="class-plans-section" class="{{ old('eligibility_scope', $membershipPlan?->eligibility_scope ?? 'all_classes') !== 'selected_class_plans' ? 'hidden' : '' }}">
-                    <label class="label-text mb-2 block">Select Class Plans</label>
-                    @if($classPlans->isEmpty())
-                        <p class="text-base-content/60 text-sm">No active class plans available. <a href="{{ route('class-plans.create') }}" class="link link-primary">Create one first</a>.</p>
-                    @else
-                        <div class="max-h-64 overflow-y-auto border border-base-300 rounded-lg p-3 space-y-2">
-                            @foreach($classPlans as $classPlan)
-                                <label class="flex items-center gap-3 cursor-pointer hover:bg-base-200 p-2 rounded">
-                                    <input type="checkbox" name="class_plan_ids[]" value="{{ $classPlan->id }}"
-                                        class="checkbox checkbox-primary checkbox-sm"
-                                        {{ in_array($classPlan->id, old('class_plan_ids', $selectedClassPlanIds)) ? 'checked' : '' }}>
-                                    <div class="flex items-center gap-2 flex-1">
-                                        <span class="w-3 h-3 rounded-full" style="background-color: {{ $classPlan->color }}"></span>
-                                        <span class="font-medium">{{ $classPlan->name }}</span>
-                                        <span class="text-xs text-base-content/60">{{ ucfirst($classPlan->category) }}</span>
-                                    </div>
-                                </label>
-                            @endforeach
-                        </div>
-                    @endif
-                    @error('class_plan_ids')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
-        </div>
+        {{-- Default eligibility scope (all classes) --}}
+        <input type="hidden" name="eligibility_scope" value="all_classes">
 
         {{-- Location Scope --}}
         <div class="card bg-base-100">
@@ -523,36 +404,6 @@
         }
     });
 
-    // Toggle scheduled classes section based on has_scheduled_class
-    function toggleScheduledClassSection() {
-        var scheduledSection = document.getElementById('scheduled-classes-section');
-        var hasScheduledClass = document.querySelector('input[name="has_scheduled_class"]:checked')?.value === '1';
-
-        if (hasScheduledClass) {
-            scheduledSection.classList.remove('hidden');
-        } else {
-            scheduledSection.classList.add('hidden');
-        }
-    }
-
-    // Toggle all scheduled class checkboxes
-    function toggleAllScheduledClasses(selectAllCheckbox) {
-        var checkboxes = document.querySelectorAll('.scheduled-class-checkbox');
-        checkboxes.forEach(function(checkbox) {
-            checkbox.checked = selectAllCheckbox.checked;
-        });
-    }
-
-    // Toggle class plans section based on eligibility scope
-    document.getElementById('eligibility_scope').addEventListener('change', function() {
-        var classPlansSection = document.getElementById('class-plans-section');
-        if (this.value === 'selected_class_plans') {
-            classPlansSection.classList.remove('hidden');
-        } else {
-            classPlansSection.classList.add('hidden');
-        }
-    });
-
     // Toggle locations section based on location scope
     document.getElementById('location_scope_type').addEventListener('change', function() {
         var locationsSection = document.getElementById('locations-section');
@@ -562,8 +413,5 @@
             locationsSection.classList.add('hidden');
         }
     });
-
-    // Initialize on page load
-    toggleScheduledClassSection();
 </script>
 @endpush

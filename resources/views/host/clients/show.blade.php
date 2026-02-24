@@ -389,6 +389,12 @@
                         <div class="card-body">
                             <h2 class="card-title text-lg">Membership</h2>
                             <div class="space-y-4 mt-4">
+                                @if(isset($activeCustomerMembership) && $activeCustomerMembership->membershipPlan)
+                                <div class="flex justify-between">
+                                    <span class="text-base-content/60">Plan</span>
+                                    <span class="font-medium">{{ $activeCustomerMembership->membershipPlan->name }}</span>
+                                </div>
+                                @endif
                                 <div class="flex justify-between">
                                     <span class="text-base-content/60">Status</span>
                                     @php

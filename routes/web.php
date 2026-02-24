@@ -33,6 +33,7 @@ use App\Http\Controllers\Host\RentalFulfillmentController;
 use App\Http\Controllers\Host\RentalInvoiceController;
 use App\Http\Controllers\Host\QuestionnaireController;
 use App\Http\Controllers\Host\WalkInController;
+use App\Http\Controllers\Host\ScheduledMembershipController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\QuestionnaireResponseController;
 use App\Http\Controllers\SecurityCodeController;
@@ -293,6 +294,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/class-sessions/{class_session}/promote-backup', [ClassSessionController::class, 'promoteBackup'])->name('class-sessions.promote-backup');
     Route::post('/class-sessions/{class_session}/duplicate', [ClassSessionController::class, 'duplicate'])->name('class-sessions.duplicate');
     Route::patch('/class-sessions/{class_session}/resolve-conflict', [ClassSessionController::class, 'resolveConflict'])->name('class-sessions.resolve-conflict');
+
+    // Scheduled Membership Classes
+    Route::get('/membership-schedules', [ScheduledMembershipController::class, 'index'])->name('membership-schedules.index');
+    Route::get('/scheduled-membership/create', [ScheduledMembershipController::class, 'create'])->name('scheduled-membership.create');
+    Route::post('/scheduled-membership', [ScheduledMembershipController::class, 'store'])->name('scheduled-membership.store');
 
     // Walk-In Booking
     Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');

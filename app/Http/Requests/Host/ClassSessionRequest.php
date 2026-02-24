@@ -64,12 +64,10 @@ class ClassSessionRequest extends FormRequest
             'recurrence_end_type' => 'nullable|required_if:is_recurring,true|in:never,after,on',
             'recurrence_count' => 'nullable|required_if:recurrence_end_type,after|integer|min:2|max:52',
             'recurrence_end_date' => 'nullable|required_if:recurrence_end_type,on|date|after:session_date',
-        ];
 
-        // For updates, add status validation
-        if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $rules['status'] = ['nullable', Rule::in(array_keys(ClassSession::getStatuses()))];
-        }
+            // Status
+            'status' => ['nullable', Rule::in(array_keys(ClassSession::getStatuses()))],
+        ];
 
         return $rules;
     }

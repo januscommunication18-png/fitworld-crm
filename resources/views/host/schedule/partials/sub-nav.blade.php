@@ -16,6 +16,10 @@
         <span class="icon-[tabler--massage] size-4 mr-2"></span>
         Services
     </a>
+    <a href="{{ route('membership-schedules.index') }}" class="tab whitespace-nowrap {{ request()->routeIs('membership-schedules.*', 'scheduled-membership.*') ? 'tab-active' : '' }}">
+        <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>
+        Memberships
+    </a>
     <a href="{{ route('schedule.requests') }}" class="tab whitespace-nowrap {{ request()->routeIs('schedule.requests') ? 'tab-active' : '' }}">
         <span class="icon-[tabler--message-question] size-4 mr-2"></span>
         Requests

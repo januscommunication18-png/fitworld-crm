@@ -97,11 +97,67 @@ class ServiceSlotController extends Controller
         $data = $request->validated();
         $data['host_id'] = $host->id;
 
-        // Calculate end time based on service plan duration
+        // Get service plan for duration
         $servicePlan = ServicePlan::find($data['service_plan_id']);
-        $startTime = Carbon::parse($data['start_time']);
-        $data['end_time'] = $startTime->copy()->addMinutes($servicePlan->duration_minutes);
+        $durationMinutes = $servicePlan->duration_minutes;
 
+        // Parse start time
+        $startTime = Carbon::parse($data['start_time']);
+        $data['end_time'] = $startTime->copy()->addMinutes($durationMinutes);
+
+        // Set status (default to draft if not provided)
+        $data['status'] = $request->status ?? ServiceSlot::STATUS_DRAFT;
+
+        // Check if recurring
+        $isRecurring = $request->boolean('is_recurring');
+        $recurrenceDays = $request->recurrence_days ?? [];
+
+        if ($isRecurring && !empty($recurrenceDays)) {
+            // Create recurring slots
+            $createdCount = 0;
+            $endDate = $request->recurrence_end_date
+                ? Carbon::parse($request->recurrence_end_date)
+                : $startTime->copy()->addWeeks(12);
+
+            $currentDate = $startTime->copy();
+
+            while ($currentDate->lte($endDate) && $createdCount < 52) {
+                $dayOfWeek = $currentDate->dayOfWeek;
+
+                if (in_array((string) $dayOfWeek, $recurrenceDays)) {
+                    $slotStartTime = $currentDate->copy()->setTimeFrom($startTime);
+                    $slotEndTime = $slotStartTime->copy()->addMinutes($durationMinutes);
+
+                    // Check for overlapping slots
+                    if (!$this->hasOverlappingSlot($host->id, $data['instructor_id'], $slotStartTime, $slotEndTime)) {
+                        ServiceSlot::create([
+                            'host_id' => $host->id,
+                            'service_plan_id' => $data['service_plan_id'],
+                            'instructor_id' => $data['instructor_id'],
+                            'location_id' => $data['location_id'] ?? null,
+                            'room_id' => $data['room_id'] ?? null,
+                            'start_time' => $slotStartTime,
+                            'end_time' => $slotEndTime,
+                            'price' => $data['price'] ?? null,
+                            'status' => $data['status'],
+                            'notes' => $data['notes'] ?? null,
+                        ]);
+                        $createdCount++;
+                    }
+                }
+
+                $currentDate->addDay();
+            }
+
+            $message = $createdCount > 1
+                ? "Created {$createdCount} service slots successfully."
+                : 'Service slot created successfully.';
+
+            return redirect()->route('service-slots.index')
+                ->with('success', $message);
+        }
+
+        // Single slot creation
         // Check for overlapping slots
         if ($this->hasOverlappingSlot($host->id, $data['instructor_id'], $startTime, $data['end_time'])) {
             return back()->withInput()->with('error', 'This slot overlaps with an existing slot for this instructor.');

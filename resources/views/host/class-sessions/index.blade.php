@@ -217,7 +217,7 @@
                     $dateObj = \Carbon\Carbon::parse($dateKey);
                     $isToday = $dateObj->isToday();
                 @endphp
-                <div class="card bg-base-100">
+                <div id="date-{{ $dateKey }}" class="card bg-base-100" @if($isToday) data-today="true" @endif>
                     {{-- Date Header --}}
                     <div class="px-4 py-3 border-b border-base-200">
                         <div class="flex items-center gap-3">
@@ -268,9 +268,11 @@
                                                 <div>
                                                     @if($session->title)
                                                         <div class="font-medium">{{ $session->title }}</div>
-                                                        <div class="text-xs text-base-content/60">{{ $session->classPlan->name }}</div>
+                                                        @if($session->classPlan)
+                                                            <div class="text-xs text-base-content/60">{{ $session->classPlan->name }}</div>
+                                                        @endif
                                                     @else
-                                                        <div class="font-medium">{{ $session->classPlan->name ?? 'Untitled' }}</div>
+                                                        <div class="font-medium">{{ $session->classPlan->name ?? 'Membership Session' }}</div>
                                                     @endif
                                                 </div>
                                             </div>
@@ -553,6 +555,50 @@ function closeAllDrawers() {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeAllDrawers();
+    }
+});
+
+// Auto-scroll to today's date or nearest future date on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const today = '{{ now()->format('Y-m-d') }}';
+    console.log('Today:', today);
+
+    // First try to find today's card
+    let targetCard = document.querySelector('[data-today="true"]');
+    console.log('Today card found:', targetCard);
+
+    // If no today card, find the nearest future date
+    if (!targetCard) {
+        const allDateCards = document.querySelectorAll('[id^="date-"]');
+        console.log('All date cards:', allDateCards.length);
+
+        for (const card of allDateCards) {
+            const cardDate = card.id.replace('date-', '');
+            console.log('Checking card date:', cardDate);
+            if (cardDate >= today) {
+                targetCard = card;
+                console.log('Found target card:', cardDate);
+                break;
+            }
+        }
+    }
+
+    if (targetCard) {
+        console.log('Scrolling to:', targetCard.id);
+        // Small delay to ensure page is fully rendered
+        setTimeout(function() {
+            const rect = targetCard.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const targetPosition = rect.top + scrollTop - 120; // 120px offset for header
+
+            window.scrollTo({
+                top: targetPosition,
+                behavior: 'smooth'
+            });
+            console.log('Scrolled to position:', targetPosition);
+        }, 300);
+    } else {
+        console.log('No target card found');
     }
 });
 </script>

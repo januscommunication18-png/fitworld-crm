@@ -579,22 +579,12 @@ class InstructorController extends Controller
             'total_services' => $instructor->serviceSlots()
                 ->where('start_time', '<', now())
                 ->count(),
-            'total_clients' => \DB::table('class_bookings')
-                ->join('class_sessions', 'class_bookings.class_session_id', '=', 'class_sessions.id')
-                ->where('class_sessions.primary_instructor_id', $instructor->id)
-                ->distinct('class_bookings.client_id')
-                ->count('class_bookings.client_id'),
+            'total_clients' => 0, // TODO: Implement when class_bookings table is created
             'years_teaching' => $instructor->created_at ? now()->diffInYears($instructor->created_at) : 0,
         ];
 
         // Upcoming service bookings
-        $upcomingServiceBookings = \App\Models\ServiceBooking::where('instructor_id', $instructor->id)
-            ->where('start_time', '>', now())
-            ->whereIn('status', ['confirmed', 'pending'])
-            ->with(['servicePlan', 'client'])
-            ->orderBy('start_time')
-            ->limit(5)
-            ->get();
+        $upcomingServiceBookings = collect(); // TODO: Implement when ServiceBooking model is created
 
         return view('host.instructors.show', [
             'instructor' => $instructor,

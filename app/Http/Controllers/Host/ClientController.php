@@ -396,6 +396,13 @@ class ClientController extends Controller
             }
         });
 
+        // Load active customer membership with plan
+        $activeCustomerMembership = $client->customerMemberships()
+            ->where('status', \App\Models\CustomerMembership::STATUS_ACTIVE)
+            ->with('membershipPlan')
+            ->latest()
+            ->first();
+
         return view('host.clients.show', [
             'client' => $client,
             'customFields' => $customFields,
@@ -403,6 +410,7 @@ class ClientController extends Controller
             'bookings' => $bookings,
             'bookingStats' => $bookingStats,
             'questionnaireResponses' => $questionnaireResponses,
+            'activeCustomerMembership' => $activeCustomerMembership,
         ]);
     }
 

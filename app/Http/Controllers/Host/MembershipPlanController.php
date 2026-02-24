@@ -83,9 +83,6 @@ class MembershipPlanController extends Controller
         // Handle visibility checkbox
         $data['visibility_public'] = $request->boolean('visibility_public');
 
-        // Handle scheduled class checkbox
-        $data['has_scheduled_class'] = $request->boolean('has_scheduled_class');
-
         // Clear credits_per_cycle if not a credits-based plan
         if ($data['type'] !== MembershipPlan::TYPE_CREDITS) {
             $data['credits_per_cycle'] = null;
@@ -102,22 +99,9 @@ class MembershipPlanController extends Controller
 
         $membershipPlan = $host->membershipPlans()->create($data);
 
-        // Attach class plans based on eligibility scope OR scheduled classes
-        $classPlanIds = [];
-
-        // If eligibility scope is selected, use those class plan ids
+        // Attach class plans based on eligibility scope
         if ($data['eligibility_scope'] === MembershipPlan::ELIGIBILITY_SELECTED && $request->has('class_plan_ids')) {
-            $classPlanIds = array_merge($classPlanIds, $request->input('class_plan_ids', []));
-        }
-
-        // If has scheduled classes, also include scheduled class plan ids
-        if ($data['has_scheduled_class'] && $request->has('scheduled_class_plan_ids')) {
-            $classPlanIds = array_merge($classPlanIds, $request->input('scheduled_class_plan_ids', []));
-        }
-
-        // Attach unique class plan ids
-        if (!empty($classPlanIds)) {
-            $membershipPlan->classPlans()->attach(array_unique($classPlanIds));
+            $membershipPlan->classPlans()->attach($request->input('class_plan_ids', []));
         }
 
         // Sync questionnaire attachments
@@ -197,9 +181,6 @@ class MembershipPlanController extends Controller
         // Handle visibility checkbox
         $data['visibility_public'] = $request->boolean('visibility_public');
 
-        // Handle scheduled class checkbox
-        $data['has_scheduled_class'] = $request->boolean('has_scheduled_class');
-
         // Clear credits_per_cycle if not a credits-based plan
         if ($data['type'] !== MembershipPlan::TYPE_CREDITS) {
             $data['credits_per_cycle'] = null;
@@ -216,21 +197,12 @@ class MembershipPlanController extends Controller
 
         $membershipPlan->update($data);
 
-        // Sync class plans based on eligibility scope AND scheduled classes
-        $classPlanIds = [];
-
-        // If eligibility scope is selected, use those class plan ids
+        // Sync class plans based on eligibility scope
         if ($data['eligibility_scope'] === MembershipPlan::ELIGIBILITY_SELECTED) {
-            $classPlanIds = array_merge($classPlanIds, $request->input('class_plan_ids', []));
+            $membershipPlan->classPlans()->sync($request->input('class_plan_ids', []));
+        } else {
+            $membershipPlan->classPlans()->sync([]);
         }
-
-        // If has scheduled classes, also include scheduled class plan ids
-        if ($data['has_scheduled_class'] && $request->has('scheduled_class_plan_ids')) {
-            $classPlanIds = array_merge($classPlanIds, $request->input('scheduled_class_plan_ids', []));
-        }
-
-        // Sync unique class plan ids
-        $membershipPlan->classPlans()->sync(array_unique($classPlanIds));
 
         // Sync questionnaire attachments
         $this->syncQuestionnaireAttachments($membershipPlan, $request);

@@ -61,13 +61,13 @@
 
             {{-- Schedule - Requires schedule.view or schedule.view_own --}}
             @if($canViewSchedule)
-            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') ? 'active' : '' }}" data-nav="schedule">
+            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') ? 'active' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">Schedule</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
                     <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>Calendar View
                     </a></li>
@@ -77,6 +77,9 @@
                     @if($user->hasPermission('schedule.view'))
                     <li><a href="{{ url('/service-slots') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('service-slots*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clock] size-4 mr-2"></span>Service Slots
+                    </a></li>
+                    <li><a href="{{ url('/membership-schedules') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('membership-schedules*') || request()->is('scheduled-membership*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>Membership Sessions
                     </a></li>
                     @endif
                 </ul>

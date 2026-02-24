@@ -170,12 +170,19 @@ class ScheduleController extends Controller
 
         $events = [];
 
-        // Get class sessions
-        if ($type === 'all' || $type === 'class') {
+        // Get class sessions (includes regular classes and membership sessions)
+        if ($type === 'all' || $type === 'class' || $type === 'membership') {
             $classSessionsQuery = ClassSession::where('host_id', $host->id)
                 ->with(['classPlan', 'primaryInstructor', 'location', 'confirmedBookings'])
                 ->forDateRange($start, $end)
                 ->notCancelled();
+
+            // Filter by type: class (has class_plan_id) or membership (no class_plan_id)
+            if ($type === 'class') {
+                $classSessionsQuery->whereNotNull('class_plan_id');
+            } elseif ($type === 'membership') {
+                $classSessionsQuery->whereNull('class_plan_id');
+            }
 
             if ($request->filled('instructor_id')) {
                 $classSessionsQuery->forInstructor($request->instructor_id);
@@ -198,12 +205,16 @@ class ScheduleController extends Controller
                 // Just format them without timezone conversion
                 // Determine color based on status and conflict
                 $hasConflict = $session->hasUnresolvedConflict();
+                $isMembershipSession = $session->class_plan_id === null;
+
                 if ($hasConflict) {
                     $bgColor = '#ef4444'; // Red for conflicts
                 } elseif ($session->status === ClassSession::STATUS_DRAFT) {
                     $bgColor = '#f59e0b'; // Yellow for draft
+                } elseif ($isMembershipSession) {
+                    $bgColor = '#8b5cf6'; // Violet for membership sessions
                 } else {
-                    $bgColor = '#6366f1'; // Purple for published
+                    $bgColor = '#6366f1'; // Indigo for regular classes
                 }
 
                 $events[] = [
@@ -214,7 +225,7 @@ class ScheduleController extends Controller
                     'backgroundColor' => $bgColor,
                     'borderColor' => $bgColor,
                     'extendedProps' => [
-                        'type' => 'class',
+                        'type' => $isMembershipSession ? 'membership' : 'class',
                         'instructor' => $session->primaryInstructor?->name ?? 'TBD',
                         'location' => $session->location?->name ?? 'TBD',
                         'capacity' => $session->getEffectiveCapacity(),
@@ -224,6 +235,7 @@ class ScheduleController extends Controller
                         'status' => $session->status,
                         'hasConflict' => $hasConflict,
                         'conflictNotes' => $session->conflict_notes,
+                        'isMembershipSession' => $isMembershipSession,
                     ],
                 ];
             }

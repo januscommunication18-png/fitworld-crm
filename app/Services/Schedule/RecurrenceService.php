@@ -32,8 +32,18 @@ class RecurrenceService
             $endDate = $endValue;
         }
 
-        // Map day names to Carbon day constants
-        $dayMap = [
+        // Map day names to Carbon day numbers and names
+        $dayNameToNumber = [
+            'sunday' => 0,
+            'monday' => 1,
+            'tuesday' => 2,
+            'wednesday' => 3,
+            'thursday' => 4,
+            'friday' => 5,
+            'saturday' => 6,
+        ];
+
+        $dayNumberToName = [
             0 => 'Sunday',
             1 => 'Monday',
             2 => 'Tuesday',
@@ -48,7 +58,12 @@ class RecurrenceService
 
         while ($count < $occurrenceLimit) {
             foreach ($daysOfWeek as $day) {
-                $dayNumber = is_int($day) ? $day : array_search($day, $dayMap);
+                // Convert day to number (supports numeric, string numbers, and day names)
+                if (is_numeric($day)) {
+                    $dayNumber = (int) $day;
+                } else {
+                    $dayNumber = $dayNameToNumber[strtolower($day)] ?? false;
+                }
 
                 if ($dayNumber === false) {
                     continue;
@@ -58,7 +73,7 @@ class RecurrenceService
 
                 // Adjust to the target day of week
                 if ($occurrence->dayOfWeek !== $dayNumber) {
-                    $occurrence = $occurrence->next($dayMap[$dayNumber]);
+                    $occurrence = $occurrence->next($dayNumberToName[$dayNumber]);
                 }
 
                 // Skip if before start date
@@ -104,12 +119,24 @@ class RecurrenceService
         string $endType,
         int|Carbon|null $endValue = null
     ): Collection {
+        \Log::info('createRecurringSessions called', [
+            'parent_start_time' => $parentSession->start_time,
+            'daysOfWeek' => $daysOfWeek,
+            'endType' => $endType,
+            'endValue' => $endValue,
+        ]);
+
         $occurrences = $this->generateOccurrences(
             $parentSession->start_time,
             $daysOfWeek,
             $endType,
             $endValue
         );
+
+        \Log::info('Occurrences generated', [
+            'count' => $occurrences->count(),
+            'dates' => $occurrences->map(fn($d) => $d->format('Y-m-d'))->toArray(),
+        ]);
 
         $sessions = collect();
 
@@ -119,7 +146,7 @@ class RecurrenceService
         // Skip the first occurrence (it's the parent)
         foreach ($occurrences->skip(1) as $date) {
             $startTime = $date->copy()->setTimeFrom($parentSession->start_time);
-            $endTime = $startTime->copy()->addMinutes($parentSession->duration_minutes);
+            $endTime = $startTime->copy()->addMinutes((int) $parentSession->duration_minutes);
 
             $session = ClassSession::create([
                 'host_id' => $parentSession->host_id,
@@ -215,8 +242,28 @@ class RecurrenceService
         string $endType,
         int|Carbon|null $endValue = null
     ): string {
-        $dayNames = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-        $byDays = array_map(fn ($day) => $dayNames[$day], $daysOfWeek);
+        // Map day names to iCal day codes
+        $dayMap = [
+            'sunday' => 'SU',
+            'monday' => 'MO',
+            'tuesday' => 'TU',
+            'wednesday' => 'WE',
+            'thursday' => 'TH',
+            'friday' => 'FR',
+            'saturday' => 'SA',
+            0 => 'SU',
+            1 => 'MO',
+            2 => 'TU',
+            3 => 'WE',
+            4 => 'TH',
+            5 => 'FR',
+            6 => 'SA',
+        ];
+        $byDays = array_map(function ($day) use ($dayMap) {
+            // Convert string numbers to integers for proper lookup
+            $key = is_numeric($day) ? (int) $day : strtolower($day);
+            return $dayMap[$key] ?? 'MO';
+        }, $daysOfWeek);
 
         $rule = 'FREQ=WEEKLY;BYDAY=' . implode(',', $byDays);
 

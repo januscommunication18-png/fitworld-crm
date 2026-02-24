@@ -179,7 +179,7 @@ class ClassSessionController extends Controller
             'duration_minutes' => $request->duration_minutes,
             'capacity' => $request->capacity,
             'price' => $request->price,
-            'status' => ClassSession::STATUS_DRAFT,
+            'status' => $request->status ?? ClassSession::STATUS_DRAFT,
             'has_scheduling_conflict' => $hasConflict,
             'conflict_notes' => $conflictNotes,
             'recurrence_rule' => $recurrenceRule,
@@ -194,6 +194,16 @@ class ClassSessionController extends Controller
 
         // Create recurring sessions if applicable
         $createdCount = 1;
+
+        // Debug: Log recurring data
+        \Log::info('Recurring check', [
+            'is_recurring' => $request->boolean('is_recurring'),
+            'recurrence_days' => $request->recurrence_days,
+            'recurrence_end_type' => $request->recurrence_end_type,
+            'recurrence_end_date' => $request->recurrence_end_date,
+            'recurrence_count' => $request->recurrence_count,
+        ]);
+
         if ($request->boolean('is_recurring') && $request->recurrence_days) {
             $endValue = match ($request->recurrence_end_type) {
                 'after' => (int) $request->recurrence_count,

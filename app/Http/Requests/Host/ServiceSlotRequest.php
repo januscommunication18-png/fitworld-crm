@@ -23,12 +23,17 @@ class ServiceSlotRequest extends FormRequest
             'start_time' => ['required', 'date', 'after_or_equal:now'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'status' => ['nullable', 'string', Rule::in(array_keys(ServiceSlot::getStatuses()))],
+
+            // Recurrence fields
+            'is_recurring' => ['nullable', 'boolean'],
+            'recurrence_days' => ['nullable', 'array'],
+            'recurrence_days.*' => ['integer', 'between:0,6'],
+            'recurrence_end_date' => ['nullable', 'date', 'after:start_time'],
         ];
 
-        // For updates, allow status field
+        // For updates, allow updating past slots
         if ($this->isMethod('PUT') || $this->isMethod('PATCH')) {
-            $rules['status'] = ['nullable', 'string', Rule::in(array_keys(ServiceSlot::getStatuses()))];
-            // Allow updating past slots but with warning
             $rules['start_time'] = ['required', 'date'];
         }
 
