@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Host;
 
+use App\Events\ClassSessionPublished;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Host\ClassSessionRequest;
 use App\Models\ClassPlan;
@@ -335,6 +336,9 @@ class ClassSessionController extends Controller
         }
 
         $classSession->publish();
+
+        // Dispatch event for auto-enrollment of scheduled membership holders
+        ClassSessionPublished::dispatch($classSession);
 
         return back()->with('success', 'Session published successfully.');
     }

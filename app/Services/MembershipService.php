@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\MembershipActivated;
 use App\Models\ClassPlan;
 use App\Models\Client;
 use App\Models\CustomerMembership;
@@ -13,11 +14,31 @@ class MembershipService
 {
     protected AuditService $auditService;
     protected PaymentService $paymentService;
+    protected ?ScheduledMembershipService $scheduledMembershipService = null;
 
     public function __construct(AuditService $auditService, PaymentService $paymentService)
     {
         $this->auditService = $auditService;
         $this->paymentService = $paymentService;
+    }
+
+    /**
+     * Set the scheduled membership service (to avoid circular dependency)
+     */
+    public function setScheduledMembershipService(ScheduledMembershipService $service): void
+    {
+        $this->scheduledMembershipService = $service;
+    }
+
+    /**
+     * Get the scheduled membership service
+     */
+    protected function getScheduledMembershipService(): ScheduledMembershipService
+    {
+        if (!$this->scheduledMembershipService) {
+            $this->scheduledMembershipService = app(ScheduledMembershipService::class);
+        }
+        return $this->scheduledMembershipService;
     }
 
     /**
@@ -73,6 +94,9 @@ class MembershipService
             }
 
             $this->auditService->logMembershipCreated($membership);
+
+            // Dispatch event for auto-enrollment into scheduled classes
+            MembershipActivated::dispatch($membership);
 
             return $membership;
         });
@@ -135,6 +159,14 @@ class MembershipService
                 'membership_status' => Client::MEMBERSHIP_PAUSED,
             ]);
 
+            // Cancel future scheduled enrollments
+            if ($membership->membershipPlan?->has_scheduled_class) {
+                $this->getScheduledMembershipService()->removeScheduledEnrollments(
+                    $membership,
+                    'Membership paused'
+                );
+            }
+
             $this->auditService->logMembershipPaused($membership, $reason);
 
             return $membership->fresh();
@@ -156,6 +188,9 @@ class MembershipService
 
             $this->auditService->logMembershipResumed($membership);
 
+            // Dispatch event to re-enroll into scheduled classes
+            MembershipActivated::dispatch($membership);
+
             return $membership->fresh();
         });
     }
@@ -173,6 +208,14 @@ class MembershipService
                 'status' => Client::STATUS_CLIENT,
                 'membership_status' => Client::MEMBERSHIP_CANCELLED,
             ]);
+
+            // Cancel future scheduled enrollments
+            if ($membership->membershipPlan?->has_scheduled_class) {
+                $this->getScheduledMembershipService()->removeScheduledEnrollments(
+                    $membership,
+                    $reason ?? 'Membership cancelled'
+                );
+            }
 
             $this->auditService->logMembershipCancelled($membership, $reason);
 

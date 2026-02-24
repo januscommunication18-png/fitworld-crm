@@ -102,9 +102,22 @@ class MembershipPlanController extends Controller
 
         $membershipPlan = $host->membershipPlans()->create($data);
 
-        // Attach class plans if eligibility is selected
+        // Attach class plans based on eligibility scope OR scheduled classes
+        $classPlanIds = [];
+
+        // If eligibility scope is selected, use those class plan ids
         if ($data['eligibility_scope'] === MembershipPlan::ELIGIBILITY_SELECTED && $request->has('class_plan_ids')) {
-            $membershipPlan->classPlans()->attach($request->input('class_plan_ids'));
+            $classPlanIds = array_merge($classPlanIds, $request->input('class_plan_ids', []));
+        }
+
+        // If has scheduled classes, also include scheduled class plan ids
+        if ($data['has_scheduled_class'] && $request->has('scheduled_class_plan_ids')) {
+            $classPlanIds = array_merge($classPlanIds, $request->input('scheduled_class_plan_ids', []));
+        }
+
+        // Attach unique class plan ids
+        if (!empty($classPlanIds)) {
+            $membershipPlan->classPlans()->attach(array_unique($classPlanIds));
         }
 
         // Sync questionnaire attachments
@@ -203,12 +216,21 @@ class MembershipPlanController extends Controller
 
         $membershipPlan->update($data);
 
-        // Sync class plans
+        // Sync class plans based on eligibility scope AND scheduled classes
+        $classPlanIds = [];
+
+        // If eligibility scope is selected, use those class plan ids
         if ($data['eligibility_scope'] === MembershipPlan::ELIGIBILITY_SELECTED) {
-            $membershipPlan->classPlans()->sync($request->input('class_plan_ids', []));
-        } else {
-            $membershipPlan->classPlans()->detach();
+            $classPlanIds = array_merge($classPlanIds, $request->input('class_plan_ids', []));
         }
+
+        // If has scheduled classes, also include scheduled class plan ids
+        if ($data['has_scheduled_class'] && $request->has('scheduled_class_plan_ids')) {
+            $classPlanIds = array_merge($classPlanIds, $request->input('scheduled_class_plan_ids', []));
+        }
+
+        // Sync unique class plan ids
+        $membershipPlan->classPlans()->sync(array_unique($classPlanIds));
 
         // Sync questionnaire attachments
         $this->syncQuestionnaireAttachments($membershipPlan, $request);

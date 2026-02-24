@@ -32,6 +32,8 @@ class MembershipPlanRequest extends FormRequest
             'eligibility_scope' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getEligibilityScopes()))],
             'class_plan_ids' => ['nullable', 'array'],
             'class_plan_ids.*' => ['exists:class_plans,id'],
+            'scheduled_class_plan_ids' => ['nullable', 'array'],
+            'scheduled_class_plan_ids.*' => ['exists:class_plans,id'],
             'addon_members' => ['nullable', 'integer', 'min:0', 'max:10'],
             'free_amenities' => ['nullable', 'array'],
             'free_amenities.*' => ['string', 'max:255'],
