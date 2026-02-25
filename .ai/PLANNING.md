@@ -2016,6 +2016,147 @@ Walk-in bookings must be labeled: `booking_source = internal_walkin`
 | Webhook handlers | Stripe webhook processing |
 | Refund processing | In-app refund workflow |
 
+### FEAT-009: Language Settings & Translation System
+
+- **Status:** Planned (Phase 1 in progress: Country of Operation)
+- **Priority:** P2 (medium)
+- **Description:** Multi-language support system with studio-configurable language preferences and admin-managed translation templates.
+- **User Story:** As a studio owner operating in multiple countries, I want to configure language preferences so that my booking page and app display content in the appropriate language for my clients.
+- **Modules Involved:** Settings (Studio), Admin Panel, Booking Page (Subdomain)
+- **Affected Areas:**
+  - Routes: `/settings/studio/*`, admin routes for translations
+  - Controllers: `SettingsController`, new `TranslationController`
+  - Models: `Host` (update), new `Translation` model
+  - Views: Studio profile settings, admin translation manager
+  - Services: `TranslationService`
+- **Dependencies:** Host model, Settings infrastructure
+
+---
+
+#### 9.1 Implementation Phases
+
+| Phase | Feature | Status | Description |
+|-------|---------|--------|-------------|
+| 1 | Country of Operation | **Completed** | Multiple country selection in studio settings (USA, Canada, Germany, UK, Australia, India) |
+| 2 | Language Preferences | Planned | App language and Booking page language dropdowns |
+| 3 | Translation Template (Admin) | Planned | Admin panel to manage translation key-value pairs |
+| 4 | Frontend Translation | Planned | Display translated content based on language setting |
+
+---
+
+#### 9.2 Phase 1: Country of Operation (Completed)
+
+**Database:**
+- Added `operating_countries` JSON column to `hosts` table
+
+**UI Location:** Settings → Studio Profile → Countries of Operation
+
+**Supported Countries:**
+| Code | Name | Flag |
+|------|------|------|
+| US | United States | 🇺🇸 |
+| CA | Canada | 🇨🇦 |
+| DE | Germany | 🇩🇪 |
+| GB | United Kingdom | 🇬🇧 |
+| AU | Australia | 🇦🇺 |
+| IN | India | 🇮🇳 |
+
+**Implementation:**
+- Multiple selection checkboxes
+- Saved as JSON array in `operating_countries` column
+- Route: `PUT /settings/studio/countries`
+
+---
+
+#### 9.3 Phase 2: Language Preferences (Planned)
+
+**Database Changes:**
+```
+ALTER TABLE hosts ADD COLUMN app_language VARCHAR(5) DEFAULT 'en';
+ALTER TABLE hosts ADD COLUMN booking_language VARCHAR(5) DEFAULT 'en';
+```
+
+**Supported Languages:**
+| Code | Name |
+|------|------|
+| en | English |
+| fr | French |
+| de | German |
+| es | Spanish |
+
+**UI Location:** Settings → Studio Profile → Language Settings
+
+**Settings:**
+- Default language preference - App (dropdown)
+- Default language preference - Booking Page (dropdown)
+
+---
+
+#### 9.4 Phase 3: Translation Template (Admin Panel) (Planned)
+
+**Database Schema:**
+```sql
+CREATE TABLE translations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    host_id BIGINT NULL,           -- NULL = system default
+    language VARCHAR(5) NOT NULL,   -- 'en', 'fr', 'de', 'es'
+    category VARCHAR(50) NOT NULL,  -- 'page', 'field', 'general'
+    key VARCHAR(255) NOT NULL,      -- 'booking.title', 'form.email.label'
+    value TEXT NOT NULL,            -- Translated text
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    UNIQUE KEY (host_id, language, key)
+);
+```
+
+**Categories:**
+| Category | Description | Examples |
+|----------|-------------|----------|
+| page | Page titles and headers | "Schedule", "My Bookings" |
+| field | Form field labels | "Email Address", "Phone Number" |
+| general | General content | "Welcome", "Book Now", "Cancel" |
+
+**Admin UI:**
+- Table listing with filters by category, language
+- Inline editing of translation values
+- Import/Export functionality
+- Copy from English to other languages
+
+**Rules:**
+- Only English stored in database columns
+- Translations fetched from `translations` table
+- Host-specific overrides take precedence over system defaults
+
+---
+
+#### 9.5 Phase 4: Frontend Translation (Planned)
+
+**Blade Helper:**
+```php
+{{ __trans('booking.title') }}  // Returns translated text based on current language
+```
+
+**Vue Helper:**
+```javascript
+this.$trans('booking.title')  // Returns translated text
+```
+
+**Language Detection:**
+1. User's browser language (for public booking)
+2. Studio's `booking_language` setting
+3. Fallback to English
+
+---
+
+#### 9.6 Future Considerations
+
+| Feature | Description |
+|---------|-------------|
+| RTL Support | Right-to-left languages (Arabic, Hebrew) |
+| Additional Languages | Japanese, Chinese, Portuguese, Italian |
+| AI Translation | Auto-translate using AI for initial population |
+| Client Language Preference | Per-client language override |
+
 <!-- Add feature plans below this line -->
 
 ---

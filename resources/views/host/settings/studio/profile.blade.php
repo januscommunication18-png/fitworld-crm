@@ -31,6 +31,15 @@ $currencies = [
     'INR' => ['symbol' => '₹', 'name' => 'Indian Rupee'],
 ];
 
+$operatingCountriesList = [
+    'US' => ['name' => 'United States', 'flag' => '🇺🇸'],
+    'CA' => ['name' => 'Canada', 'flag' => '🇨🇦'],
+    'DE' => ['name' => 'Germany', 'flag' => '🇩🇪'],
+    'GB' => ['name' => 'United Kingdom', 'flag' => '🇬🇧'],
+    'AU' => ['name' => 'Australia', 'flag' => '🇦🇺'],
+    'IN' => ['name' => 'India', 'flag' => '🇮🇳'],
+];
+
 $amenitiesList = [
     'Parking', 'Showers', 'Lockers', 'Mats Provided', 'Towels Provided',
     'Reformer Equipment', 'Wheelchair Accessible', 'Water Station',
@@ -331,6 +340,36 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     @endforeach
                 @else
                     <span class="text-base-content/50 text-sm">No amenities selected</span>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- Country of Operation Card --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold">Countries of Operation</h2>
+                    <p class="text-base-content/60 text-sm">Where your studio operates and serves clients</p>
+                </div>
+                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-countries-drawer')">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                </button>
+            </div>
+
+            <div class="flex flex-wrap gap-2" id="display-operating-countries">
+                @if($host->operating_countries && count($host->operating_countries) > 0)
+                    @foreach($host->operating_countries as $countryCode)
+                        @if(isset($operatingCountriesList[$countryCode]))
+                            <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">
+                                <span class="text-lg">{{ $operatingCountriesList[$countryCode]['flag'] }}</span>
+                                <span class="text-sm font-medium">{{ $operatingCountriesList[$countryCode]['name'] }}</span>
+                            </div>
+                        @endif
+                    @endforeach
+                @else
+                    <span class="text-base-content/50 text-sm">No countries selected</span>
                 @endif
             </div>
         </div>
@@ -780,6 +819,37 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 Save Changes
             </button>
             <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-amenities-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
+{{-- Edit Countries Drawer --}}
+<div id="edit-countries-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Countries of Operation</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-countries-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="edit-countries-form" class="flex flex-col flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-sm text-base-content/60 mb-4">Select all countries where your studio operates and serves clients. This helps with regional settings and compliance.</p>
+            <div class="space-y-2">
+                @foreach($operatingCountriesList as $code => $info)
+                <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer border border-base-200 rounded-lg hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                    <input type="checkbox" class="checkbox checkbox-primary country-checkbox" value="{{ $code }}" {{ in_array($code, $host->operating_countries ?? []) ? 'checked' : '' }} />
+                    <span class="text-xl">{{ $info['flag'] }}</span>
+                    <span class="label-text font-medium">{{ $info['name'] }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-countries-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="countries-spinner"></span>
+                Save Changes
+            </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-countries-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -1363,6 +1433,47 @@ document.getElementById('edit-amenities-form').addEventListener('submit', functi
             document.getElementById('display-amenities').innerHTML = amenitiesHtml;
             closeDrawer('edit-amenities-drawer');
             setTimeout(function() { showToast('Amenities updated!'); }, 350);
+        } else { showToast(result.message || 'Failed to update', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Countries of Operation
+var operatingCountries = @json($operatingCountriesList);
+
+document.getElementById('edit-countries-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-countries-btn');
+    var spinner = document.getElementById('countries-spinner');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    var selectedCountries = [];
+    document.querySelectorAll('.country-checkbox:checked').forEach(function(cb) { selectedCountries.push(cb.value); });
+
+    fetch('{{ route("settings.studio.countries.update") }}', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({ operating_countries: selectedCountries })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var countriesHtml = '';
+            if (selectedCountries.length > 0) {
+                countriesHtml = selectedCountries.map(function(code) {
+                    var info = operatingCountries[code];
+                    return '<div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">' +
+                        '<span class="text-lg">' + info.flag + '</span>' +
+                        '<span class="text-sm font-medium">' + info.name + '</span>' +
+                    '</div>';
+                }).join('');
+            } else {
+                countriesHtml = '<span class="text-base-content/50 text-sm">No countries selected</span>';
+            }
+            document.getElementById('display-operating-countries').innerHTML = countriesHtml;
+            closeDrawer('edit-countries-drawer');
+            setTimeout(function() { showToast('Countries of operation updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })

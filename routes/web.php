@@ -393,6 +393,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/studio/social', [SettingsController::class, 'updateStudioSocial'])->name('settings.studio.social.update');
     Route::put('/settings/studio/amenities', [SettingsController::class, 'updateStudioAmenities'])->name('settings.studio.amenities.update');
     Route::put('/settings/studio/currency', [SettingsController::class, 'updateStudioCurrency'])->name('settings.studio.currency.update');
+    Route::put('/settings/studio/countries', [SettingsController::class, 'updateStudioCountries'])->name('settings.studio.countries.update');
     Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
     Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');

@@ -379,6 +379,25 @@ class SettingsController extends Controller
         ]);
     }
 
+    public function updateStudioCountries(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'operating_countries' => 'nullable|array',
+            'operating_countries.*' => 'string|size:2|in:US,CA,DE,GB,AU,IN',
+        ]);
+
+        $host->update([
+            'operating_countries' => $validated['operating_countries'] ?? [],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Countries of operation updated successfully',
+        ]);
+    }
+
     public function updateStudioCancellation(Request $request)
     {
         $host = auth()->user()->host;
