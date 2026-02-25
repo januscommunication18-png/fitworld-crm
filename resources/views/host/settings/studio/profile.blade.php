@@ -427,6 +427,81 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
+    {{-- Language Settings Card --}}
+    @php
+        $supportedLanguages = [
+            'en' => ['name' => 'English', 'flag' => '🇺🇸'],
+            'fr' => ['name' => 'French', 'flag' => '🇫🇷'],
+            'de' => ['name' => 'German', 'flag' => '🇩🇪'],
+            'es' => ['name' => 'Spanish', 'flag' => '🇪🇸'],
+        ];
+    @endphp
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold">Language Settings</h2>
+                    <p class="text-base-content/60 text-sm">Configure language preferences for your studio</p>
+                </div>
+                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-language-drawer')">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                {{-- Studio Languages (Multiple Selection) --}}
+                <div class="space-y-1">
+                    <label class="text-sm text-base-content/60">Studio Languages</label>
+                    <div class="flex flex-wrap gap-2" id="display-studio-languages">
+                        @php
+                            $studioLanguages = $host->studio_languages ?? ['en'];
+                            if (is_string($studioLanguages)) {
+                                $studioLanguages = json_decode($studioLanguages, true) ?? ['en'];
+                            }
+                        @endphp
+                        @foreach($studioLanguages as $langCode)
+                            @if(isset($supportedLanguages[$langCode]))
+                            <span class="badge badge-soft badge-primary gap-1">
+                                <span>{{ $supportedLanguages[$langCode]['flag'] }}</span>
+                                <span>{{ $supportedLanguages[$langCode]['name'] }}</span>
+                            </span>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Default Studio Language --}}
+                <div class="space-y-1">
+                    <label class="text-sm text-base-content/60">Default Studio Language</label>
+                    <div class="flex items-center gap-2" id="display-language-app">
+                        @php $langApp = $host->default_language_app ?? 'en'; @endphp
+                        @if(isset($supportedLanguages[$langApp]))
+                            <span class="text-lg">{{ $supportedLanguages[$langApp]['flag'] }}</span>
+                            <span class="font-medium">{{ $supportedLanguages[$langApp]['name'] }}</span>
+                        @else
+                            <span class="text-base-content/50">Not set</span>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Booking Page Language --}}
+                <div class="space-y-1">
+                    <label class="text-sm text-base-content/60">Booking Page Language</label>
+                    <div class="flex items-center gap-2" id="display-language-booking">
+                        @php $langBooking = $host->default_language_booking ?? 'en'; @endphp
+                        @if(isset($supportedLanguages[$langBooking]))
+                            <span class="text-lg">{{ $supportedLanguages[$langBooking]['flag'] }}</span>
+                            <span class="font-medium">{{ $supportedLanguages[$langBooking]['name'] }}</span>
+                        @else
+                            <span class="text-base-content/50">Not set</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     {{-- Booking Cancellation Policy Card --}}
     <div class="card bg-base-100">
         <div class="card-body">
@@ -907,6 +982,87 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     </form>
 </div>
 
+{{-- Edit Language Settings Drawer --}}
+<div id="edit-language-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Language Settings</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-language-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="edit-language-form" class="flex flex-col flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-4">
+            @php
+                $studioLanguages = $host->studio_languages ?? ['en'];
+                if (is_string($studioLanguages)) {
+                    $studioLanguages = json_decode($studioLanguages, true) ?? ['en'];
+                }
+            @endphp
+
+            {{-- Studio Languages (Multiple Selection) --}}
+            <div class="mb-6">
+                <label class="label-text font-medium mb-2 block">Studio Languages</label>
+                <p class="text-sm text-base-content/60 mb-3">Select all languages your studio supports. You can add translations for each.</p>
+                <div class="space-y-2">
+                    @foreach($supportedLanguages as $code => $info)
+                    <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer border border-base-200 rounded-lg hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="checkbox" name="studio_languages[]" value="{{ $code }}" class="checkbox checkbox-primary studio-language-checkbox" {{ in_array($code, $studioLanguages) ? 'checked' : '' }} />
+                        <span class="text-xl">{{ $info['flag'] }}</span>
+                        <span class="label-text font-medium">{{ $info['name'] }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="divider text-xs text-base-content/50">DEFAULT LANGUAGES</div>
+
+            {{-- Default Studio Language --}}
+            <div class="mb-6">
+                <label class="label-text font-medium mb-2 block">Default Studio Language</label>
+                <p class="text-sm text-base-content/60 mb-3">Primary language used throughout the admin dashboard.</p>
+                <div class="space-y-2">
+                    @foreach($supportedLanguages as $code => $info)
+                    <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer border border-base-200 rounded-lg hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="radio" name="default_language_app" value="{{ $code }}" class="radio radio-primary" {{ ($host->default_language_app ?? 'en') === $code ? 'checked' : '' }} />
+                        <span class="text-xl">{{ $info['flag'] }}</span>
+                        <span class="label-text font-medium">{{ $info['name'] }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Booking Page Language --}}
+            <div class="mb-6">
+                <label class="label-text font-medium mb-2 block">Booking Page Language</label>
+                <p class="text-sm text-base-content/60 mb-3">Default language for your public booking page.</p>
+                <div class="space-y-2">
+                    @foreach($supportedLanguages as $code => $info)
+                    <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer border border-base-200 rounded-lg hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                        <input type="radio" name="default_language_booking" value="{{ $code }}" class="radio radio-primary" {{ ($host->default_language_booking ?? 'en') === $code ? 'checked' : '' }} />
+                        <span class="text-xl">{{ $info['flag'] }}</span>
+                        <span class="label-text font-medium">{{ $info['name'] }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="alert alert-soft alert-info">
+                <span class="icon-[tabler--info-circle] size-5"></span>
+                <div class="text-sm">
+                    For custom translations, use the <strong>Manage Translations</strong> page to edit specific text elements.
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-language-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="language-spinner"></span>
+                Save Changes
+            </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-language-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
 {{-- Edit Cancellation Policy Drawer --}}
 <div id="edit-cancellation-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
@@ -1204,7 +1360,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -1533,6 +1689,79 @@ document.getElementById('edit-currency-form').addEventListener('submit', functio
 
             closeDrawer('edit-currency-drawer');
             setTimeout(function() { showToast('Currencies updated!'); }, 350);
+        } else { showToast(result.message || 'Failed to update', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Language Settings
+var supportedLanguages = {
+    'en': { name: 'English', flag: '🇺🇸' },
+    'fr': { name: 'French', flag: '🇫🇷' },
+    'de': { name: 'German', flag: '🇩🇪' },
+    'es': { name: 'Spanish', flag: '🇪🇸' }
+};
+
+document.getElementById('edit-language-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-language-btn');
+    var spinner = document.getElementById('language-spinner');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    // Get selected studio languages (checkboxes)
+    var studioLanguages = [];
+    document.querySelectorAll('.studio-language-checkbox:checked').forEach(function(cb) {
+        studioLanguages.push(cb.value);
+    });
+
+    // Ensure at least English is selected
+    if (studioLanguages.length === 0) {
+        studioLanguages = ['en'];
+    }
+
+    var langApp = document.querySelector('input[name="default_language_app"]:checked').value;
+    var langBooking = document.querySelector('input[name="default_language_booking"]:checked').value;
+
+    fetch('{{ route("settings.studio.language.update") }}', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({
+            studio_languages: studioLanguages,
+            default_language_app: langApp,
+            default_language_booking: langBooking
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            // Update studio languages display (badges)
+            var studioLangHtml = '';
+            studioLanguages.forEach(function(code) {
+                var info = supportedLanguages[code];
+                if (info) {
+                    studioLangHtml += '<span class="badge badge-soft badge-primary gap-1">' +
+                        '<span>' + info.flag + '</span>' +
+                        '<span>' + info.name + '</span>' +
+                        '</span>';
+                }
+            });
+            document.getElementById('display-studio-languages').innerHTML = studioLangHtml;
+
+            // Update default studio language display
+            var langAppInfo = supportedLanguages[langApp];
+            document.getElementById('display-language-app').innerHTML =
+                '<span class="text-lg">' + langAppInfo.flag + '</span>' +
+                '<span class="font-medium">' + langAppInfo.name + '</span>';
+
+            // Update booking page language display
+            var langBookingInfo = supportedLanguages[langBooking];
+            document.getElementById('display-language-booking').innerHTML =
+                '<span class="text-lg">' + langBookingInfo.flag + '</span>' +
+                '<span class="font-medium">' + langBookingInfo.name + '</span>';
+
+            closeDrawer('edit-language-drawer');
+            setTimeout(function() { showToast('Language settings updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })

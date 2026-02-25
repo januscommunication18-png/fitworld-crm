@@ -400,6 +400,43 @@ class SettingsController extends Controller
         ]);
     }
 
+    public function updateStudioLanguage(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'studio_languages' => 'nullable|array',
+            'studio_languages.*' => 'string|in:en,fr,de,es',
+            'default_language_app' => 'required|string|in:en,fr,de,es',
+            'default_language_booking' => 'required|string|in:en,fr,de,es',
+        ]);
+
+        // Ensure at least English is selected
+        $studioLanguages = $validated['studio_languages'] ?? ['en'];
+        if (empty($studioLanguages)) {
+            $studioLanguages = ['en'];
+        }
+
+        $host->update([
+            'studio_languages' => $studioLanguages,
+            'default_language_app' => $validated['default_language_app'],
+            'default_language_booking' => $validated['default_language_booking'],
+        ]);
+
+        // Clear translation cache when language settings change
+        app(\App\Services\TranslationService::class)->clearCache($host->id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Language settings updated successfully',
+            'data' => [
+                'studio_languages' => $studioLanguages,
+                'default_language_app' => $validated['default_language_app'],
+                'default_language_booking' => $validated['default_language_booking'],
+            ],
+        ]);
+    }
+
     public function updateStudioCancellation(Request $request)
     {
         $host = auth()->user()->host;
@@ -1366,6 +1403,186 @@ class SettingsController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Certification deleted successfully',
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Translations Management
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Display translation management page.
+     */
+    public function translations(Request $request)
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+
+        $query = \App\Models\Translation::where('host_id', $host->id);
+
+        // Filter by category
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        // Filter by page context (use 'page_filter' to avoid conflict with pagination 'page')
+        if ($request->filled('page_filter')) {
+            $query->where('page_context', $request->page_filter);
+        }
+
+        // Search by key or value
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('translation_key', 'like', "%{$search}%")
+                  ->orWhere('value_en', 'like', "%{$search}%");
+            });
+        }
+
+        $allTranslations = $query->orderBy('category')
+            ->orderBy('page_context')
+            ->orderBy('translation_key')
+            ->get();
+
+        // Manual pagination to avoid pagination issues
+        $page = $request->get('page', 1);
+        $perPage = 25;
+        $translations = new \Illuminate\Pagination\LengthAwarePaginator(
+            $allTranslations->forPage($page, $perPage)->values(),
+            $allTranslations->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        // Get unique page contexts for filter dropdown
+        $pageContexts = \App\Models\Translation::where('host_id', $host->id)
+            ->whereNotNull('page_context')
+            ->distinct()
+            ->pluck('page_context');
+
+        return view('host.settings.translations.index', [
+            'host' => $host,
+            'translations' => $translations,
+            'categories' => \App\Models\Translation::getCategoryLabels(),
+            'languages' => \App\Models\Translation::getSupportedLanguages(),
+            'pageContexts' => $pageContexts,
+            'filters' => [
+                'category' => $request->category,
+                'page_filter' => $request->page_filter,
+                'search' => $request->search,
+            ],
+        ]);
+    }
+
+    /**
+     * Store a new translation.
+     */
+    public function storeTranslation(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'category' => 'required|string|in:field_labels,page_titles,general_content,buttons,messages',
+            'translation_key' => 'required|string|max:255',
+            'value_en' => 'required|string',
+            'value_fr' => 'nullable|string',
+            'value_de' => 'nullable|string',
+            'value_es' => 'nullable|string',
+            'page_context' => 'nullable|string|max:100',
+        ]);
+
+        // Check for duplicate key
+        $exists = \App\Models\Translation::where('host_id', $host->id)
+            ->where('translation_key', $validated['translation_key'])
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'A translation with this key already exists.',
+            ], 422);
+        }
+
+        $translation = \App\Models\Translation::create([
+            'host_id' => $host->id,
+            'category' => $validated['category'],
+            'translation_key' => $validated['translation_key'],
+            'value_en' => $validated['value_en'],
+            'value_fr' => $validated['value_fr'] ?? null,
+            'value_de' => $validated['value_de'] ?? null,
+            'value_es' => $validated['value_es'] ?? null,
+            'page_context' => $validated['page_context'] ?? null,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Translation created successfully',
+            'translation' => $translation,
+        ]);
+    }
+
+    /**
+     * Update an existing translation.
+     */
+    public function updateTranslation(Request $request, $id)
+    {
+        $host = auth()->user()->host;
+
+        $translation = \App\Models\Translation::where('host_id', $host->id)
+            ->findOrFail($id);
+
+        $validated = $request->validate([
+            'category' => 'sometimes|string|in:field_labels,page_titles,general_content,buttons,messages',
+            'translation_key' => 'sometimes|string|max:255',
+            'value_en' => 'sometimes|string',
+            'value_fr' => 'nullable|string',
+            'value_de' => 'nullable|string',
+            'value_es' => 'nullable|string',
+            'page_context' => 'nullable|string|max:100',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        // Check for duplicate key if key is being changed
+        if (isset($validated['translation_key']) && $validated['translation_key'] !== $translation->translation_key) {
+            $exists = \App\Models\Translation::where('host_id', $host->id)
+                ->where('translation_key', $validated['translation_key'])
+                ->where('id', '!=', $id)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'A translation with this key already exists.',
+                ], 422);
+            }
+        }
+
+        $translation->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Translation updated successfully',
+            'translation' => $translation,
+        ]);
+    }
+
+    /**
+     * Delete a translation.
+     */
+    public function deleteTranslation($id)
+    {
+        $host = auth()->user()->host;
+
+        $translation = \App\Models\Translation::where('host_id', $host->id)
+            ->findOrFail($id);
+
+        $translation->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Translation deleted successfully',
         ]);
     }
 }

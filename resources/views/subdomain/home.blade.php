@@ -1,10 +1,13 @@
 @extends('layouts.subdomain')
 
-@section('title', $host->studio_name . ' — Book a Class')
+@section('title', $host->studio_name . ' — ' . ($trans['subdomain.home.book_class'] ?? 'Book a Class'))
 
 @php
     $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
     $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
+    $selectedLang = session("language_{$host->id}", $host->default_language_booking ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
 @endphp
 
 @section('content')
@@ -57,14 +60,14 @@
     <div class="flex justify-center mb-10">
         <div class="tabs tabs-boxed bg-base-200 p-1">
             <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="tab tab-active">
-                <span class="icon-[tabler--home] size-4 me-1"></span> Home
+                <span class="icon-[tabler--home] size-4 me-1"></span> {{ $trans['nav.dashboard'] ?? 'Home' }}
             </a>
             <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="tab">
-                <span class="icon-[tabler--calendar] size-4 me-1"></span> Schedule
+                <span class="icon-[tabler--calendar] size-4 me-1"></span> {{ $trans['nav.schedule'] ?? 'Schedule' }}
             </a>
             @if($bookingSettings['show_instructors'] ?? true)
             <a href="{{ route('subdomain.instructors', ['subdomain' => $host->subdomain]) }}" class="tab">
-                <span class="icon-[tabler--users] size-4 me-1"></span> Instructors
+                <span class="icon-[tabler--users] size-4 me-1"></span> {{ $trans['nav.instructors'] ?? 'Instructors' }}
             </a>
             @endif
         </div>
@@ -74,11 +77,11 @@
     <section class="mb-12">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h2 class="text-2xl font-bold">Upcoming Classes</h2>
-                <p class="text-base-content/60 mt-1">Join our group fitness sessions</p>
+                <h2 class="text-2xl font-bold">{{ $trans['dashboard.upcoming_classes'] ?? 'Upcoming Classes' }}</h2>
+                <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.join_sessions'] ?? 'Join our group fitness sessions' }}</p>
             </div>
             <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm">
-                View All <span class="icon-[tabler--arrow-right] size-4 ms-1"></span>
+                {{ $trans['btn.view_all'] ?? 'View All' }} <span class="icon-[tabler--arrow-right] size-4 ms-1"></span>
             </a>
         </div>
 
@@ -88,8 +91,8 @@
                 <div class="w-20 h-20 rounded-full bg-base-200 flex items-center justify-center mb-4">
                     <span class="icon-[tabler--calendar-off] size-10 text-base-content/30"></span>
                 </div>
-                <h3 class="text-lg font-semibold">No Upcoming Classes</h3>
-                <p class="text-base-content/60">Check back soon for new classes!</p>
+                <h3 class="text-lg font-semibold">{{ $trans['dashboard.no_classes_today'] ?? 'No Upcoming Classes' }}</h3>
+                <p class="text-base-content/60">{{ $trans['subdomain.home.check_back'] ?? 'Check back soon for new classes!' }}</p>
             </div>
         </div>
         @else
@@ -129,28 +132,28 @@
                     <div class="card-actions justify-between items-center mt-auto pt-2">
                         @php $spotsLeft = $session->capacity - ($session->bookings_count ?? 0); @endphp
                         @if($spotsLeft <= 0)
-                            <span class="badge badge-error">Full</span>
+                            <span class="badge badge-error">{{ $trans['subdomain.schedule.full'] ?? 'Full' }}</span>
                             <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id, 'waitlist' => 1]) }}"
                                class="btn btn-warning btn-sm">
-                                Join Waitlist
+                                {{ $trans['btn.join_waitlist'] ?? 'Join Waitlist' }}
                             </a>
                         @else
                             @if($spotsLeft <= 3)
-                                <span class="badge badge-warning">{{ $spotsLeft }} left</span>
+                                <span class="badge badge-warning">{{ $spotsLeft }} {{ $trans['subdomain.home.left'] ?? 'left' }}</span>
                             @else
-                                <span class="text-xs text-base-content/40">{{ $spotsLeft }} spots</span>
+                                <span class="text-xs text-base-content/40">{{ $spotsLeft }} {{ $trans['subdomain.home.spots'] ?? 'spots' }}</span>
                             @endif
                             <div class="flex items-center gap-2">
                                 <a href="{{ route('subdomain.class', ['subdomain' => $host->subdomain, 'classSession' => $session->id]) }}"
                                    class="btn btn-ghost btn-sm">
                                     <span class="icon-[tabler--info-circle] size-4"></span>
-                                    Details
+                                    {{ $trans['subdomain.class.details'] ?? 'Details' }}
                                 </a>
                                 <form action="{{ route('booking.select-class-session', ['subdomain' => $host->subdomain, 'session' => $session->id]) }}" method="POST">
                                     @csrf
                                     <button type="submit" class="btn btn-primary btn-sm">
                                         <span class="icon-[tabler--calendar-plus] size-4"></span>
-                                        Book
+                                        {{ $trans['btn.book_now'] ?? 'Book' }}
                                     </button>
                                 </form>
                             </div>
@@ -167,8 +170,8 @@
     @if($servicePlans->isNotEmpty() || isset($membershipPlans) && $membershipPlans->isNotEmpty())
     <section class="mb-12">
         <div class="text-center mb-8">
-            <h2 class="text-2xl font-bold">Memberships & Services</h2>
-            <p class="text-base-content/60 mt-1">Join our studio or book a private session</p>
+            <h2 class="text-2xl font-bold">{{ $trans['subdomain.home.memberships'] ?? 'Memberships' }} & {{ $trans['page.services'] ?? 'Services' }}</h2>
+            <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.join_studio'] ?? 'Join our studio or book a private session' }}</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -194,7 +197,7 @@
                                 <div class="text-xs text-base-content/50">/ {{ $plan->interval }}</div>
                                 @else
                                 <div class="text-sm text-base-content/50">
-                                    Not available in {{ $selectedCurrency }}
+                                    {{ $trans['subdomain.home.not_available'] ?? 'Not available in' }} {{ $selectedCurrency }}
                                 </div>
                                 @endif
                             </div>
@@ -202,7 +205,7 @@
 
                         {{-- Name & Description --}}
                         <h3 class="card-title text-lg mt-4">{{ $plan->name }}</h3>
-                        <span class="badge badge-success badge-sm">Membership</span>
+                        <span class="badge badge-success badge-sm">{{ $trans['page.memberships'] ?? 'Membership' }}</span>
                         @if($plan->description)
                         <p class="text-sm text-base-content/60 line-clamp-2">{{ $plan->description }}</p>
                         @endif
@@ -212,19 +215,19 @@
                             @if($plan->type === 'unlimited')
                                 <span class="flex items-center gap-1">
                                     <span class="icon-[tabler--infinity] size-4 text-success"></span>
-                                    Unlimited Classes
+                                    {{ $trans['subdomain.home.unlimited_classes'] ?? 'Unlimited Classes' }}
                                 </span>
                             @else
                                 <span class="flex items-center gap-1">
                                     <span class="icon-[tabler--ticket] size-4"></span>
-                                    {{ $plan->credits_per_cycle }} classes per {{ $plan->interval }}
+                                    {{ $plan->credits_per_cycle }} {{ $trans['page.classes'] ?? 'classes' }} {{ $trans['common.per'] ?? 'per' }} {{ $plan->interval }}
                                 </span>
                             @endif
 
                             @if($plan->addon_members > 0)
                                 <span class="flex items-center gap-1">
                                     <span class="icon-[tabler--users-plus] size-4 text-primary"></span>
-                                    Bring +{{ $plan->addon_members }} {{ Str::plural('guest', $plan->addon_members) }}
+                                    {{ $trans['subdomain.home.bring'] ?? 'Bring' }} +{{ $plan->addon_members }} {{ Str::plural('guest', $plan->addon_members) }}
                                 </span>
                             @endif
                         </div>
@@ -236,7 +239,7 @@
                                 <span class="badge badge-ghost badge-xs">{{ $amenity }}</span>
                             @endforeach
                             @if(count($plan->free_amenities) > 3)
-                                <span class="badge badge-ghost badge-xs">+{{ count($plan->free_amenities) - 3 }} more</span>
+                                <span class="badge badge-ghost badge-xs">+{{ count($plan->free_amenities) - 3 }} {{ $trans['common.more'] ?? 'more' }}</span>
                             @endif
                         </div>
                         @endif
@@ -249,12 +252,12 @@
                                 <input type="hidden" name="currency" value="{{ $selectedCurrency }}">
                                 <button type="submit" class="btn btn-success w-full">
                                     <span class="icon-[tabler--shopping-cart] size-5"></span>
-                                    Get Started
+                                    {{ $trans['subdomain.home.get_started'] ?? 'Get Started' }}
                                 </button>
                             </form>
                             @else
                             <button type="button" class="btn btn-disabled w-full" disabled>
-                                Unavailable
+                                {{ $trans['subdomain.home.unavailable'] ?? 'Unavailable' }}
                             </button>
                             @endif
                         </div>
@@ -293,7 +296,7 @@
                         @if($service->duration_minutes)
                         <span class="flex items-center gap-1">
                             <span class="icon-[tabler--clock] size-4"></span>
-                            {{ $service->duration_minutes }} min
+                            {{ $service->duration_minutes }} {{ $trans['common.minutes'] ?? 'min' }}
                         </span>
                         @endif
                     </div>
@@ -304,13 +307,13 @@
                             @csrf
                             <button type="submit" class="btn btn-primary w-full">
                                 <span class="icon-[tabler--calendar-plus] size-5"></span>
-                                Book Now
+                                {{ $trans['btn.book_now'] ?? 'Book Now' }}
                             </button>
                         </form>
                         <a href="{{ route('subdomain.service-request.plan', ['subdomain' => $host->subdomain, 'servicePlanId' => $service->id]) }}"
                            class="btn btn-ghost btn-sm w-full">
                             <span class="icon-[tabler--info-circle] size-4"></span>
-                            Request Info
+                            {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
                         </a>
                     </div>
                 </div>
@@ -327,7 +330,7 @@
             <div class="card-body">
                 <h2 class="card-title text-2xl mb-4">
                     <span class="icon-[tabler--info-circle] size-6 text-primary"></span>
-                    About Us
+                    {{ $trans['subdomain.home.about_us'] ?? 'About Us' }}
                 </h2>
                 <div class="prose prose-sm max-w-none text-base-content/80">
                     {!! $bookingSettings['about_text'] ?? $host->about !!}
@@ -338,11 +341,11 @@
                 <div class="divider"></div>
                 <div class="flex items-center justify-between">
                     <div>
-                        <h3 class="font-semibold">Meet Our Instructors</h3>
-                        <p class="text-sm text-base-content/60">Expert guidance for your fitness journey</p>
+                        <h3 class="font-semibold">{{ $trans['subdomain.instructors.meet_team'] ?? 'Meet Our Instructors' }}</h3>
+                        <p class="text-sm text-base-content/60">{{ $trans['subdomain.home.expert_guidance'] ?? 'Expert guidance for your fitness journey' }}</p>
                     </div>
                     <a href="{{ route('subdomain.instructors', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm">
-                        View All <span class="icon-[tabler--arrow-right] size-4 ms-1"></span>
+                        {{ $trans['btn.view_all'] ?? 'View All' }} <span class="icon-[tabler--arrow-right] size-4 ms-1"></span>
                     </a>
                 </div>
                 <div class="flex flex-wrap gap-3 mt-4">
@@ -382,7 +385,7 @@
             <div class="card-body">
                 <h2 class="card-title text-2xl mb-4">
                     <span class="icon-[tabler--photo] size-6 text-primary"></span>
-                    Studio Gallery
+                    {{ $trans['subdomain.home.studio_gallery'] ?? 'Studio Gallery' }}
                 </h2>
 
                 {{-- Auto-scrolling Gallery --}}
@@ -392,7 +395,7 @@
                         @foreach($galleryImages as $image)
                         <div class="gallery-slide flex-shrink-0 w-72 h-48 rounded-xl overflow-hidden shadow-md">
                             <img src="{{ $image->image_url }}"
-                                 alt="{{ $image->caption ?? 'Studio gallery' }}"
+                                 alt="{{ $image->caption ?? ($trans['subdomain.home.studio_gallery'] ?? 'Studio gallery') }}"
                                  class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
                             @if($image->caption)
                             <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
@@ -405,7 +408,7 @@
                         @foreach($galleryImages as $image)
                         <div class="gallery-slide flex-shrink-0 w-72 h-48 rounded-xl overflow-hidden shadow-md">
                             <img src="{{ $image->image_url }}"
-                                 alt="{{ $image->caption ?? 'Studio gallery' }}"
+                                 alt="{{ $image->caption ?? ($trans['subdomain.home.studio_gallery'] ?? 'Studio gallery') }}"
                                  class="w-full h-full object-cover hover:scale-105 transition-transform duration-300">
                             @if($image->caption)
                             <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
@@ -438,7 +441,7 @@
             <div class="card-body">
                 <h2 class="card-title text-2xl mb-4">
                     <span class="icon-[tabler--map-pin] size-6 text-primary"></span>
-                    Location
+                    {{ $trans['subdomain.home.location'] ?? 'Location' }}
                 </h2>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -449,7 +452,7 @@
                                 <span class="icon-[tabler--building] size-6 text-primary"></span>
                             </div>
                             <div>
-                                <p class="text-xs text-base-content/50 uppercase font-medium">Address</p>
+                                <p class="text-xs text-base-content/50 uppercase font-medium">{{ $trans['field.address'] ?? 'Address' }}</p>
                                 @if($defaultLocation->address_line_1)
                                     <p class="font-semibold">{{ $defaultLocation->address_line_1 }}</p>
                                     @if($defaultLocation->address_line_2)
@@ -497,7 +500,7 @@
                            target="_blank"
                            class="btn btn-primary btn-sm">
                             <span class="icon-[tabler--external-link] size-4"></span>
-                            Get Directions
+                            {{ $trans['subdomain.home.get_directions'] ?? 'Get Directions' }}
                         </a>
                     </div>
                 </div>
@@ -512,9 +515,9 @@
         <div class="card bg-gradient-to-br from-primary/5 to-secondary/5 border border-base-200">
             <div class="card-body text-center">
                 <h2 class="card-title justify-center text-2xl mb-2">
-                    Follow Us
+                    {{ $trans['subdomain.home.follow_us'] ?? 'Follow Us' }}
                 </h2>
-                <p class="text-base-content/60 mb-6">Stay connected and follow our journey</p>
+                <p class="text-base-content/60 mb-6">{{ $trans['subdomain.home.stay_connected'] ?? 'Stay connected and follow our journey' }}</p>
 
                 <div class="flex items-center justify-center gap-4 flex-wrap">
                     @if(!empty($host->social_links['instagram']))

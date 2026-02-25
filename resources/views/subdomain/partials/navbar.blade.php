@@ -1,12 +1,22 @@
 @php
+    // Currency setup
     $hostCurrencies = $host->currencies ?? [$host->default_currency ?? 'USD'];
-    // Ensure currencies is an array
     if (!is_array($hostCurrencies)) {
         $hostCurrencies = [$host->default_currency ?? 'USD'];
     }
     $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
     $currencySymbols = \App\Models\MembershipPlan::getCurrencySymbols();
     $hasMultipleCurrencies = count($hostCurrencies) > 1;
+
+    // Language setup
+    $hostLanguages = $host->studio_languages ?? [$host->default_language_booking ?? 'en'];
+    if (!is_array($hostLanguages) || empty($hostLanguages)) {
+        $hostLanguages = ['en'];
+    }
+    $selectedLanguage = session("language_{$host->id}", $host->default_language_booking ?? 'en');
+    $languageNames = ['en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch', 'es' => 'Español'];
+    $languageFlags = ['en' => '🇺🇸', 'fr' => '🇫🇷', 'de' => '🇩🇪', 'es' => '🇪🇸'];
+    $hasMultipleLanguages = count($hostLanguages) > 1;
 @endphp
 
 {{-- Navigation Bar - 75px height --}}
@@ -29,8 +39,43 @@
                 @endif
             </div>
 
-            {{-- Right: Currency Picker + Request Booking + Member Login --}}
+            {{-- Right: Language Picker + Currency Picker + Request Booking + Member Login --}}
             <div class="flex items-center gap-3">
+                {{-- Language Picker (only show if multiple languages) --}}
+                @if($hasMultipleLanguages)
+                <div class="relative" id="language-dropdown">
+                    <button type="button"
+                            class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg hover:bg-base-200 transition-colors"
+                            id="language-picker-btn">
+                        <span id="current-language-flag">{{ $languageFlags[$selectedLanguage] ?? '🌐' }}</span>
+                        <span id="current-language-code" class="hidden sm:inline">{{ strtoupper($selectedLanguage) }}</span>
+                        <svg class="w-4 h-4 transition-transform" id="language-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div id="language-menu"
+                         class="hidden absolute right-0 mt-2 w-48 bg-base-100 rounded-lg shadow-lg border border-base-200 py-1 z-50">
+                        <div class="px-3 py-2 text-xs text-base-content/60 border-b border-base-200">Select Language</div>
+                        @foreach($hostLanguages as $lang)
+                            <button type="button"
+                                    class="language-option w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors {{ $lang === $selectedLanguage ? 'bg-primary/10' : '' }}"
+                                    data-language="{{ $lang }}"
+                                    data-flag="{{ $languageFlags[$lang] ?? '🌐' }}"
+                                    data-name="{{ $languageNames[$lang] ?? $lang }}">
+                                <span class="w-6">{{ $languageFlags[$lang] ?? '🌐' }}</span>
+                                <span>{{ $languageNames[$lang] ?? $lang }}</span>
+                                @if($lang === $selectedLanguage)
+                                    <svg class="w-4 h-4 ml-auto text-success language-check" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                @endif
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="w-px h-6 bg-base-300 hidden sm:block"></div>
+                @endif
+
                 {{-- Currency Picker (only show if multiple currencies) --}}
                 @if($hasMultipleCurrencies)
                 <div class="relative" id="currency-dropdown">
@@ -172,6 +217,83 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error setting currency:', error);
+            });
+        });
+    });
+});
+</script>
+@endpush
+@endif
+
+{{-- Language Picker JavaScript --}}
+@if($hasMultipleLanguages)
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const langPickerBtn = document.getElementById('language-picker-btn');
+    const langMenu = document.getElementById('language-menu');
+    const langChevron = document.getElementById('language-chevron');
+    const languageOptions = document.querySelectorAll('.language-option');
+    const langFlagEl = document.getElementById('current-language-flag');
+    const langCodeEl = document.getElementById('current-language-code');
+
+    // Toggle dropdown
+    langPickerBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        langMenu.classList.toggle('hidden');
+        langChevron.classList.toggle('rotate-180');
+    });
+
+    // Close on click outside
+    document.addEventListener('click', function(e) {
+        if (!langMenu.contains(e.target) && !langPickerBtn.contains(e.target)) {
+            langMenu.classList.add('hidden');
+            langChevron.classList.remove('rotate-180');
+        }
+    });
+
+    // Handle language selection
+    languageOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            const language = this.dataset.language;
+            const flag = this.dataset.flag;
+
+            // Update UI immediately
+            langFlagEl.textContent = flag;
+            if (langCodeEl) langCodeEl.textContent = language.toUpperCase();
+
+            // Update active state
+            languageOptions.forEach(opt => {
+                opt.classList.remove('bg-primary/10');
+                const checkIcon = opt.querySelector('.language-check');
+                if (checkIcon) checkIcon.remove();
+            });
+            this.classList.add('bg-primary/10');
+            this.insertAdjacentHTML('beforeend', '<svg class="w-4 h-4 ml-auto text-success language-check" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>');
+
+            // Close dropdown
+            langMenu.classList.add('hidden');
+            langChevron.classList.remove('rotate-180');
+
+            // Save to server
+            fetch('{{ route("subdomain.set-language", ["subdomain" => $host->subdomain]) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ language: language })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload page to update all translations
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error setting language:', error);
             });
         });
     });

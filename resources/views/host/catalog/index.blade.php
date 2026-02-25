@@ -1,12 +1,20 @@
+@php
+    $user = auth()->user();
+    $host = $user->currentHost() ?? $user->host;
+    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
+@endphp
+
 @extends('layouts.dashboard')
 
-@section('title', 'Catalog')
+@section('title', $trans['nav.catalog'] ?? 'Catalog')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> Catalog</li>
+        <li aria-current="page"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> {{ $trans['nav.catalog'] ?? 'Catalog' }}</li>
     </ol>
 @endsection
 
@@ -14,8 +22,8 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div>
-        <h1 class="text-2xl font-bold">Classes & Services</h1>
-        <p class="text-base-content/60 mt-1">Manage your class templates and service offerings.</p>
+        <h1 class="text-2xl font-bold">{{ $trans['page.classes'] ?? 'Classes' }} & {{ $trans['page.services'] ?? 'Services' }}</h1>
+        <p class="text-base-content/60 mt-1">{{ $trans['catalog.description'] ?? 'Manage your class templates and service offerings.' }}</p>
     </div>
 
     {{-- Tabs & Actions --}}
@@ -24,17 +32,17 @@
             <a href="{{ route('catalog.index', ['tab' => 'classes', 'view' => request('view', 'list')]) }}"
                class="tab {{ $tab === 'classes' ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--users-group] size-4 mr-2"></span>
-                Class Plans
+                {{ $trans['nav.catalog.class_plans'] ?? 'Class Plans' }}
             </a>
             <a href="{{ route('catalog.index', ['tab' => 'services', 'view' => request('view', 'list')]) }}"
                class="tab {{ $tab === 'services' ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--user] size-4 mr-2"></span>
-                Service Plans
+                {{ $trans['nav.catalog.service_plans'] ?? 'Service Plans' }}
             </a>
             <a href="{{ route('catalog.index', ['tab' => 'memberships', 'view' => request('view', 'list')]) }}"
                class="tab {{ $tab === 'memberships' ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>
-                Memberships
+                {{ $trans['page.memberships'] ?? 'Memberships' }}
             </a>
         </div>
 
@@ -42,11 +50,11 @@
             {{-- View Toggle --}}
             <div class="btn-group">
                 <a href="{{ route('catalog.index', ['tab' => $tab, 'view' => 'list']) }}"
-                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="List View">
+                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.list'] ?? 'List View' }}">
                     <span class="icon-[tabler--list] size-4"></span>
                 </a>
                 <a href="{{ route('catalog.index', ['tab' => $tab, 'view' => 'grid']) }}"
-                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="Grid View">
+                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.grid'] ?? 'Grid View' }}">
                     <span class="icon-[tabler--layout-grid] size-4"></span>
                 </a>
             </div>
@@ -54,17 +62,17 @@
             @if($tab === 'classes')
             <a href="{{ route('class-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Class Plan
+                {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.catalog.class_plans'] ?? 'Class Plan' }}
             </a>
             @elseif($tab === 'services')
             <a href="{{ route('service-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Service Plan
+                {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.catalog.service_plans'] ?? 'Service Plan' }}
             </a>
             @else
             <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Membership
+                {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['page.memberships'] ?? 'Membership' }}
             </a>
             @endif
         </div>
@@ -76,11 +84,11 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--users-group] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Class Plans Yet</h3>
-                <p class="text-base-content/60 mb-4">Create your first class plan template to start scheduling classes.</p>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['catalog.no_class_plans'] ?? 'No Class Plans Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['catalog.no_class_plans_desc'] ?? 'Create your first class plan template to start scheduling classes.' }}</p>
                 <a href="{{ route('class-plans.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Create First Class Plan
+                    {{ $trans['catalog.create_first_class'] ?? 'Create First Class Plan' }}
                 </a>
             </div>
         </div>
@@ -107,9 +115,9 @@
                         </div>
                         <div class="flex items-center gap-1">
                             @if($classPlan->is_active)
-                                <span class="badge badge-soft badge-success badge-sm">Active</span>
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
-                                <span class="badge badge-soft badge-neutral badge-sm">Inactive</span>
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
                             @endif
                         </div>
                     </div>
@@ -125,7 +133,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $classPlan->default_capacity }} max</span>
+                            <span>{{ $classPlan->default_capacity }} {{ $trans['common.max'] ?? 'max' }}</span>
                         </div>
                         <span class="badge {{ $classPlan->getDifficultyBadgeClass() }} badge-sm capitalize">{{ str_replace('_', ' ', $classPlan->difficulty_level) }}</span>
                     </div>
@@ -137,9 +145,9 @@
                         </a>
                         <a href="{{ route('class-plans.edit', $classPlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
                             <span class="icon-[tabler--edit] size-4"></span>
-                            Edit
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', 'class plan')">
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>
@@ -169,9 +177,9 @@
                         </div>
                         <div class="flex items-center gap-2">
                             @if($classPlan->is_active)
-                                <span class="badge badge-soft badge-success badge-sm">Active</span>
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
-                                <span class="badge badge-soft badge-neutral badge-sm">Inactive</span>
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
                             @endif
                             <span class="badge {{ $classPlan->getDifficultyBadgeClass() }} badge-soft badge-sm capitalize">{{ str_replace('_', ' ', $classPlan->difficulty_level) }}</span>
                         </div>
@@ -184,7 +192,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $classPlan->default_capacity }} max</span>
+                            <span>{{ $classPlan->default_capacity }} {{ $trans['common.max'] ?? 'max' }}</span>
                         </div>
                         @if($classPlan->description)
                         <p class="text-base-content/60 line-clamp-1 flex-1">{{ $classPlan->description }}</p>
@@ -195,13 +203,13 @@
                     <div class="card-actions justify-end mt-2">
                         <a href="{{ route('class-plans.show', $classPlan) }}" class="btn btn-sm btn-soft btn-secondary">
                             <span class="icon-[tabler--eye] size-4"></span>
-                            View
+                            {{ $trans['btn.view'] ?? 'View' }}
                         </a>
                         <a href="{{ route('class-plans.edit', $classPlan) }}" class="btn btn-sm btn-soft btn-primary">
                             <span class="icon-[tabler--edit] size-4"></span>
-                            Edit
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', 'class plan')">
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>
@@ -216,11 +224,11 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--user] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Service Plans Yet</h3>
-                <p class="text-base-content/60 mb-4">Create your first service plan for private sessions or consultations.</p>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['catalog.no_service_plans'] ?? 'No Service Plans Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['catalog.no_service_plans_desc'] ?? 'Create your first service plan for private sessions or consultations.' }}</p>
                 <a href="{{ route('service-plans.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Create First Service Plan
+                    {{ $trans['catalog.create_first_service'] ?? 'Create First Service Plan' }}
                 </a>
             </div>
         </div>
@@ -247,9 +255,9 @@
                         </div>
                         <div class="flex items-center gap-1">
                             @if($servicePlan->is_active)
-                                <span class="badge badge-soft badge-success badge-sm">Active</span>
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
-                                <span class="badge badge-soft badge-neutral badge-sm">Inactive</span>
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
                             @endif
                         </div>
                     </div>
@@ -265,7 +273,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->active_instructors_count }} instructor{{ $servicePlan->active_instructors_count !== 1 ? 's' : '' }}</span>
+                            <span>{{ $servicePlan->active_instructors_count }} {{ $trans['common.instructor'] ?? 'instructor' }}{{ $servicePlan->active_instructors_count !== 1 ? 's' : '' }}</span>
                         </div>
                         <span class="badge badge-soft badge-neutral badge-sm capitalize">{{ str_replace('_', ' ', $servicePlan->location_type) }}</span>
                     </div>
@@ -277,12 +285,12 @@
                         </a>
                         <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
                             <span class="icon-[tabler--edit] size-4"></span>
-                            Edit
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
                         <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-info">
                             <span class="icon-[tabler--users] size-4"></span>
                         </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', 'service plan')">
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>
@@ -312,9 +320,9 @@
                         </div>
                         <div class="flex items-center gap-2">
                             @if($servicePlan->is_active)
-                                <span class="badge badge-soft badge-success badge-sm">Active</span>
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
-                                <span class="badge badge-soft badge-neutral badge-sm">Inactive</span>
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
                             @endif
                             <span class="badge badge-soft badge-neutral badge-sm capitalize">{{ str_replace('_', ' ', $servicePlan->location_type) }}</span>
                         </div>
@@ -327,7 +335,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->active_instructors_count }} instructor{{ $servicePlan->active_instructors_count !== 1 ? 's' : '' }}</span>
+                            <span>{{ $servicePlan->active_instructors_count }} {{ $trans['common.instructor'] ?? 'instructor' }}{{ $servicePlan->active_instructors_count !== 1 ? 's' : '' }}</span>
                         </div>
                         @if($servicePlan->description)
                         <p class="text-base-content/60 line-clamp-1 flex-1">{{ $servicePlan->description }}</p>
@@ -338,17 +346,17 @@
                     <div class="card-actions justify-end mt-2">
                         <a href="{{ route('service-plans.show', $servicePlan) }}" class="btn btn-sm btn-soft btn-secondary">
                             <span class="icon-[tabler--eye] size-4"></span>
-                            View
+                            {{ $trans['btn.view'] ?? 'View' }}
                         </a>
                         <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary">
                             <span class="icon-[tabler--edit] size-4"></span>
-                            Edit
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
                         <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-info">
                             <span class="icon-[tabler--users] size-4"></span>
-                            Instructors
+                            {{ $trans['nav.instructors'] ?? 'Instructors' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', 'service plan')">
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>
@@ -364,11 +372,11 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--id-badge-2] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Membership Plans Yet</h3>
-                <p class="text-base-content/60 mb-4">Create membership plans to offer recurring access to your classes.</p>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['catalog.no_membership_plans'] ?? 'No Membership Plans Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['catalog.no_membership_plans_desc'] ?? 'Create membership plans to offer recurring access to your classes.' }}</p>
                 <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Create First Membership
+                    {{ $trans['catalog.create_first_membership'] ?? 'Create First Membership' }}
                 </a>
             </div>
         </div>
@@ -402,7 +410,7 @@
                         @if($membershipPlan->isCredits())
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
-                            <span>{{ $membershipPlan->credits_per_cycle }} credits</span>
+                            <span>{{ $membershipPlan->credits_per_cycle }} {{ $trans['common.credits'] ?? 'credits' }}</span>
                         </div>
                         @endif
                         <span class="badge {{ $membershipPlan->type_badge_class }} badge-soft badge-sm">{{ $membershipPlan->formatted_type }}</span>
@@ -415,9 +423,9 @@
                         </a>
                         <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
                             <span class="icon-[tabler--edit] size-4"></span>
-                            Edit
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', 'membership plan')">
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>
@@ -453,13 +461,13 @@
                         @if($membershipPlan->isCredits())
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
-                            <span>{{ $membershipPlan->credits_per_cycle }} credits/cycle</span>
+                            <span>{{ $membershipPlan->credits_per_cycle }} {{ $trans['common.credits_per_cycle'] ?? 'credits/cycle' }}</span>
                         </div>
                         @endif
                         @if($membershipPlan->coversAllClasses())
-                        <span class="text-base-content/60">All Classes</span>
+                        <span class="text-base-content/60">{{ $trans['common.all_classes'] ?? 'All Classes' }}</span>
                         @else
-                        <span class="text-base-content/60">{{ $membershipPlan->class_plans_count }} class plan(s)</span>
+                        <span class="text-base-content/60">{{ $membershipPlan->class_plans_count }} {{ $trans['common.class_plans'] ?? 'class plan(s)' }}</span>
                         @endif
                         @if($membershipPlan->description)
                         <p class="text-base-content/60 line-clamp-1 flex-1">{{ $membershipPlan->description }}</p>
@@ -470,13 +478,13 @@
                     <div class="card-actions justify-end mt-2">
                         <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="btn btn-sm btn-soft btn-secondary">
                             <span class="icon-[tabler--eye] size-4"></span>
-                            View
+                            {{ $trans['btn.view'] ?? 'View' }}
                         </a>
                         <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-sm btn-soft btn-primary">
                             <span class="icon-[tabler--edit] size-4"></span>
-                            Edit
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', 'membership plan')">
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>
@@ -497,21 +505,21 @@
                 <span class="icon-[tabler--trash] size-6 text-error"></span>
             </div>
             <div>
-                <h3 class="font-bold text-lg">Delete <span id="deleteItemType"></span></h3>
-                <p class="text-base-content/60 text-sm">This action cannot be undone.</p>
+                <h3 class="font-bold text-lg">{{ $trans['btn.delete'] ?? 'Delete' }} <span id="deleteItemType"></span></h3>
+                <p class="text-base-content/60 text-sm">{{ $trans['common.action_cannot_undone'] ?? 'This action cannot be undone.' }}</p>
             </div>
         </div>
-        <p class="py-2">Are you sure you want to delete <strong id="deleteItemName"></strong>?</p>
+        <p class="py-2">{{ $trans['common.confirm_delete'] ?? 'Are you sure you want to delete' }} <strong id="deleteItemName"></strong>?</p>
         <div class="modal-action">
             <form method="dialog">
-                <button class="btn btn-ghost">Cancel</button>
+                <button class="btn btn-ghost">{{ $trans['btn.cancel'] ?? 'Cancel' }}</button>
             </form>
             <form id="deleteForm" method="POST">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn btn-error">
                     <span class="icon-[tabler--trash] size-4"></span>
-                    Delete
+                    {{ $trans['btn.delete'] ?? 'Delete' }}
                 </button>
             </form>
         </div>

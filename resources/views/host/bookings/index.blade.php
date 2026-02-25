@@ -1,17 +1,25 @@
+@php
+    $user = auth()->user();
+    $host = $user->currentHost() ?? $user->host;
+    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
+@endphp
+
 @extends('layouts.dashboard')
 
 @section('title', $title)
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         @if($filter)
-            <li><a href="{{ route('bookings.index') }}"><span class="icon-[tabler--book] me-1 size-4"></span> Bookings</a></li>
+            <li><a href="{{ route('bookings.index') }}"><span class="icon-[tabler--book] me-1 size-4"></span> {{ $trans['nav.bookings'] ?? 'Bookings' }}</a></li>
             <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
             <li aria-current="page">{{ $title }}</li>
         @else
-            <li aria-current="page"><span class="icon-[tabler--book] me-1 size-4"></span> Bookings</li>
+            <li aria-current="page"><span class="icon-[tabler--book] me-1 size-4"></span> {{ $trans['nav.bookings'] ?? 'Bookings' }}</li>
         @endif
     </ol>
 @endsection
@@ -23,7 +31,7 @@
         <h1 class="text-2xl font-bold">{{ $title }}</h1>
         <a href="{{ route('walk-in.select') }}" class="btn btn-primary">
             <span class="icon-[tabler--plus] size-5"></span>
-            Booking
+            {{ $trans['bookings.booking'] ?? 'Booking' }}
         </a>
     </div>
 
@@ -32,22 +40,22 @@
         <a href="{{ route('bookings.index') }}"
            class="tab {{ !$filter ? 'tab-active' : '' }}">
             <span class="icon-[tabler--clipboard-list] size-4 mr-1"></span>
-            All Bookings
+            {{ $trans['bookings.all_bookings'] ?? 'All Bookings' }}
         </a>
         <a href="{{ route('bookings.upcoming') }}"
            class="tab {{ $filter === 'upcoming' ? 'tab-active' : '' }}">
             <span class="icon-[tabler--clock] size-4 mr-1"></span>
-            Upcoming
+            {{ $trans['bookings.upcoming'] ?? 'Upcoming' }}
         </a>
         <a href="{{ route('bookings.cancelled') }}"
            class="tab {{ $filter === 'cancelled' ? 'tab-active' : '' }}">
             <span class="icon-[tabler--circle-x] size-4 mr-1"></span>
-            Cancellations
+            {{ $trans['bookings.cancellations'] ?? 'Cancellations' }}
         </a>
         <a href="{{ route('bookings.no-shows') }}"
            class="tab {{ $filter === 'no-shows' ? 'tab-active' : '' }}">
             <span class="icon-[tabler--user-x] size-4 mr-1"></span>
-            No-Shows
+            {{ $trans['bookings.no_shows'] ?? 'No-Shows' }}
         </a>
     </div>
 
@@ -56,20 +64,20 @@
         <div class="card-body p-4">
             <form method="GET" action="{{ url()->current() }}" class="flex flex-wrap items-end gap-3">
                 <div class="form-control flex-1 min-w-[200px]">
-                    <label class="label" for="search"><span class="label-text">Search</span></label>
+                    <label class="label" for="search"><span class="label-text">{{ $trans['common.search'] ?? 'Search' }}</span></label>
                     <div class="relative">
                         <span class="icon-[tabler--search] size-5 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2"></span>
                         <input type="text" name="search" id="search" value="{{ request('search') }}"
                                class="input input-bordered w-full pl-10"
-                               placeholder="Search by client name or email...">
+                               placeholder="{{ $trans['bookings.search_placeholder'] ?? 'Search by client name or email...' }}">
                     </div>
                 </div>
 
                 @if(!$filter)
                 <div class="form-control w-40">
-                    <label class="label" for="status"><span class="label-text">Status</span></label>
+                    <label class="label" for="status"><span class="label-text">{{ $trans['common.status'] ?? 'Status' }}</span></label>
                     <select name="status" id="status" class="select select-bordered">
-                        <option value="">All Statuses</option>
+                        <option value="">{{ $trans['schedule.all_statuses'] ?? 'All Statuses' }}</option>
                         @foreach($statuses as $value => $label)
                             <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
@@ -77,9 +85,9 @@
                 </div>
 
                 <div class="form-control w-40">
-                    <label class="label" for="source"><span class="label-text">Source</span></label>
+                    <label class="label" for="source"><span class="label-text">{{ $trans['bookings.source'] ?? 'Source' }}</span></label>
                     <select name="source" id="source" class="select select-bordered">
-                        <option value="">All Sources</option>
+                        <option value="">{{ $trans['bookings.all_sources'] ?? 'All Sources' }}</option>
                         @foreach($sources as $value => $label)
                             <option value="{{ $value }}" {{ request('source') === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
@@ -87,9 +95,9 @@
                 </div>
 
                 <div class="form-control w-40">
-                    <label class="label" for="payment"><span class="label-text">Payment</span></label>
+                    <label class="label" for="payment"><span class="label-text">{{ $trans['bookings.payment'] ?? 'Payment' }}</span></label>
                     <select name="payment" id="payment" class="select select-bordered">
-                        <option value="">All Methods</option>
+                        <option value="">{{ $trans['bookings.all_methods'] ?? 'All Methods' }}</option>
                         @foreach($paymentMethods as $value => $label)
                             <option value="{{ $value }}" {{ request('payment') === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
@@ -99,13 +107,13 @@
 
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--search] size-4"></span>
-                    Search
+                    {{ $trans['common.search'] ?? 'Search' }}
                 </button>
 
                 @if(request()->hasAny(['search', 'status', 'source', 'payment']))
                 <a href="{{ url()->current() }}" class="btn btn-ghost">
                     <span class="icon-[tabler--x] size-4"></span>
-                    Clear
+                    {{ $trans['btn.clear'] ?? 'Clear' }}
                 </a>
                 @endif
             </form>
@@ -118,16 +126,16 @@
             @if($bookings->isEmpty())
                 <div class="text-center py-12">
                     <span class="icon-[tabler--calendar-off] size-12 text-base-content/30 mx-auto mb-4"></span>
-                    <h3 class="font-semibold text-lg">No Bookings Found</h3>
+                    <h3 class="font-semibold text-lg">{{ $trans['bookings.no_bookings_found'] ?? 'No Bookings Found' }}</h3>
                     <p class="text-base-content/60 text-sm mt-1">
                         @if($filter === 'upcoming')
-                            There are no upcoming bookings at the moment.
+                            {{ $trans['bookings.no_upcoming'] ?? 'There are no upcoming bookings at the moment.' }}
                         @elseif($filter === 'cancelled')
-                            No bookings have been cancelled.
+                            {{ $trans['bookings.no_cancelled'] ?? 'No bookings have been cancelled.' }}
                         @elseif($filter === 'no-shows')
-                            No clients have been marked as no-shows.
+                            {{ $trans['bookings.no_no_shows'] ?? 'No clients have been marked as no-shows.' }}
                         @else
-                            No bookings match your search criteria.
+                            {{ $trans['bookings.no_match_search'] ?? 'No bookings match your search criteria.' }}
                         @endif
                     </p>
                 </div>
@@ -136,13 +144,13 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Date/Time</th>
-                                <th>Client</th>
-                                <th>Class/Service</th>
-                                <th>Source</th>
-                                <th>Payment</th>
-                                <th>Status</th>
-                                <th class="text-center">Intake</th>
+                                <th>{{ $trans['bookings.date_time'] ?? 'Date/Time' }}</th>
+                                <th>{{ $trans['field.client'] ?? 'Client' }}</th>
+                                <th>{{ $trans['bookings.class_service'] ?? 'Class/Service' }}</th>
+                                <th>{{ $trans['bookings.source'] ?? 'Source' }}</th>
+                                <th>{{ $trans['bookings.payment'] ?? 'Payment' }}</th>
+                                <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                                <th class="text-center">{{ $trans['schedule.intake'] ?? 'Intake' }}</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -175,15 +183,15 @@
                                             </div>
                                         </div>
                                     @else
-                                        <span class="text-base-content/50">Unknown Client</span>
+                                        <span class="text-base-content/50">{{ $trans['bookings.unknown_client'] ?? 'Unknown Client' }}</span>
                                     @endif
                                 </td>
                                 <td>
                                     <div class="font-medium">
                                         @if($booking->bookable)
-                                            {{ $booking->bookable->display_title ?? $booking->bookable->title ?? 'Unknown' }}
+                                            {{ $booking->bookable->display_title ?? $booking->bookable->title ?? ($trans['common.unknown'] ?? 'Unknown') }}
                                         @else
-                                            <span class="text-base-content/50">Deleted</span>
+                                            <span class="text-base-content/50">{{ $trans['common.deleted'] ?? 'Deleted' }}</span>
                                         @endif
                                     </div>
                                     <div class="text-sm text-base-content/60">
@@ -209,7 +217,7 @@
                                     </span>
                                     @if($booking->isCheckedIn())
                                         <div class="text-xs text-success mt-0.5">
-                                            <span class="icon-[tabler--check] size-3"></span> Checked in
+                                            <span class="icon-[tabler--check] size-3"></span> {{ $trans['bookings.checked_in'] ?? 'Checked in' }}
                                         </div>
                                     @endif
                                 </td>
@@ -230,30 +238,30 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="View Details" onclick="openDrawer('booking-{{ $booking->id }}', event)">
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['bookings.view_details'] ?? 'View Details' }}" onclick="openDrawer('booking-{{ $booking->id }}', event)">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </button>
                                         <div class="dropdown relative inline-flex [--trigger:hover] [--placement:bottom-end]">
-                                            <button type="button" class="dropdown-toggle btn btn-ghost btn-xs btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
+                                            <button type="button" class="dropdown-toggle btn btn-ghost btn-xs btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="{{ $trans['common.actions'] ?? 'Actions' }}">
                                                 <span class="icon-[tabler--dots] size-4"></span>
                                             </button>
                                             <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu">
                                                 <li>
                                                     <a class="dropdown-item" href="{{ route('bookings.show', $booking) }}">
-                                                        <span class="icon-[tabler--eye] size-4 me-2"></span>View Details
+                                                        <span class="icon-[tabler--eye] size-4 me-2"></span>{{ $trans['bookings.view_details'] ?? 'View Details' }}
                                                     </a>
                                                 </li>
                                                 @if($booking->client)
                                                 <li>
                                                     <a class="dropdown-item" href="{{ route('clients.show', $booking->client) }}">
-                                                        <span class="icon-[tabler--user] size-4 me-2"></span>View Client
+                                                        <span class="icon-[tabler--user] size-4 me-2"></span>{{ $trans['bookings.view_client'] ?? 'View Client' }}
                                                     </a>
                                                 </li>
                                                 @endif
                                                 @if($booking->bookable && $booking->bookable_type === 'App\\Models\\ClassSession')
                                                 <li>
                                                     <a class="dropdown-item" href="{{ route('class-sessions.show', $booking->bookable_id) }}">
-                                                        <span class="icon-[tabler--calendar-event] size-4 me-2"></span>View Session
+                                                        <span class="icon-[tabler--calendar-event] size-4 me-2"></span>{{ $trans['bookings.view_session'] ?? 'View Session' }}
                                                     </a>
                                                 </li>
                                                 @endif

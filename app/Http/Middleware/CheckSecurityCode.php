@@ -33,6 +33,8 @@ class CheckSecurityCode
      */
     protected array $exemptRoutePrefixes = [
         'subdomain.',  // All public booking page routes
+        'booking.',    // All booking flow routes (guest checkout)
+        'member.',     // All member portal routes
     ];
 
     /**

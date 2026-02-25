@@ -1,12 +1,20 @@
+@php
+    $user = auth()->user();
+    $host = $user->currentHost() ?? $user->host;
+    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
+@endphp
+
 @extends('layouts.dashboard')
 
-@section('title', 'All Clients')
+@section('title', $trans['clients.all_clients'] ?? 'All Clients')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--users] me-1 size-4"></span> Clients</li>
+        <li aria-current="page"><span class="icon-[tabler--users] me-1 size-4"></span> {{ $trans['nav.clients'] ?? 'Clients' }}</li>
     </ol>
 @endsection
 
@@ -14,8 +22,8 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div>
-        <h1 class="text-2xl font-bold">Clients</h1>
-        <p class="text-base-content/60 mt-1">Manage your studio's clients, leads, and members.</p>
+        <h1 class="text-2xl font-bold">{{ $trans['nav.clients'] ?? 'Clients' }}</h1>
+        <p class="text-base-content/60 mt-1">{{ $trans['clients.manage_description'] ?? 'Manage your studio\'s clients, leads, and members.' }}</p>
     </div>
 
     {{-- Stats Cards --}}
@@ -28,7 +36,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $clients->total() }}</p>
-                        <p class="text-xs text-base-content/60">Total Clients</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.all_clients'] ?? 'Total Clients' }}</p>
                     </div>
                 </div>
             </div>
@@ -41,7 +49,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ \App\Models\Client::forHost(auth()->user()->currentHost()->id ?? auth()->user()->host_id)->active()->leads()->count() }}</p>
-                        <p class="text-xs text-base-content/60">Leads</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.leads'] ?? 'Leads' }}</p>
                     </div>
                 </div>
             </div>
@@ -54,7 +62,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ \App\Models\Client::forHost(auth()->user()->currentHost()->id ?? auth()->user()->host_id)->active()->members()->count() }}</p>
-                        <p class="text-xs text-base-content/60">Members</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['nav.clients.members'] ?? 'Members' }}</p>
                     </div>
                 </div>
             </div>
@@ -67,7 +75,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ \App\Models\Client::forHost(auth()->user()->currentHost()->id ?? auth()->user()->host_id)->active()->atRisk()->count() }}</p>
-                        <p class="text-xs text-base-content/60">At-Risk</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.at_risk'] ?? 'At-Risk' }}</p>
                     </div>
                 </div>
             </div>
@@ -79,19 +87,19 @@
         <div class="tabs tabs-bordered">
             <a href="{{ route('clients.index') }}" class="tab tab-active">
                 <span class="icon-[tabler--users] size-4 mr-2"></span>
-                All Clients
+                {{ $trans['clients.all_clients'] ?? 'All Clients' }}
             </a>
             <a href="{{ route('clients.leads') }}" class="tab">
                 <span class="icon-[tabler--target] size-4 mr-2"></span>
-                Leads
+                {{ $trans['clients.leads'] ?? 'Leads' }}
             </a>
             <a href="{{ route('clients.members') }}" class="tab">
                 <span class="icon-[tabler--user-check] size-4 mr-2"></span>
-                Members
+                {{ $trans['nav.clients.members'] ?? 'Members' }}
             </a>
             <a href="{{ route('clients.at-risk') }}" class="tab">
                 <span class="icon-[tabler--alert-triangle] size-4 mr-2"></span>
-                At-Risk
+                {{ $trans['clients.at_risk'] ?? 'At-Risk' }}
             </a>
         </div>
 
@@ -99,18 +107,18 @@
             {{-- View Toggle --}}
             <div class="btn-group">
                 <a href="{{ route('clients.index', array_merge(request()->query(), ['view' => 'list'])) }}"
-                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="List View">
+                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.list'] ?? 'List View' }}">
                     <span class="icon-[tabler--list] size-4"></span>
                 </a>
                 <a href="{{ route('clients.index', array_merge(request()->query(), ['view' => 'grid'])) }}"
-                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="Grid View">
+                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.grid'] ?? 'Grid View' }}">
                     <span class="icon-[tabler--layout-grid] size-4"></span>
                 </a>
             </div>
 
             <a href="{{ route('clients.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Client
+                {{ $trans['clients.add_client'] ?? 'Add Client' }}
             </a>
         </div>
     </div>
@@ -121,18 +129,18 @@
             <form action="{{ route('clients.index') }}" method="GET" class="flex flex-wrap gap-4 items-end">
                 <input type="hidden" name="view" value="{{ request('view', 'list') }}">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="search">Search</label>
+                    <label class="label-text" for="search">{{ $trans['btn.search'] ?? 'Search' }}</label>
                     <div class="relative">
                         <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"></span>
                         <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="Name, email, or phone..."
+                               placeholder="{{ $trans['clients.search_placeholder'] ?? 'Name, email, or phone...' }}"
                                class="input w-full pl-10">
                     </div>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="status">Status</label>
+                    <label class="label-text" for="status">{{ $trans['common.status'] ?? 'Status' }}</label>
                     <select id="status" name="status" class="select w-full">
-                        <option value="">All Statuses</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['common.status'] ?? 'Statuses' }}</option>
                         @foreach($statuses as $key => $label)
                             <option value="{{ $key }}" {{ ($filters['status'] ?? '') === $key ? 'selected' : '' }}>
                                 {{ $label }}
@@ -141,9 +149,9 @@
                     </select>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="source">Source</label>
+                    <label class="label-text" for="source">{{ $trans['clients.lead_source'] ?? 'Source' }}</label>
                     <select id="source" name="source" class="select w-full">
-                        <option value="">All Sources</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} Sources</option>
                         @foreach($sources as $key => $label)
                             <option value="{{ $key }}" {{ ($filters['source'] ?? '') === $key ? 'selected' : '' }}>
                                 {{ $label }}
@@ -152,9 +160,9 @@
                     </select>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="tag">Tag</label>
+                    <label class="label-text" for="tag">{{ $trans['clients.tags'] ?? 'Tag' }}</label>
                     <select id="tag" name="tag" class="select w-full">
-                        <option value="">All Tags</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['clients.tags'] ?? 'Tags' }}</option>
                         @foreach($tags as $tag)
                             <option value="{{ $tag->id }}" {{ ($filters['tag'] ?? '') == $tag->id ? 'selected' : '' }}>
                                 {{ $tag->name }}
@@ -164,12 +172,12 @@
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--filter] size-5"></span>
-                    Filter
+                    {{ $trans['btn.filter'] ?? 'Filter' }}
                 </button>
                 @if(!empty(array_filter($filters ?? [])))
                     <a href="{{ route('clients.index') }}" class="btn btn-ghost">
                         <span class="icon-[tabler--x] size-4"></span>
-                        Clear
+                        {{ $trans['btn.clear'] ?? 'Clear' }}
                     </a>
                 @endif
             </form>
@@ -181,21 +189,21 @@
     <div class="card bg-base-100">
         <div class="card-body text-center py-12">
             <span class="icon-[tabler--users] size-16 text-base-content/20 mx-auto mb-4"></span>
-            <h3 class="text-lg font-semibold mb-2">No Clients Found</h3>
+            <h3 class="text-lg font-semibold mb-2">{{ $trans['clients.no_clients'] ?? 'No Clients Found' }}</h3>
             <p class="text-base-content/60 mb-4">
                 @if(!empty(array_filter($filters ?? [])))
-                    No clients match your current filters. Try adjusting your search.
+                    {{ $trans['msg.info.no_results'] ?? 'No clients match your current filters. Try adjusting your search.' }}
                 @else
-                    Get started by adding your first client.
+                    {{ $trans['clients.get_started'] ?? 'Get started by adding your first client.' }}
                 @endif
             </p>
             @if(empty(array_filter($filters ?? [])))
             <a href="{{ route('clients.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Your First Client
+                {{ $trans['clients.add_first'] ?? 'Add Your First Client' }}
             </a>
             @else
-            <a href="{{ route('clients.index') }}" class="btn btn-ghost">Clear Filters</a>
+            <a href="{{ route('clients.index') }}" class="btn btn-ghost">{{ $trans['btn.clear'] ?? 'Clear' }} {{ $trans['btn.filter'] ?? 'Filters' }}</a>
             @endif
         </div>
     </div>
@@ -268,20 +276,20 @@
 
                     <div class="flex items-center justify-between text-sm">
                         <div class="flex items-center gap-4 text-base-content/60">
-                            <span title="Source">
+                            <span title="{{ $trans['clients.lead_source'] ?? 'Source' }}">
                                 <span class="icon-[tabler--source-code] size-4 inline"></span>
                                 {{ $sources[$client->lead_source] ?? $client->lead_source }}
                             </span>
-                            <span title="Last Visit">
+                            <span title="{{ $trans['clients.last_visit'] ?? 'Last Visit' }}">
                                 <span class="icon-[tabler--calendar] size-4 inline"></span>
-                                {{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}
+                                {{ $client->last_visit_at?->diffForHumans() ?? ($trans['common.never'] ?? 'Never') }}
                             </span>
                         </div>
                         <div class="flex gap-1">
-                            <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('client-{{ $client->id }}', event)">
+                            <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('client-{{ $client->id }}', event)">
                                 <span class="icon-[tabler--eye] size-4"></span>
                             </button>
-                            <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                            <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                 <span class="icon-[tabler--edit] size-4"></span>
                             </a>
                         </div>
@@ -298,13 +306,13 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Client</th>
-                                <th>Status</th>
-                                <th>Source</th>
-                                <th>Tags</th>
-                                <th>Last Visit</th>
-                                <th>Created</th>
-                                <th class="w-32">Actions</th>
+                                <th>{{ $trans['nav.clients'] ?? 'Client' }}</th>
+                                <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                                <th>{{ $trans['clients.lead_source'] ?? 'Source' }}</th>
+                                <th>{{ $trans['clients.tags'] ?? 'Tags' }}</th>
+                                <th>{{ $trans['clients.last_visit'] ?? 'Last Visit' }}</th>
+                                <th>{{ $trans['clients.joined_date'] ?? 'Created' }}</th>
+                                <th class="w-32">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -368,7 +376,7 @@
                                     @if($client->last_visit_at)
                                         <span class="text-sm">{{ $client->last_visit_at->diffForHumans() }}</span>
                                     @else
-                                        <span class="text-sm text-base-content/40">Never</span>
+                                        <span class="text-sm text-base-content/40">{{ $trans['common.never'] ?? 'Never' }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -376,10 +384,10 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('client-{{ $client->id }}', event)">
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('client-{{ $client->id }}', event)">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </button>
-                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
                                         <div class="relative">
@@ -393,7 +401,7 @@
                                                     <form method="POST" action="{{ route('clients.convert-to-client', $client) }}" class="m-0">
                                                         @csrf
                                                         <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                            <span class="icon-[tabler--user-check] size-4"></span> Convert to Client
+                                                            <span class="icon-[tabler--user-check] size-4"></span> {{ $trans['clients.convert_to_client'] ?? 'Convert to Client' }}
                                                         </button>
                                                     </form>
                                                 </li>
@@ -403,16 +411,16 @@
                                                     <form method="POST" action="{{ route('clients.convert-to-member', $client) }}" class="m-0">
                                                         @csrf
                                                         <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                            <span class="icon-[tabler--id-badge] size-4"></span> Convert to Member
+                                                            <span class="icon-[tabler--id-badge] size-4"></span> {{ $trans['clients.convert_to_member'] ?? 'Convert to Member' }}
                                                         </button>
                                                     </form>
                                                 </li>
                                                 @endif
                                                 <li>
-                                                    <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0" onsubmit="return confirm('Archive this client?')">
+                                                    <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0" onsubmit="return confirm('{{ $trans['msg.confirm.archive'] ?? 'Archive this client?' }}')">
                                                         @csrf
                                                         <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                            <span class="icon-[tabler--archive] size-4"></span> Archive
+                                                            <span class="icon-[tabler--archive] size-4"></span> {{ $trans['btn.archive'] ?? 'Archive' }}
                                                         </button>
                                                     </form>
                                                 </li>

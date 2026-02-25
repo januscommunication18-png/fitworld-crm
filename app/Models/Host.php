@@ -35,6 +35,9 @@ class Host extends Model
         'city',
         'country',
         'operating_countries',
+        'default_language_app',
+        'default_language_booking',
+        'studio_languages',
         'currencies',
         'default_currency',
         'phone',
@@ -79,6 +82,7 @@ class Host extends Model
             'room_capacities' => 'array',
             'amenities' => 'array',
             'operating_countries' => 'array',
+            'studio_languages' => 'array',
             'currencies' => 'array',
             'social_links' => 'array',
             'booking_settings' => 'array',
@@ -431,6 +435,11 @@ class Host extends Model
     public function certifications(): HasMany
     {
         return $this->hasMany(StudioCertification::class);
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(Translation::class);
     }
 
     public function defaultLocation()

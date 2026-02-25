@@ -1,14 +1,22 @@
+@php
+    $user = auth()->user();
+    $host = $user->currentHost() ?? $user->host;
+    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
+@endphp
+
 @extends('layouts.dashboard')
 
-@section('title', 'Membership Sessions')
+@section('title', $trans['schedule.membership_sessions'] ?? 'Membership Sessions')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('schedule.index') }}"><span class="icon-[tabler--calendar] me-1 size-4"></span> Schedule</a></li>
+        <li><a href="{{ route('schedule.index') }}"><span class="icon-[tabler--calendar] me-1 size-4"></span> {{ $trans['nav.schedule'] ?? 'Schedule' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Membership Sessions</li>
+        <li aria-current="page">{{ $trans['schedule.membership_sessions'] ?? 'Membership Sessions' }}</li>
     </ol>
 @endsection
 
@@ -17,14 +25,14 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold">Membership Sessions</h1>
+            <h1 class="text-2xl font-bold">{{ $trans['schedule.membership_sessions'] ?? 'Membership Sessions' }}</h1>
             <p class="text-base-content/60 mt-1">
                 @if($range === 'today')
                     {{ $startDate->format('l, F j, Y') }}
                 @elseif($range === 'month')
                     {{ $startDate->format('F Y') }}
                 @elseif($range === 'all')
-                    All upcoming sessions
+                    {{ $trans['schedule.all_upcoming_sessions'] ?? 'All upcoming sessions' }}
                 @else
                     {{ $startDate->format('M j') }} - {{ $endDate->format('M j, Y') }}
                 @endif
@@ -33,7 +41,7 @@
         <div class="flex items-center gap-2">
             <a href="{{ route('scheduled-membership.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Session
+                {{ $trans['schedule.add_session'] ?? 'Add Session' }}
             </a>
         </div>
     </div>
@@ -44,19 +52,19 @@
             <form id="filter-form" action="{{ route('membership-schedules.index') }}" method="GET" class="flex flex-wrap gap-4 items-end">
                 {{-- Range Toggle --}}
                 <div>
-                    <label class="label-text">Range</label>
+                    <label class="label-text">{{ $trans['schedule.range'] ?? 'Range' }}</label>
                     <div class="join">
                         <button type="button" class="btn btn-sm join-item {{ $range === 'today' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('today')">
-                            Today
+                            {{ $trans['schedule.today'] ?? 'Today' }}
                         </button>
                         <button type="button" class="btn btn-sm join-item {{ $range === 'week' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('week')">
-                            Week
+                            {{ $trans['schedule.week'] ?? 'Week' }}
                         </button>
                         <button type="button" class="btn btn-sm join-item {{ $range === 'month' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('month')">
-                            Month
+                            {{ $trans['schedule.month'] ?? 'Month' }}
                         </button>
                         <button type="button" class="btn btn-sm join-item {{ $range === 'all' ? 'btn-primary' : 'btn-ghost' }}" onclick="setRange('all')">
-                            All
+                            {{ $trans['common.all'] ?? 'All' }}
                         </button>
                     </div>
                     <input type="hidden" name="range" id="range-input" value="{{ $range }}">
@@ -65,9 +73,9 @@
 
                 {{-- Membership Plan Filter --}}
                 <div class="w-48">
-                    <label class="label-text" for="membership_plan_id">Membership</label>
+                    <label class="label-text" for="membership_plan_id">{{ $trans['field.membership'] ?? 'Membership' }}</label>
                     <select id="membership_plan_id" name="membership_plan_id" class="select select-sm w-full" onchange="submitFilters()">
-                        <option value="">All Memberships</option>
+                        <option value="">{{ $trans['schedule.all_memberships'] ?? 'All Memberships' }}</option>
                         @foreach($membershipPlans as $plan)
                             <option value="{{ $plan->id }}" {{ $membershipPlanId == $plan->id ? 'selected' : '' }}>
                                 {{ $plan->name }}
@@ -78,9 +86,9 @@
 
                 {{-- Instructor Filter --}}
                 <div class="w-40">
-                    <label class="label-text" for="instructor_id">Instructor</label>
+                    <label class="label-text" for="instructor_id">{{ $trans['field.instructor'] ?? 'Instructor' }}</label>
                     <select id="instructor_id" name="instructor_id" class="select select-sm w-full" onchange="submitFilters()">
-                        <option value="">All Instructors</option>
+                        <option value="">{{ $trans['schedule.all_instructors'] ?? 'All Instructors' }}</option>
                         @foreach($instructors as $instructor)
                             <option value="{{ $instructor->id }}" {{ $instructorId == $instructor->id ? 'selected' : '' }}>
                                 {{ $instructor->name }}
@@ -91,9 +99,9 @@
 
                 {{-- Status Filter --}}
                 <div class="w-32">
-                    <label class="label-text" for="status">Status</label>
+                    <label class="label-text" for="status">{{ $trans['common.status'] ?? 'Status' }}</label>
                     <select id="status" name="status" class="select select-sm w-full" onchange="submitFilters()">
-                        <option value="">All Statuses</option>
+                        <option value="">{{ $trans['schedule.all_statuses'] ?? 'All Statuses' }}</option>
                         @foreach($statuses as $value => $label)
                             <option value="{{ $value }}" {{ $status === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
@@ -103,7 +111,7 @@
                 @if($membershipPlanId || $instructorId || $status)
                     <a href="{{ route('membership-schedules.index', ['date' => $date, 'range' => $range]) }}" class="btn btn-ghost btn-sm">
                         <span class="icon-[tabler--x] size-4"></span>
-                        Clear
+                        {{ $trans['btn.clear'] ?? 'Clear' }}
                     </a>
                 @endif
             </form>
@@ -117,23 +125,23 @@
         @elseif($range === 'today')
             <a href="{{ route('membership-schedules.index', array_merge(request()->query(), ['date' => $startDate->copy()->subDay()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
                 <span class="icon-[tabler--chevron-left] size-5"></span>
-                Previous Day
+                {{ $trans['schedule.previous_day'] ?? 'Previous Day' }}
             </a>
         @elseif($range === 'week')
             <a href="{{ route('membership-schedules.index', array_merge(request()->query(), ['date' => $startDate->copy()->subWeek()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
                 <span class="icon-[tabler--chevron-left] size-5"></span>
-                Previous Week
+                {{ $trans['schedule.previous_week'] ?? 'Previous Week' }}
             </a>
         @elseif($range === 'month')
             <a href="{{ route('membership-schedules.index', array_merge(request()->query(), ['date' => $startDate->copy()->subMonth()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
                 <span class="icon-[tabler--chevron-left] size-5"></span>
-                Previous Month
+                {{ $trans['schedule.previous_month'] ?? 'Previous Month' }}
             </a>
         @endif
 
         <div class="flex items-center gap-4 text-sm text-base-content/60">
             <span>
-                <span class="font-semibold text-base-content">{{ $sessions->count() }}</span> {{ Str::plural('session', $sessions->count()) }}
+                <span class="font-semibold text-base-content">{{ $sessions->count() }}</span> {{ $trans['common.session'] ?? 'session' }}{{ $sessions->count() !== 1 ? 's' : '' }}
             </span>
         </div>
 
@@ -141,17 +149,17 @@
             <div></div>
         @elseif($range === 'today')
             <a href="{{ route('membership-schedules.index', array_merge(request()->query(), ['date' => $startDate->copy()->addDay()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
-                Next Day
+                {{ $trans['schedule.next_day'] ?? 'Next Day' }}
                 <span class="icon-[tabler--chevron-right] size-5"></span>
             </a>
         @elseif($range === 'week')
             <a href="{{ route('membership-schedules.index', array_merge(request()->query(), ['date' => $startDate->copy()->addWeek()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
-                Next Week
+                {{ $trans['schedule.next_week'] ?? 'Next Week' }}
                 <span class="icon-[tabler--chevron-right] size-5"></span>
             </a>
         @elseif($range === 'month')
             <a href="{{ route('membership-schedules.index', array_merge(request()->query(), ['date' => $startDate->copy()->addMonth()->format('Y-m-d')])) }}" class="btn btn-ghost btn-sm">
-                Next Month
+                {{ $trans['schedule.next_month'] ?? 'Next Month' }}
                 <span class="icon-[tabler--chevron-right] size-5"></span>
             </a>
         @endif
@@ -162,25 +170,25 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Sessions Found</h3>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['schedule.no_sessions_found'] ?? 'No Sessions Found' }}</h3>
                 <p class="text-base-content/60 mb-4">
                     @if($membershipPlanId || $instructorId || $status)
-                        No membership sessions match your current filters.
+                        {{ $trans['schedule.no_membership_sessions_filter'] ?? 'No membership sessions match your current filters.' }}
                     @else
                         @if($range === 'today')
-                            No membership sessions scheduled for today.
+                            {{ $trans['schedule.no_membership_sessions_today'] ?? 'No membership sessions scheduled for today.' }}
                         @elseif($range === 'week')
-                            No membership sessions scheduled for this week.
+                            {{ $trans['schedule.no_membership_sessions_week'] ?? 'No membership sessions scheduled for this week.' }}
                         @elseif($range === 'month')
-                            No membership sessions scheduled for this month.
+                            {{ $trans['schedule.no_membership_sessions_month'] ?? 'No membership sessions scheduled for this month.' }}
                         @else
-                            No upcoming membership sessions found.
+                            {{ $trans['schedule.no_membership_sessions_upcoming'] ?? 'No upcoming membership sessions found.' }}
                         @endif
                     @endif
                 </p>
                 <a href="{{ route('scheduled-membership.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Schedule First Session
+                    {{ $trans['schedule.schedule_first_session'] ?? 'Schedule First Session' }}
                 </a>
             </div>
         </div>
@@ -203,10 +211,10 @@
                                 <h3 class="font-semibold {{ $isToday ? 'text-secondary' : '' }}">
                                     {{ $dateObj->format('l, F j, Y') }}
                                     @if($isToday)
-                                        <span class="badge badge-secondary badge-sm ml-2">Today</span>
+                                        <span class="badge badge-secondary badge-sm ml-2">{{ $trans['schedule.today'] ?? 'Today' }}</span>
                                     @endif
                                 </h3>
-                                <p class="text-sm text-base-content/60">{{ $daySessions->count() }} {{ Str::plural('session', $daySessions->count()) }}</p>
+                                <p class="text-sm text-base-content/60">{{ $daySessions->count() }} {{ $trans['common.session'] ?? 'session' }}{{ $daySessions->count() !== 1 ? 's' : '' }}</p>
                             </div>
                         </div>
                     </div>
@@ -216,14 +224,14 @@
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th class="w-24">Time</th>
-                                    <th>Session</th>
-                                    <th>Membership</th>
-                                    <th>Instructor</th>
-                                    <th>Location</th>
-                                    <th>Capacity</th>
-                                    <th>Status</th>
-                                    <th class="w-32">Actions</th>
+                                    <th class="w-24">{{ $trans['field.time'] ?? 'Time' }}</th>
+                                    <th>{{ $trans['common.session'] ?? 'Session' }}</th>
+                                    <th>{{ $trans['field.membership'] ?? 'Membership' }}</th>
+                                    <th>{{ $trans['field.instructor'] ?? 'Instructor' }}</th>
+                                    <th>{{ $trans['field.location'] ?? 'Location' }}</th>
+                                    <th>{{ $trans['field.capacity'] ?? 'Capacity' }}</th>
+                                    <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                                    <th class="w-32">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -241,7 +249,7 @@
                                         <td>
                                             <div class="flex items-center gap-2">
                                                 <div class="w-3 h-3 rounded-full" style="background-color: #8b5cf6;"></div>
-                                                <span class="font-medium">{{ $session->title ?? 'Membership Session' }}</span>
+                                                <span class="font-medium">{{ $session->title ?? ($trans['schedule.membership_session'] ?? 'Membership Session') }}</span>
                                             </div>
                                         </td>
                                         <td>
@@ -261,12 +269,12 @@
                                                     />
                                                     <span class="text-sm">{{ $session->primaryInstructor->name }}</span>
                                                 @else
-                                                    <span class="text-base-content/40">TBD</span>
+                                                    <span class="text-base-content/40">{{ $trans['common.tbd'] ?? 'TBD' }}</span>
                                                 @endif
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="text-sm">{{ $session->location?->name ?? 'TBD' }}</div>
+                                            <div class="text-sm">{{ $session->location?->name ?? ($trans['common.tbd'] ?? 'TBD') }}</div>
                                             @if($session->room)
                                                 <div class="text-xs text-base-content/60">{{ $session->room->name }}</div>
                                             @endif
@@ -277,7 +285,7 @@
                                                     {{ $confirmedCount }}/{{ $capacity }}
                                                 </span>
                                                 @if($confirmedCount >= $capacity)
-                                                    <span class="badge badge-error badge-xs">Full</span>
+                                                    <span class="badge badge-error badge-xs">{{ $trans['common.full'] ?? 'Full' }}</span>
                                                 @endif
                                             </div>
                                         </td>
@@ -286,17 +294,17 @@
                                         </td>
                                         <td>
                                             <div class="flex items-center gap-1">
-                                                <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('class-session-{{ $session->id }}', event)">
+                                                <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('class-session-{{ $session->id }}', event)">
                                                     <span class="icon-[tabler--eye] size-4"></span>
                                                 </button>
-                                                <a href="{{ route('class-sessions.edit', $session) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                                <a href="{{ route('class-sessions.edit', $session) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                                     <span class="icon-[tabler--edit] size-4"></span>
                                                 </a>
                                                 @if($session->status !== 'cancelled' && $confirmedCount === 0)
-                                                    <form action="{{ route('class-sessions.destroy', $session) }}" method="POST" class="inline" onsubmit="return confirm('Delete this session?')">
+                                                    <form action="{{ route('class-sessions.destroy', $session) }}" method="POST" class="inline" onsubmit="return confirm('{{ $trans['schedule.delete_session_confirm'] ?? 'Delete this session?' }}')">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">
+                                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="{{ $trans['btn.delete'] ?? 'Delete' }}">
                                                             <span class="icon-[tabler--trash] size-4"></span>
                                                         </button>
                                                     </form>

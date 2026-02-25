@@ -1,3 +1,9 @@
+@php
+    $selectedLang = session("language_{$host->id}", $host->default_language_booking ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
+@endphp
+
 {{-- Member Portal Navigation --}}
 {{-- Header --}}
 <nav class="bg-base-100 border-b border-base-200" style="height: 75px;">
@@ -38,22 +44,22 @@
                         </li>
                         <li><a href="{{ route('member.portal.dashboard', ['subdomain' => $host->subdomain]) }}" class="menu-item">
                             <span class="icon-[tabler--home] size-4"></span>
-                            Home
+                            {{ $trans['nav.dashboard'] ?? 'Home' }}
                         </a></li>
                         <li><a href="{{ route('member.portal.bookings', ['subdomain' => $host->subdomain]) }}" class="menu-item">
                             <span class="icon-[tabler--calendar-check] size-4"></span>
-                            My Schedule
+                            {{ $trans['member.portal.my_bookings'] ?? 'My Schedule' }}
                         </a></li>
                         <li><a href="{{ route('member.portal.profile', ['subdomain' => $host->subdomain]) }}" class="menu-item">
                             <span class="icon-[tabler--user] size-4"></span>
-                            My Profile
+                            {{ $trans['member.portal.my_profile'] ?? 'My Profile' }}
                         </a></li>
                         <li class="border-t border-base-200 mt-1 pt-1">
                             <form action="{{ route('member.logout', ['subdomain' => $host->subdomain]) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="menu-item text-error w-full">
                                     <span class="icon-[tabler--logout] size-4"></span>
-                                    Logoff
+                                    {{ $trans['member.portal.logout'] ?? 'Logoff' }}
                                 </button>
                             </form>
                         </li>
@@ -71,33 +77,33 @@
             <a href="{{ route('member.portal.dashboard', ['subdomain' => $host->subdomain]) }}"
                class="tab {{ request()->routeIs('member.portal', 'member.portal.dashboard') ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--home] size-4 mr-2"></span>
-                Home
+                {{ $trans['nav.dashboard'] ?? 'Home' }}
             </a>
             <a href="{{ route('member.portal.bookings', ['subdomain' => $host->subdomain]) }}"
                class="tab {{ request()->routeIs('member.portal.bookings') ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--calendar-check] size-4 mr-2"></span>
-                My Schedule
+                {{ $trans['member.portal.my_bookings'] ?? 'My Schedule' }}
             </a>
             <a href="{{ route('member.portal.booking', ['subdomain' => $host->subdomain]) }}"
                class="tab {{ request()->routeIs('member.portal.booking', 'member.portal.schedule', 'member.portal.services', 'member.portal.memberships') ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--calendar-plus] size-4 mr-2"></span>
-                Booking
+                {{ $trans['nav.bookings'] ?? 'Booking' }}
             </a>
             <a href="{{ route('member.portal.payments', ['subdomain' => $host->subdomain]) }}"
                class="tab {{ request()->routeIs('member.portal.payments') ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--receipt] size-4 mr-2"></span>
-                Payments
+                {{ $trans['member.portal.my_payments'] ?? 'Payments' }}
             </a>
             <a href="{{ route('member.portal.profile', ['subdomain' => $host->subdomain]) }}"
                class="tab {{ request()->routeIs('member.portal.profile') ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--user] size-4 mr-2"></span>
-                My Profile
+                {{ $trans['member.portal.my_profile'] ?? 'My Profile' }}
             </a>
             <form action="{{ route('member.logout', ['subdomain' => $host->subdomain]) }}" method="POST" class="inline">
                 @csrf
                 <button type="submit" class="tab text-error hover:text-error">
                     <span class="icon-[tabler--logout] size-4 mr-2"></span>
-                    Logoff
+                    {{ $trans['member.portal.logout'] ?? 'Logoff' }}
                 </button>
             </form>
         </div>

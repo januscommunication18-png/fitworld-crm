@@ -251,4 +251,99 @@ class BookingController extends Controller
     {
         return $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
     }
+
+    /**
+     * Set the user's preferred language in session
+     */
+    public function setLanguage(Request $request)
+    {
+        $host = $this->getHost($request);
+
+        $validated = $request->validate([
+            'language' => 'required|string|size:2',
+        ]);
+
+        $language = strtolower($validated['language']);
+
+        // Get available languages for this host
+        $hostLanguages = $host->studio_languages ?? [$host->default_language_booking ?? 'en'];
+        if (!is_array($hostLanguages) || empty($hostLanguages)) {
+            $hostLanguages = ['en'];
+        }
+
+        // Verify this language is available for the host
+        if (!in_array($language, $hostLanguages)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This language is not available.',
+            ], 400);
+        }
+
+        // Store in session with host-specific key
+        $request->session()->put("language_{$host->id}", $language);
+
+        return response()->json([
+            'success' => true,
+            'language' => $language,
+            'name' => self::getLanguageName($language),
+        ]);
+    }
+
+    /**
+     * Get the user's preferred language from session
+     */
+    public function getLanguage(Request $request)
+    {
+        $host = $this->getHost($request);
+
+        $language = $request->session()->get("language_{$host->id}", $host->default_language_booking ?? 'en');
+        $hostLanguages = $host->studio_languages ?? [$host->default_language_booking ?? 'en'];
+        if (!is_array($hostLanguages) || empty($hostLanguages)) {
+            $hostLanguages = ['en'];
+        }
+
+        return response()->json([
+            'language' => $language,
+            'name' => self::getLanguageName($language),
+            'available_languages' => $hostLanguages,
+        ]);
+    }
+
+    /**
+     * Get selected language for a host (static helper)
+     */
+    public static function getSelectedLanguage(Request $request, Host $host): string
+    {
+        return $request->session()->get("language_{$host->id}", $host->default_language_booking ?? 'en');
+    }
+
+    /**
+     * Get language name from code
+     */
+    public static function getLanguageName(string $code): string
+    {
+        $languages = [
+            'en' => 'English',
+            'fr' => 'Français',
+            'de' => 'Deutsch',
+            'es' => 'Español',
+        ];
+
+        return $languages[$code] ?? $code;
+    }
+
+    /**
+     * Get language flag from code
+     */
+    public static function getLanguageFlag(string $code): string
+    {
+        $flags = [
+            'en' => '🇺🇸',
+            'fr' => '🇫🇷',
+            'de' => '🇩🇪',
+            'es' => '🇪🇸',
+        ];
+
+        return $flags[$code] ?? '🌐';
+    }
 }

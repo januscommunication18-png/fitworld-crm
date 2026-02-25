@@ -1,6 +1,12 @@
+@php
+    $selectedLang = session("language_{$host->id}", $host->default_language_booking ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
+@endphp
+
 @extends('layouts.subdomain')
 
-@section('title', 'Member Login — ' . $host->studio_name)
+@section('title', ($trans['subdomain.auth.login'] ?? 'Member Login') . ' — ' . $host->studio_name)
 
 @section('content')
 <div class="min-h-screen flex flex-col">
@@ -27,7 +33,7 @@
                 {{-- Back to Booking --}}
                 <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm">
                     <span class="icon-[tabler--arrow-left] size-5"></span>
-                    Back to Schedule
+                    {{ $trans['btn.back'] ?? 'Back' }} {{ $trans['nav.schedule'] ?? 'to Schedule' }}
                 </a>
             </div>
         </div>
@@ -37,8 +43,8 @@
     <div class="flex-1 flex items-center justify-center py-12 px-4">
         <div class="w-full max-w-md">
             <div class="text-center mb-8">
-                <h1 class="text-2xl font-bold">Welcome Back</h1>
-                <p class="text-base-content/60 mt-2">Sign in to access your member portal</p>
+                <h1 class="text-2xl font-bold">{{ $trans['member.dashboard.welcome'] ?? 'Welcome Back' }}</h1>
+                <p class="text-base-content/60 mt-2">{{ $trans['subdomain.auth.sign_in_access'] ?? 'Sign in to access your member portal' }}</p>
             </div>
 
             @if(session('status'))
@@ -63,24 +69,24 @@
                             @csrf
                             <div class="space-y-4">
                                 <div>
-                                    <label class="label-text" for="email">Email Address</label>
+                                    <label class="label-text" for="email">{{ $trans['subdomain.auth.email'] ?? 'Email Address' }}</label>
                                     <input type="email" id="email" name="email"
                                            value="{{ old('email', session('email')) }}"
                                            required autofocus
-                                           placeholder="Enter your email"
+                                           placeholder="{{ $trans['field.email_placeholder'] ?? 'Enter your email' }}"
                                            class="input input-bordered w-full mt-1 @error('email') input-error @enderror">
                                 </div>
 
                                 <button type="submit" class="btn btn-primary w-full">
                                     <span class="icon-[tabler--mail] size-5"></span>
-                                    Send Verification Code
+                                    {{ $trans['subdomain.auth.send_code'] ?? 'Send Verification Code' }}
                                 </button>
                             </div>
                         </form>
 
                         <div class="text-center mt-4">
                             <p class="text-sm text-base-content/60">
-                                We'll send a 6-digit code to your email to verify your identity.
+                                {{ $trans['subdomain.auth.otp_info'] ?? "We'll send a 6-digit code to your email to verify your identity." }}
                             </p>
                         </div>
                     @else
@@ -89,36 +95,36 @@
                             @csrf
                             <div class="space-y-4">
                                 <div>
-                                    <label class="label-text" for="email">Email Address</label>
+                                    <label class="label-text" for="email">{{ $trans['subdomain.auth.email'] ?? 'Email Address' }}</label>
                                     <input type="email" id="email" name="email"
                                            value="{{ old('email') }}"
                                            required autofocus
-                                           placeholder="Enter your email"
+                                           placeholder="{{ $trans['field.email_placeholder'] ?? 'Enter your email' }}"
                                            class="input input-bordered w-full mt-1 @error('email') input-error @enderror">
                                 </div>
 
                                 <div>
-                                    <label class="label-text" for="password">Password</label>
+                                    <label class="label-text" for="password">{{ $trans['subdomain.auth.password'] ?? 'Password' }}</label>
                                     <input type="password" id="password" name="password"
                                            required
-                                           placeholder="Enter your password"
+                                           placeholder="{{ $trans['field.password_placeholder'] ?? 'Enter your password' }}"
                                            class="input input-bordered w-full mt-1">
                                 </div>
 
                                 <div class="flex items-center justify-between">
                                     <label class="flex items-center gap-2 cursor-pointer">
                                         <input type="checkbox" name="remember" value="1" class="checkbox checkbox-sm checkbox-primary">
-                                        <span class="text-sm">Remember me</span>
+                                        <span class="text-sm">{{ $trans['subdomain.auth.remember_me'] ?? 'Remember me' }}</span>
                                     </label>
                                     <a href="{{ route('member.forgot-password', ['subdomain' => $host->subdomain]) }}"
                                        class="text-sm text-primary hover:underline">
-                                        Forgot password?
+                                        {{ $trans['subdomain.auth.forgot_password'] ?? 'Forgot password?' }}
                                     </a>
                                 </div>
 
                                 <button type="submit" class="btn btn-primary w-full">
                                     <span class="icon-[tabler--login] size-5"></span>
-                                    Sign In
+                                    {{ $trans['subdomain.auth.login'] ?? 'Sign In' }}
                                 </button>
                             </div>
                         </form>
@@ -127,10 +133,10 @@
             </div>
 
             <p class="text-center text-sm text-base-content/60 mt-6">
-                Don't have an account?
+                {{ $trans['subdomain.auth.no_account'] ?? "Don't have an account?" }}
                 <a href="{{ route('member.signup', ['subdomain' => $host->subdomain]) }}"
                    class="text-primary hover:underline font-medium">
-                    Create Account
+                    {{ $trans['subdomain.auth.create_account'] ?? 'Create Account' }}
                 </a>
             </p>
         </div>

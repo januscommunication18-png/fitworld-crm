@@ -11,6 +11,7 @@ use App\Http\Controllers\Backoffice\EmailTemplateController;
 use App\Http\Controllers\Backoffice\PlanController;
 use App\Http\Controllers\Backoffice\PlaceholderController;
 use App\Http\Controllers\Backoffice\SettingsController;
+use App\Http\Controllers\Backoffice\TranslationController;
 use App\Models\Host;
 use Illuminate\Support\Facades\Route;
 
@@ -95,6 +96,15 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                     Route::post('/settings/mail', [SettingsController::class, 'updateMail'])->name('settings.update.mail');
                     Route::post('/settings/test-mail', [SettingsController::class, 'testMail'])->name('settings.test.mail');
                     Route::post('/settings/clear-cache', [SettingsController::class, 'clearCache'])->name('settings.clear-cache');
+                });
+
+                // Translations
+                Route::prefix('translations')->name('translations.')->group(function () {
+                    Route::get('/', [TranslationController::class, 'index'])->name('index');
+                    Route::post('/', [TranslationController::class, 'store'])->name('store');
+                    Route::put('/{id}', [TranslationController::class, 'update'])->name('update');
+                    Route::delete('/{id}', [TranslationController::class, 'destroy'])->name('destroy');
+                    Route::post('/copy', [TranslationController::class, 'copy'])->name('copy');
                 });
 
                 // Coming Soon Placeholders

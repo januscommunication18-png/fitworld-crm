@@ -37,6 +37,10 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::post('/set-currency', [BookingController::class, 'setCurrency'])->name('subdomain.set-currency');
         Route::get('/get-currency', [BookingController::class, 'getCurrency'])->name('subdomain.get-currency');
 
+        // Language preference
+        Route::post('/set-language', [BookingController::class, 'setLanguage'])->name('subdomain.set-language');
+        Route::get('/get-language', [BookingController::class, 'getLanguage'])->name('subdomain.get-language');
+
         // Schedule view
         Route::get('/schedule', [BookingController::class, 'schedule'])->name('subdomain.schedule');
 
@@ -77,7 +81,7 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         // Step 1: Select what to book
         Route::get('/book', [BookingFlowController::class, 'selectType'])->name('booking.select-type');
         Route::get('/book/class', [BookingFlowController::class, 'selectClass'])->name('booking.select-class');
-        Route::get('/book/class/{classPlanId}', [BookingFlowController::class, 'selectClass'])->name('booking.select-class.filter')->where('classPlanId', '[0-9]+');
+        // Note: /book/class/{classPlanId} route removed - users should use /book/class without filter
         Route::post('/book/class/{session}', [BookingFlowController::class, 'selectClassSession'])->name('booking.select-class-session');
         Route::get('/book/service', [BookingFlowController::class, 'selectService'])->name('booking.select-service');
         Route::get('/book/service/{servicePlanId}', [BookingFlowController::class, 'selectService'])->name('booking.select-service.filter')->where('servicePlanId', '[0-9]+');

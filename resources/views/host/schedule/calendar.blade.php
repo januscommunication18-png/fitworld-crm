@@ -1,14 +1,22 @@
+@php
+    $user = auth()->user();
+    $host = $user->currentHost() ?? $user->host;
+    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
+    $t = \App\Services\TranslationService::make($host, $selectedLang);
+    $trans = $t->all();
+@endphp
+
 @extends('layouts.dashboard')
 
-@section('title', 'Studio Calendar')
+@section('title', $trans['schedule.calendar'] ?? 'Studio Calendar')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('schedule.index') }}"><span class="icon-[tabler--calendar] me-1 size-4"></span> Schedule</a></li>
+        <li><a href="{{ route('schedule.index') }}"><span class="icon-[tabler--calendar] me-1 size-4"></span> {{ $trans['nav.schedule'] ?? 'Schedule' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Studio Calendar</li>
+        <li aria-current="page">{{ $trans['schedule.calendar'] ?? 'Studio Calendar' }}</li>
     </ol>
 @endsection
 
@@ -17,8 +25,8 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold">Studio Calendar</h1>
-            <p class="text-base-content/60 mt-1">View your classes and services in calendar format.</p>
+            <h1 class="text-2xl font-bold">{{ $trans['schedule.calendar'] ?? 'Studio Calendar' }}</h1>
+            <p class="text-base-content/60 mt-1">{{ $trans['schedule.calendar_description'] ?? 'View your classes and services in calendar format.' }}</p>
         </div>
         <div class="flex items-center gap-3">
             {{-- Current Time Display --}}
@@ -32,26 +40,26 @@
             <div class="relative">
                 <button type="button" class="btn btn-success" onclick="toggleDropdown('booking-dropdown')">
                     <span class="icon-[tabler--user-plus] size-5"></span>
-                    Add Booking
+                    {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
                     <span class="icon-[tabler--chevron-down] size-4"></span>
                 </button>
                 <ul id="booking-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
                     <li>
                         <a href="{{ route('walk-in.select') }}">
                             <span class="icon-[tabler--yoga] size-5 text-primary"></span>
-                            Class Session
+                            {{ $trans['schedule.class_sessions'] ?? 'Class Session' }}
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('walk-in.select-service') }}">
                             <span class="icon-[tabler--massage] size-5 text-success"></span>
-                            Service Slot
+                            {{ $trans['schedule.service_slots'] ?? 'Service Slot' }}
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('walk-in.select-membership') }}">
                             <span class="icon-[tabler--id-badge-2] size-5 text-warning"></span>
-                            Membership
+                            {{ $trans['page.memberships'] ?? 'Membership' }}
                         </a>
                     </li>
                 </ul>
@@ -61,36 +69,36 @@
             <div class="relative">
                 <button type="button" class="btn btn-primary" onclick="toggleDropdown('schedule-dropdown')">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Add Schedule
+                    {{ $trans['schedule.add_schedule'] ?? 'Add Schedule' }}
                     <span class="icon-[tabler--chevron-down] size-4"></span>
                 </button>
                 <ul id="schedule-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-72 p-2 shadow-lg border border-base-300 z-50">
-                    <li class="menu-title text-xs uppercase tracking-wider text-base-content/50 px-2 pt-2">Schedule Type</li>
+                    <li class="menu-title text-xs uppercase tracking-wider text-base-content/50 px-2 pt-2">{{ $trans['common.type'] ?? 'Schedule Type' }}</li>
                     <li>
                         <a href="{{ route('class-sessions.create') }}" class="flex flex-col items-start gap-0.5 py-3">
                             <span class="flex items-center gap-2">
                                 <span class="icon-[tabler--yoga] size-5 text-primary"></span>
-                                <span class="font-medium">Class</span>
+                                <span class="font-medium">{{ $trans['page.classes'] ?? 'Class' }}</span>
                             </span>
-                            <span class="text-xs text-base-content/60 ml-7">Single or recurring class session</span>
+                            <span class="text-xs text-base-content/60 ml-7">{{ $trans['schedule.class_description'] ?? 'Single or recurring class session' }}</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('service-slots.create') }}" class="flex flex-col items-start gap-0.5 py-3">
                             <span class="flex items-center gap-2">
                                 <span class="icon-[tabler--massage] size-5 text-success"></span>
-                                <span class="font-medium">Service</span>
+                                <span class="font-medium">{{ $trans['page.services'] ?? 'Service' }}</span>
                             </span>
-                            <span class="text-xs text-base-content/60 ml-7">1-on-1 appointment slot</span>
+                            <span class="text-xs text-base-content/60 ml-7">{{ $trans['schedule.service_description'] ?? '1-on-1 appointment slot' }}</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ route('scheduled-membership.create') }}" class="flex flex-col items-start gap-0.5 py-3">
                             <span class="flex items-center gap-2">
                                 <span class="icon-[tabler--calendar-user] size-5 text-warning"></span>
-                                <span class="font-medium">Membership Schedule</span>
+                                <span class="font-medium">{{ $trans['schedule.membership_schedule'] ?? 'Membership Schedule' }}</span>
                             </span>
-                            <span class="text-xs text-base-content/60 ml-7">Recurring classes for membership holders</span>
+                            <span class="text-xs text-base-content/60 ml-7">{{ $trans['schedule.membership_schedule_description'] ?? 'Recurring classes for membership holders' }}</span>
                         </a>
                     </li>
                 </ul>
@@ -106,10 +114,10 @@
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--category] size-4 text-base-content/60"></span>
                     <select id="filter-type" class="select select-sm w-44 select-bordered">
-                        <option value="all">All Types</option>
-                        <option value="class">Classes Only</option>
-                        <option value="service">Services Only</option>
-                        <option value="membership">Membership Only</option>
+                        <option value="all">{{ $trans['common.all'] ?? 'All' }} {{ $trans['common.type'] ?? 'Types' }}</option>
+                        <option value="class">{{ $trans['page.classes'] ?? 'Classes' }} {{ $trans['common.only'] ?? 'Only' }}</option>
+                        <option value="service">{{ $trans['page.services'] ?? 'Services' }} {{ $trans['common.only'] ?? 'Only' }}</option>
+                        <option value="membership">{{ $trans['page.memberships'] ?? 'Membership' }} {{ $trans['common.only'] ?? 'Only' }}</option>
                     </select>
                 </div>
 
@@ -117,7 +125,7 @@
                 <div id="class-plan-filter" class="flex items-center gap-2 hidden">
                     <span class="icon-[tabler--yoga] size-4 text-primary"></span>
                     <select id="filter-class-plan" class="select select-sm w-48 select-bordered">
-                        <option value="">All Classes</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['page.classes'] ?? 'Classes' }}</option>
                         @foreach($classPlans ?? [] as $plan)
                             <option value="{{ $plan->id }}">{{ $plan->name }}</option>
                         @endforeach
@@ -128,7 +136,7 @@
                 <div id="service-plan-filter" class="flex items-center gap-2 hidden">
                     <span class="icon-[tabler--massage] size-4 text-success"></span>
                     <select id="filter-service-plan" class="select select-sm w-48 select-bordered">
-                        <option value="">All Services</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['page.services'] ?? 'Services' }}</option>
                         @foreach($servicePlans ?? [] as $plan)
                             <option value="{{ $plan->id }}">{{ $plan->name }}</option>
                         @endforeach
@@ -139,7 +147,7 @@
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--map-pin] size-4 text-base-content/60"></span>
                     <select id="filter-location" class="select select-sm w-44 select-bordered">
-                        <option value="">All Locations</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['settings.locations'] ?? 'Locations' }}</option>
                         @foreach($locations as $location)
                             <option value="{{ $location->id }}">{{ $location->name }}</option>
                         @endforeach
@@ -150,7 +158,7 @@
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--user] size-4 text-base-content/60"></span>
                     <select id="filter-instructor" class="select select-sm w-48 select-bordered">
-                        <option value="">All Instructors</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['nav.instructors'] ?? 'Instructors' }}</option>
                         @foreach($instructors as $instructor)
                             <option value="{{ $instructor->id }}">{{ $instructor->name }}</option>
                         @endforeach
@@ -161,19 +169,19 @@
                 <div class="flex items-center gap-4 ml-auto">
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #6366f1;"></span>
-                        <span class="text-sm font-medium text-base-content">Class</span>
+                        <span class="text-sm font-medium text-base-content">{{ $trans['page.classes'] ?? 'Class' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #10b981;"></span>
-                        <span class="text-sm font-medium text-base-content">Service</span>
+                        <span class="text-sm font-medium text-base-content">{{ $trans['page.services'] ?? 'Service' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #8b5cf6;"></span>
-                        <span class="text-sm font-medium text-base-content">Membership</span>
+                        <span class="text-sm font-medium text-base-content">{{ $trans['page.memberships'] ?? 'Membership' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #f59e0b;"></span>
-                        <span class="text-sm font-medium text-base-content">Draft</span>
+                        <span class="text-sm font-medium text-base-content">{{ $trans['common.draft'] ?? 'Draft' }}</span>
                     </div>
                 </div>
             </div>

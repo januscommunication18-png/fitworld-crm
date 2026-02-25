@@ -78,6 +78,38 @@ Route::post('/setup/invite/{token}', [InvitationController::class, 'accept'])->n
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // Set studio language preference
+    Route::post('/set-language', function (Request $request) {
+        $validated = $request->validate([
+            'language' => 'required|string|size:2',
+        ]);
+
+        $user = Auth::user();
+        $host = $user->currentHost() ?? $user->host;
+
+        if (!$host) {
+            return response()->json(['success' => false, 'message' => 'No host found'], 400);
+        }
+
+        $language = strtolower($validated['language']);
+        $hostLanguages = $host->studio_languages ?? ['en'];
+
+        if (!is_array($hostLanguages) || empty($hostLanguages)) {
+            $hostLanguages = ['en'];
+        }
+
+        if (!in_array($language, $hostLanguages)) {
+            return response()->json(['success' => false, 'message' => 'Language not available'], 400);
+        }
+
+        $request->session()->put("studio_language_{$host->id}", $language);
+
+        return response()->json([
+            'success' => true,
+            'language' => $language,
+        ]);
+    })->name('set-language');
+
     // Email Verification
     Route::get('/email/verify', function () {
         return view('auth.verify-email');
@@ -399,7 +431,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/studio/amenities', [SettingsController::class, 'updateStudioAmenities'])->name('settings.studio.amenities.update');
     Route::put('/settings/studio/currency', [SettingsController::class, 'updateStudioCurrency'])->name('settings.studio.currency.update');
     Route::put('/settings/studio/countries', [SettingsController::class, 'updateStudioCountries'])->name('settings.studio.countries.update');
+    Route::put('/settings/studio/language', [SettingsController::class, 'updateStudioLanguage'])->name('settings.studio.language.update');
     Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
+
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
     Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
 

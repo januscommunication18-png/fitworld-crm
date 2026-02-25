@@ -68,6 +68,20 @@
     @endif
 @endauth
 
+@php
+    // Language setup for studio portal
+    $currentUser = Auth::user();
+    $currentHost = $currentUser ? ($currentUser->currentHost() ?? $currentUser->host) : null;
+    $hostLanguages = $currentHost?->studio_languages ?? ['en'];
+    if (!is_array($hostLanguages) || empty($hostLanguages)) {
+        $hostLanguages = ['en'];
+    }
+    $selectedLanguage = $currentHost ? session("studio_language_{$currentHost->id}", $currentHost->default_language_app ?? 'en') : 'en';
+    $languageNames = ['en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch', 'es' => 'Español'];
+    $languageFlags = ['en' => '🇺🇸', 'fr' => '🇫🇷', 'de' => '🇩🇪', 'es' => '🇪🇸'];
+    $hasMultipleLanguages = count($hostLanguages) > 1;
+@endphp
+
 <div id="toolbar" class="flex items-center justify-between bg-base-100 border-b border-base-content/10 px-6 h-16 shrink-0">
     {{-- Left: mobile sidebar toggle + search --}}
     <div class="flex items-center gap-3">
@@ -92,6 +106,35 @@
 
     {{-- Right: action icons + profile --}}
     <div class="flex items-center gap-1">
+        {{-- Language Picker (only show if multiple languages) --}}
+        @if($hasMultipleLanguages)
+        <div class="relative" id="studio-language-dropdown-wrapper">
+            <button type="button"
+                    class="flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg hover:bg-base-200 transition-colors"
+                    id="studio-language-picker-btn">
+                <span id="studio-current-language-flag">{{ $languageFlags[$selectedLanguage] ?? '🌐' }}</span>
+                <span id="studio-current-language-code" class="text-xs">{{ strtoupper($selectedLanguage) }}</span>
+                <span class="icon-[tabler--chevron-down] size-3 transition-transform" id="studio-language-chevron"></span>
+            </button>
+            <div id="studio-language-menu"
+                 class="hidden absolute right-0 mt-2 w-44 bg-base-100 rounded-lg shadow-lg border border-base-200 py-1 z-50">
+                <div class="px-3 py-2 text-xs text-base-content/60 border-b border-base-200">Select Language</div>
+                @foreach($hostLanguages as $lang)
+                    <button type="button"
+                            class="studio-language-option w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors {{ $lang === $selectedLanguage ? 'bg-primary/10' : '' }}"
+                            data-language="{{ $lang }}"
+                            data-flag="{{ $languageFlags[$lang] ?? '🌐' }}">
+                        <span class="w-6">{{ $languageFlags[$lang] ?? '🌐' }}</span>
+                        <span>{{ $languageNames[$lang] ?? $lang }}</span>
+                        @if($lang === $selectedLanguage)
+                            <span class="icon-[tabler--check] size-4 ml-auto text-success studio-lang-check"></span>
+                        @endif
+                    </button>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
         {{-- Alerts bell --}}
         <button type="button" class="btn btn-ghost btn-sm btn-square indicator"
             aria-haspopup="dialog" aria-expanded="false" aria-controls="alerts-drawer" data-overlay="#alerts-drawer">
@@ -151,3 +194,82 @@
         </div>
     </div>
 </div>
+
+{{-- Studio Language Picker JavaScript --}}
+@if($hasMultipleLanguages)
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pickerBtn = document.getElementById('studio-language-picker-btn');
+    const menu = document.getElementById('studio-language-menu');
+    const chevron = document.getElementById('studio-language-chevron');
+    const languageOptions = document.querySelectorAll('.studio-language-option');
+    const langFlagEl = document.getElementById('studio-current-language-flag');
+    const langCodeEl = document.getElementById('studio-current-language-code');
+
+    // Toggle dropdown
+    if (pickerBtn && menu) {
+        pickerBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            menu.classList.toggle('hidden');
+            if (chevron) chevron.classList.toggle('rotate-180');
+        });
+
+        // Close on click outside
+        document.addEventListener('click', function(e) {
+            if (!menu.contains(e.target) && !pickerBtn.contains(e.target)) {
+                menu.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+            }
+        });
+    }
+
+    // Handle language selection
+    languageOptions.forEach(function(option) {
+        option.addEventListener('click', function() {
+            const language = this.dataset.language;
+            const flag = this.dataset.flag;
+
+            // Update UI immediately
+            if (langFlagEl) langFlagEl.textContent = flag;
+            if (langCodeEl) langCodeEl.textContent = language.toUpperCase();
+
+            // Update active state
+            languageOptions.forEach(function(opt) {
+                opt.classList.remove('bg-primary/10');
+                const checkIcon = opt.querySelector('.studio-lang-check');
+                if (checkIcon) checkIcon.remove();
+            });
+            this.classList.add('bg-primary/10');
+            this.insertAdjacentHTML('beforeend', '<span class="icon-[tabler--check] size-4 ml-auto text-success studio-lang-check"></span>');
+
+            // Close dropdown
+            if (menu) menu.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+
+            // Save to server
+            fetch('{{ route("set-language") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ language: language })
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    // Reload page to update all translations
+                    window.location.reload();
+                }
+            })
+            .catch(function(error) {
+                console.error('Error setting language:', error);
+            });
+        });
+    });
+});
+</script>
+@endpush
+@endif
