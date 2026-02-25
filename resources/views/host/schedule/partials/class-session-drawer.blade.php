@@ -1,5 +1,5 @@
 {{-- Class Session Drawer --}}
-{{-- Usage: @include('host.schedule.partials.class-session-drawer', ['classSession' => $classSession]) --}}
+{{-- Usage: @include('host.schedule.partials.class-session-drawer', ['classSession' => $classSession, 'isMembershipSchedule' => false]) --}}
 
 @php
     $statuses = \App\Models\ClassSession::getStatuses();
@@ -15,6 +15,7 @@
     ];
     $confirmedBookings = $classSession->confirmedBookings;
     $checkedInCount = $confirmedBookings->filter(fn($b) => $b->isCheckedIn())->count();
+    $isMembershipSchedule = $isMembershipSchedule ?? false;
 @endphp
 
 <x-detail-drawer id="class-session-{{ $classSession->id }}" title="{{ $classSession->display_title }}" size="4xl">
@@ -128,10 +129,17 @@
                     </button>
                 </form>
             @endif
-            <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-soft btn-primary btn-sm">
-                <span class="icon-[tabler--user-plus] size-4"></span>
-                Booking
-            </a>
+            @if($isMembershipSchedule)
+                <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-soft btn-warning btn-sm">
+                    <span class="icon-[tabler--id-badge-2] size-4"></span>
+                    Add Booking
+                </a>
+            @else
+                <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-soft btn-primary btn-sm">
+                    <span class="icon-[tabler--user-plus] size-4"></span>
+                    Booking
+                </a>
+            @endif
         </div>
     </div>
     @endif
@@ -156,10 +164,17 @@
             <div class="text-center py-6">
                 <span class="icon-[tabler--users-minus] size-10 text-base-content/20 mx-auto mb-2"></span>
                 <p class="text-sm text-base-content/60">No bookings yet</p>
-                <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-sm btn-primary mt-3">
-                    <span class="icon-[tabler--user-plus] size-4"></span>
-                    Add Booking
-                </a>
+                @if($isMembershipSchedule)
+                    <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-sm btn-warning mt-3">
+                        <span class="icon-[tabler--id-badge-2] size-4"></span>
+                        Add Booking
+                    </a>
+                @else
+                    <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-sm btn-primary mt-3">
+                        <span class="icon-[tabler--user-plus] size-4"></span>
+                        Add Booking
+                    </a>
+                @endif
             </div>
         @else
             <div class="overflow-x-auto">

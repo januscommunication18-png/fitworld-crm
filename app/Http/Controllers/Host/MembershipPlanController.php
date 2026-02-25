@@ -97,6 +97,11 @@ class MembershipPlanController extends Controller
             $data['price'] = $data['prices'][$defaultCurrency] ?? 0;
         }
 
+        // Handle new member prices
+        if (isset($data['new_member_prices'])) {
+            $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
         $membershipPlan = $host->membershipPlans()->create($data);
 
         // Attach class plans based on eligibility scope
@@ -116,7 +121,17 @@ class MembershipPlanController extends Controller
         $this->authorizeHost($membershipPlan);
         $membershipPlan->load('classPlans');
 
-        return view('host.membership-plans.show', compact('membershipPlan'));
+        $host = auth()->user()->host;
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.membership-plans.show', compact(
+            'membershipPlan',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
     }
 
     public function edit(MembershipPlan $membershipPlan)
@@ -193,6 +208,11 @@ class MembershipPlanController extends Controller
             // Set legacy price field to default currency price
             $defaultCurrency = $host->default_currency ?? 'USD';
             $data['price'] = $data['prices'][$defaultCurrency] ?? 0;
+        }
+
+        // Handle new member prices
+        if (isset($data['new_member_prices'])) {
+            $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
         }
 
         $membershipPlan->update($data);

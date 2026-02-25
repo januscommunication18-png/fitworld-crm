@@ -9,6 +9,8 @@ use App\Models\Client;
 use App\Models\Booking;
 use App\Models\ClassPlan;
 use App\Models\ServicePlan;
+use App\Models\MembershipPlan;
+use App\Models\CustomerMembership;
 use App\Models\Instructor;
 use App\Models\Offer;
 use App\Models\QuestionnaireAttachment;
@@ -18,6 +20,7 @@ use App\Services\PaymentService;
 use App\Services\MembershipService;
 use App\Services\ClassPackService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class WalkInController extends Controller
 {
@@ -1194,5 +1197,227 @@ class WalkInController extends Controller
                 'end_time_iso' => $slot->end_time->toIso8601String(),
             ],
         ]);
+    }
+
+    /**
+     * Show membership selection page for walk-in booking
+     */
+    public function selectMembership(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        // Get active membership plans
+        $membershipPlans = MembershipPlan::where('host_id', $host->id)
+            ->where('status', 'active')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        // Multi-currency support
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        // Pre-selected class session (from membership schedules)
+        $selectedClassSession = null;
+        $preselectedMembershipPlanId = null;
+        if ($request->has('class_session_id')) {
+            $selectedClassSession = ClassSession::where('host_id', $host->id)
+                ->where('id', $request->get('class_session_id'))
+                ->with(['classPlan', 'primaryInstructor', 'location', 'membershipPlans'])
+                ->first();
+
+            // Pre-select the first membership plan associated with the class session
+            if ($selectedClassSession && $selectedClassSession->membershipPlans->isNotEmpty()) {
+                $preselectedMembershipPlanId = $selectedClassSession->membershipPlans->first()->id;
+            }
+        }
+
+        return view('host.walk-in.select-membership', compact(
+            'membershipPlans',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols',
+            'selectedClassSession',
+            'preselectedMembershipPlanId'
+        ));
+    }
+
+    /**
+     * Get membership plans (AJAX)
+     */
+    public function getMembershipPlans(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $plans = MembershipPlan::where('host_id', $host->id)
+            ->where('status', 'active')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($plan) use ($host) {
+                $defaultCurrency = $host->default_currency ?? 'USD';
+                return [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'description' => $plan->description,
+                    'type' => $plan->type,
+                    'formatted_type' => $plan->formatted_type,
+                    'interval' => $plan->interval,
+                    'formatted_interval' => $plan->formatted_interval,
+                    'price' => $plan->getPriceForCurrency($defaultCurrency),
+                    'formatted_price' => $plan->getFormattedPriceForCurrency($defaultCurrency),
+                    'formatted_price_with_interval' => $plan->formatted_price_with_interval,
+                    'credits_per_cycle' => $plan->credits_per_cycle,
+                    'color' => $plan->color,
+                ];
+            });
+
+        return response()->json(['plans' => $plans]);
+    }
+
+    /**
+     * Process walk-in membership booking
+     */
+    public function bookMembership(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'membership_plan_id' => 'required|exists:membership_plans,id',
+            'payment_method' => 'required|in:manual,comp',
+            'manual_method' => 'required_if:payment_method,manual|in:cash,card,check,other',
+            'price_paid' => 'nullable|numeric|min:0',
+            'start_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:500',
+            'offer_id' => 'nullable|integer|exists:offers,id',
+            'promo_code' => 'nullable|string|max:50',
+            'discount_amount' => 'nullable|numeric|min:0',
+            'class_session_id' => 'nullable|exists:class_sessions,id',
+            'book_into_class' => 'nullable|boolean',
+        ]);
+
+        // Verify client belongs to host
+        $client = Client::where('host_id', $host->id)
+            ->findOrFail($validated['client_id']);
+
+        // Verify membership plan belongs to host
+        $membershipPlan = MembershipPlan::where('host_id', $host->id)
+            ->findOrFail($validated['membership_plan_id']);
+
+        // Handle offer/discount
+        $offer = null;
+        $discountAmount = 0;
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $originalPrice = $membershipPlan->getPriceForCurrency($defaultCurrency) ?? 0;
+
+        if (!empty($validated['offer_id'])) {
+            $offer = Offer::where('id', $validated['offer_id'])
+                ->where('host_id', $host->id)
+                ->first();
+
+            if ($offer) {
+                $validation = $this->offerService->validateOffer($offer, $client, 'memberships', $originalPrice);
+                if ($validation['valid']) {
+                    $discountAmount = $validation['discount_amount'];
+                }
+            }
+        }
+
+        try {
+            // Determine start date
+            $startDate = !empty($validated['start_date'])
+                ? \Carbon\Carbon::parse($validated['start_date'])
+                : now();
+
+            // Calculate end date based on interval
+            $endDate = match ($membershipPlan->interval) {
+                'weekly' => $startDate->copy()->addWeek(),
+                'monthly' => $startDate->copy()->addMonth(),
+                'quarterly' => $startDate->copy()->addMonths(3),
+                'yearly' => $startDate->copy()->addYear(),
+                default => $startDate->copy()->addMonth(),
+            };
+
+            // Calculate price paid
+            $pricePaid = $validated['payment_method'] === 'comp'
+                ? 0
+                : ($validated['price_paid'] ?? max(0, $originalPrice - $discountAmount));
+
+            // Create customer membership
+            $customerMembership = CustomerMembership::create([
+                'host_id' => $host->id,
+                'client_id' => $client->id,
+                'membership_plan_id' => $membershipPlan->id,
+                'status' => CustomerMembership::STATUS_ACTIVE,
+                'started_at' => $startDate,
+                'expires_at' => $endDate,
+                'current_period_start' => $startDate,
+                'current_period_end' => $endDate,
+                'credits_remaining' => $membershipPlan->type === 'credits' ? $membershipPlan->credits_per_cycle : null,
+                'credits_per_period' => $membershipPlan->type === 'credits' ? $membershipPlan->credits_per_cycle : null,
+                'payment_method' => $validated['payment_method'] === 'comp' ? 'comp' : 'manual',
+                'created_by_user_id' => auth()->id(),
+            ]);
+
+            // Record offer redemption if applicable
+            if ($offer && $discountAmount > 0) {
+                $this->offerService->recordRedemption(
+                    $offer,
+                    $client,
+                    $originalPrice,
+                    $discountAmount,
+                    'front_desk',
+                    $validated['promo_code'] ?? null,
+                    auth()->id(),
+                    CustomerMembership::class,
+                    $customerMembership->id
+                );
+            }
+
+            // If a class session was specified and user wants to book into it
+            if (!empty($validated['class_session_id']) && !empty($validated['book_into_class'])) {
+                $classSession = ClassSession::where('host_id', $host->id)
+                    ->find($validated['class_session_id']);
+
+                if ($classSession) {
+                    try {
+                        $this->bookingService->createWalkInClassBooking(
+                            host: $host,
+                            client: $client,
+                            session: $classSession,
+                            options: [
+                                'payment_method' => 'membership',
+                                'customer_membership_id' => $customerMembership->id,
+                                'check_in_now' => false,
+                                'capacity_override' => true,
+                            ]
+                        );
+
+                        return redirect()
+                            ->route('membership-schedules.index')
+                            ->with('success', "Membership '{$membershipPlan->name}' sold and {$client->full_name} booked into {$classSession->display_title}!");
+                    } catch (\Exception $e) {
+                        // Membership was sold but booking failed - still redirect with partial success
+                        return redirect()
+                            ->route('membership-schedules.index')
+                            ->with('warning', "Membership sold but could not book into class: {$e->getMessage()}");
+                    }
+                }
+            }
+
+            // Determine redirect based on where we came from
+            $redirectRoute = !empty($validated['class_session_id']) ? 'membership-schedules.index' : 'schedule.calendar';
+
+            return redirect()
+                ->route($redirectRoute)
+                ->with('success', "Membership '{$membershipPlan->name}' sold to {$client->full_name}!");
+
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
     }
 }

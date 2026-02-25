@@ -84,6 +84,15 @@ class ClassPlanController extends Controller
             $data['drop_in_price'] = $data['drop_in_prices'][$defaultCurrency] ?? null;
         }
 
+        // Handle new member prices
+        if (isset($data['new_member_prices'])) {
+            $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        if (isset($data['new_member_drop_in_prices'])) {
+            $data['new_member_drop_in_prices'] = array_filter($data['new_member_drop_in_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
         // Handle image upload
         if ($request->hasFile('image')) {
             $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('class-plans'), config('filesystems.uploads'));
@@ -105,7 +114,17 @@ class ClassPlanController extends Controller
     {
         $this->authorizeHost($classPlan);
 
-        return view('host.class-plans.show', compact('classPlan'));
+        $host = auth()->user()->host;
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.class-plans.show', compact(
+            'classPlan',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
     }
 
     public function edit(ClassPlan $classPlan)
@@ -167,6 +186,15 @@ class ClassPlanController extends Controller
         if (isset($data['drop_in_prices'])) {
             $data['drop_in_prices'] = array_filter($data['drop_in_prices'], fn($price) => $price !== null && $price !== '');
             $data['drop_in_price'] = $data['drop_in_prices'][$defaultCurrency] ?? null;
+        }
+
+        // Handle new member prices
+        if (isset($data['new_member_prices'])) {
+            $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        if (isset($data['new_member_drop_in_prices'])) {
+            $data['new_member_drop_in_prices'] = array_filter($data['new_member_drop_in_prices'], fn($price) => $price !== null && $price !== '');
         }
 
         // Handle image upload

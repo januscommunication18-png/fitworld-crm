@@ -44,6 +44,7 @@ class MembershipPlan extends Model
         'has_scheduled_class',
         'price',
         'prices',
+        'new_member_prices',
         'interval',
         'credits_per_cycle',
         'addon_members',
@@ -65,6 +66,7 @@ class MembershipPlan extends Model
         return [
             'price' => 'decimal:2',
             'prices' => 'array',
+            'new_member_prices' => 'array',
             'has_scheduled_class' => 'boolean',
             'addon_members' => 'integer',
             'free_amenities' => 'array',
@@ -191,6 +193,49 @@ class MembershipPlan extends Model
     public function hasPriceForCurrency(string $currency): bool
     {
         return !empty($this->prices) && isset($this->prices[$currency]) && $this->prices[$currency] !== null;
+    }
+
+    /**
+     * Get new member price for a specific currency
+     */
+    public function getNewMemberPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        if (!empty($this->new_member_prices) && isset($this->new_member_prices[$currency])) {
+            return (float) $this->new_member_prices[$currency];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get formatted new member price for a specific currency
+     */
+    public function getFormattedNewMemberPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getNewMemberPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'Free';
+        }
+
+        $symbol = self::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Get formatted new member price with interval
+     */
+    public function getFormattedNewMemberPriceWithIntervalForCurrency(?string $currency = null): string
+    {
+        return $this->getFormattedNewMemberPriceForCurrency($currency) . $this->formatted_interval;
     }
 
     /**

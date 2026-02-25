@@ -72,48 +72,89 @@
                 {{-- Multi-Currency Pricing --}}
                 <div>
                     <label class="label-text mb-2 block">Pricing by Currency</label>
-                    <p class="text-sm text-base-content/60 mb-3">Set prices for each currency your studio accepts. Default currency price is required.</p>
+                    <p class="text-sm text-base-content/60 mb-3">New member prices are shown on public booking (subdomain). Default currency price is required.</p>
 
                     @php
                         $existingPrices = $membershipPlan?->prices ?? [];
+                        $existingNewMemberPrices = $membershipPlan?->new_member_prices ?? [];
                         $legacyPrice = $membershipPlan?->price;
                     @endphp
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        @foreach($hostCurrencies as $currency)
-                            @php
-                                $isDefault = $currency === $defaultCurrency;
-                                $symbol = $currencySymbols[$currency] ?? $currency;
-                                // Get price from existing prices, or fall back to legacy price for default currency
-                                $currentPrice = old("prices.{$currency}",
-                                    $existingPrices[$currency] ??
-                                    ($isDefault && $legacyPrice !== null ? $legacyPrice : '')
-                                );
-                            @endphp
-                            <div class="relative">
-                                <label class="label-text text-xs flex items-center gap-1" for="prices_{{ $currency }}">
-                                    <span class="font-bold text-primary">{{ $symbol }}</span>
-                                    {{ $currency }}
-                                    @if($isDefault)
-                                        <span class="badge badge-primary badge-xs">Default</span>
-                                    @endif
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60 font-medium">{{ $symbol }}</span>
-                                    <input type="number"
-                                        id="prices_{{ $currency }}"
-                                        name="prices[{{ $currency }}]"
-                                        value="{{ $currentPrice }}"
-                                        class="input w-full pl-10 @error("prices.{$currency}") input-error @enderror"
-                                        min="0" max="99999.99" step="0.01"
-                                        placeholder="0.00"
-                                        {{ $isDefault ? 'required' : '' }}>
-                                </div>
-                                @error("prices.{$currency}")
-                                    <p class="text-error text-xs mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        @endforeach
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th class="w-48">Price Type</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">
+                                            {{ $currency }}
+                                            @if($currency === $defaultCurrency)
+                                                <span class="badge badge-primary badge-xs ms-1">Default</span>
+                                            @endif
+                                        </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{-- New Member Pricing Section --}}
+                                <tr class="bg-info/5">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
+                                        New Member Pricing
+                                        <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label class="label-text" for="new_member_prices_{{ $hostCurrencies[0] }}">Price</label>
+                                    </td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td>
+                                            <label class="input input-bordered input-sm flex items-center gap-1">
+                                                <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                                <input type="number" id="new_member_prices_{{ $currency }}" name="new_member_prices[{{ $currency }}]" step="0.01" min="0"
+                                                       value="{{ old('new_member_prices.' . $currency, $existingNewMemberPrices[$currency] ?? '') }}"
+                                                       class="grow w-full min-w-20" placeholder="0.00">
+                                            </label>
+                                        </td>
+                                    @endforeach
+                                </tr>
+
+                                {{-- Existing Member Pricing Section --}}
+                                <tr class="bg-base-200/50">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
+                                        Existing Member Pricing
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <label class="label-text" for="prices_{{ $hostCurrencies[0] }}">Price <span class="text-error">*</span></label>
+                                    </td>
+                                    @foreach($hostCurrencies as $currency)
+                                        @php
+                                            $isDefault = $currency === $defaultCurrency;
+                                            $currentPrice = old("prices.{$currency}",
+                                                $existingPrices[$currency] ??
+                                                ($isDefault && $legacyPrice !== null ? $legacyPrice : '')
+                                            );
+                                        @endphp
+                                        <td>
+                                            <label class="input input-bordered input-sm flex items-center gap-1 @error("prices.{$currency}") input-error @enderror">
+                                                <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                                <input type="number" id="prices_{{ $currency }}" name="prices[{{ $currency }}]" step="0.01" min="0"
+                                                       value="{{ $currentPrice }}"
+                                                       class="grow w-full min-w-20" placeholder="0.00"
+                                                       {{ $isDefault ? 'required' : '' }}>
+                                            </label>
+                                            @error("prices.{$currency}")
+                                                <p class="text-error text-xs mt-1">{{ $message }}</p>
+                                            @enderror
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
                     @if(count($hostCurrencies) > 1)

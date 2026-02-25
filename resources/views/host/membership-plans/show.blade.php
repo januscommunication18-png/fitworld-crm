@@ -60,11 +60,7 @@
                     <h3 class="card-title">Plan Details</h3>
                 </div>
                 <div class="card-body">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div>
-                            <p class="text-sm text-base-content/60">Price</p>
-                            <p class="text-xl font-bold text-primary">{{ $membershipPlan->formatted_price_with_interval }}</p>
-                        </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div>
                             <p class="text-sm text-base-content/60">Type</p>
                             <p class="font-medium">{{ $membershipPlan->formatted_type }}</p>
@@ -87,6 +83,74 @@
                         <p class="text-base-content">{{ $membershipPlan->description }}</p>
                     </div>
                     @endif
+                </div>
+            </div>
+
+            {{-- Pricing --}}
+            <div class="card bg-base-100">
+                <div class="card-header">
+                    <h3 class="card-title">Pricing</h3>
+                </div>
+                <div class="card-body">
+                    <div class="overflow-x-auto">
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th class="w-48">Price Type</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">
+                                            {{ $currency }}
+                                            @if($currency === $defaultCurrency)
+                                                <span class="badge badge-primary badge-xs ms-1">Default</span>
+                                            @endif
+                                        </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{-- New Member Pricing Section --}}
+                                <tr class="bg-info/5">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
+                                        New Member Pricing
+                                        <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Price{{ $membershipPlan->formatted_interval }}</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($membershipPlan->new_member_prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($membershipPlan->new_member_prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+
+                                {{-- Existing Member Pricing Section --}}
+                                <tr class="bg-base-200/50">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
+                                        Existing Member Pricing
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Price{{ $membershipPlan->formatted_interval }}</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($membershipPlan->prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($membershipPlan->prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
