@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Models\TaxRate;
+use App\Services\TaxService;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
@@ -607,9 +609,262 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function taxSettings()
+    public function taxSettings(TaxService $taxService)
     {
-        return view('host.settings.payments.tax');
+        $host = auth()->user()->host;
+        $taxSettings = $host->tax_settings ?? TaxService::getDefaultTaxSettings();
+
+        // Get operating countries or fall back to host's country
+        $operatingCountries = $host->operating_countries ?? [];
+        if (empty($operatingCountries) && $host->country) {
+            $operatingCountries = [$host->country];
+        }
+
+        // Get tax rates for operating countries
+        $taxRates = collect();
+        if (!empty($operatingCountries)) {
+            $taxRates = $taxService->getSystemRatesForCountries($operatingCountries);
+
+            // Merge with any host-specific custom rates
+            $customRates = TaxRate::where('host_id', $host->id)
+                ->whereIn('country_code', $operatingCountries)
+                ->get();
+
+            // Mark system rates that have been overridden
+            $taxRates = $taxRates->map(function ($rate) use ($customRates) {
+                $override = $customRates->first(function ($custom) use ($rate) {
+                    return $custom->country_code === $rate->country_code
+                        && $custom->state_code === $rate->state_code
+                        && $custom->tax_type === $rate->tax_type;
+                });
+
+                $rate->has_override = $override !== null;
+                $rate->override_rate = $override ? $override->rate : null;
+                $rate->override_id = $override ? $override->id : null;
+                $rate->is_enabled = $override ? $override->is_active : $rate->is_active;
+
+                return $rate;
+            });
+
+            // Add any custom rates that don't have a system equivalent
+            $customOnlyRates = $customRates->filter(function ($custom) use ($taxRates) {
+                return !$taxRates->contains(function ($rate) use ($custom) {
+                    return $rate->country_code === $custom->country_code
+                        && $rate->state_code === $custom->state_code
+                        && $rate->tax_type === $custom->tax_type;
+                });
+            });
+
+            $taxRates = $taxRates->concat($customOnlyRates);
+        }
+
+        // Group rates by country
+        $ratesByCountry = $taxRates->groupBy('country_code');
+
+        return view('host.settings.payments.tax', [
+            'host' => $host,
+            'taxSettings' => $taxSettings,
+            'ratesByCountry' => $ratesByCountry,
+            'operatingCountries' => $operatingCountries,
+            'countryNames' => TaxRate::getCountryNames(),
+            'taxTypeLabels' => TaxRate::getTaxTypeLabels(),
+        ]);
+    }
+
+    public function updateTaxSettings(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'tax_enabled' => 'boolean',
+            'tax_calculation_method' => 'nullable|in:exclusive,inclusive',
+            'tax_display_mode' => 'nullable|in:combined,itemized',
+            'tax_id' => 'nullable|string|max:50',
+            'tax_id_label' => 'nullable|string|max:30',
+            'show_tax_on_receipts' => 'boolean',
+            'default_tax_exempt' => 'boolean',
+            'exempt_payment_methods' => 'nullable|array',
+            'exempt_payment_methods.*' => 'string|in:membership,pack',
+            'round_tax' => 'nullable|in:standard,up,down',
+        ]);
+
+        // Merge with existing settings
+        $existingSettings = $host->tax_settings ?? TaxService::getDefaultTaxSettings();
+        $newSettings = array_merge($existingSettings, [
+            'tax_enabled' => $request->boolean('tax_enabled'),
+            'tax_calculation_method' => $validated['tax_calculation_method'] ?? 'exclusive',
+            'tax_display_mode' => $validated['tax_display_mode'] ?? 'combined',
+            'tax_id' => $validated['tax_id'] ?? null,
+            'tax_id_label' => $validated['tax_id_label'] ?? 'Tax ID',
+            'show_tax_on_receipts' => $request->boolean('show_tax_on_receipts'),
+            'default_tax_exempt' => $request->boolean('default_tax_exempt'),
+            'exempt_payment_methods' => $validated['exempt_payment_methods'] ?? [],
+            'round_tax' => $validated['round_tax'] ?? 'standard',
+        ]);
+
+        $host->update(['tax_settings' => $newSettings]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tax settings updated successfully',
+        ]);
+    }
+
+    public function storeTaxRate(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'country_code' => 'required|string|size:2',
+            'state_code' => 'nullable|string|max:10',
+            'city' => 'nullable|string|max:100',
+            'tax_name' => 'required|string|max:100',
+            'tax_type' => 'required|string|max:50',
+            'rate' => 'required|numeric|min:0|max:100',
+            'applies_to' => 'nullable|array',
+            'applies_to.*' => 'string|in:class,service,membership,pack',
+        ]);
+
+        $taxRate = TaxRate::create([
+            'host_id' => $host->id,
+            'country_code' => $validated['country_code'],
+            'state_code' => $validated['state_code'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'tax_name' => $validated['tax_name'],
+            'tax_type' => $validated['tax_type'],
+            'rate' => $validated['rate'],
+            'applies_to' => $validated['applies_to'] ?? null,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tax rate created successfully',
+            'rate' => $taxRate,
+        ]);
+    }
+
+    public function updateTaxRate(Request $request, $id)
+    {
+        $host = auth()->user()->host;
+
+        $taxRate = TaxRate::where('host_id', $host->id)->findOrFail($id);
+
+        $validated = $request->validate([
+            'tax_name' => 'sometimes|required|string|max:100',
+            'rate' => 'sometimes|required|numeric|min:0|max:100',
+            'applies_to' => 'nullable|array',
+            'applies_to.*' => 'string|in:class,service,membership,pack',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        $taxRate->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tax rate updated successfully',
+            'rate' => $taxRate,
+        ]);
+    }
+
+    public function deleteTaxRate($id)
+    {
+        $host = auth()->user()->host;
+
+        $taxRate = TaxRate::where('host_id', $host->id)->findOrFail($id);
+        $taxRate->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tax rate deleted successfully',
+        ]);
+    }
+
+    public function toggleTaxRate(Request $request, $id)
+    {
+        $host = auth()->user()->host;
+
+        // Check if this is a system rate or custom rate
+        $systemRate = TaxRate::whereNull('host_id')->find($id);
+
+        if ($systemRate) {
+            // Create or update a host-specific override
+            $override = TaxRate::where('host_id', $host->id)
+                ->where('country_code', $systemRate->country_code)
+                ->where('state_code', $systemRate->state_code)
+                ->where('tax_type', $systemRate->tax_type)
+                ->first();
+
+            if ($override) {
+                $override->update(['is_active' => !$override->is_active]);
+            } else {
+                // Create a new override with toggled status
+                TaxRate::create([
+                    'host_id' => $host->id,
+                    'country_code' => $systemRate->country_code,
+                    'state_code' => $systemRate->state_code,
+                    'city' => $systemRate->city,
+                    'tax_name' => $systemRate->tax_name,
+                    'tax_type' => $systemRate->tax_type,
+                    'rate' => $systemRate->rate,
+                    'is_compound' => $systemRate->is_compound,
+                    'priority' => $systemRate->priority,
+                    'applies_to' => $systemRate->applies_to,
+                    'is_active' => false, // Toggle from system default (true) to false
+                ]);
+            }
+        } else {
+            // Toggle custom rate
+            $customRate = TaxRate::where('host_id', $host->id)->findOrFail($id);
+            $customRate->update(['is_active' => !$customRate->is_active]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tax rate status updated',
+        ]);
+    }
+
+    public function overrideTaxRate(Request $request, $id)
+    {
+        $host = auth()->user()->host;
+
+        $systemRate = TaxRate::whereNull('host_id')->findOrFail($id);
+
+        $validated = $request->validate([
+            'rate' => 'required|numeric|min:0|max:100',
+        ]);
+
+        // Check for existing override
+        $override = TaxRate::where('host_id', $host->id)
+            ->where('country_code', $systemRate->country_code)
+            ->where('state_code', $systemRate->state_code)
+            ->where('tax_type', $systemRate->tax_type)
+            ->first();
+
+        if ($override) {
+            $override->update(['rate' => $validated['rate']]);
+        } else {
+            $override = TaxRate::create([
+                'host_id' => $host->id,
+                'country_code' => $systemRate->country_code,
+                'state_code' => $systemRate->state_code,
+                'city' => $systemRate->city,
+                'tax_name' => $systemRate->tax_name,
+                'tax_type' => $systemRate->tax_type,
+                'rate' => $validated['rate'],
+                'is_compound' => $systemRate->is_compound,
+                'priority' => $systemRate->priority,
+                'applies_to' => $systemRate->applies_to,
+                'is_active' => true,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tax rate overridden successfully',
+            'rate' => $override,
+        ]);
     }
 
     public function payoutPreferences()

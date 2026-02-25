@@ -211,32 +211,35 @@
                     </div>
                 </div>
 
-                {{-- Payment Method Card --}}
+                {{-- Pricing & Payment Card --}}
                 <div class="card bg-base-100 border border-base-200">
                     <div class="card-header">
                         <h3 class="card-title">
-                            <span class="icon-[tabler--credit-card] size-5 mr-2"></span>
-                            Payment Method
+                            <span class="icon-[tabler--receipt] size-5 mr-2"></span>
+                            Pricing & Payment
                         </h3>
                     </div>
-                    <div class="card-body space-y-3">
-                        {{-- Manual Payment --}}
-                        <label class="flex items-start gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                            <input type="radio" name="payment_method" value="manual" class="radio radio-primary mt-0.5" checked>
-                            <div class="flex-1">
-                                <div class="font-medium">Manual Payment</div>
-                                <div class="text-sm text-base-content/60">Cash, card, check, or other</div>
-                                <div class="mt-3 grid grid-cols-2 gap-3" id="manual-details">
-                                    <select name="manual_method" class="select select-bordered select-sm">
-                                        <option value="cash">Cash</option>
-                                        <option value="card">Card</option>
-                                        <option value="check">Check</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                    <input type="number" name="price_paid" step="0.01" min="0" class="input input-bordered input-sm" placeholder="Amount" value="{{ $session->price ?? $session->classPlan->default_price ?? 0 }}">
+                    <div class="card-body">
+                        <div class="divider my-2 text-xs text-base-content/50">PAYMENT METHOD</div>
+
+                        <div class="space-y-3">
+                            {{-- Manual Payment --}}
+                            <label class="flex items-start gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <input type="radio" name="payment_method" value="manual" class="radio radio-primary mt-0.5" checked>
+                                <div class="flex-1">
+                                    <div class="font-medium">Manual Payment</div>
+                                    <div class="text-sm text-base-content/60">Cash, card, check, or other</div>
+                                    <div class="mt-3 grid grid-cols-2 gap-3" id="manual-details">
+                                        <select name="manual_method" class="select select-bordered select-sm">
+                                            <option value="cash">Cash</option>
+                                            <option value="card">Card</option>
+                                            <option value="check">Check</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                        <input type="number" name="price_paid" step="0.01" min="0" class="input input-bordered input-sm" placeholder="Amount" value="" id="manual-price-input">
+                                    </div>
                                 </div>
-                            </div>
-                        </label>
+                            </label>
 
                         {{-- Complimentary --}}
                         @can('comp', App\Models\Booking::class)
@@ -249,9 +252,10 @@
                         </label>
                         @endcan
 
-                        {{-- Membership/Pack options will be loaded dynamically based on selected client --}}
-                        <div id="client-payment-options" class="hidden space-y-3">
-                            {{-- Will be populated via AJAX --}}
+                            {{-- Membership/Pack options will be loaded dynamically based on selected client --}}
+                            <div id="client-payment-options" class="hidden space-y-3">
+                                {{-- Will be populated via AJAX --}}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -618,7 +622,8 @@ function loadPaymentOptions(clientId) {
 }
 
 // Promo code functionality
-const originalPrice = {{ $session->price ?? $session->classPlan->default_price ?? 0 }};
+let currentSelectedPrice = {{ $session->price ?? $session->classPlan->default_price ?? 0 }};
+let originalPrice = currentSelectedPrice;
 let appliedOfferId = null;
 let appliedDiscount = 0;
 
@@ -649,7 +654,7 @@ function applyPromoCode() {
         body: JSON.stringify({
             code: code,
             type: 'classes',
-            original_price: originalPrice,
+            original_price: currentSelectedPrice,
             client_id: selectedClientId
         })
     })
@@ -743,12 +748,12 @@ function removePromoCode() {
     document.getElementById('promo-error').classList.add('hidden');
 
     // Reset price display
-    updatePriceDisplay(originalPrice, 0, originalPrice);
+    updatePriceDisplay(currentSelectedPrice, 0, currentSelectedPrice);
 
     // Reset manual payment amount
     const manualAmountInput = document.querySelector('input[name="price_paid"]');
     if (manualAmountInput) {
-        manualAmountInput.value = originalPrice.toFixed(2);
+        manualAmountInput.value = currentSelectedPrice.toFixed(2);
     }
 }
 

@@ -494,6 +494,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/payments/settings', [SettingsController::class, 'paymentSettings'])->name('settings.payments.settings');
     Route::put('/settings/payments/settings', [SettingsController::class, 'updatePaymentSettings'])->name('settings.payments.settings.update');
     Route::get('/settings/payments/tax', [SettingsController::class, 'taxSettings'])->name('settings.payments.tax');
+    Route::put('/settings/payments/tax', [SettingsController::class, 'updateTaxSettings'])->name('settings.payments.tax.update');
+    Route::post('/settings/payments/tax/rates', [SettingsController::class, 'storeTaxRate'])->name('settings.payments.tax.rates.store');
+    Route::put('/settings/payments/tax/rates/{id}', [SettingsController::class, 'updateTaxRate'])->name('settings.payments.tax.rates.update');
+    Route::delete('/settings/payments/tax/rates/{id}', [SettingsController::class, 'deleteTaxRate'])->name('settings.payments.tax.rates.delete');
+    Route::patch('/settings/payments/tax/rates/{id}/toggle', [SettingsController::class, 'toggleTaxRate'])->name('settings.payments.tax.rates.toggle');
+    Route::post('/settings/payments/tax/rates/{id}/override', [SettingsController::class, 'overrideTaxRate'])->name('settings.payments.tax.rates.override');
     Route::get('/settings/payments/payouts', [SettingsController::class, 'payoutPreferences'])->name('settings.payments.payouts');
 
     // Settings - Notifications

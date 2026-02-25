@@ -175,6 +175,9 @@ class WalkInController extends Controller
             abort(403);
         }
 
+        // Load classPlan and host relationships for pricing display
+        $classSession->load(['classPlan', 'host']);
+
         // Get recent clients
         $recentClients = Client::where('host_id', $host->id)
             ->orderBy('updated_at', 'desc')
@@ -191,6 +194,7 @@ class WalkInController extends Controller
             'recentClients' => $recentClients,
             'bookedCount' => $bookedCount,
             'spotsRemaining' => $classSession->capacity - $bookedCount,
+            'host' => $host,
         ]);
     }
 
