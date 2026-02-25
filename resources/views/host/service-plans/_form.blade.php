@@ -134,50 +134,103 @@
             <div class="card-header">
                 <h3 class="card-title">Pricing</h3>
             </div>
-            <div class="card-body space-y-4">
-                {{-- Service Price --}}
-                <div>
-                    <label class="label-text font-medium">Service Price</label>
-                    <p class="text-xs text-base-content/60 mb-2">Leave empty for free services</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        @foreach($hostCurrencies as $currency)
-                            <div class="form-control">
-                                <label class="label py-1 justify-start gap-2">
-                                    <span class="label-text text-sm">{{ $currency }}</span>
-                                    @if($currency === $defaultCurrency)
-                                        <span class="badge badge-primary badge-xs">Default</span>
-                                    @endif
-                                </label>
-                                <label class="input input-bordered flex items-center gap-2">
-                                    <span class="text-base-content/60">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                    <input type="number" name="prices[{{ $currency }}]" step="0.01" min="0"
-                                           value="{{ old('prices.' . $currency, $servicePlan?->prices[$currency] ?? '') }}"
-                                           class="grow w-full" placeholder="0.00">
-                                </label>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
+            <div class="card-body">
+                <p class="text-sm text-base-content/60 mb-4">Leave empty for free services. New member prices are shown on public booking (subdomain).</p>
 
-                {{-- Deposit Amount --}}
-                <div>
-                    <label class="label-text font-medium">Deposit Amount</label>
-                    <p class="text-xs text-base-content/60 mb-2">Required deposit at booking (optional)</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        @foreach($hostCurrencies as $currency)
-                            <div class="form-control">
-                                <label class="label py-1 justify-start gap-2">
-                                    <span class="label-text text-sm">{{ $currency }}</span>
-                                </label>
-                                <label class="input input-bordered flex items-center gap-2">
-                                    <span class="text-base-content/60">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                    <input type="number" name="deposit_prices[{{ $currency }}]" step="0.01" min="0"
-                                           value="{{ old('deposit_prices.' . $currency, $servicePlan?->deposit_prices[$currency] ?? '') }}"
-                                           class="grow w-full" placeholder="0.00">
-                                </label>
-                            </div>
-                        @endforeach
-                    </div>
+                <div class="overflow-x-auto">
+                    <table class="table table-zebra">
+                        <thead>
+                            <tr>
+                                <th class="w-48">Price Type</th>
+                                @foreach($hostCurrencies as $currency)
+                                    <th class="text-center">
+                                        {{ $currency }}
+                                        @if($currency === $defaultCurrency)
+                                            <span class="badge badge-primary badge-xs ms-1">Default</span>
+                                        @endif
+                                    </th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- New Member Pricing Section --}}
+                            <tr class="bg-info/5">
+                                <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                    <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
+                                    New Member Pricing
+                                    <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label class="label-text" for="new_member_prices_{{ $hostCurrencies[0] }}">Service Price</label>
+                                </td>
+                                @foreach($hostCurrencies as $currency)
+                                    <td>
+                                        <label class="input input-bordered input-sm flex items-center gap-1">
+                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                            <input type="number" id="new_member_prices_{{ $currency }}" name="new_member_prices[{{ $currency }}]" step="0.01" min="0"
+                                                   value="{{ old('new_member_prices.' . $currency, $servicePlan?->new_member_prices[$currency] ?? '') }}"
+                                                   class="grow w-full min-w-20" placeholder="0.00">
+                                        </label>
+                                    </td>
+                                @endforeach
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label class="label-text" for="new_member_deposit_prices_{{ $hostCurrencies[0] }}">Deposit</label>
+                                </td>
+                                @foreach($hostCurrencies as $currency)
+                                    <td>
+                                        <label class="input input-bordered input-sm flex items-center gap-1">
+                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                            <input type="number" id="new_member_deposit_prices_{{ $currency }}" name="new_member_deposit_prices[{{ $currency }}]" step="0.01" min="0"
+                                                   value="{{ old('new_member_deposit_prices.' . $currency, $servicePlan?->new_member_deposit_prices[$currency] ?? '') }}"
+                                                   class="grow w-full min-w-20" placeholder="0.00">
+                                        </label>
+                                    </td>
+                                @endforeach
+                            </tr>
+
+                            {{-- Existing Member Pricing Section --}}
+                            <tr class="bg-base-200/50">
+                                <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                    <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
+                                    Existing Member Pricing
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label class="label-text" for="prices_{{ $hostCurrencies[0] }}">Service Price</label>
+                                </td>
+                                @foreach($hostCurrencies as $currency)
+                                    <td>
+                                        <label class="input input-bordered input-sm flex items-center gap-1">
+                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                            <input type="number" id="prices_{{ $currency }}" name="prices[{{ $currency }}]" step="0.01" min="0"
+                                                   value="{{ old('prices.' . $currency, $servicePlan?->prices[$currency] ?? '') }}"
+                                                   class="grow w-full min-w-20" placeholder="0.00">
+                                        </label>
+                                    </td>
+                                @endforeach
+                            </tr>
+                            <tr>
+                                <td>
+                                    <label class="label-text" for="deposit_prices_{{ $hostCurrencies[0] }}">Deposit</label>
+                                </td>
+                                @foreach($hostCurrencies as $currency)
+                                    <td>
+                                        <label class="input input-bordered input-sm flex items-center gap-1">
+                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
+                                            <input type="number" id="deposit_prices_{{ $currency }}" name="deposit_prices[{{ $currency }}]" step="0.01" min="0"
+                                                   value="{{ old('deposit_prices.' . $currency, $servicePlan?->deposit_prices[$currency] ?? '') }}"
+                                                   class="grow w-full min-w-20" placeholder="0.00">
+                                        </label>
+                                    </td>
+                                @endforeach
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

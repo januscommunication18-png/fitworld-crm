@@ -43,6 +43,8 @@ class ClassPlan extends Model
         'drop_in_price',
         'prices',
         'drop_in_prices',
+        'new_member_prices',
+        'new_member_drop_in_prices',
         'color',
         'difficulty_level',
         'equipment_needed',
@@ -60,6 +62,8 @@ class ClassPlan extends Model
             'drop_in_price' => 'decimal:2',
             'prices' => 'array',
             'drop_in_prices' => 'array',
+            'new_member_prices' => 'array',
+            'new_member_drop_in_prices' => 'array',
             'is_active' => 'boolean',
             'is_visible_on_booking_page' => 'boolean',
         ];
@@ -192,6 +196,76 @@ class ClassPlan extends Model
     public function hasPriceForCurrency(string $currency): bool
     {
         return !empty($this->prices) && isset($this->prices[$currency]) && $this->prices[$currency] !== null;
+    }
+
+    /**
+     * Get new member price for a specific currency
+     */
+    public function getNewMemberPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        if (!empty($this->new_member_prices) && isset($this->new_member_prices[$currency])) {
+            return (float) $this->new_member_prices[$currency];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get new member drop-in price for a specific currency
+     */
+    public function getNewMemberDropInPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        if (!empty($this->new_member_drop_in_prices) && isset($this->new_member_drop_in_prices[$currency])) {
+            return (float) $this->new_member_drop_in_prices[$currency];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get formatted new member price for a specific currency
+     */
+    public function getFormattedNewMemberPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getNewMemberPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'Free';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Get formatted new member drop-in price for a specific currency
+     */
+    public function getFormattedNewMemberDropInPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getNewMemberDropInPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'N/A';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
     }
 
     /**

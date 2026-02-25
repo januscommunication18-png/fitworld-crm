@@ -48,6 +48,12 @@
                             Service Slot
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('walk-in.select-membership') }}">
+                            <span class="icon-[tabler--id-badge-2] size-5 text-warning"></span>
+                            Membership
+                        </a>
+                    </li>
                 </ul>
             </div>
 

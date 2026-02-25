@@ -85,7 +85,7 @@
                         <span class="icon-[tabler--info-circle] size-5"></span>
                         Service Details
                     </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                         <div>
                             <label class="text-sm text-base-content/60">Duration</label>
                             <p class="font-medium">{{ $servicePlan->formatted_duration }}</p>
@@ -99,17 +99,102 @@
                             <p class="font-medium">{{ $servicePlan->max_participants ?? '1' }}</p>
                         </div>
                         <div>
-                            <label class="text-sm text-base-content/60">Price</label>
-                            <p class="font-medium text-success">{{ $servicePlan->formatted_price }}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-base-content/60">Deposit Required</label>
-                            <p class="font-medium">{{ $servicePlan->deposit_amount ? '$' . number_format($servicePlan->deposit_amount, 2) : 'None' }}</p>
-                        </div>
-                        <div>
                             <label class="text-sm text-base-content/60">Location Type</label>
                             <p class="font-medium">{{ \App\Models\ServicePlan::getLocationTypes()[$servicePlan->location_type] ?? '-' }}</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Pricing --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--currency-dollar] size-5"></span>
+                        Pricing
+                    </h2>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th class="w-48">Price Type</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">
+                                            {{ $currency }}
+                                            @if($currency === $defaultCurrency)
+                                                <span class="badge badge-primary badge-xs ms-1">Default</span>
+                                            @endif
+                                        </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{-- New Member Pricing Section --}}
+                                <tr class="bg-info/5">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
+                                        New Member Pricing
+                                        <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Service Price</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($servicePlan->new_member_prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($servicePlan->new_member_prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Deposit</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($servicePlan->new_member_deposit_prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($servicePlan->new_member_deposit_prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+
+                                {{-- Existing Member Pricing Section --}}
+                                <tr class="bg-base-200/50">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
+                                        Existing Member Pricing
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Service Price</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($servicePlan->prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($servicePlan->prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Deposit</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($servicePlan->deposit_prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($servicePlan->deposit_prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

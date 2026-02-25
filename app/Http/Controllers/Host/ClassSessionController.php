@@ -240,6 +240,7 @@ class ClassSessionController extends Controller
             'backupInstructors',
             'location',
             'room',
+            'membershipPlans',
             'recurrenceChildren' => fn ($q) => $q->orderBy('start_time'),
             'bookings.client',
             'bookings.questionnaireResponses.version.questionnaire',

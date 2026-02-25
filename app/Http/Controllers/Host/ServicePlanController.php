@@ -82,6 +82,15 @@ class ServicePlanController extends Controller
             $data['deposit_amount'] = $data['deposit_prices'][$defaultCurrency] ?? 0;
         }
 
+        // Handle new member prices
+        if (isset($data['new_member_prices'])) {
+            $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        if (isset($data['new_member_deposit_prices'])) {
+            $data['new_member_deposit_prices'] = array_filter($data['new_member_deposit_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
         // Handle image upload
         if ($request->hasFile('image')) {
             $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('service-plans'), config('filesystems.uploads'));
@@ -110,7 +119,17 @@ class ServicePlanController extends Controller
 
         $servicePlan->load('instructors');
 
-        return view('host.service-plans.show', compact('servicePlan'));
+        $host = auth()->user()->host;
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.service-plans.show', compact(
+            'servicePlan',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
     }
 
     public function edit(ServicePlan $servicePlan)
@@ -170,6 +189,15 @@ class ServicePlanController extends Controller
             $data['deposit_prices'] = array_filter($data['deposit_prices'], fn($price) => $price !== null && $price !== '');
             $defaultCurrency = $host->default_currency ?? 'USD';
             $data['deposit_amount'] = $data['deposit_prices'][$defaultCurrency] ?? 0;
+        }
+
+        // Handle new member prices
+        if (isset($data['new_member_prices'])) {
+            $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        if (isset($data['new_member_deposit_prices'])) {
+            $data['new_member_deposit_prices'] = array_filter($data['new_member_deposit_prices'], fn($price) => $price !== null && $price !== '');
         }
 
         // Handle image upload

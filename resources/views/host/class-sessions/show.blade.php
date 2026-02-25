@@ -21,7 +21,7 @@
                 <a href="{{ route('class-sessions.index') }}" class="btn btn-ghost btn-sm btn-circle">
                     <span class="icon-[tabler--arrow-left] size-5"></span>
                 </a>
-                <div class="w-4 h-4 rounded-full" style="background-color: {{ $classSession->classPlan->color }};"></div>
+                <div class="w-4 h-4 rounded-full" style="background-color: {{ $classSession->classPlan?->color ?? '#6366f1' }};"></div>
                 <h1 class="text-2xl font-bold">{{ $classSession->display_title }}</h1>
                 <span class="badge {{ $classSession->getStatusBadgeClass() }} badge-soft capitalize">{{ $classSession->status }}</span>
             </div>
@@ -35,10 +35,17 @@
         </div>
         <div class="flex items-center gap-2">
             @if($classSession->isPublished() && !$classSession->isPast())
-            <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-success">
-                <span class="icon-[tabler--user-plus] size-5"></span>
-                Add Booking
-            </a>
+                @if($classSession->membershipPlans->isNotEmpty())
+                    <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-warning">
+                        <span class="icon-[tabler--id-badge-2] size-5"></span>
+                        Add Booking
+                    </a>
+                @else
+                    <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-success">
+                        <span class="icon-[tabler--user-plus] size-5"></span>
+                        Add Booking
+                    </a>
+                @endif
             @endif
             @if($classSession->isDraft())
             <form action="{{ route('class-sessions.publish', $classSession) }}" method="POST" class="inline">
@@ -159,15 +166,15 @@
                         </div>
                         <div>
                             <dt class="text-sm text-base-content/60">Class Plan</dt>
-                            <dd class="font-medium">{{ $classSession->classPlan->name }}</dd>
+                            <dd class="font-medium">{{ $classSession->classPlan?->name ?? '-' }}</dd>
                         </div>
                         <div>
                             <dt class="text-sm text-base-content/60">Category</dt>
-                            <dd class="capitalize">{{ $classSession->classPlan->category }}</dd>
+                            <dd class="capitalize">{{ $classSession->classPlan?->category ?? '-' }}</dd>
                         </div>
                         <div>
                             <dt class="text-sm text-base-content/60">Difficulty</dt>
-                            <dd><span class="badge {{ $classSession->classPlan->getDifficultyBadgeClass() }} badge-soft badge-sm capitalize">{{ str_replace('_', ' ', $classSession->classPlan->difficulty_level) }}</span></dd>
+                            <dd><span class="badge {{ $classSession->classPlan?->getDifficultyBadgeClass() ?? 'badge-neutral' }} badge-soft badge-sm capitalize">{{ $classSession->classPlan ? str_replace('_', ' ', $classSession->classPlan->difficulty_level) : '-' }}</span></dd>
                         </div>
                         <div>
                             <dt class="text-sm text-base-content/60">Duration</dt>

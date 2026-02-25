@@ -36,6 +36,8 @@ class ServicePlan extends Model
         'prices',
         'deposit_amount',
         'deposit_prices',
+        'new_member_prices',
+        'new_member_deposit_prices',
         'location_type',
         'max_participants',
         'image_path',
@@ -54,6 +56,8 @@ class ServicePlan extends Model
             'prices' => 'array',
             'deposit_amount' => 'decimal:2',
             'deposit_prices' => 'array',
+            'new_member_prices' => 'array',
+            'new_member_deposit_prices' => 'array',
             'is_active' => 'boolean',
             'is_visible_on_booking_page' => 'boolean',
         ];
@@ -188,6 +192,76 @@ class ServicePlan extends Model
     public function hasPriceForCurrency(string $currency): bool
     {
         return !empty($this->prices) && isset($this->prices[$currency]) && $this->prices[$currency] !== null;
+    }
+
+    /**
+     * Get new member price for a specific currency
+     */
+    public function getNewMemberPriceForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        if (!empty($this->new_member_prices) && isset($this->new_member_prices[$currency])) {
+            return (float) $this->new_member_prices[$currency];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get new member deposit for a specific currency
+     */
+    public function getNewMemberDepositForCurrency(?string $currency = null): ?float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        if (!empty($this->new_member_deposit_prices) && isset($this->new_member_deposit_prices[$currency])) {
+            return (float) $this->new_member_deposit_prices[$currency];
+        }
+
+        return null;
+    }
+
+    /**
+     * Get formatted new member price for a specific currency
+     */
+    public function getFormattedNewMemberPriceForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $price = $this->getNewMemberPriceForCurrency($currency);
+
+        if ($price === null) {
+            return 'Free';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($price, 2);
+    }
+
+    /**
+     * Get formatted new member deposit for a specific currency
+     */
+    public function getFormattedNewMemberDepositForCurrency(?string $currency = null): string
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $deposit = $this->getNewMemberDepositForCurrency($currency);
+
+        if ($deposit === null) {
+            return 'No deposit';
+        }
+
+        $symbol = MembershipPlan::getCurrencySymbol($currency);
+        return $symbol . number_format($deposit, 2);
     }
 
     /**

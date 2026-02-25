@@ -405,7 +405,7 @@ class BookingService
         Booking $booking,
         Host $host,
         Client $client,
-        ClassPlan $classPlan,
+        ?ClassPlan $classPlan,
         array $options
     ): void {
         $paymentMethod = $options['payment_method'] ?? null;
@@ -415,7 +415,7 @@ class BookingService
                 $membershipId = $options['customer_membership_id'] ?? null;
                 $membership = $membershipId
                     ? CustomerMembership::find($membershipId)
-                    : $this->membershipService->getEligibleMembershipForClass($client, $classPlan);
+                    : ($classPlan ? $this->membershipService->getEligibleMembershipForClass($client, $classPlan) : null);
 
                 if ($membership && $this->membershipService->deductCredit($membership)) {
                     $booking->update(['customer_membership_id' => $membership->id]);
@@ -429,7 +429,7 @@ class BookingService
                 $packId = $options['class_pack_purchase_id'] ?? null;
                 $packPurchase = $packId
                     ? ClassPackPurchase::find($packId)
-                    : $this->classPackService->getEligiblePackForClass($client, $classPlan);
+                    : ($classPlan ? $this->classPackService->getEligiblePackForClass($client, $classPlan) : null);
 
                 if ($packPurchase && $this->classPackService->deductCredit($packPurchase, $booking)) {
                     $booking->update(['class_pack_purchase_id' => $packPurchase->id]);
@@ -441,7 +441,7 @@ class BookingService
 
             case Booking::PAYMENT_MANUAL:
             case Booking::PAYMENT_CASH:
-                $amount = $options['price_paid'] ?? $classPlan->drop_in_price ?? 0;
+                $amount = $options['price_paid'] ?? $classPlan?->drop_in_price ?? 0;
                 $manualMethod = $options['manual_method'] ?? Payment::MANUAL_CASH;
                 $this->paymentService->processManualPayment(
                     $host,

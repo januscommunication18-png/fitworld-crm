@@ -319,7 +319,7 @@
 
 {{-- Class Session Drawers --}}
 @foreach($sessions as $session)
-    @include('host.schedule.partials.class-session-drawer', ['classSession' => $session])
+    @include('host.schedule.partials.class-session-drawer', ['classSession' => $session, 'isMembershipSchedule' => true])
 @endforeach
 
 @push('scripts')

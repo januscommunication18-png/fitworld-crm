@@ -324,6 +324,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in/service-plan-defaults', [WalkInController::class, 'getServicePlanDefaults'])->name('walk-in.service-plan-defaults');
     Route::post('/walk-in/service-slots/quick-create', [WalkInController::class, 'quickCreateServiceSlot'])->name('walk-in.service-slots.quick-create');
 
+    // Walk-In Membership Booking
+    Route::get('/walk-in/memberships', [WalkInController::class, 'selectMembership'])->name('walk-in.select-membership');
+    Route::get('/walk-in/membership-plans', [WalkInController::class, 'getMembershipPlans'])->name('walk-in.membership-plans');
+    Route::post('/walk-in/membership/book', [WalkInController::class, 'bookMembership'])->name('walk-in.membership.book');
+
     // Class Requests
     Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');
     Route::get('/class-requests/{class_request}', [ClassRequestController::class, 'show'])->name('class-requests.show');

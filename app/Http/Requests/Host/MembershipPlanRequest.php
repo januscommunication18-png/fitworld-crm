@@ -26,6 +26,8 @@ class MembershipPlanRequest extends FormRequest
             'prices' => ['nullable', 'array'],
             'prices.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'prices.' . $defaultCurrency => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'new_member_prices' => ['nullable', 'array'],
+            'new_member_prices.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'interval' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getIntervals()))],
             'credits_per_cycle' => ['nullable', 'integer', 'min:1', 'max:999', 'required_if:type,credits'],
             'eligibility_scope' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getEligibilityScopes()))],
