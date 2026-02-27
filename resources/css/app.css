@@ -9,9 +9,9 @@
 @import "flyonui/src/vendor/fullcalendar.css";
 @import "notyf/notyf.min.css";
 @import "flyonui/src/vendor/notyf.css";
-@plugin "flyonui/theme" {
-    themes: light, dark;
-}
+
+/* FitCRM Theme - Custom branding variables (edit fitcrm-theme.css to customize) */
+@import "./fitcrm-theme.css";
 
 /* ── Layout wrapper ────────────────────────────────────────── */
 #layout-wrapper { display: flex; min-height: 100vh; }

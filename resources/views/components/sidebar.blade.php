@@ -62,13 +62,13 @@
 
             {{-- Schedule - Requires schedule.view or schedule.view_own --}}
             @if($canViewSchedule)
-            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') ? 'active' : '' }}" data-nav="schedule">
+            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') ? 'active' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.schedule'] ?? 'Schedule' }}</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
                     <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>{{ $trans['nav.schedule.calendar'] ?? 'Calendar View' }}
                     </a></li>
@@ -82,6 +82,9 @@
                     <li><a href="{{ url('/membership-schedules') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('membership-schedules*') || request()->is('scheduled-membership*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>{{ $trans['nav.schedule.membership_sessions'] ?? 'Membership Sessions' }}
                     </a></li>
+                    <li><a href="{{ url('/space-rentals') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--building] size-4 mr-2"></span>{{ $trans['nav.schedule.space_rentals'] ?? 'Space Rentals' }}
+                    </a></li>
                     @endif
                 </ul>
             </li>
@@ -89,13 +92,13 @@
 
             {{-- Bookings - Requires bookings.view or bookings.view_own --}}
             @if($canViewBookings)
-            <li class="nav-item {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') ? 'active' : '' }}" data-nav="bookings">
+            <li class="nav-item {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') || request()->is('rentals/fulfillment*') || request()->is('space-rentals/create*') ? 'active' : '' }}" data-nav="bookings">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--book] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.bookings'] ?? 'Bookings' }}</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') || request()->is('rentals/fulfillment*') || request()->is('space-rentals/create*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
                     <li><a href="{{ route('bookings.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('bookings') && !request()->is('bookings/*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clipboard-list] size-4 mr-2"></span>{{ $user->hasPermission('bookings.view') ? ($trans['nav.bookings.all'] ?? 'All Bookings') : ($trans['nav.bookings.my_bookings'] ?? 'My Class Bookings') }}
                     </a></li>
@@ -128,6 +131,12 @@
                         @endif
                     </a></li>
                     @endif
+                    <li><a href="{{ url('/rentals/fulfillment') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals/fulfillment*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--clipboard-check] size-4 mr-2"></span>{{ $trans['nav.bookings.fulfillment'] ?? 'Fulfillment (Items)' }}
+                    </a></li>
+                    <li><a href="{{ url('/space-rentals/create') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals/create*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--building-plus] size-4 mr-2"></span>{{ $trans['nav.bookings.space_booking'] ?? 'Space Booking' }}
+                    </a></li>
                 </ul>
             </li>
             @endif
@@ -215,43 +224,6 @@
             </li>
             @endif
 
-            {{-- Rentals - Always visible --}}
-            <li class="nav-item {{ request()->is('rentals*') ? 'active' : '' }}" data-nav="rentals">
-                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
-                    <span class="icon-[tabler--package] size-5 shrink-0"></span>
-                    <span class="sidebar-label flex-1 text-left">{{ $trans['nav.rentals'] ?? 'Rentals' }}</span>
-                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
-                </button>
-                <ul class="sidebar-submenu {{ request()->is('rentals*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    <li><a href="{{ url('/rentals') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals') && !request()->is('rentals/*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--list] size-4 mr-2"></span>{{ $trans['nav.rentals.all_items'] ?? 'All Items' }}
-                    </a></li>
-                    <li><a href="{{ url('/rentals/fulfillment') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals/fulfillment*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--clipboard-check] size-4 mr-2"></span>{{ $trans['nav.rentals.fulfillment'] ?? 'Fulfillment' }}
-                    </a></li>
-                    <li><a href="{{ url('/rentals/invoice/create') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals/invoice*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--receipt] size-4 mr-2"></span>{{ $trans['nav.rentals.create_invoice'] ?? 'Create Invoice' }}
-                    </a></li>
-                </ul>
-            </li>
-
-            {{-- Space Rentals - Always visible --}}
-            <li class="nav-item {{ request()->is('space-rentals*') ? 'active' : '' }}" data-nav="space-rentals">
-                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
-                    <span class="icon-[tabler--building] size-5 shrink-0"></span>
-                    <span class="sidebar-label flex-1 text-left">{{ $trans['nav.space_rentals'] ?? 'Space Rentals' }}</span>
-                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
-                </button>
-                <ul class="sidebar-submenu {{ request()->is('space-rentals*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    <li><a href="{{ url('/space-rentals') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals') && !request()->is('space-rentals/*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>{{ $trans['nav.space_rentals.bookings'] ?? 'Bookings' }}
-                    </a></li>
-                    <li><a href="{{ url('/space-rentals/config') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals/config*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--settings] size-4 mr-2"></span>{{ $trans['nav.space_rentals.configure'] ?? 'Configure Spaces' }}
-                    </a></li>
-                </ul>
-            </li>
-
             {{-- Section: Commerce - Only show if user has any commerce permissions --}}
             @if($canViewOffers || $canViewInsights || $canViewPayments)
             <li class="menu-title sidebar-section-label pt-4">
@@ -316,13 +288,16 @@
 
             {{-- Payments - Requires payments.view --}}
             @if($canViewPayments)
-            <li class="nav-item {{ request()->is('payments*') ? 'active' : '' }}" data-nav="payments">
+            <li class="nav-item {{ request()->is('payments*') || request()->is('rentals/invoice*') ? 'active' : '' }}" data-nav="payments">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--credit-card] size-5 shrink-0"></span>
-                    <span class="sidebar-label flex-1 text-left">{{ $trans['nav.payments'] ?? 'Payments' }}</span>
+                    <span class="sidebar-label flex-1 text-left">{{ $trans['nav.paymentsinvoice'] ?? 'Payments & Invoice' }}</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('payments*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('payments*') || request()->is('rentals/invoice*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/rentals/invoice/create') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals/invoice*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--file-plus] size-4 mr-2"></span>{{ $trans['nav.payments.create_invoice'] ?? 'Create Invoice' }}
+                    </a></li>
                     <li><a href="{{ url('/payments/transactions') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
                         <span class="icon-[tabler--receipt] size-4 mr-2"></span>{{ $trans['nav.payments.transactions'] ?? 'Transactions' }}
                     </a></li>

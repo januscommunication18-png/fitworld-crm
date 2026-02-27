@@ -277,8 +277,59 @@ createApp(FeedbackForm).mount('#app')
 | **CSS Framework** | Tailwind CSS |
 | **Component Library** | [FlyonUI](https://flyonui.com/docs/getting-started/introduction/) |
 | **Icons** | Tabler Icons (via webfont, local) |
+| **Theme File** | `resources/css/fitcrm-theme.css` |
 
 FlyonUI is the primary component library for all UI development. See Section 3 for the full component guide.
+
+### Theme Customization
+
+All brand customization is controlled via a single CSS file: `resources/css/fitcrm-theme.css`
+
+**File Structure:**
+- **Section 1** - Brand Settings (EDIT THESE) - Colors, fonts, border radius, spacing
+- **Section 2** - FlyonUI Mapping (DO NOT EDIT) - Maps fitcrm-* variables to FlyonUI
+- **Section 3** - Dark Mode (optional, commented out)
+- **Section 4** - Custom Utilities (optional)
+
+**How to Customize:**
+
+1. Open `resources/css/fitcrm-theme.css`
+2. Edit values in **Section 1 only**
+3. Save file (changes apply automatically in dev mode via Vite)
+
+**Color Format (OKLCH):**
+
+```
+oklch(lightness% chroma hue)
+- lightness: 0-100% (0=black, 100=white)
+- chroma: 0-0.4 (0=gray, higher=more saturated)
+- hue: 0-360 (0=red, 120=green, 240=blue)
+```
+
+Use https://oklch.com/ to pick colors visually.
+
+**Example Colors:**
+```css
+Purple:  oklch(55% 0.25 275)
+Blue:    oklch(60% 0.20 250)
+Green:   oklch(70% 0.20 145)
+Red:     oklch(60% 0.22 25)
+Orange:  oklch(75% 0.16 50)
+```
+
+**Available Variables:**
+| Variable | Purpose |
+|---|---|
+| `--fitcrm-brand-primary` | Main brand color (buttons, links) |
+| `--fitcrm-brand-secondary` | Secondary actions |
+| `--fitcrm-brand-accent` | Highlights, badges |
+| `--fitcrm-brand-neutral` | Dark/muted elements |
+| `--fitcrm-success/warning/error/info` | Feedback colors |
+| `--fitcrm-base-100/200/300` | Backgrounds, cards, borders |
+| `--fitcrm-base-content` | Text color |
+| `--fitcrm-font-family-sans` | Main font family |
+| `--fitcrm-radius-selector/field/box` | Border radius sizes |
+| `--fitcrm-depth` | 0=flat, 1=shadows enabled |
 
 ## 2.6 Content Loading - Skeleton Loading
 

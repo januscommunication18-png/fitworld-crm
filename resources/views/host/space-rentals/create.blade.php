@@ -2,6 +2,16 @@
 
 @section('title', $trans['space_rentals.new_booking'] ?? 'New Space Rental')
 
+@section('breadcrumbs')
+    <ol>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li><a href="{{ route('space-rentals.index') }}">{{ $trans['nav.space_rentals'] ?? 'Space Rentals' }}</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li aria-current="page">{{ $trans['space_rentals.new_booking'] ?? 'New Booking' }}</li>
+    </ol>
+@endsection
+
 @section('content')
 <div class="max-w-5xl mx-auto">
     {{-- Header --}}
