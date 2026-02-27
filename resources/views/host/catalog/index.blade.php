@@ -1,11 +1,3 @@
-@php
-    $user = auth()->user();
-    $host = $user->currentHost() ?? $user->host;
-    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
-    $t = \App\Services\TranslationService::make($host, $selectedLang);
-    $trans = $t->all();
-@endphp
-
 @extends('layouts.dashboard')
 
 @section('title', $trans['nav.catalog'] ?? 'Catalog')
@@ -44,6 +36,16 @@
                 <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>
                 {{ $trans['page.memberships'] ?? 'Memberships' }}
             </a>
+            <a href="{{ route('catalog.index', ['tab' => 'rental-spaces', 'view' => request('view', 'list')]) }}"
+               class="tab {{ $tab === 'rental-spaces' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--building] size-4 mr-2"></span>
+                {{ $trans['nav.rental_spaces'] ?? 'Rental Spaces' }}
+            </a>
+            <a href="{{ route('catalog.index', ['tab' => 'item-rentals', 'view' => request('view', 'list')]) }}"
+               class="tab {{ $tab === 'item-rentals' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--package] size-4 mr-2"></span>
+                {{ $trans['nav.item_rentals'] ?? 'Item Rentals' }}
+            </a>
         </div>
 
         <div class="flex items-center gap-2">
@@ -69,10 +71,20 @@
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.catalog.service_plans'] ?? 'Service Plan' }}
             </a>
-            @else
+            @elseif($tab === 'memberships')
             <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['page.memberships'] ?? 'Membership' }}
+            </a>
+            @elseif($tab === 'rental-spaces')
+            <a href="{{ route('space-rentals.config.create') }}" class="btn btn-primary">
+                <span class="icon-[tabler--plus] size-5"></span>
+                {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.rental_spaces'] ?? 'Rental Space' }}
+            </a>
+            @elseif($tab === 'item-rentals')
+            <a href="{{ route('rentals.create') }}" class="btn btn-primary">
+                <span class="icon-[tabler--plus] size-5"></span>
+                {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.item_rentals'] ?? 'Item' }}
             </a>
             @endif
         </div>
@@ -366,7 +378,7 @@
         </div>
         @endif
         @endif
-    @else
+    @elseif($tab === 'memberships')
         {{-- Memberships Tab --}}
         @if($membershipPlans->isEmpty())
         <div class="card bg-base-100">
@@ -485,6 +497,326 @@
                             {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
                         <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+        @endif
+    @elseif($tab === 'rental-spaces')
+        {{-- Rental Spaces Tab --}}
+        @if($spaceRentalConfigs->isEmpty())
+        <div class="card bg-base-100">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--building] size-16 text-base-content/20 mx-auto mb-4"></span>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['catalog.no_rental_spaces'] ?? 'No Rental Spaces Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['catalog.no_rental_spaces_desc'] ?? 'Configure spaces that can be rented out for professional use or workshops.' }}</p>
+                <a href="{{ route('space-rentals.config.create') }}" class="btn btn-primary">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    {{ $trans['catalog.create_first_rental_space'] ?? 'Create First Rental Space' }}
+                </a>
+            </div>
+        </div>
+        @else
+        @if(request('view') === 'grid')
+        {{-- Grid View --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            @foreach($spaceRentalConfigs as $config)
+            <div class="card bg-base-100 {{ !$config->is_active ? 'opacity-60' : '' }}">
+                <div class="h-32 flex items-center justify-center bg-secondary/10">
+                    <span class="icon-[tabler--{{ $config->type_icon }}] size-12 text-secondary"></span>
+                </div>
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title">{{ $config->name }}</h3>
+                            <p class="text-sm text-base-content/60">
+                                {{ $config->location?->name ?? 'No location' }}
+                                @if($config->room)
+                                    &bull; {{ $config->room->name }}
+                                @endif
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            @if($config->is_active)
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
+                            @else
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if($config->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $config->description }}</p>
+                    @endif
+
+                    <div class="mt-4 flex items-center gap-4 text-sm">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $config->getFormattedHourlyRateForCurrency() }}/hr</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--clock] size-4 text-base-content/60"></span>
+                            <span>{{ $config->minimum_hours }}h {{ $trans['common.min'] ?? 'min' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--calendar-event] size-4 text-base-content/60"></span>
+                            <span>{{ $config->rentals_count }} {{ $trans['common.bookings'] ?? 'bookings' }}</span>
+                        </div>
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
+                        <a href="{{ route('space-rentals.config.show', $config) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                        </a>
+                        <a href="{{ route('space-rentals.config.edit', $config) }}" class="btn btn-sm btn-soft btn-primary flex-1">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </a>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('space-rentals.config.destroy', $config) }}', '{{ $config->name }}', '{{ $trans['catalog.rental_space'] ?? 'rental space' }}')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @else
+        {{-- List View --}}
+        <div class="space-y-4">
+            @foreach($spaceRentalConfigs as $config)
+            <div class="card bg-base-100 card-side {{ !$config->is_active ? 'opacity-60' : '' }}">
+                <div class="w-32 shrink-0 flex items-center justify-center bg-secondary/10">
+                    <span class="icon-[tabler--{{ $config->type_icon }}] size-10 text-secondary"></span>
+                </div>
+                <div class="card-body py-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title text-base">{{ $config->name }}</h3>
+                            <p class="text-sm text-base-content/60">
+                                {{ $config->location?->name ?? 'No location' }}
+                                @if($config->room)
+                                    &bull; {{ $config->room->name }}
+                                @endif
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($config->is_active)
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
+                            @else
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
+                            @endif
+                            <span class="badge badge-soft badge-secondary badge-sm capitalize">{{ $config->rentable_type }}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6 text-sm mt-2">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $config->getFormattedHourlyRateForCurrency() }}/hr</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--clock] size-4 text-base-content/60"></span>
+                            <span>{{ $config->minimum_hours }}h {{ $trans['common.min'] ?? 'min' }}</span>
+                        </div>
+                        @if($config->getDepositForCurrency() > 0)
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--cash] size-4 text-base-content/60"></span>
+                            <span>{{ $config->getFormattedDepositForCurrency() }} {{ $trans['space_rentals.deposit'] ?? 'deposit' }}</span>
+                        </div>
+                        @endif
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--calendar-event] size-4 text-base-content/60"></span>
+                            <span>{{ $config->rentals_count }} {{ $trans['common.bookings'] ?? 'bookings' }}</span>
+                        </div>
+                        @if($config->description)
+                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $config->description }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions justify-end mt-2">
+                        <a href="{{ route('space-rentals.config.show', $config) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            {{ $trans['btn.view'] ?? 'View' }}
+                        </a>
+                        <a href="{{ route('space-rentals.config.edit', $config) }}" class="btn btn-sm btn-soft btn-primary">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </a>
+                        <a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}" class="btn btn-sm btn-soft btn-info">
+                            <span class="icon-[tabler--calendar-plus] size-4"></span>
+                            {{ $trans['space_rentals.new_booking'] ?? 'New Booking' }}
+                        </a>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('space-rentals.config.destroy', $config) }}', '{{ $config->name }}', '{{ $trans['catalog.rental_space'] ?? 'rental space' }}')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+        @endif
+    @elseif($tab === 'item-rentals')
+        {{-- Item Rentals Tab --}}
+        @if($rentalItems->isEmpty())
+        <div class="card bg-base-100">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--package] size-16 text-base-content/20 mx-auto mb-4"></span>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['catalog.no_rental_items'] ?? 'No Rental Items Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['catalog.no_rental_items_desc'] ?? 'Add equipment, mats, towels, and other items for members to rent.' }}</p>
+                <a href="{{ route('rentals.create') }}" class="btn btn-primary">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    {{ $trans['catalog.create_first_rental_item'] ?? 'Create First Rental Item' }}
+                </a>
+            </div>
+        </div>
+        @else
+        @if(request('view') === 'grid')
+        {{-- Grid View --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            @foreach($rentalItems as $item)
+            <div class="card bg-base-100 {{ !$item->is_active ? 'opacity-60' : '' }}">
+                @if($item->primary_image)
+                <figure class="h-32">
+                    <img src="{{ Storage::url($item->primary_image) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
+                </figure>
+                @else
+                <div class="h-32 flex items-center justify-center bg-primary/10">
+                    <span class="icon-[tabler--{{ $item->category_icon }}] size-12 text-primary"></span>
+                </div>
+                @endif
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title">{{ $item->name }}</h3>
+                            <p class="text-sm text-base-content/60">{{ $item->formatted_category }}</p>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            @if($item->is_active)
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
+                            @else
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if($item->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $item->description }}</p>
+                    @endif
+
+                    <div class="mt-4 flex items-center gap-4 text-sm">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $item->getFormattedPriceForCurrency() }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--box] size-4 text-base-content/60"></span>
+                            <span class="{{ $item->available_inventory <= 0 ? 'text-error' : ($item->isLowStock() ? 'text-warning' : 'text-success') }}">
+                                {{ $item->available_inventory }}/{{ $item->total_inventory }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--calendar-event] size-4 text-base-content/60"></span>
+                            <span>{{ $item->bookings_count }} {{ $trans['common.rentals'] ?? 'rentals' }}</span>
+                        </div>
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
+                        <a href="{{ route('rentals.show', $item) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                        </a>
+                        <a href="{{ route('rentals.edit', $item) }}" class="btn btn-sm btn-soft btn-primary flex-1">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </a>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('rentals.destroy', $item) }}', '{{ $item->name }}', '{{ $trans['catalog.rental_item'] ?? 'rental item' }}')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @else
+        {{-- List View --}}
+        <div class="space-y-4">
+            @foreach($rentalItems as $item)
+            <div class="card bg-base-100 card-side {{ !$item->is_active ? 'opacity-60' : '' }}">
+                @if($item->primary_image)
+                <figure class="w-32 shrink-0">
+                    <img src="{{ Storage::url($item->primary_image) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
+                </figure>
+                @else
+                <div class="w-32 shrink-0 flex items-center justify-center bg-primary/10">
+                    <span class="icon-[tabler--{{ $item->category_icon }}] size-10 text-primary"></span>
+                </div>
+                @endif
+                <div class="card-body py-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title text-base">{{ $item->name }}</h3>
+                            <p class="text-sm text-base-content/60">{{ $item->formatted_category }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($item->is_active)
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
+                            @else
+                                <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
+                            @endif
+                            @if($item->available_inventory <= 0)
+                                <span class="badge badge-soft badge-error badge-sm">{{ $trans['rentals.out_of_stock'] ?? 'Out of Stock' }}</span>
+                            @elseif($item->isLowStock())
+                                <span class="badge badge-soft badge-warning badge-sm">{{ $trans['rentals.low_stock'] ?? 'Low Stock' }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6 text-sm mt-2">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $item->getFormattedPriceForCurrency() }}</span>
+                        </div>
+                        @if($item->getDepositForCurrency() > 0)
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--cash] size-4 text-base-content/60"></span>
+                            <span>{{ $item->getFormattedDepositForCurrency() }} {{ $trans['rentals.deposit'] ?? 'deposit' }}</span>
+                        </div>
+                        @endif
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--box] size-4 text-base-content/60"></span>
+                            <span>{{ $item->available_inventory }}/{{ $item->total_inventory }} {{ $trans['rentals.available'] ?? 'available' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--calendar-event] size-4 text-base-content/60"></span>
+                            <span>{{ $item->bookings_count }} {{ $trans['common.rentals'] ?? 'rentals' }}</span>
+                        </div>
+                        @if($item->description)
+                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $item->description }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions justify-end mt-2">
+                        <a href="{{ route('rentals.show', $item) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            {{ $trans['btn.view'] ?? 'View' }}
+                        </a>
+                        <a href="{{ route('rentals.edit', $item) }}" class="btn btn-sm btn-soft btn-primary">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </a>
+                        <a href="{{ route('rentals.invoice.create') }}" class="btn btn-sm btn-soft btn-info">
+                            <span class="icon-[tabler--receipt] size-4"></span>
+                            {{ $trans['rentals.new_rental'] ?? 'New Rental' }}
+                        </a>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('rentals.destroy', $item) }}', '{{ $item->name }}', '{{ $trans['catalog.rental_item'] ?? 'rental item' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>

@@ -1,11 +1,3 @@
-@php
-    $user = auth()->user();
-    $host = $user->currentHost() ?? $user->host;
-    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
-    $t = \App\Services\TranslationService::make($host, $selectedLang);
-    $trans = $t->all();
-@endphp
-
 @extends('layouts.dashboard')
 
 @section('title', $trans['schedule.membership_sessions'] ?? 'Membership Sessions')

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Host;
 use App\Http\Controllers\Controller;
 use App\Models\ClassPlan;
 use App\Models\MembershipPlan;
+use App\Models\RentalItem;
 use App\Models\ServicePlan;
+use App\Models\SpaceRentalConfig;
 use Illuminate\Http\Request;
 
 class CatalogController extends Controller
@@ -18,6 +20,8 @@ class CatalogController extends Controller
         $classPlans = collect();
         $servicePlans = collect();
         $membershipPlans = collect();
+        $spaceRentalConfigs = collect();
+        $rentalItems = collect();
 
         if ($tab === 'classes') {
             $classPlans = $host->classPlans()
@@ -30,15 +34,26 @@ class CatalogController extends Controller
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
-        } else {
-            // memberships
+        } elseif ($tab === 'memberships') {
             $membershipPlans = $host->membershipPlans()
                 ->withCount('classPlans')
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
+        } elseif ($tab === 'rental-spaces') {
+            $spaceRentalConfigs = $host->spaceRentalConfigs()
+                ->with(['location', 'room'])
+                ->withCount('rentals')
+                ->orderBy('name')
+                ->get();
+        } elseif ($tab === 'item-rentals') {
+            $rentalItems = $host->rentalItems()
+                ->withCount('bookings')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
         }
 
-        return view('host.catalog.index', compact('tab', 'classPlans', 'servicePlans', 'membershipPlans'));
+        return view('host.catalog.index', compact('tab', 'classPlans', 'servicePlans', 'membershipPlans', 'spaceRentalConfigs', 'rentalItems'));
     }
 }

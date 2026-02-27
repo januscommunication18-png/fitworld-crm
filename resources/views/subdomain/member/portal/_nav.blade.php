@@ -1,9 +1,3 @@
-@php
-    $selectedLang = session("language_{$host->id}", $host->default_language_booking ?? 'en');
-    $t = \App\Services\TranslationService::make($host, $selectedLang);
-    $trans = $t->all();
-@endphp
-
 {{-- Member Portal Navigation --}}
 {{-- Header --}}
 <nav class="bg-base-100 border-b border-base-200" style="height: 75px;">

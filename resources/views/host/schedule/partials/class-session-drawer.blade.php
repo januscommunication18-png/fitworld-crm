@@ -36,7 +36,7 @@
             </div>
             <div class="text-right">
                 <div class="text-2xl font-bold">{{ $confirmedBookings->count() }}/{{ $classSession->getEffectiveCapacity() }}</div>
-                <div class="text-sm text-base-content/60">booked</div>
+                <div class="text-sm text-base-content/60">{{ $trans['schedule.booked'] ?? 'booked' }}</div>
             </div>
         </div>
     </div>
@@ -45,19 +45,19 @@
     <div class="grid grid-cols-4 gap-3 mb-4">
         <div class="bg-base-200/50 rounded-lg p-3 text-center">
             <div class="text-lg font-bold text-primary">{{ $classSession->getEffectiveCapacity() }}</div>
-            <div class="text-xs text-base-content/60">Capacity</div>
+            <div class="text-xs text-base-content/60">{{ $trans['schedule.capacity'] ?? 'Capacity' }}</div>
         </div>
         <div class="bg-base-200/50 rounded-lg p-3 text-center">
             <div class="text-lg font-bold text-info">{{ $confirmedBookings->count() }}</div>
-            <div class="text-xs text-base-content/60">Booked</div>
+            <div class="text-xs text-base-content/60">{{ $trans['schedule.booked'] ?? 'Booked' }}</div>
         </div>
         <div class="bg-base-200/50 rounded-lg p-3 text-center">
             <div class="text-lg font-bold text-success">{{ $checkedInCount }}</div>
-            <div class="text-xs text-base-content/60">Checked In</div>
+            <div class="text-xs text-base-content/60">{{ $trans['status.checked_in'] ?? 'Checked In' }}</div>
         </div>
         <div class="bg-base-200/50 rounded-lg p-3 text-center">
             <div class="text-lg font-bold">{{ $classSession->getEffectiveCapacity() - $confirmedBookings->count() }}</div>
-            <div class="text-xs text-base-content/60">Available</div>
+            <div class="text-xs text-base-content/60">{{ $trans['schedule.available'] ?? 'Available' }}</div>
         </div>
     </div>
 
@@ -65,20 +65,20 @@
     <div class="bg-base-200/50 rounded-xl p-4 mb-4">
         <div class="flex items-center gap-2 mb-3">
             <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">Class Details</h4>
+            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.class_details'] ?? 'Class Details' }}</h4>
         </div>
         <div class="grid grid-cols-2 gap-3">
             <div class="bg-base-100 rounded-lg p-3">
                 <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--user] size-3.5"></span>
-                    Instructor
+                    {{ $trans['field.instructor'] ?? 'Instructor' }}
                 </div>
                 <div class="font-medium text-sm">{{ $classSession->primaryInstructor?->name ?? 'TBD' }}</div>
             </div>
             <div class="bg-base-100 rounded-lg p-3">
                 <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--map-pin] size-3.5"></span>
-                    Location
+                    {{ $trans['field.location'] ?? 'Location' }}
                 </div>
                 <div class="font-medium text-sm">{{ $classSession->location?->name ?? 'TBD' }}</div>
                 @if($classSession->room)
@@ -88,14 +88,14 @@
             <div class="bg-base-100 rounded-lg p-3">
                 <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--clock] size-3.5"></span>
-                    Duration
+                    {{ $trans['schedule.duration'] ?? 'Duration' }}
                 </div>
                 <div class="font-medium text-sm">{{ $classSession->formatted_duration }}</div>
             </div>
             <div class="bg-base-100 rounded-lg p-3">
                 <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--currency-dollar] size-3.5"></span>
-                    Price
+                    {{ $trans['field.price'] ?? 'Price' }}
                 </div>
                 <div class="font-medium text-sm">{{ $classSession->formatted_price }}</div>
             </div>
@@ -107,7 +107,7 @@
     <div class="bg-base-200/50 rounded-xl p-4 mb-4">
         <div class="flex items-center gap-2 mb-3">
             <span class="icon-[tabler--bolt] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">Quick Actions</h4>
+            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['common.quick_actions'] ?? 'Quick Actions' }}</h4>
         </div>
         <div class="flex flex-wrap gap-2">
             @if($classSession->isDraft())
@@ -116,7 +116,7 @@
                     @method('PATCH')
                     <button type="submit" class="btn btn-success btn-sm">
                         <span class="icon-[tabler--check] size-4"></span>
-                        Publish
+                        {{ $trans['btn.publish'] ?? 'Publish' }}
                     </button>
                 </form>
             @else
@@ -125,19 +125,19 @@
                     @method('PATCH')
                     <button type="submit" class="btn btn-warning btn-sm">
                         <span class="icon-[tabler--eye-off] size-4"></span>
-                        Unpublish
+                        {{ $trans['btn.unpublish'] ?? 'Unpublish' }}
                     </button>
                 </form>
             @endif
             @if($isMembershipSchedule)
                 <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-soft btn-warning btn-sm">
                     <span class="icon-[tabler--id-badge-2] size-4"></span>
-                    Add Booking
+                    {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
                 </a>
             @else
                 <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-soft btn-primary btn-sm">
                     <span class="icon-[tabler--user-plus] size-4"></span>
-                    Booking
+                    {{ $trans['common.booking'] ?? 'Booking' }}
                 </a>
             @endif
         </div>
@@ -149,13 +149,13 @@
         <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
                 <span class="icon-[tabler--users] size-4 text-primary"></span>
-                <h4 class="text-sm font-semibold uppercase tracking-wide">Enrolled People</h4>
+                <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.booking_roster'] ?? 'Enrolled People' }}</h4>
                 <span class="badge badge-sm badge-primary">{{ $confirmedBookings->count() }}</span>
             </div>
             @if($confirmedBookings->count() > 0 && $checkedInCount < $confirmedBookings->count())
                 <button type="button" class="btn btn-xs btn-success" onclick="checkInAll({{ $classSession->id }})">
                     <span class="icon-[tabler--checks] size-3"></span>
-                    Check In All
+                    {{ $trans['btn.check_in_all'] ?? 'Check In All' }}
                 </button>
             @endif
         </div>
@@ -163,16 +163,16 @@
         @if($confirmedBookings->isEmpty())
             <div class="text-center py-6">
                 <span class="icon-[tabler--users-minus] size-10 text-base-content/20 mx-auto mb-2"></span>
-                <p class="text-sm text-base-content/60">No bookings yet</p>
+                <p class="text-sm text-base-content/60">{{ $trans['drawer.no_bookings'] ?? 'No bookings yet' }}</p>
                 @if($isMembershipSchedule)
                     <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-sm btn-warning mt-3">
                         <span class="icon-[tabler--id-badge-2] size-4"></span>
-                        Add Booking
+                        {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
                     </a>
                 @else
                     <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-sm btn-primary mt-3">
                         <span class="icon-[tabler--user-plus] size-4"></span>
-                        Add Booking
+                        {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
                     </a>
                 @endif
             </div>
@@ -181,12 +181,12 @@
                 <table class="table table-sm">
                     <thead>
                         <tr>
-                            <th>Client</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Payment</th>
-                            <th class="text-center">Intake</th>
-                            <th class="text-center">Check In</th>
-                            <th class="w-24">Actions</th>
+                            <th>{{ $trans['field.client'] ?? 'Client' }}</th>
+                            <th class="text-center">{{ $trans['field.status'] ?? 'Status' }}</th>
+                            <th class="text-center">{{ $trans['drawer.payment'] ?? 'Payment' }}</th>
+                            <th class="text-center">{{ $trans['schedule.intake'] ?? 'Intake' }}</th>
+                            <th class="text-center">{{ $trans['btn.check_in'] ?? 'Check In' }}</th>
+                            <th class="w-24">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -286,11 +286,11 @@
     <x-slot name="footer">
         <a href="{{ route('class-sessions.edit', $classSession) }}" class="btn btn-soft btn-primary">
             <span class="icon-[tabler--edit] size-4 me-1"></span>
-            Edit
+            {{ $trans['btn.edit'] ?? 'Edit' }}
         </a>
         <a href="{{ route('class-sessions.show', $classSession) }}" class="btn btn-primary">
             <span class="icon-[tabler--external-link] size-4 me-1"></span>
-            View Full Details
+            {{ $trans['btn.view_full_details'] ?? 'View Full Details' }}
         </a>
     </x-slot>
 </x-detail-drawer>

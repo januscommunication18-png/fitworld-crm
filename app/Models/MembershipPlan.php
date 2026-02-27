@@ -116,6 +116,15 @@ class MembershipPlan extends Model
     }
 
     /**
+     * Class sessions linked to this membership plan for scheduled auto-enrollment
+     */
+    public function classSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(ClassSession::class, 'class_session_membership_plan')
+            ->withTimestamps();
+    }
+
+    /**
      * Currency symbols
      */
     public static function getCurrencySymbols(): array

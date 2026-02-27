@@ -62,7 +62,27 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- Main Tabs --}}
+    <div class="tabs tabs-bordered" role="tablist">
+        <button class="tab {{ $tab === 'overview' ? 'tab-active' : '' }}" data-tab="overview" role="tab">
+            <span class="icon-[tabler--info-circle] size-4 mr-2"></span>Overview
+        </button>
+        <button class="tab {{ $tab === 'schedule' ? 'tab-active' : '' }}" data-tab="schedule" role="tab">
+            <span class="icon-[tabler--calendar] size-4 mr-2"></span>Schedule
+            @php
+                $totalUpcoming = $slotsByLocation->flatten()->count();
+            @endphp
+            @if($totalUpcoming > 0)
+                <span class="badge badge-sm badge-primary ml-1">{{ $totalUpcoming }}</span>
+            @endif
+        </button>
+    </div>
+
+    {{-- Tab Contents --}}
+    <div class="tab-contents">
+        {{-- Overview Tab --}}
+        <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Main Content --}}
         <div class="lg:col-span-2 space-y-6">
             {{-- Description --}}
@@ -379,6 +399,222 @@
                 </div>
             </div>
         </div>
+            </div>
+        </div>
+
+        {{-- Schedule Tab --}}
+        <div class="tab-content {{ $tab === 'schedule' ? 'active' : 'hidden' }}" data-content="schedule">
+            @if($locations->isEmpty() && $slotsByLocation->isEmpty())
+                <div class="card bg-base-100">
+                    <div class="card-body text-center py-12">
+                        <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
+                        <h3 class="text-lg font-semibold mb-2">No Scheduled Slots</h3>
+                        <p class="text-base-content/60 mb-4">This service plan has no upcoming slots at any location.</p>
+                        <a href="{{ route('service-slots.create', ['service_plan_id' => $servicePlan->id]) }}" class="btn btn-primary">
+                            <span class="icon-[tabler--plus] size-5"></span>
+                            Create First Slot
+                        </a>
+                    </div>
+                </div>
+            @else
+                {{-- Location Filter Dropdown --}}
+                <div class="flex justify-end mb-6">
+                    <div class="form-control w-64">
+                        <select id="location-filter" class="select select-bordered select-sm">
+                            <option value="all" selected>
+                                All Locations ({{ $slotsByLocation->flatten()->count() }})
+                            </option>
+                            @foreach($locations as $location)
+                                <option value="{{ $location->id }}">
+                                    {{ $location->name }}
+                                    @if(isset($slotsByLocation[$location->id]))
+                                        ({{ $slotsByLocation[$location->id]->count() }})
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- All Locations Content --}}
+                <div class="location-content" data-location-content="all">
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--calendar-event] size-5"></span>
+                                    All Upcoming Slots
+                                </h2>
+                                <a href="{{ route('service-slots.index', ['service_plan_id' => $servicePlan->id]) }}" class="btn btn-ghost btn-sm">
+                                    View All <span class="icon-[tabler--chevron-right] size-4"></span>
+                                </a>
+                            </div>
+                            @if($slotsByLocation->flatten()->isEmpty())
+                                <div class="text-center py-8">
+                                    <span class="icon-[tabler--calendar-off] size-10 text-base-content/20"></span>
+                                    <p class="text-base-content/60 mt-2">No upcoming slots scheduled.</p>
+                                </div>
+                            @else
+                                <div class="overflow-x-auto">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date & Time</th>
+                                                <th>Location</th>
+                                                <th>Instructor</th>
+                                                <th>Status</th>
+                                                <th class="text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($slotsByLocation->flatten()->sortBy('start_time') as $slot)
+                                                <tr>
+                                                    <td>
+                                                        <div class="font-medium">{{ $slot->start_time->format('D, M d, Y') }}</div>
+                                                        <div class="text-sm text-base-content/60">{{ $slot->start_time->format('g:i A') }} - {{ $slot->end_time->format('g:i A') }}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="icon-[tabler--map-pin] size-4 text-base-content/60"></span>
+                                                            {{ $slot->location?->name ?? 'No location' }}
+                                                        </div>
+                                                        @if($slot->room)
+                                                            <div class="text-sm text-base-content/60">{{ $slot->room->name }}</div>
+                                                        @endif
+                                                    </td>
+                                                    <td>{{ $slot->instructor?->name ?? '-' }}</td>
+                                                    <td>
+                                                        <span class="badge badge-soft badge-sm {{ $slot->getStatusBadgeClass() }}">{{ ucfirst($slot->status) }}</span>
+                                                    </td>
+                                                    <td class="text-right">
+                                                        <a href="{{ route('service-slots.show', $slot) }}" class="btn btn-ghost btn-xs">
+                                                            <span class="icon-[tabler--eye] size-4"></span>
+                                                        </a>
+                                                        <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs">
+                                                            <span class="icon-[tabler--edit] size-4"></span>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Individual Location Contents --}}
+                @foreach($locations as $location)
+                    <div class="location-content hidden" data-location-content="{{ $location->id }}">
+                        <div class="card bg-base-100">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h2 class="card-title text-lg">
+                                            <span class="icon-[tabler--map-pin] size-5"></span>
+                                            {{ $location->name }}
+                                        </h2>
+                                        @if($location->full_address)
+                                            <p class="text-sm text-base-content/60 mt-1">{{ $location->full_address }}</p>
+                                        @endif
+                                    </div>
+                                    <a href="{{ route('service-slots.create', ['service_plan_id' => $servicePlan->id, 'location_id' => $location->id]) }}" class="btn btn-primary btn-sm">
+                                        <span class="icon-[tabler--plus] size-4"></span>
+                                        Add Slot
+                                    </a>
+                                </div>
+
+                                @if(isset($slotsByLocation[$location->id]) && $slotsByLocation[$location->id]->count() > 0)
+                                    <div class="overflow-x-auto">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date & Time</th>
+                                                    <th>Room</th>
+                                                    <th>Instructor</th>
+                                                    <th>Status</th>
+                                                    <th class="text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($slotsByLocation[$location->id] as $slot)
+                                                    <tr>
+                                                        <td>
+                                                            <div class="font-medium">{{ $slot->start_time->format('D, M d, Y') }}</div>
+                                                            <div class="text-sm text-base-content/60">{{ $slot->start_time->format('g:i A') }} - {{ $slot->end_time->format('g:i A') }}</div>
+                                                        </td>
+                                                        <td>{{ $slot->room?->name ?? '-' }}</td>
+                                                        <td>{{ $slot->instructor?->name ?? '-' }}</td>
+                                                        <td>
+                                                            <span class="badge badge-soft badge-sm {{ $slot->getStatusBadgeClass() }}">{{ ucfirst($slot->status) }}</span>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <a href="{{ route('service-slots.show', $slot) }}" class="btn btn-ghost btn-xs">
+                                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                            </a>
+                                                            <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs">
+                                                                <span class="icon-[tabler--edit] size-4"></span>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center py-8">
+                                        <span class="icon-[tabler--calendar-off] size-10 text-base-content/20"></span>
+                                        <p class="text-base-content/60 mt-2">No upcoming slots at this location.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Main tab switching
+    const mainTabs = document.querySelectorAll('.tabs.tabs-bordered .tab');
+    const mainContents = document.querySelectorAll('.tab-content');
+
+    mainTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+            const url = new URL(window.location);
+            url.searchParams.set('tab', targetTab);
+            window.history.pushState({}, '', url);
+
+            mainTabs.forEach(t => t.classList.remove('tab-active'));
+            this.classList.add('tab-active');
+
+            mainContents.forEach(content => {
+                content.classList.toggle('hidden', content.dataset.content !== targetTab);
+                content.classList.toggle('active', content.dataset.content === targetTab);
+            });
+        });
+    });
+
+    // Location dropdown filter
+    const locationFilter = document.getElementById('location-filter');
+    const locationContents = document.querySelectorAll('.location-content');
+
+    if (locationFilter) {
+        locationFilter.addEventListener('change', function() {
+            const targetLocation = this.value;
+
+            locationContents.forEach(content => {
+                content.classList.toggle('hidden', content.dataset.locationContent !== targetLocation);
+            });
+        });
+    }
+});
+</script>
+@endpush

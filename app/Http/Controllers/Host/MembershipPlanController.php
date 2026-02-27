@@ -116,7 +116,7 @@ class MembershipPlanController extends Controller
             ->with('success', 'Membership plan created successfully.');
     }
 
-    public function show(MembershipPlan $membershipPlan)
+    public function show(MembershipPlan $membershipPlan, Request $request)
     {
         $this->authorizeHost($membershipPlan);
         $membershipPlan->load('classPlans');
@@ -126,11 +126,32 @@ class MembershipPlanController extends Controller
         $defaultCurrency = $host->default_currency ?? 'USD';
         $currencySymbols = MembershipPlan::getCurrencySymbols();
 
+        // Tab support
+        $tab = $request->get('tab', 'overview');
+
+        // Load upcoming sessions specifically linked to this membership plan (via pivot table)
+        $upcomingSessions = $membershipPlan->classSessions()
+            ->where('host_id', $host->id)
+            ->where('start_time', '>', now())
+            ->where('status', '!=', 'cancelled')
+            ->with(['classPlan', 'primaryInstructor', 'location', 'room'])
+            ->orderBy('start_time')
+            ->get();
+
+        // Get unique locations from the sessions
+        $locations = $upcomingSessions->pluck('location')->filter()->unique('id')->sortBy('name')->values();
+
+        // Group sessions by location
+        $sessionsByLocation = $upcomingSessions->groupBy('location_id');
+
         return view('host.membership-plans.show', compact(
             'membershipPlan',
             'hostCurrencies',
             'defaultCurrency',
-            'currencySymbols'
+            'currencySymbols',
+            'tab',
+            'locations',
+            'sessionsByLocation'
         ));
     }
 

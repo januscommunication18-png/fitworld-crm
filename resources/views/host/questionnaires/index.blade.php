@@ -1,14 +1,14 @@
 @extends('layouts.settings')
 
-@section('title', 'Questionnaires — Settings')
+@section('title', $trans['settings.questionnaires'] ?? 'Questionnaires — Settings')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('settings.index') }}"><span class="icon-[tabler--settings] me-1 size-4"></span> Settings</a></li>
+        <li><a href="{{ route('settings.index') }}"><span class="icon-[tabler--settings] me-1 size-4"></span> {{ $trans['nav.settings'] ?? 'Settings' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Questionnaires</li>
+        <li aria-current="page">{{ $trans['settings.questionnaires'] ?? 'Questionnaires' }}</li>
     </ol>
 @endsection
 
@@ -23,13 +23,13 @@
                         <span class="icon-[tabler--forms] size-7 text-primary"></span>
                     </div>
                     <div>
-                        <h1 class="text-2xl font-bold">Questionnaires</h1>
-                        <p class="text-base-content/60 mt-1">Build intake forms to collect client information before bookings.</p>
+                        <h1 class="text-2xl font-bold">{{ $trans['settings.questionnaires'] ?? 'Questionnaires' }}</h1>
+                        <p class="text-base-content/60 mt-1">{{ $trans['questionnaires.description'] ?? 'Build intake forms to collect client information before bookings.' }}</p>
                     </div>
                 </div>
                 <a href="{{ route('questionnaires.create') }}" class="btn btn-primary shadow-lg shadow-primary/25">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    New Questionnaire
+                    {{ $trans['questionnaires.new'] ?? 'New Questionnaire' }}
                 </a>
             </div>
         </div>
@@ -42,7 +42,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-2xl font-bold">{{ $counts['all'] }}</p>
-                        <p class="text-sm text-base-content/60">Total</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['common.total'] ?? 'Total' }}</p>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center">
                         <span class="icon-[tabler--files] size-5 text-base-content/60"></span>
@@ -55,7 +55,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-2xl font-bold text-success">{{ $counts['active'] }}</p>
-                        <p class="text-sm text-base-content/60">Active</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['common.active'] ?? 'Active' }}</p>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
                         <span class="icon-[tabler--circle-check] size-5 text-success"></span>
@@ -68,7 +68,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-2xl font-bold text-warning">{{ $counts['draft'] }}</p>
-                        <p class="text-sm text-base-content/60">Drafts</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['common.drafts'] ?? 'Drafts' }}</p>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
                         <span class="icon-[tabler--pencil] size-5 text-warning"></span>
@@ -81,7 +81,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-2xl font-bold text-base-content/50">{{ $counts['archived'] }}</p>
-                        <p class="text-sm text-base-content/60">Archived</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['common.archived'] ?? 'Archived' }}</p>
                     </div>
                     <div class="w-10 h-10 rounded-xl bg-base-200 flex items-center justify-center">
                         <span class="icon-[tabler--archive] size-5 text-base-content/40"></span>
@@ -116,7 +116,7 @@
         <div class="flex items-center gap-3">
             {{-- Type Filter --}}
             <select class="select select-bordered select-sm" onchange="window.location.href=this.value">
-                <option value="{{ route('questionnaires.index', array_filter(['status' => $status])) }}" {{ !$type ? 'selected' : '' }}>All Types</option>
+                <option value="{{ route('questionnaires.index', array_filter(['status' => $status])) }}" {{ !$type ? 'selected' : '' }}>{{ $trans['common.all'] ?? 'All' }} {{ $trans['common.types'] ?? 'Types' }}</option>
                 @foreach($types as $key => $label)
                     <option value="{{ route('questionnaires.index', array_filter(['status' => $status, 'type' => $key])) }}" {{ $type === $key ? 'selected' : '' }}>
                         {{ $label }}
@@ -133,15 +133,14 @@
                 <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 mx-auto mb-6">
                     <span class="icon-[tabler--clipboard-list] size-12 text-primary"></span>
                 </div>
-                <h3 class="text-xl font-bold mb-2">No Questionnaires Yet</h3>
+                <h3 class="text-xl font-bold mb-2">{{ $trans['questionnaires.no_questionnaires'] ?? 'No Questionnaires Yet' }}</h3>
                 <p class="text-base-content/60 mb-8 max-w-md mx-auto">
-                    Create intake forms to gather important information from clients before their first visit.
-                    Learn about injuries, goals, and preferences.
+                    {{ $trans['questionnaires.get_started'] ?? 'Create intake forms to gather important information from clients before their first visit. Learn about injuries, goals, and preferences.' }}
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
                     <a href="{{ route('questionnaires.create') }}" class="btn btn-primary shadow-lg shadow-primary/25">
                         <span class="icon-[tabler--plus] size-5"></span>
-                        Create Your First Questionnaire
+                        {{ $trans['questionnaires.create_first'] ?? 'Create Your First Questionnaire' }}
                     </a>
                 </div>
 
@@ -151,22 +150,22 @@
                         <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                             <span class="icon-[tabler--list-numbers] size-6 text-primary"></span>
                         </div>
-                        <h4 class="font-semibold text-sm">Multi-Step Wizards</h4>
-                        <p class="text-xs text-base-content/50 mt-1">Guide clients through step-by-step forms</p>
+                        <h4 class="font-semibold text-sm">{{ $trans['questionnaires.multi_step'] ?? 'Multi-Step Wizards' }}</h4>
+                        <p class="text-xs text-base-content/50 mt-1">{{ $trans['questionnaires.multi_step_desc'] ?? 'Guide clients through step-by-step forms' }}</p>
                     </div>
                     <div class="text-center p-4">
                         <div class="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center mx-auto mb-3">
                             <span class="icon-[tabler--device-mobile] size-6 text-success"></span>
                         </div>
-                        <h4 class="font-semibold text-sm">Mobile Friendly</h4>
-                        <p class="text-xs text-base-content/50 mt-1">Works perfectly on any device</p>
+                        <h4 class="font-semibold text-sm">{{ $trans['questionnaires.mobile_friendly'] ?? 'Mobile Friendly' }}</h4>
+                        <p class="text-xs text-base-content/50 mt-1">{{ $trans['questionnaires.mobile_friendly_desc'] ?? 'Works perfectly on any device' }}</p>
                     </div>
                     <div class="text-center p-4">
                         <div class="w-12 h-12 rounded-xl bg-info/10 flex items-center justify-center mx-auto mb-3">
                             <span class="icon-[tabler--chart-dots] size-6 text-info"></span>
                         </div>
-                        <h4 class="font-semibold text-sm">Track Responses</h4>
-                        <p class="text-xs text-base-content/50 mt-1">View and manage all submissions</p>
+                        <h4 class="font-semibold text-sm">{{ $trans['questionnaires.track_responses'] ?? 'Track Responses' }}</h4>
+                        <p class="text-xs text-base-content/50 mt-1">{{ $trans['questionnaires.track_responses_desc'] ?? 'View and manage all submissions' }}</p>
                     </div>
                 </div>
             </div>
@@ -212,22 +211,22 @@
                                     </summary>
                                     <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
                                         <li><a href="{{ route('questionnaires.builder', $questionnaire) }}">
-                                            <span class="icon-[tabler--edit] size-4"></span> Edit Builder
+                                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['questionnaires.edit_builder'] ?? 'Edit Builder' }}
                                         </a></li>
                                         <li><a href="{{ route('questionnaires.preview', $questionnaire) }}">
-                                            <span class="icon-[tabler--eye] size-4"></span> Preview
+                                            <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.preview'] ?? 'Preview' }}
                                         </a></li>
                                         <li><a href="{{ route('questionnaires.show', $questionnaire) }}">
-                                            <span class="icon-[tabler--chart-bar] size-4"></span> View Responses
+                                            <span class="icon-[tabler--chart-bar] size-4"></span> {{ $trans['questionnaires.view_responses'] ?? 'View Responses' }}
                                         </a></li>
                                         <li><a href="{{ route('questionnaires.edit', $questionnaire) }}">
-                                            <span class="icon-[tabler--settings] size-4"></span> Settings
+                                            <span class="icon-[tabler--settings] size-4"></span> {{ $trans['nav.settings'] ?? 'Settings' }}
                                         </a></li>
                                         <li>
                                             <form action="{{ route('questionnaires.duplicate', $questionnaire) }}" method="POST" class="m-0">
                                                 @csrf
                                                 <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                    <span class="icon-[tabler--copy] size-4"></span> Duplicate
+                                                    <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
                                                 </button>
                                             </form>
                                         </li>
@@ -236,7 +235,7 @@
                                                 <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="m-0">
                                                     @csrf
                                                     <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
-                                                        <span class="icon-[tabler--rocket] size-4"></span> Publish
+                                                        <span class="icon-[tabler--rocket] size-4"></span> {{ $trans['btn.publish'] ?? 'Publish' }}
                                                     </button>
                                                 </form>
                                             </li>
@@ -245,17 +244,17 @@
                                                 <form action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="m-0">
                                                     @csrf
                                                     <button type="submit" class="w-full text-left flex items-center gap-2 text-warning">
-                                                        <span class="icon-[tabler--archive] size-4"></span> Archive
+                                                        <span class="icon-[tabler--archive] size-4"></span> {{ $trans['btn.archive'] ?? 'Archive' }}
                                                     </button>
                                                 </form>
                                             </li>
                                         @endif
                                         <li>
-                                            <form action="{{ route('questionnaires.destroy', $questionnaire) }}" method="POST" class="m-0" onsubmit="return confirm('Are you sure you want to delete this questionnaire?')">
+                                            <form action="{{ route('questionnaires.destroy', $questionnaire) }}" method="POST" class="m-0" onsubmit="return confirm('{{ $trans['msg.confirm.delete_questionnaire'] ?? 'Are you sure you want to delete this questionnaire?' }}')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
                                                 </button>
                                             </form>
                                         </li>
@@ -297,32 +296,32 @@
                         <div class="flex items-center gap-2">
                             <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-sm btn-primary flex-1 gap-2">
                                 <span class="icon-[tabler--edit] size-4"></span>
-                                Edit
+                                {{ $trans['btn.edit'] ?? 'Edit' }}
                             </a>
                             <a href="{{ route('questionnaires.preview', $questionnaire) }}" class="btn btn-sm btn-ghost flex-1 gap-2">
                                 <span class="icon-[tabler--eye] size-4"></span>
-                                Preview
+                                {{ $trans['btn.preview'] ?? 'Preview' }}
                             </a>
                             @if($questionnaire->isDraft())
                                 <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="m-0">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-success gap-2" title="Publish">
+                                    <button type="submit" class="btn btn-sm btn-success gap-2" title="{{ $trans['btn.publish'] ?? 'Publish' }}">
                                         <span class="icon-[tabler--rocket] size-4"></span>
-                                        Publish
+                                        {{ $trans['btn.publish'] ?? 'Publish' }}
                                     </button>
                                 </form>
                             @elseif($questionnaire->isActive())
                                 <form action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="m-0">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-warning gap-2" title="Unpublish / Archive">
+                                    <button type="submit" class="btn btn-sm btn-warning gap-2" title="{{ $trans['btn.archive'] ?? 'Unpublish / Archive' }}">
                                         <span class="icon-[tabler--archive] size-4"></span>
-                                        Archive
+                                        {{ $trans['btn.archive'] ?? 'Archive' }}
                                     </button>
                                 </form>
                             @else
-                                <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-sm btn-ghost gap-2" title="View Responses">
+                                <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-sm btn-ghost gap-2" title="{{ $trans['questionnaires.view_responses'] ?? 'View Responses' }}">
                                     <span class="icon-[tabler--chart-bar] size-4"></span>
-                                    Responses
+                                    {{ $trans['questionnaires.responses'] ?? 'Responses' }}
                                 </a>
                             @endif
                         </div>

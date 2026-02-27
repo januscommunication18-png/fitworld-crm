@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Add Instructor')
+@section('title', $trans['instructors.add_instructor'] ?? 'Add Instructor')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('instructors.index') }}">Instructors</a></li>
+        <li><a href="{{ route('instructors.index') }}">{{ $trans['nav.instructors'] ?? 'Instructors' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Add Instructor</li>
+        <li aria-current="page">{{ $trans['instructors.add_instructor'] ?? 'Add Instructor' }}</li>
     </ol>
 @endsection
 
@@ -20,8 +20,8 @@
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
-            <h1 class="text-2xl font-bold mb-2">Add New Instructor</h1>
-            <p class="text-base-content/60">Create a new instructor profile or link an existing team member.</p>
+            <h1 class="text-2xl font-bold mb-2">{{ $trans['instructors.add_new_instructor'] ?? 'Add New Instructor' }}</h1>
+            <p class="text-base-content/60">{{ $trans['instructors.create_description'] ?? 'Create a new instructor profile or link an existing team member.' }}</p>
         </div>
     </div>
 

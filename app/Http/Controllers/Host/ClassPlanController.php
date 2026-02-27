@@ -110,7 +110,7 @@ class ClassPlanController extends Controller
             ->with('success', 'Class plan created successfully.');
     }
 
-    public function show(ClassPlan $classPlan)
+    public function show(ClassPlan $classPlan, Request $request)
     {
         $this->authorizeHost($classPlan);
 
@@ -119,11 +119,36 @@ class ClassPlanController extends Controller
         $defaultCurrency = $host->default_currency ?? 'USD';
         $currencySymbols = MembershipPlan::getCurrencySymbols();
 
+        // Tab support
+        $tab = $request->get('tab', 'overview');
+
+        // Load locations that have sessions for this class plan (scoped to host)
+        $locations = $host->locations()
+            ->whereHas('classSessions', function ($q) use ($classPlan, $host) {
+                $q->where('class_plan_id', $classPlan->id)
+                    ->where('host_id', $host->id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Load upcoming sessions grouped by location (scoped to host)
+        $sessionsByLocation = $classPlan->sessions()
+            ->where('host_id', $host->id)
+            ->where('start_time', '>', now())
+            ->where('status', '!=', 'cancelled')
+            ->with(['primaryInstructor', 'location', 'room'])
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy('location_id');
+
         return view('host.class-plans.show', compact(
             'classPlan',
             'hostCurrencies',
             'defaultCurrency',
-            'currencySymbols'
+            'currencySymbols',
+            'tab',
+            'locations',
+            'sessionsByLocation'
         ));
     }
 

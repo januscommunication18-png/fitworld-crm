@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Membership Plans')
+@section('title', $trans['nav.catalog.memberships'] ?? 'Membership Plans')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('catalog.index', ['tab' => 'memberships']) }}"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> Catalog</a></li>
+        <li><a href="{{ route('catalog.index', ['tab' => 'memberships']) }}"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> {{ $trans['nav.catalog'] ?? 'Catalog' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Membership Plans</li>
+        <li aria-current="page">{{ $trans['nav.catalog.memberships'] ?? 'Membership Plans' }}</li>
     </ol>
 @endsection
 
@@ -21,20 +21,20 @@
                 <span class="icon-[tabler--arrow-left] size-5"></span>
             </a>
             <div>
-                <h1 class="text-2xl font-bold">Membership Plans</h1>
-                <p class="text-base-content/60 mt-1">Manage recurring subscription plans for your members.</p>
+                <h1 class="text-2xl font-bold">{{ $trans['nav.catalog.memberships'] ?? 'Membership Plans' }}</h1>
+                <p class="text-base-content/60 mt-1">{{ $trans['memberships.manage_description'] ?? 'Manage recurring subscription plans for your members.' }}</p>
             </div>
         </div>
         <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
             <span class="icon-[tabler--plus] size-5"></span>
-            Add Membership
+            {{ $trans['memberships.add'] ?? 'Add Membership' }}
         </a>
     </div>
 
     {{-- Filters --}}
     <div class="flex items-center gap-4">
         <div class="tabs tabs-boxed">
-            <a href="{{ route('membership-plans.index') }}" class="tab {{ !$status ? 'tab-active' : '' }}">All</a>
+            <a href="{{ route('membership-plans.index') }}" class="tab {{ !$status ? 'tab-active' : '' }}">{{ $trans['common.all'] ?? 'All' }}</a>
             @foreach($statuses as $key => $label)
                 <a href="{{ route('membership-plans.index', ['status' => $key]) }}"
                    class="tab {{ $status === $key ? 'tab-active' : '' }}">{{ $label }}</a>
@@ -47,11 +47,11 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--id-badge-2] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Membership Plans Yet</h3>
-                <p class="text-base-content/60 mb-4">Create membership plans to offer recurring access to your classes.</p>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['memberships.no_plans'] ?? 'No Membership Plans Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['memberships.get_started'] ?? 'Create membership plans to offer recurring access to your classes.' }}</p>
                 <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Create First Membership
+                    {{ $trans['memberships.create_first'] ?? 'Create First Membership' }}
                 </a>
             </div>
         </div>
@@ -62,14 +62,14 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Plan</th>
-                                <th>Type</th>
-                                <th>Price</th>
-                                <th>Interval</th>
-                                <th>Eligibility</th>
-                                <th>Status</th>
-                                <th>Visibility</th>
-                                <th class="w-24">Actions</th>
+                                <th>{{ $trans['field.plan'] ?? 'Plan' }}</th>
+                                <th>{{ $trans['field.type'] ?? 'Type' }}</th>
+                                <th>{{ $trans['field.price'] ?? 'Price' }}</th>
+                                <th>{{ $trans['field.interval'] ?? 'Interval' }}</th>
+                                <th>{{ $trans['memberships.eligibility'] ?? 'Eligibility' }}</th>
+                                <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                                <th>{{ $trans['common.visibility'] ?? 'Visibility' }}</th>
+                                <th class="w-24">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -102,9 +102,9 @@
                                 <td>{{ ucfirst($membershipPlan->interval) }}</td>
                                 <td>
                                     @if($membershipPlan->coversAllClasses())
-                                        <span class="text-success text-sm">All Classes</span>
+                                        <span class="text-success text-sm">{{ $trans['memberships.all_classes'] ?? 'All Classes' }}</span>
                                     @else
-                                        <span class="text-sm">{{ $membershipPlan->class_plans_count }} class plan(s)</span>
+                                        <span class="text-sm">{{ $membershipPlan->class_plans_count }} {{ $trans['memberships.class_plans'] ?? 'class plan(s)' }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -121,16 +121,16 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
-                                        <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
-                                        <form action="{{ route('membership-plans.destroy', $membershipPlan) }}" method="POST" onsubmit="return confirm('Are you sure?')">
+                                        <form action="{{ route('membership-plans.destroy', $membershipPlan) }}" method="POST" onsubmit="return confirm('{{ $trans['msg.confirm.delete'] ?? 'Are you sure?' }}')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">
+                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="{{ $trans['btn.delete'] ?? 'Delete' }}">
                                                 <span class="icon-[tabler--trash] size-4"></span>
                                             </button>
                                         </form>

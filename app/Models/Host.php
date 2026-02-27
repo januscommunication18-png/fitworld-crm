@@ -352,6 +352,16 @@ class Host extends Model
         return $this->hasMany(RentalBooking::class);
     }
 
+    public function spaceRentalConfigs(): HasMany
+    {
+        return $this->hasMany(SpaceRentalConfig::class);
+    }
+
+    public function spaceRentals(): HasMany
+    {
+        return $this->hasMany(SpaceRental::class);
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);

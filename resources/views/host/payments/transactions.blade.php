@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Transactions')
+@section('title', $trans['nav.payments.transactions'] ?? 'Transactions')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--credit-card] me-1 size-4"></span> Transactions</li>
+        <li aria-current="page"><span class="icon-[tabler--credit-card] me-1 size-4"></span> {{ $trans['nav.payments.transactions'] ?? 'Transactions' }}</li>
     </ol>
 @endsection
 
@@ -14,7 +14,7 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Transactions</h1>
+        <h1 class="text-2xl font-bold">{{ $trans['nav.payments.transactions'] ?? 'Transactions' }}</h1>
     </div>
 
     {{-- Flash Messages --}}
@@ -36,19 +36,19 @@
     <div class="tabs tabs-boxed bg-base-100 w-fit">
         <a href="{{ route('payments.transactions', ['status' => 'all']) }}"
            class="tab {{ $status === 'all' ? 'tab-active' : '' }}">
-            All
+            {{ $trans['common.all'] ?? 'All' }}
             <span class="badge badge-sm ml-2">{{ $counts['all'] }}</span>
         </a>
         <a href="{{ route('payments.transactions', ['status' => 'pending']) }}"
            class="tab {{ $status === 'pending' ? 'tab-active' : '' }}">
-            Pending
+            {{ $trans['common.pending'] ?? 'Pending' }}
             @if($counts['pending'] > 0)
                 <span class="badge badge-warning badge-sm ml-2">{{ $counts['pending'] }}</span>
             @endif
         </a>
         <a href="{{ route('payments.transactions', ['status' => 'paid']) }}"
            class="tab {{ $status === 'paid' ? 'tab-active' : '' }}">
-            Paid
+            {{ $trans['transactions.paid'] ?? 'Paid' }}
             <span class="badge badge-success badge-sm ml-2">{{ $counts['paid'] }}</span>
         </a>
     </div>
@@ -139,7 +139,7 @@
                                                 class="btn btn-success btn-sm gap-1"
                                                 onclick="openConfirmModal('{{ $transaction->id }}', '{{ $transaction->transaction_id }}', '{{ $transaction->formatted_total }}')">
                                             <span class="icon-[tabler--check] size-4"></span>
-                                            Confirm
+                                            {{ $trans['btn.confirm'] ?? 'Confirm' }}
                                         </button>
 
                                         {{-- Cancel Button --}}
@@ -169,12 +169,12 @@
             @else
             <div class="text-center py-12">
                 <span class="icon-[tabler--receipt-off] size-16 text-base-content/20 mx-auto"></span>
-                <h3 class="text-lg font-semibold mt-4">No Transactions</h3>
+                <h3 class="text-lg font-semibold mt-4">{{ $trans['transactions.no_transactions'] ?? 'No Transactions' }}</h3>
                 <p class="text-base-content/60 mt-2">
                     @if($status === 'pending')
-                        No pending transactions at the moment.
+                        {{ $trans['transactions.no_pending'] ?? 'No pending transactions at the moment.' }}
                     @else
-                        No transactions found.
+                        {{ $trans['transactions.no_found'] ?? 'No transactions found.' }}
                     @endif
                 </p>
             </div>
@@ -193,7 +193,7 @@
             <div class="flex items-center justify-between p-4 border-b border-base-200">
                 <h3 class="text-lg font-semibold flex items-center gap-2">
                     <span class="icon-[tabler--check-circle] size-6 text-success"></span>
-                    Confirm Payment
+                    {{ $trans['transactions.confirm_payment'] ?? 'Confirm Payment' }}
                 </h3>
                 <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeConfirmModal()">
                     <span class="icon-[tabler--x] size-4"></span>

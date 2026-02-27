@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Create Rental Invoice')
+@section('title', $trans['rentals.create_invoice'] ?? 'Create Rental Invoice')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('rentals.index') }}">Rentals</a></li>
+        <li><a href="{{ route('catalog.index', ['tab' => 'item-rentals']) }}">{{ $trans['nav.item_rentals'] ?? 'Item Rentals' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Create Invoice</li>
+        <li aria-current="page">{{ $trans['rentals.create_invoice'] ?? 'Create Invoice' }}</li>
     </ol>
 @endsection
 
@@ -21,36 +21,92 @@
         <div class="lg:col-span-2 space-y-6">
             {{-- Client Selection --}}
             <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Customer</h3>
-                </div>
                 <div class="card-body">
-                    <div>
-                        <label class="label-text" for="client_id">Select Customer</label>
-                        <select id="client_id" name="client_id" class="hidden"
-                            data-select='{
-                                "placeholder": "Search customers...",
-                                "hasSearch": true,
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "searchClasses": "input input-sm mb-2",
-                                "searchWrapperClasses": "bg-base-100 p-2 sticky top-0",
-                                "searchPlaceholder": "Type to search..."
-                            }'>
-                            <option value="">Walk-in (No customer)</option>
-                            @foreach($clients as $client)
-                                <option value="{{ $client->id }}" {{ old('client_id') == $client->id ? 'selected' : '' }}>
-                                    {{ $client->full_name }} ({{ $client->email }})
-                                </option>
-                            @endforeach
-                        </select>
-                        <p class="text-xs text-base-content/60 mt-1">Leave empty for walk-in customers</p>
-                        @error('client_id')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
+                    <h2 class="card-title mb-4">
+                        <span class="icon-[tabler--user] size-5"></span>
+                        {{ $trans['walk_in.select_client'] ?? 'Select Client' }}
+                    </h2>
+
+                    {{-- Client Type Selection --}}
+                    <div id="client-type-selection" class="grid grid-cols-2 gap-3 mb-4">
+                        <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                            <input type="radio" name="client_type" value="existing" class="radio radio-primary" checked>
+                            <span class="icon-[tabler--users] size-6 text-primary"></span>
+                            <div>
+                                <span class="font-semibold">{{ $trans['walk_in.existing_client'] ?? 'Existing Client' }}</span>
+                                <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.search_client_list'] ?? 'Search client list' }}</span>
+                            </div>
+                        </label>
+                        <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                            <input type="radio" name="client_type" value="new" class="radio radio-success">
+                            <span class="icon-[tabler--user-plus] size-6 text-success"></span>
+                            <div>
+                                <span class="font-semibold">{{ $trans['walk_in.new_client'] ?? 'New Client' }}</span>
+                                <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.create_new_profile'] ?? 'Create new profile' }}</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    {{-- Existing Client Search --}}
+                    <div id="existing-client-section">
+                        <div class="form-control mb-4">
+                            <div class="relative">
+                                <span class="icon-[tabler--search] size-5 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2"></span>
+                                <input type="text"
+                                       id="client-search"
+                                       class="input input-bordered w-full pl-10"
+                                       placeholder="{{ $trans['walk_in.search_placeholder'] ?? 'Search by name, email or phone...' }}">
+                            </div>
+                        </div>
+                        <div id="client-search-results" class="space-y-2"></div>
+                        <p class="text-xs text-base-content/60 mt-2">{{ $trans['rentals.walk_in_note'] ?? 'Leave empty for walk-in customers without a profile' }}</p>
+                    </div>
+
+                    {{-- New Client Form --}}
+                    <div id="new-client-section" class="hidden space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label-text" for="new_first_name">{{ $trans['field.first_name'] ?? 'First Name' }} *</label>
+                                <input type="text" id="new_first_name" class="input input-bordered" placeholder="John">
+                            </div>
+                            <div class="form-control">
+                                <label class="label-text" for="new_last_name">{{ $trans['field.last_name'] ?? 'Last Name' }} *</label>
+                                <input type="text" id="new_last_name" class="input input-bordered" placeholder="Doe">
+                            </div>
+                        </div>
+                        <div class="form-control">
+                            <label class="label-text" for="new_email">{{ $trans['field.email'] ?? 'Email' }}</label>
+                            <input type="email" id="new_email" class="input input-bordered" placeholder="john@example.com">
+                        </div>
+                        <div class="form-control">
+                            <label class="label-text" for="new_phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
+                            <input type="tel" id="new_phone" class="input input-bordered" placeholder="+1 234 567 8900">
+                        </div>
+                        <button type="button" id="create-client-btn" class="btn btn-success btn-sm">
+                            <span class="icon-[tabler--plus] size-4"></span>
+                            {{ $trans['btn.create_client'] ?? 'Create Client' }}
+                        </button>
+                    </div>
+
+                    {{-- Selected Client Display --}}
+                    <div id="selected-client" class="hidden mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div id="selected-client-avatar" class="avatar placeholder">
+                                    <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold">
+                                        <span id="selected-client-initials">JD</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div id="selected-client-name" class="font-semibold">John Doe</div>
+                                    <div id="selected-client-email" class="text-sm text-base-content/60">john@example.com</div>
+                                </div>
+                            </div>
+                            <button type="button" onclick="clearSelectedClient()" class="btn btn-ghost btn-sm btn-circle">
+                                <span class="icon-[tabler--x] size-4"></span>
+                            </button>
+                        </div>
+                        <input type="hidden" name="client_id" id="client_id" value="">
                     </div>
                 </div>
             </div>
@@ -260,6 +316,130 @@
 let itemIndex = 0;
 const currencySymbols = @json($currencySymbols);
 
+// Client selection elements
+const clientSearch = document.getElementById('client-search');
+const clientSearchResults = document.getElementById('client-search-results');
+const existingClientSection = document.getElementById('existing-client-section');
+const newClientSection = document.getElementById('new-client-section');
+const selectedClientDiv = document.getElementById('selected-client');
+const clientIdInput = document.getElementById('client_id');
+
+let searchTimeout;
+
+// Client type toggle
+document.querySelectorAll('input[name="client_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'existing') {
+            existingClientSection.classList.remove('hidden');
+            newClientSection.classList.add('hidden');
+        } else {
+            existingClientSection.classList.add('hidden');
+            newClientSection.classList.remove('hidden');
+        }
+    });
+});
+
+// Client search
+clientSearch.addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const query = this.value.trim();
+
+    if (query.length < 2) {
+        clientSearchResults.innerHTML = '';
+        return;
+    }
+
+    searchTimeout = setTimeout(() => {
+        fetch(`{{ route('walk-in.clients.search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                clientSearchResults.innerHTML = '';
+                if (data.clients.length === 0) {
+                    clientSearchResults.innerHTML = '<p class="text-base-content/60 text-sm p-2">{{ $trans["common.no_results"] ?? "No clients found" }}</p>';
+                    return;
+                }
+
+                data.clients.forEach(client => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-3 p-3 bg-base-200/50 rounded-lg cursor-pointer hover:bg-base-200 transition-colors';
+                    div.innerHTML = `
+                        <div class="avatar placeholder">
+                            <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold text-sm">
+                                ${client.initials || (client.first_name[0] + client.last_name[0]).toUpperCase()}
+                            </div>
+                        </div>
+                        <div>
+                            <div class="font-medium">${client.first_name} ${client.last_name}</div>
+                            <div class="text-xs text-base-content/60">${client.email || client.phone || ''}</div>
+                        </div>
+                    `;
+                    div.addEventListener('click', () => selectClient(client));
+                    clientSearchResults.appendChild(div);
+                });
+            });
+    }, 300);
+});
+
+// Create new client
+document.getElementById('create-client-btn').addEventListener('click', function() {
+    const firstName = document.getElementById('new_first_name').value.trim();
+    const lastName = document.getElementById('new_last_name').value.trim();
+    const email = document.getElementById('new_email').value.trim();
+    const phone = document.getElementById('new_phone').value.trim();
+
+    if (!firstName || !lastName) {
+        alert('{{ $trans["msg.error.name_required"] ?? "Please enter first and last name" }}');
+        return;
+    }
+
+    fetch('{{ route('walk-in.clients.quick-add') }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone: phone
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            selectClient(data.client);
+            // Clear form
+            document.getElementById('new_first_name').value = '';
+            document.getElementById('new_last_name').value = '';
+            document.getElementById('new_email').value = '';
+            document.getElementById('new_phone').value = '';
+        }
+    });
+});
+
+function selectClient(client) {
+    clientIdInput.value = client.id;
+    document.getElementById('selected-client-initials').textContent = client.initials || (client.first_name[0] + client.last_name[0]).toUpperCase();
+    document.getElementById('selected-client-name').textContent = `${client.first_name} ${client.last_name}`;
+    document.getElementById('selected-client-email').textContent = client.email || client.phone || '';
+
+    selectedClientDiv.classList.remove('hidden');
+    clientSearch.value = '';
+    clientSearchResults.innerHTML = '';
+
+    // Switch back to existing client type
+    document.querySelector('input[name="client_type"][value="existing"]').checked = true;
+    existingClientSection.classList.remove('hidden');
+    newClientSection.classList.add('hidden');
+}
+
+window.clearSelectedClient = function() {
+    clientIdInput.value = '';
+    selectedClientDiv.classList.add('hidden');
+};
+
+// Rental items functions
 function addItem() {
     const container = document.getElementById('items-container');
     const template = document.getElementById('item-template');

@@ -42,7 +42,7 @@
             @if($client->is_member)
                 <div class="flex items-center gap-2 bg-success/20 text-success px-3 py-2 rounded-lg">
                     <span class="icon-[tabler--id-badge-2] size-5"></span>
-                    <span class="font-medium text-sm">Member</span>
+                    <span class="font-medium text-sm">{{ $trans['status.member'] ?? 'Member' }}</span>
                 </div>
             @endif
         </div>
@@ -52,14 +52,14 @@
     <div class="bg-base-200/50 rounded-xl p-4 mb-4">
         <div class="flex items-center gap-2 mb-3">
             <span class="icon-[tabler--address-book] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">Contact Information</h4>
+            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.contact_info'] ?? 'Contact Information' }}</h4>
         </div>
         <div class="grid grid-cols-2 gap-3">
             @if($client->email)
                 <div class="bg-base-100 rounded-lg p-3">
                     <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                         <span class="icon-[tabler--mail] size-3.5"></span>
-                        Email
+                        {{ $trans['field.email'] ?? 'Email' }}
                     </div>
                     <div class="font-medium text-sm truncate">{{ $client->email }}</div>
                 </div>
@@ -68,7 +68,7 @@
                 <div class="bg-base-100 rounded-lg p-3">
                     <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                         <span class="icon-[tabler--phone] size-3.5"></span>
-                        Phone
+                        {{ $trans['field.phone'] ?? 'Phone' }}
                     </div>
                     <div class="font-medium text-sm">{{ $client->phone }}</div>
                 </div>
@@ -77,7 +77,7 @@
                 <div class="bg-base-100 rounded-lg p-3">
                     <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                         <span class="icon-[tabler--cake] size-3.5"></span>
-                        Birthday
+                        {{ $trans['field.birthday'] ?? 'Birthday' }}
                     </div>
                     <div class="font-medium text-sm">{{ $client->date_of_birth->format('M j, Y') }}</div>
                 </div>
@@ -86,7 +86,7 @@
                 <div class="bg-base-100 rounded-lg p-3">
                     <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
                         <span class="icon-[tabler--gender-bigender] size-3.5"></span>
-                        Gender
+                        {{ $trans['field.gender'] ?? 'Gender' }}
                     </div>
                     <div class="font-medium text-sm">{{ ucfirst($client->gender) }}</div>
                 </div>
@@ -107,33 +107,33 @@
     <div class="bg-base-200/50 rounded-xl p-4 mb-4">
         <div class="flex items-center gap-2 mb-3">
             <span class="icon-[tabler--chart-bar] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">Booking Stats</h4>
+            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.booking_stats'] ?? 'Booking Stats' }}</h4>
         </div>
         <div class="grid grid-cols-4 gap-2">
             <div class="bg-base-100 rounded-lg p-2 text-center">
                 <div class="text-lg font-bold">{{ $bookingStats['total'] }}</div>
-                <div class="text-xs text-base-content/60">Total</div>
+                <div class="text-xs text-base-content/60">{{ $trans['stats.total'] ?? 'Total' }}</div>
             </div>
             <div class="bg-base-100 rounded-lg p-2 text-center">
                 <div class="text-lg font-bold text-success">{{ $bookingStats['attended'] }}</div>
-                <div class="text-xs text-base-content/60">Attended</div>
+                <div class="text-xs text-base-content/60">{{ $trans['stats.attended'] ?? 'Attended' }}</div>
             </div>
             <div class="bg-base-100 rounded-lg p-2 text-center">
                 <div class="text-lg font-bold text-warning">{{ $bookingStats['cancelled'] }}</div>
-                <div class="text-xs text-base-content/60">Cancelled</div>
+                <div class="text-xs text-base-content/60">{{ $trans['stats.cancelled'] ?? 'Cancelled' }}</div>
             </div>
             <div class="bg-base-100 rounded-lg p-2 text-center">
                 <div class="text-lg font-bold text-error">{{ $bookingStats['no_show'] }}</div>
-                <div class="text-xs text-base-content/60">No Show</div>
+                <div class="text-xs text-base-content/60">{{ $trans['stats.no_show'] ?? 'No Show' }}</div>
             </div>
         </div>
         <div class="grid grid-cols-2 gap-3 mt-3">
             <div class="flex items-center justify-between text-sm">
-                <span class="text-base-content/60">Last Visit</span>
-                <span class="font-medium">{{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}</span>
+                <span class="text-base-content/60">{{ $trans['field.last_visit'] ?? 'Last Visit' }}</span>
+                <span class="font-medium">{{ $client->last_visit_at?->diffForHumans() ?? ($trans['common.never'] ?? 'Never') }}</span>
             </div>
             <div class="flex items-center justify-between text-sm">
-                <span class="text-base-content/60">Client Since</span>
+                <span class="text-base-content/60">{{ $trans['field.client_since'] ?? 'Client Since' }}</span>
                 <span class="font-medium">{{ $client->created_at->format('M Y') }}</span>
             </div>
         </div>
@@ -161,9 +161,9 @@
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--calendar-event] size-4 text-primary"></span>
-                    <h4 class="text-sm font-semibold uppercase tracking-wide">Recent Bookings</h4>
+                    <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.recent_bookings'] ?? 'Recent Bookings' }}</h4>
                 </div>
-                <a href="{{ route('clients.show', $client) }}?tab=bookings" class="text-xs text-primary hover:underline">View All</a>
+                <a href="{{ route('clients.show', $client) }}?tab=bookings" class="text-xs text-primary hover:underline">{{ $trans['btn.view_all'] ?? 'View All' }}</a>
             </div>
             <div class="space-y-2">
                 @foreach($recentBookings as $booking)
@@ -199,7 +199,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             @if($booking->checked_in_at)
-                                <span class="badge badge-xs badge-success">Attended</span>
+                                <span class="badge badge-xs badge-success">{{ $trans['stats.attended'] ?? 'Attended' }}</span>
                             @else
                                 <span class="badge badge-sm {{ $statusBadge }} badge-soft">{{ ucfirst($booking->status) }}</span>
                             @endif
@@ -233,9 +233,9 @@
             <div class="flex items-center justify-between mb-3">
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--forms] size-4 text-primary"></span>
-                    <h4 class="text-sm font-semibold uppercase tracking-wide">Questionnaires</h4>
+                    <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['nav.questionnaires'] ?? 'Questionnaires' }}</h4>
                 </div>
-                <a href="{{ route('clients.show', $client) }}?tab=questionnaires" class="text-xs text-primary hover:underline">View All</a>
+                <a href="{{ route('clients.show', $client) }}?tab=questionnaires" class="text-xs text-primary hover:underline">{{ $trans['btn.view_all'] ?? 'View All' }}</a>
             </div>
             <div class="space-y-2">
                 @foreach($questionnaireResponses as $response)
@@ -281,7 +281,7 @@
         <div class="bg-base-200/50 rounded-xl p-4 mb-4">
             <div class="flex items-center gap-2 mb-3">
                 <span class="icon-[tabler--tags] size-4 text-primary"></span>
-                <h4 class="text-sm font-semibold uppercase tracking-wide">Tags</h4>
+                <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['field.tags'] ?? 'Tags' }}</h4>
             </div>
             <div class="flex flex-wrap gap-2">
                 @foreach($client->tags as $tag)
@@ -298,7 +298,7 @@
         <div class="bg-base-200/50 rounded-xl p-4">
             <div class="flex items-center gap-2 mb-3">
                 <span class="icon-[tabler--notes] size-4 text-primary"></span>
-                <h4 class="text-sm font-semibold uppercase tracking-wide">Notes</h4>
+                <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['field.notes'] ?? 'Notes' }}</h4>
             </div>
             <p class="text-sm text-base-content/70 line-clamp-3">{{ $client->notes }}</p>
         </div>
@@ -308,12 +308,12 @@
         <div class="flex items-center gap-2">
             <a href="{{ route('clients.edit', $client) }}" class="btn btn-soft btn-primary">
                 <span class="icon-[tabler--edit] size-4 me-1"></span>
-                Edit
+                {{ $trans['btn.edit'] ?? 'Edit' }}
             </a>
         </div>
         <a href="{{ route('clients.show', $client) }}" class="btn btn-primary">
             <span class="icon-[tabler--external-link] size-4 me-1"></span>
-            View Full Profile
+            {{ $trans['btn.view_full_profile'] ?? 'View Full Profile' }}
         </a>
     </x-slot>
 </x-detail-drawer>

@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Add Client')
+@section('title', $trans['clients.add_client'] ?? 'Add Client')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('clients.index') }}">Clients</a></li>
+        <li><a href="{{ route('clients.index') }}">{{ $trans['nav.clients'] ?? 'Clients' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Add Client</li>
+        <li aria-current="page">{{ $trans['clients.add_client'] ?? 'Add Client' }}</li>
     </ol>
 @endsection
 
@@ -20,8 +20,8 @@
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
-            <h1 class="text-2xl font-bold">Add New Client</h1>
-            <p class="text-base-content/60 text-sm mt-1">Create a new client profile for your studio</p>
+            <h1 class="text-2xl font-bold">{{ $trans['clients.add_new_client'] ?? 'Add New Client' }}</h1>
+            <p class="text-base-content/60 text-sm mt-1">{{ $trans['clients.create_description'] ?? 'Create a new client profile for your studio' }}</p>
         </div>
     </div>
 
@@ -33,12 +33,12 @@
             <div class="card-body">
                 <h5 class="card-title mb-4">
                     <span class="icon-[tabler--user] size-5 mr-1"></span>
-                    Basic Information
+                    {{ $trans['clients.basic_information'] ?? 'Basic Information' }}
                 </h5>
 
                 <div class="space-y-4">
                     <div>
-                        <label class="label-text" for="first_name">First Name <span class="text-error">*</span></label>
+                        <label class="label-text" for="first_name">{{ $trans['field.first_name'] ?? 'First Name' }} <span class="text-error">*</span></label>
                         <input type="text" id="first_name" name="first_name" value="{{ old('first_name') }}"
                                class="input w-full" placeholder="John" required>
                         @error('first_name')
@@ -47,7 +47,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="last_name">Last Name <span class="text-error">*</span></label>
+                        <label class="label-text" for="last_name">{{ $trans['field.last_name'] ?? 'Last Name' }} <span class="text-error">*</span></label>
                         <input type="text" id="last_name" name="last_name" value="{{ old('last_name') }}"
                                class="input w-full" placeholder="Doe" required>
                         @error('last_name')
@@ -56,7 +56,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="email">Email <span class="text-error">*</span></label>
+                        <label class="label-text" for="email">{{ $trans['field.email'] ?? 'Email' }} <span class="text-error">*</span></label>
                         <input type="email" id="email" name="email" value="{{ old('email') }}"
                                class="input w-full" placeholder="john@example.com" required>
                         @error('email')
@@ -65,7 +65,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="phone">Phone</label>
+                        <label class="label-text" for="phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
                         <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
                                class="input w-full" placeholder="+1 (555) 000-0000">
                         @error('phone')
@@ -74,7 +74,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text">Date of Birth</label>
+                        <label class="label-text">{{ $trans['field.date_of_birth'] ?? 'Date of Birth' }}</label>
                         <div class="grid grid-cols-3 gap-2">
                             <div>
                                 <select id="dob_day" name="dob_day" class="hidden"
@@ -132,7 +132,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="gender">Gender</label>
+                        <label class="label-text" for="gender">{{ $trans['field.gender'] ?? 'Gender' }}</label>
                         <select id="gender" name="gender" class="hidden"
                             data-select='{
                                 "placeholder": "Select gender...",
@@ -158,12 +158,12 @@
             <div class="card-body">
                 <h5 class="card-title mb-4">
                     <span class="icon-[tabler--tag] size-5 mr-1"></span>
-                    Status & Source
+                    {{ $trans['clients.status_source'] ?? 'Status & Source' }}
                 </h5>
 
                 {{-- Status Selection - Radio Custom Option Cards --}}
                 <div class="mb-4">
-                    <label class="label-text mb-2 block">Client Status <span class="text-error">*</span></label>
+                    <label class="label-text mb-2 block">{{ $trans['clients.client_status'] ?? 'Client Status' }} <span class="text-error">*</span></label>
                     <div class="flex w-full items-start gap-3 flex-wrap sm:flex-nowrap">
                         @foreach($statuses as $key => $label)
                             @php
@@ -192,7 +192,7 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="label-text" for="lead_source">Lead Source <span class="text-error">*</span></label>
+                        <label class="label-text" for="lead_source">{{ $trans['field.lead_source'] ?? 'Lead Source' }} <span class="text-error">*</span></label>
                         <select id="lead_source" name="lead_source" class="hidden" required
                             data-select='{
                                 "placeholder": "Select source...",
@@ -216,9 +216,9 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="referral_source">Referral Source</label>
+                        <label class="label-text" for="referral_source">{{ $trans['field.referral_source'] ?? 'Referral Source' }}</label>
                         <input type="text" id="referral_source" name="referral_source" value="{{ old('referral_source') }}"
-                               class="input w-full" placeholder="Who referred them?">
+                               class="input w-full" placeholder="{{ $trans['clients.who_referred'] ?? 'Who referred them?' }}">
                     </div>
                 </div>
             </div>
@@ -230,7 +230,7 @@
                 <div class="flex items-center justify-between">
                     <h5 class="card-title mb-0">
                         <span class="icon-[tabler--map-pin] size-5 mr-1"></span>
-                        Contact Details
+                        {{ $trans['clients.contact_details'] ?? 'Contact Details' }}
                     </h5>
                     <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
                 </div>
@@ -238,40 +238,40 @@
             <div class="card-body pt-0">
                 <div class="space-y-4">
                     <div>
-                        <label class="label-text" for="secondary_phone">Secondary Phone</label>
+                        <label class="label-text" for="secondary_phone">{{ $trans['field.secondary_phone'] ?? 'Secondary Phone' }}</label>
                         <input type="tel" id="secondary_phone" name="secondary_phone" value="{{ old('secondary_phone') }}"
-                               class="input w-full" placeholder="Alternative number">
+                               class="input w-full" placeholder="{{ $trans['clients.alternative_number'] ?? 'Alternative number' }}">
                     </div>
 
                     <div>
-                        <label class="label-text" for="address_line_1">Address Line 1</label>
+                        <label class="label-text" for="address_line_1">{{ $trans['field.address_line_1'] ?? 'Address Line 1' }}</label>
                         <input type="text" id="address_line_1" name="address_line_1" value="{{ old('address_line_1') }}"
-                               class="input w-full" placeholder="Street address">
+                               class="input w-full" placeholder="{{ $trans['clients.street_address'] ?? 'Street address' }}">
                     </div>
 
                     <div
-                        <label class="label-text" for="address_line_2">Address Line 2</label>
+                        <label class="label-text" for="address_line_2">{{ $trans['field.address_line_2'] ?? 'Address Line 2' }}</label>
                         <input type="text" id="address_line_2" name="address_line_2" value="{{ old('address_line_2') }}"
-                               class="input w-full" placeholder="Apt, suite, unit, etc.">
+                               class="input w-full" placeholder="{{ $trans['clients.apt_suite'] ?? 'Apt, suite, unit, etc.' }}">
                     </div>
 
                     <div>
-                        <label class="label-text" for="city">City</label>
+                        <label class="label-text" for="city">{{ $trans['field.city'] ?? 'City' }}</label>
                         <input type="text" id="city" name="city" value="{{ old('city') }}" class="input w-full">
                     </div>
 
                     <div>
-                        <label class="label-text" for="state_province">State / Province</label>
+                        <label class="label-text" for="state_province">{{ $trans['field.state_province'] ?? 'State / Province' }}</label>
                         <input type="text" id="state_province" name="state_province" value="{{ old('state_province') }}" class="input w-full">
                     </div>
 
                     <div>
-                        <label class="label-text" for="postal_code">Postal Code</label>
+                        <label class="label-text" for="postal_code">{{ $trans['field.postal_code'] ?? 'Postal Code' }}</label>
                         <input type="text" id="postal_code" name="postal_code" value="{{ old('postal_code') }}" class="input w-full">
                     </div>
 
                     <div>
-                        <label class="label-text" for="country">Country</label>
+                        <label class="label-text" for="country">{{ $trans['field.country'] ?? 'Country' }}</label>
                         <input type="text" id="country" name="country" value="{{ old('country') }}" class="input w-full">
                     </div>
                 </div>
@@ -284,14 +284,14 @@
                 <div class="flex items-center justify-between">
                     <h5 class="card-title mb-0">
                         <span class="icon-[tabler--mail] size-5 mr-1"></span>
-                        Communication Preferences
+                        {{ $trans['clients.communication_preferences'] ?? 'Communication Preferences' }}
                     </h5>
                     <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
                 </div>
             </summary>
             <div class="card-body pt-0 space-y-4">
                 <div>
-                    <label class="label-text" for="preferred_contact_method">Preferred Contact Method</label>
+                    <label class="label-text" for="preferred_contact_method">{{ $trans['field.preferred_contact_method'] ?? 'Preferred Contact Method' }}</label>
                     <select id="preferred_contact_method" name="preferred_contact_method[]" class="hidden" multiple
                         data-select='{
                             "placeholder": "Select methods...",
@@ -308,15 +308,15 @@
                     </select>
                 </div>
 
-                <div class="divider text-sm text-base-content/50">Opt-in Preferences</div>
+                <div class="divider text-sm text-base-content/50">{{ $trans['clients.opt_in_preferences'] ?? 'Opt-in Preferences' }}</div>
 
                 <div class="flex w-full flex-wrap items-start gap-3">
                     <label class="custom-option flex flex-row items-start gap-3">
                         <input type="checkbox" name="email_opt_in" value="1" class="checkbox checkbox-primary mt-1"
                                {{ old('email_opt_in', true) ? 'checked' : '' }}>
                         <span class="label-text w-full text-start">
-                            <span class="text-base font-medium">Email Notifications</span>
-                            <span class="text-base-content/80 block text-sm">Booking confirmations & reminders</span>
+                            <span class="text-base font-medium">{{ $trans['clients.email_notifications'] ?? 'Email Notifications' }}</span>
+                            <span class="text-base-content/80 block text-sm">{{ $trans['clients.email_notifications_desc'] ?? 'Booking confirmations & reminders' }}</span>
                         </span>
                     </label>
 
@@ -324,8 +324,8 @@
                         <input type="checkbox" name="sms_opt_in" value="1" class="checkbox checkbox-primary mt-1"
                                {{ old('sms_opt_in') ? 'checked' : '' }}>
                         <span class="label-text w-full text-start">
-                            <span class="text-base font-medium">SMS Notifications</span>
-                            <span class="text-base-content/80 block text-sm">Text message reminders</span>
+                            <span class="text-base font-medium">{{ $trans['clients.sms_notifications'] ?? 'SMS Notifications' }}</span>
+                            <span class="text-base-content/80 block text-sm">{{ $trans['clients.sms_notifications_desc'] ?? 'Text message reminders' }}</span>
                         </span>
                     </label>
 
@@ -333,8 +333,8 @@
                         <input type="checkbox" name="marketing_opt_in" value="1" class="checkbox checkbox-primary mt-1"
                                {{ old('marketing_opt_in', true) ? 'checked' : '' }}>
                         <span class="label-text w-full text-start">
-                            <span class="text-base font-medium">Marketing</span>
-                            <span class="text-base-content/80 block text-sm">Promotions & newsletter</span>
+                            <span class="text-base font-medium">{{ $trans['clients.marketing'] ?? 'Marketing' }}</span>
+                            <span class="text-base-content/80 block text-sm">{{ $trans['clients.marketing_desc'] ?? 'Promotions & newsletter' }}</span>
                         </span>
                     </label>
                 </div>
@@ -347,7 +347,7 @@
                 <div class="flex items-center justify-between">
                     <h5 class="card-title mb-0">
                         <span class="icon-[tabler--emergency-bed] size-5 mr-1"></span>
-                        Emergency Contact
+                        {{ $trans['clients.emergency_contact'] ?? 'Emergency Contact' }}
                     </h5>
                     <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
                 </div>
@@ -355,25 +355,25 @@
             <div class="card-body pt-0">
                 <div class="space-y-4">
                     <div>
-                        <label class="label-text" for="emergency_contact_name">Contact Name</label>
+                        <label class="label-text" for="emergency_contact_name">{{ $trans['field.contact_name'] ?? 'Contact Name' }}</label>
                         <input type="text" id="emergency_contact_name" name="emergency_contact_name" value="{{ old('emergency_contact_name') }}"
-                               class="input w-full" placeholder="Full name">
+                               class="input w-full" placeholder="{{ $trans['clients.full_name'] ?? 'Full name' }}">
                     </div>
 
                     <div>
-                        <label class="label-text" for="emergency_contact_relationship">Relationship</label>
+                        <label class="label-text" for="emergency_contact_relationship">{{ $trans['field.relationship'] ?? 'Relationship' }}</label>
                         <input type="text" id="emergency_contact_relationship" name="emergency_contact_relationship" value="{{ old('emergency_contact_relationship') }}"
-                               class="input w-full" placeholder="e.g., Spouse, Parent">
+                               class="input w-full" placeholder="{{ $trans['clients.relationship_example'] ?? 'e.g., Spouse, Parent' }}">
                     </div>
 
                     <div>
-                        <label class="label-text" for="emergency_contact_phone">Phone</label>
+                        <label class="label-text" for="emergency_contact_phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
                         <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value="{{ old('emergency_contact_phone') }}"
                                class="input w-full" placeholder="+1 (555) 000-0000">
                     </div>
 
                     <div>
-                        <label class="label-text" for="emergency_contact_email">Email</label>
+                        <label class="label-text" for="emergency_contact_email">{{ $trans['field.email'] ?? 'Email' }}</label>
                         <input type="email" id="emergency_contact_email" name="emergency_contact_email" value="{{ old('emergency_contact_email') }}"
                                class="input w-full" placeholder="email@example.com">
                     </div>
@@ -387,7 +387,7 @@
                 <div class="flex items-center justify-between">
                     <h5 class="card-title mb-0">
                         <span class="icon-[tabler--heartbeat] size-5 mr-1"></span>
-                        Health & Fitness
+                        {{ $trans['clients.health_fitness'] ?? 'Health & Fitness' }}
                     </h5>
                     <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
                 </div>
@@ -395,7 +395,7 @@
             <div class="card-body pt-0">
                 <div class="space-y-4">
                     <div>
-                        <label class="label-text" for="experience_level">Experience Level</label>
+                        <label class="label-text" for="experience_level">{{ $trans['field.experience_level'] ?? 'Experience Level' }}</label>
                         <select id="experience_level" name="experience_level" class="hidden"
                             data-select='{
                                 "placeholder": "Select level...",
@@ -414,27 +414,27 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="fitness_goals">Fitness Goals</label>
+                        <label class="label-text" for="fitness_goals">{{ $trans['field.fitness_goals'] ?? 'Fitness Goals' }}</label>
                         <textarea id="fitness_goals" name="fitness_goals" rows="2" class="textarea textarea-bordered w-full"
-                                  placeholder="What are their fitness goals?">{{ old('fitness_goals') }}</textarea>
+                                  placeholder="{{ $trans['clients.fitness_goals_placeholder'] ?? 'What are their fitness goals?' }}">{{ old('fitness_goals') }}</textarea>
                     </div>
 
                     <div>
-                        <label class="label-text" for="medical_conditions">Medical Conditions</label>
+                        <label class="label-text" for="medical_conditions">{{ $trans['field.medical_conditions'] ?? 'Medical Conditions' }}</label>
                         <textarea id="medical_conditions" name="medical_conditions" rows="2" class="textarea textarea-bordered w-full"
-                                  placeholder="Any medical conditions to be aware of?">{{ old('medical_conditions') }}</textarea>
+                                  placeholder="{{ $trans['clients.medical_conditions_placeholder'] ?? 'Any medical conditions to be aware of?' }}">{{ old('medical_conditions') }}</textarea>
                     </div>
 
                     <div>
-                        <label class="label-text" for="injuries">Injuries</label>
+                        <label class="label-text" for="injuries">{{ $trans['field.injuries'] ?? 'Injuries' }}</label>
                         <textarea id="injuries" name="injuries" rows="2" class="textarea textarea-bordered w-full"
-                                  placeholder="Past or current injuries">{{ old('injuries') }}</textarea>
+                                  placeholder="{{ $trans['clients.injuries_placeholder'] ?? 'Past or current injuries' }}">{{ old('injuries') }}</textarea>
                     </div>
 
                     <div>
-                        <label class="label-text" for="limitations">Limitations</label>
+                        <label class="label-text" for="limitations">{{ $trans['field.limitations'] ?? 'Limitations' }}</label>
                         <textarea id="limitations" name="limitations" rows="2" class="textarea textarea-bordered w-full"
-                                  placeholder="Physical limitations">{{ old('limitations') }}</textarea>
+                                  placeholder="{{ $trans['clients.limitations_placeholder'] ?? 'Physical limitations' }}">{{ old('limitations') }}</textarea>
                     </div>
 
                     <div>
@@ -442,8 +442,8 @@
                             <input type="checkbox" name="pregnancy_status" value="1" class="checkbox checkbox-warning mt-1"
                                    {{ old('pregnancy_status') ? 'checked' : '' }}>
                             <span class="label-text w-full text-start">
-                                <span class="text-base font-medium">Currently Pregnant</span>
-                                <span class="text-base-content/80 block text-sm">Special considerations apply</span>
+                                <span class="text-base font-medium">{{ $trans['clients.currently_pregnant'] ?? 'Currently Pregnant' }}</span>
+                                <span class="text-base-content/80 block text-sm">{{ $trans['clients.pregnancy_considerations'] ?? 'Special considerations apply' }}</span>
                             </span>
                         </label>
                     </div>
@@ -457,7 +457,7 @@
                 <div class="flex items-center justify-between">
                     <h5 class="card-title mb-0">
                         <span class="icon-[tabler--chart-bar] size-5 mr-1"></span>
-                        Marketing Tracking (UTM)
+                        {{ $trans['clients.marketing_tracking'] ?? 'Marketing Tracking (UTM)' }}
                     </h5>
                     <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
                 </div>
@@ -465,39 +465,39 @@
             <div class="card-body pt-0">
                 <div class="space-y-4">
                     <div
-                        <label class="label-text" for="source_url">Source URL</label>
+                        <label class="label-text" for="source_url">{{ $trans['field.source_url'] ?? 'Source URL' }}</label>
                         <input type="url" id="source_url" name="source_url" value="{{ old('source_url') }}"
                                class="input w-full" placeholder="https://...">
                     </div>
 
                     <div>
-                        <label class="label-text" for="utm_source">UTM Source</label>
+                        <label class="label-text" for="utm_source">{{ $trans['field.utm_source'] ?? 'UTM Source' }}</label>
                         <input type="text" id="utm_source" name="utm_source" value="{{ old('utm_source') }}"
                                class="input w-full" placeholder="google, facebook">
                     </div>
 
                     <div>
-                        <label class="label-text" for="utm_medium">UTM Medium</label>
+                        <label class="label-text" for="utm_medium">{{ $trans['field.utm_medium'] ?? 'UTM Medium' }}</label>
                         <input type="text" id="utm_medium" name="utm_medium" value="{{ old('utm_medium') }}"
                                class="input w-full" placeholder="cpc, email">
                     </div>
 
                     <div>
-                        <label class="label-text" for="utm_campaign">UTM Campaign</label>
+                        <label class="label-text" for="utm_campaign">{{ $trans['field.utm_campaign'] ?? 'UTM Campaign' }}</label>
                         <input type="text" id="utm_campaign" name="utm_campaign" value="{{ old('utm_campaign') }}"
-                               class="input w-full" placeholder="Campaign name">
+                               class="input w-full" placeholder="{{ $trans['clients.campaign_name'] ?? 'Campaign name' }}">
                     </div>
 
                     <div>
-                        <label class="label-text" for="utm_term">UTM Term</label>
+                        <label class="label-text" for="utm_term">{{ $trans['field.utm_term'] ?? 'UTM Term' }}</label>
                         <input type="text" id="utm_term" name="utm_term" value="{{ old('utm_term') }}"
-                               class="input w-full" placeholder="Keywords">
+                               class="input w-full" placeholder="{{ $trans['common.keywords'] ?? 'Keywords' }}">
                     </div>
 
                     <div>
-                        <label class="label-text" for="utm_content">UTM Content</label>
+                        <label class="label-text" for="utm_content">{{ $trans['field.utm_content'] ?? 'UTM Content' }}</label>
                         <input type="text" id="utm_content" name="utm_content" value="{{ old('utm_content') }}"
-                               class="input w-full" placeholder="Ad content">
+                               class="input w-full" placeholder="{{ $trans['clients.ad_content'] ?? 'Ad content' }}">
                     </div>
                 </div>
             </div>
@@ -509,7 +509,7 @@
             <div class="card-body">
                 <h5 class="card-title mb-4">
                     <span class="icon-[tabler--tags] size-5 mr-1"></span>
-                    Tags
+                    {{ $trans['field.tags'] ?? 'Tags' }}
                 </h5>
                 <div class="flex flex-wrap gap-2">
                     @foreach($tags as $tag)
@@ -534,7 +534,7 @@
             <div class="card-body">
                 <h5 class="card-title mb-4">
                     <span class="icon-[tabler--forms] size-5 mr-1"></span>
-                    Additional Information
+                    {{ $trans['clients.additional_information'] ?? 'Additional Information' }}
                 </h5>
 
                 {{-- Unsectioned Fields --}}
@@ -568,20 +568,20 @@
             <div class="card-body">
                 <h5 class="card-title mb-4">
                     <span class="icon-[tabler--notes] size-5 mr-1"></span>
-                    Internal Notes
+                    {{ $trans['clients.internal_notes'] ?? 'Internal Notes' }}
                 </h5>
                 <textarea id="notes" name="notes" rows="3" class="textarea textarea-bordered w-full"
-                          placeholder="Add any internal notes about this client...">{{ old('notes') }}</textarea>
-                <p class="text-base-content/50 text-sm mt-2">These notes are only visible to staff members.</p>
+                          placeholder="{{ $trans['clients.internal_notes_placeholder'] ?? 'Add any internal notes about this client...' }}">{{ old('notes') }}</textarea>
+                <p class="text-base-content/50 text-sm mt-2">{{ $trans['clients.notes_visibility'] ?? 'These notes are only visible to staff members.' }}</p>
             </div>
         </div>
 
         {{-- Actions --}}
         <div class="flex justify-end gap-3">
-            <a href="{{ route('clients.index') }}" class="btn btn-soft btn-secondary">Cancel</a>
+            <a href="{{ route('clients.index') }}" class="btn btn-soft btn-secondary">{{ $trans['btn.cancel'] ?? 'Cancel' }}</a>
             <button type="submit" class="btn btn-primary">
                 <span class="icon-[tabler--check] size-5"></span>
-                Create Client
+                {{ $trans['btn.create_client'] ?? 'Create Client' }}
             </button>
         </div>
     </form>

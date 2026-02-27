@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Segments')
+@section('title', $trans['nav.marketing.segments'] ?? 'Segments')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><span class="icon-[tabler--speakerphone] me-1 size-4"></span> Marketing</li>
+        <li><span class="icon-[tabler--speakerphone] me-1 size-4"></span> {{ $trans['nav.marketing'] ?? 'Marketing' }}</li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Segments</li>
+        <li aria-current="page">{{ $trans['nav.marketing.segments'] ?? 'Segments' }}</li>
     </ol>
 @endsection
 
@@ -17,12 +17,12 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold">Client Segments</h1>
-            <p class="text-base-content/60 mt-1">Create targeted groups of clients for personalized offers and campaigns.</p>
+            <h1 class="text-2xl font-bold">{{ $trans['segments.title'] ?? 'Client Segments' }}</h1>
+            <p class="text-base-content/60 mt-1">{{ $trans['segments.description'] ?? 'Create targeted groups of clients for personalized offers and campaigns.' }}</p>
         </div>
         <a href="{{ route('segments.create') }}" class="btn btn-primary">
             <span class="icon-[tabler--plus] size-5"></span>
-            Create Segment
+            {{ $trans['segments.create'] ?? 'Create Segment' }}
         </a>
     </div>
 
@@ -36,7 +36,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ number_format($totalClients) }}</p>
-                        <p class="text-sm text-base-content/60">Total Clients</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['segments.total_clients'] ?? 'Total Clients' }}</p>
                     </div>
                 </div>
             </div>
@@ -49,7 +49,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $segments->where('type', 'dynamic')->count() }}</p>
-                        <p class="text-sm text-base-content/60">Dynamic Segments</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['segments.dynamic'] ?? 'Dynamic Segments' }}</p>
                     </div>
                 </div>
             </div>
@@ -62,7 +62,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $segments->where('type', 'smart')->count() }}</p>
-                        <p class="text-sm text-base-content/60">Smart Segments</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['segments.smart'] ?? 'Smart Segments' }}</p>
                     </div>
                 </div>
             </div>
@@ -72,7 +72,7 @@
     {{-- Filters --}}
     <div class="flex items-center gap-4">
         <div class="tabs tabs-boxed">
-            <a href="{{ route('segments.index') }}" class="tab {{ !$type ? 'tab-active' : '' }}">All</a>
+            <a href="{{ route('segments.index') }}" class="tab {{ !$type ? 'tab-active' : '' }}">{{ $trans['common.all'] ?? 'All' }}</a>
             @foreach($types as $key => $label)
                 <a href="{{ route('segments.index', ['type' => $key]) }}"
                    class="tab {{ $type === $key ? 'tab-active' : '' }}">{{ $label }}</a>
@@ -85,11 +85,11 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--users-group] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Segments Yet</h3>
-                <p class="text-base-content/60 mb-4">Create segments to target specific groups of clients with personalized offers.</p>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['segments.no_segments'] ?? 'No Segments Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['segments.get_started'] ?? 'Create segments to target specific groups of clients with personalized offers.' }}</p>
                 <a href="{{ route('segments.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Create First Segment
+                    {{ $trans['segments.create_first'] ?? 'Create First Segment' }}
                 </a>
             </div>
         </div>
@@ -118,7 +118,7 @@
                                             {{ ucfirst($segment->type) }}
                                         </span>
                                         @if(!$segment->is_active)
-                                            <span class="badge badge-soft badge-error badge-sm">Inactive</span>
+                                            <span class="badge badge-soft badge-error badge-sm">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
                                         @endif
                                     </div>
                                 </div>
@@ -128,25 +128,25 @@
                                     <span class="icon-[tabler--dots-vertical] size-4"></span>
                                 </summary>
                                 <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
-                                    <li><a href="{{ route('segments.show', $segment) }}"><span class="icon-[tabler--eye] size-4"></span> View</a></li>
+                                    <li><a href="{{ route('segments.show', $segment) }}"><span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}</a></li>
                                     @if(!$segment->is_system)
-                                        <li><a href="{{ route('segments.edit', $segment) }}"><span class="icon-[tabler--edit] size-4"></span> Edit</a></li>
+                                        <li><a href="{{ route('segments.edit', $segment) }}"><span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}</a></li>
                                         @if($segment->type === 'dynamic')
                                             <li>
                                                 <form action="{{ route('segments.refresh', $segment) }}" method="POST">
                                                     @csrf
                                                     <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                        <span class="icon-[tabler--refresh] size-4"></span> Refresh
+                                                        <span class="icon-[tabler--refresh] size-4"></span> {{ $trans['btn.refresh'] ?? 'Refresh' }}
                                                     </button>
                                                 </form>
                                             </li>
                                         @endif
                                         <li>
-                                            <form action="{{ route('segments.destroy', $segment) }}" method="POST" onsubmit="return confirm('Delete this segment?')">
+                                            <form action="{{ route('segments.destroy', $segment) }}" method="POST" onsubmit="return confirm('{{ $trans['msg.confirm.delete_segment'] ?? 'Delete this segment?' }}')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
                                                 </button>
                                             </form>
                                         </li>
@@ -164,10 +164,10 @@
                                 <div class="flex items-center gap-2">
                                     <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
                                     <span class="font-medium">{{ number_format($segment->member_count) }}</span>
-                                    <span class="text-sm text-base-content/60">members</span>
+                                    <span class="text-sm text-base-content/60">{{ $trans['segments.members'] ?? 'members' }}</span>
                                 </div>
                                 @if($segment->total_revenue > 0)
-                                    <span class="text-sm text-success font-medium">${{ number_format($segment->total_revenue, 0) }} revenue</span>
+                                    <span class="text-sm text-success font-medium">${{ number_format($segment->total_revenue, 0) }} {{ $trans['segments.revenue'] ?? 'revenue' }}</span>
                                 @endif
                             </div>
                             @if($segment->tier)

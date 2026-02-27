@@ -150,8 +150,8 @@
                                 <th class="w-12">#</th>
                                 <th>Key</th>
                                 <th>Category</th>
-                                <th>Page</th>
-                                <th>Value (English)</th>
+                                <th>English</th>
+                                <th class="text-center">Languages</th>
                                 <th class="w-24 text-center">Actions</th>
                             </tr>
                         </thead>
@@ -161,19 +161,31 @@
                                 <td class="text-base-content/50">{{ $translations->firstItem() + $index }}</td>
                                 <td>
                                     <code class="text-xs bg-base-200 px-2 py-1 rounded">{{ $translation->translation_key }}</code>
+                                    @if($translation->page_context)
+                                        <span class="badge badge-ghost badge-xs ml-1">{{ $translation->page_context }}</span>
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge badge-soft badge-primary badge-sm">{{ $categories[$translation->category] ?? $translation->category }}</span>
                                 </td>
-                                <td>
-                                    @if($translation->page_context)
-                                        <span class="badge badge-ghost badge-sm">{{ $translation->page_context }}</span>
-                                    @else
-                                        <span class="text-base-content/30">-</span>
-                                    @endif
+                                <td class="max-w-[250px]" title="{{ $translation->value_en }}">
+                                    {{ Str::limit($translation->value_en, 40) }}
                                 </td>
-                                <td class="max-w-[300px]" title="{{ $translation->value_en }}">
-                                    {{ Str::limit($translation->value_en, 50) }}
+                                <td class="text-center">
+                                    <div class="flex items-center justify-center gap-1">
+                                        <span class="tooltip" data-tip="{{ $translation->value_en ? 'English: ' . Str::limit($translation->value_en, 30) : 'Missing English' }}">
+                                            <span class="badge badge-xs {{ $translation->value_en ? 'badge-success' : 'badge-error' }}">EN</span>
+                                        </span>
+                                        <span class="tooltip" data-tip="{{ $translation->value_fr ? 'French: ' . Str::limit($translation->value_fr, 30) : 'Missing French' }}">
+                                            <span class="badge badge-xs {{ $translation->value_fr ? 'badge-success' : 'badge-error' }}">FR</span>
+                                        </span>
+                                        <span class="tooltip" data-tip="{{ $translation->value_de ? 'German: ' . Str::limit($translation->value_de, 30) : 'Missing German' }}">
+                                            <span class="badge badge-xs {{ $translation->value_de ? 'badge-success' : 'badge-error' }}">DE</span>
+                                        </span>
+                                        <span class="tooltip" data-tip="{{ $translation->value_es ? 'Spanish: ' . Str::limit($translation->value_es, 30) : 'Missing Spanish' }}">
+                                            <span class="badge badge-xs {{ $translation->value_es ? 'badge-success' : 'badge-error' }}">ES</span>
+                                        </span>
+                                    </div>
                                 </td>
                                 <td class="text-center">
                                     <div class="flex items-center justify-center gap-1">
@@ -221,7 +233,7 @@
 </div>
 
 {{-- Add Translation Drawer --}}
-<div id="add-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-lg bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="add-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-2xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Add Translation</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('add-translation-drawer')">
@@ -230,36 +242,71 @@
     </div>
     <form id="add-translation-form" class="flex flex-col flex-1 overflow-hidden">
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
-            {{-- Category --}}
-            <div class="form-control">
-                <label class="label" for="add-category"><span class="label-text font-medium">Category <span class="text-error">*</span></span></label>
-                <select id="add-category" name="category" class="select select-bordered" required>
-                    @foreach($categories as $key => $label)
-                        <option value="{{ $key }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+            <div class="grid grid-cols-2 gap-4">
+                {{-- Category --}}
+                <div class="form-control">
+                    <label class="label" for="add-category"><span class="label-text font-medium">Category <span class="text-error">*</span></span></label>
+                    <select id="add-category" name="category" class="select select-bordered" required>
+                        @foreach($categories as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Page Context --}}
+                <div class="form-control">
+                    <label class="label" for="add-page"><span class="label-text font-medium">Page Context</span></label>
+                    <input type="text" id="add-page" name="page_context" class="input input-bordered" placeholder="e.g., sidebar, booking" />
+                </div>
             </div>
 
             {{-- Translation Key --}}
             <div class="form-control">
                 <label class="label" for="add-key"><span class="label-text font-medium">Translation Key <span class="text-error">*</span></span></label>
-                <input type="text" id="add-key" name="translation_key" class="input input-bordered" placeholder="e.g., booking.confirm_button" required />
-                <label class="label"><span class="label-text-alt text-base-content/60">A unique identifier for this translation</span></label>
+                <input type="text" id="add-key" name="translation_key" class="input input-bordered" placeholder="e.g., nav.dashboard, btn.save, field.email" required />
+                <label class="label"><span class="label-text-alt text-base-content/60">Use dot notation for organization (e.g., nav.dashboard, btn.save)</span></label>
             </div>
 
-            {{-- Page Context --}}
-            <div class="form-control">
-                <label class="label" for="add-page"><span class="label-text font-medium">Page Context</span></label>
-                <input type="text" id="add-page" name="page_context" class="input input-bordered" placeholder="e.g., booking, dashboard, checkout" />
-                <label class="label"><span class="label-text-alt text-base-content/60">Optional: Group translations by page</span></label>
-            </div>
+            <div class="divider text-xs text-base-content/50">TRANSLATIONS</div>
 
-            {{-- Value (English) --}}
+            {{-- English (Required) --}}
             <div class="form-control">
                 <label class="label" for="add-value-en">
-                    <span class="label-text font-medium">Value <span class="text-error">*</span></span>
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇺🇸</span> English <span class="text-error">*</span>
+                    </span>
                 </label>
-                <textarea id="add-value-en" name="value_en" class="textarea textarea-bordered" rows="3" required></textarea>
+                <textarea id="add-value-en" name="value_en" class="textarea textarea-bordered" rows="2" placeholder="English translation (required)" required></textarea>
+            </div>
+
+            {{-- French --}}
+            <div class="form-control">
+                <label class="label" for="add-value-fr">
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇫🇷</span> French
+                    </span>
+                </label>
+                <textarea id="add-value-fr" name="value_fr" class="textarea textarea-bordered" rows="2" placeholder="French translation (optional)"></textarea>
+            </div>
+
+            {{-- German --}}
+            <div class="form-control">
+                <label class="label" for="add-value-de">
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇩🇪</span> German
+                    </span>
+                </label>
+                <textarea id="add-value-de" name="value_de" class="textarea textarea-bordered" rows="2" placeholder="German translation (optional)"></textarea>
+            </div>
+
+            {{-- Spanish --}}
+            <div class="form-control">
+                <label class="label" for="add-value-es">
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇪🇸</span> Spanish
+                    </span>
+                </label>
+                <textarea id="add-value-es" name="value_es" class="textarea textarea-bordered" rows="2" placeholder="Spanish translation (optional)"></textarea>
             </div>
         </div>
         <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
@@ -273,7 +320,7 @@
 </div>
 
 {{-- Edit Translation Drawer --}}
-<div id="edit-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-lg bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-2xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Edit Translation</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-translation-drawer')">
@@ -283,14 +330,22 @@
     <form id="edit-translation-form" class="flex flex-col flex-1 overflow-hidden">
         <input type="hidden" id="edit-id" name="id" />
         <div class="flex-1 overflow-y-auto p-4 space-y-4">
-            {{-- Category --}}
-            <div class="form-control">
-                <label class="label" for="edit-category"><span class="label-text font-medium">Category <span class="text-error">*</span></span></label>
-                <select id="edit-category" name="category" class="select select-bordered" required>
-                    @foreach($categories as $key => $label)
-                        <option value="{{ $key }}">{{ $label }}</option>
-                    @endforeach
-                </select>
+            <div class="grid grid-cols-2 gap-4">
+                {{-- Category --}}
+                <div class="form-control">
+                    <label class="label" for="edit-category"><span class="label-text font-medium">Category <span class="text-error">*</span></span></label>
+                    <select id="edit-category" name="category" class="select select-bordered" required>
+                        @foreach($categories as $key => $label)
+                            <option value="{{ $key }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Page Context --}}
+                <div class="form-control">
+                    <label class="label" for="edit-page"><span class="label-text font-medium">Page Context</span></label>
+                    <input type="text" id="edit-page" name="page_context" class="input input-bordered" placeholder="e.g., sidebar, booking" />
+                </div>
             </div>
 
             {{-- Translation Key --}}
@@ -299,18 +354,46 @@
                 <input type="text" id="edit-key" name="translation_key" class="input input-bordered" required />
             </div>
 
-            {{-- Page Context --}}
-            <div class="form-control">
-                <label class="label" for="edit-page"><span class="label-text font-medium">Page Context</span></label>
-                <input type="text" id="edit-page" name="page_context" class="input input-bordered" />
-            </div>
+            <div class="divider text-xs text-base-content/50">TRANSLATIONS</div>
 
-            {{-- Value (English) --}}
+            {{-- English (Required) --}}
             <div class="form-control">
                 <label class="label" for="edit-value-en">
-                    <span class="label-text font-medium">Value <span class="text-error">*</span></span>
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇺🇸</span> English <span class="text-error">*</span>
+                    </span>
                 </label>
-                <textarea id="edit-value-en" name="value_en" class="textarea textarea-bordered" rows="3" required></textarea>
+                <textarea id="edit-value-en" name="value_en" class="textarea textarea-bordered" rows="2" placeholder="English translation (required)" required></textarea>
+            </div>
+
+            {{-- French --}}
+            <div class="form-control">
+                <label class="label" for="edit-value-fr">
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇫🇷</span> French
+                    </span>
+                </label>
+                <textarea id="edit-value-fr" name="value_fr" class="textarea textarea-bordered" rows="2" placeholder="French translation (optional)"></textarea>
+            </div>
+
+            {{-- German --}}
+            <div class="form-control">
+                <label class="label" for="edit-value-de">
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇩🇪</span> German
+                    </span>
+                </label>
+                <textarea id="edit-value-de" name="value_de" class="textarea textarea-bordered" rows="2" placeholder="German translation (optional)"></textarea>
+            </div>
+
+            {{-- Spanish --}}
+            <div class="form-control">
+                <label class="label" for="edit-value-es">
+                    <span class="label-text font-medium flex items-center gap-2">
+                        <span class="text-lg">🇪🇸</span> Spanish
+                    </span>
+                </label>
+                <textarea id="edit-value-es" name="value_es" class="textarea textarea-bordered" rows="2" placeholder="Spanish translation (optional)"></textarea>
             </div>
         </div>
         <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
@@ -372,6 +455,9 @@ document.getElementById('add-translation-form').addEventListener('submit', funct
         translation_key: document.getElementById('add-key').value,
         page_context: document.getElementById('add-page').value || null,
         value_en: document.getElementById('add-value-en').value,
+        value_fr: document.getElementById('add-value-fr').value || null,
+        value_de: document.getElementById('add-value-de').value || null,
+        value_es: document.getElementById('add-value-es').value || null,
     };
 
     fetch('{{ route("backoffice.translations.store") }}', {
@@ -410,6 +496,9 @@ function editTranslation(id) {
     document.getElementById('edit-key').value = translation.translation_key;
     document.getElementById('edit-page').value = translation.page_context || '';
     document.getElementById('edit-value-en').value = translation.value_en || '';
+    document.getElementById('edit-value-fr').value = translation.value_fr || '';
+    document.getElementById('edit-value-de').value = translation.value_de || '';
+    document.getElementById('edit-value-es').value = translation.value_es || '';
 
     openDrawer('edit-translation-drawer');
 }
@@ -427,6 +516,9 @@ document.getElementById('edit-translation-form').addEventListener('submit', func
         translation_key: document.getElementById('edit-key').value,
         page_context: document.getElementById('edit-page').value || null,
         value_en: document.getElementById('edit-value-en').value,
+        value_fr: document.getElementById('edit-value-fr').value || null,
+        value_de: document.getElementById('edit-value-de').value || null,
+        value_es: document.getElementById('edit-value-es').value || null,
     };
 
     fetch('{{ url("backoffice/translations") }}/' + id, {

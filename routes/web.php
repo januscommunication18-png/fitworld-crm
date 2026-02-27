@@ -31,6 +31,8 @@ use App\Http\Controllers\Host\MembershipPlanController;
 use App\Http\Controllers\Host\RentalItemController;
 use App\Http\Controllers\Host\RentalFulfillmentController;
 use App\Http\Controllers\Host\RentalInvoiceController;
+use App\Http\Controllers\Host\SpaceRentalConfigController;
+use App\Http\Controllers\Host\SpaceRentalController;
 use App\Http\Controllers\Host\QuestionnaireController;
 use App\Http\Controllers\Host\WalkInController;
 use App\Http\Controllers\Host\ScheduledMembershipController;
@@ -285,6 +287,39 @@ Route::middleware('auth')->group(function () {
     Route::resource('rentals', RentalItemController::class);
     Route::patch('/rentals/{rental}/toggle-status', [RentalItemController::class, 'toggleStatus'])->name('rentals.toggle-status');
     Route::post('/rentals/{rental}/adjust-inventory', [RentalItemController::class, 'adjustInventory'])->name('rentals.adjust-inventory');
+
+    // Space Rental Configuration
+    Route::prefix('space-rentals/config')->name('space-rentals.config.')->group(function () {
+        Route::get('/', [SpaceRentalConfigController::class, 'index'])->name('index');
+        Route::get('/create', [SpaceRentalConfigController::class, 'create'])->name('create');
+        Route::post('/', [SpaceRentalConfigController::class, 'store'])->name('store');
+        Route::get('/{config}', [SpaceRentalConfigController::class, 'show'])->name('show');
+        Route::get('/{config}/edit', [SpaceRentalConfigController::class, 'edit'])->name('edit');
+        Route::put('/{config}', [SpaceRentalConfigController::class, 'update'])->name('update');
+        Route::delete('/{config}', [SpaceRentalConfigController::class, 'destroy'])->name('destroy');
+        Route::patch('/{config}/toggle-status', [SpaceRentalConfigController::class, 'toggleStatus'])->name('toggle-status');
+    });
+
+    // Space Rentals (Bookings)
+    Route::prefix('space-rentals')->name('space-rentals.')->group(function () {
+        Route::get('/', [SpaceRentalController::class, 'index'])->name('index');
+        Route::get('/create', [SpaceRentalController::class, 'create'])->name('create');
+        Route::post('/', [SpaceRentalController::class, 'store'])->name('store');
+        Route::get('/{rental}', [SpaceRentalController::class, 'show'])->name('show');
+        Route::get('/{rental}/edit', [SpaceRentalController::class, 'edit'])->name('edit');
+        Route::put('/{rental}', [SpaceRentalController::class, 'update'])->name('update');
+        Route::post('/{rental}/confirm', [SpaceRentalController::class, 'confirm'])->name('confirm');
+        Route::post('/{rental}/start', [SpaceRentalController::class, 'start'])->name('start');
+        Route::post('/{rental}/complete', [SpaceRentalController::class, 'complete'])->name('complete');
+        Route::post('/{rental}/cancel', [SpaceRentalController::class, 'cancel'])->name('cancel');
+        Route::post('/{rental}/sign-waiver', [SpaceRentalController::class, 'signWaiver'])->name('sign-waiver');
+        Route::post('/{rental}/record-deposit', [SpaceRentalController::class, 'recordDeposit'])->name('record-deposit');
+        Route::post('/{rental}/refund-deposit', [SpaceRentalController::class, 'refundDeposit'])->name('refund-deposit');
+        // AJAX endpoints
+        Route::get('/config/{config}/available-times', [SpaceRentalController::class, 'getAvailableTimes'])->name('available-times');
+        Route::post('/calculate-price', [SpaceRentalController::class, 'calculatePrice'])->name('calculate-price');
+        Route::post('/check-conflicts', [SpaceRentalController::class, 'checkConflicts'])->name('check-conflicts');
+    });
 
     // Questionnaires
     Route::resource('questionnaires', QuestionnaireController::class)->names('questionnaires');

@@ -55,7 +55,7 @@
                     </button>
                     <div id="language-menu"
                          class="hidden absolute right-0 mt-2 w-48 bg-base-100 rounded-lg shadow-lg border border-base-200 py-1 z-50">
-                        <div class="px-3 py-2 text-xs text-base-content/60 border-b border-base-200">Select Language</div>
+                        <div class="px-3 py-2 text-xs text-base-content/60 border-b border-base-200">{{ $trans['subdomain.navbar.select_language'] ?? 'Select Language' }}</div>
                         @foreach($hostLanguages as $lang)
                             <button type="button"
                                     class="language-option w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors {{ $lang === $selectedLanguage ? 'bg-primary/10' : '' }}"
@@ -90,7 +90,7 @@
                     </button>
                     <div id="currency-menu"
                          class="hidden absolute right-0 mt-2 w-48 bg-base-100 rounded-lg shadow-lg border border-base-200 py-1 z-50">
-                        <div class="px-3 py-2 text-xs text-base-content/60 border-b border-base-200">Select Currency</div>
+                        <div class="px-3 py-2 text-xs text-base-content/60 border-b border-base-200">{{ $trans['subdomain.navbar.select_currency'] ?? 'Select Currency' }}</div>
                         @foreach($hostCurrencies as $currency)
                             <button type="button"
                                     class="currency-option w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-base-200 transition-colors {{ $currency === $selectedCurrency ? 'bg-primary/10' : '' }}"
@@ -113,7 +113,7 @@
                 <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain]) }}"
                    class="btn btn-primary btn-sm sm:btn-md">
                     <span class="icon-[tabler--calendar-plus] size-5 hidden sm:inline"></span>
-                    Request Booking
+                    {{ $trans['subdomain.navbar.request_booking'] ?? 'Request Booking' }}
                 </a>
 
                 {{-- Member Login --}}
@@ -123,23 +123,23 @@
                         <a href="{{ route('member.portal', ['subdomain' => $host->subdomain]) }}"
                            class="btn btn-ghost btn-sm sm:btn-md">
                             <span class="icon-[tabler--user] size-5"></span>
-                            <span class="hidden sm:inline">My Portal</span>
+                            <span class="hidden sm:inline">{{ $trans['subdomain.navbar.my_portal'] ?? 'My Portal' }}</span>
                         </a>
                     @else
                         <a href="{{ route('member.login', ['subdomain' => $host->subdomain]) }}"
                            class="btn btn-ghost btn-sm sm:btn-md">
                             <span class="icon-[tabler--login] size-5"></span>
-                            <span class="hidden sm:inline">Member Login</span>
+                            <span class="hidden sm:inline">{{ $trans['subdomain.navbar.member_login'] ?? 'Member Login' }}</span>
                         </a>
                     @endif
                 @else
                     <div class="relative group">
                         <button class="btn btn-ghost btn-sm sm:btn-md" disabled>
                             <span class="icon-[tabler--login] size-5"></span>
-                            <span class="hidden sm:inline">Member Login</span>
+                            <span class="hidden sm:inline">{{ $trans['subdomain.navbar.member_login'] ?? 'Member Login' }}</span>
                         </button>
                         <div class="absolute top-full right-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            <span class="badge badge-sm badge-neutral whitespace-nowrap">Coming Soon</span>
+                            <span class="badge badge-sm badge-neutral whitespace-nowrap">{{ $trans['common.coming_soon'] ?? 'Coming Soon' }}</span>
                         </div>
                     </div>
                 @endif

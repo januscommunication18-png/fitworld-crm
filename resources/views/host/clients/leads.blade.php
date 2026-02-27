@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Leads')
+@section('title', $trans['clients.leads'] ?? 'Leads')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('clients.index') }}">Clients</a></li>
+        <li><a href="{{ route('clients.index') }}">{{ $trans['nav.clients'] ?? 'Clients' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--target] me-1 size-4"></span> Leads</li>
+        <li aria-current="page"><span class="icon-[tabler--target] me-1 size-4"></span> {{ $trans['clients.leads'] ?? 'Leads' }}</li>
     </ol>
 @endsection
 
@@ -16,8 +16,8 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div>
-        <h1 class="text-2xl font-bold">Leads</h1>
-        <p class="text-base-content/60 mt-1">Prospective clients captured from various sources.</p>
+        <h1 class="text-2xl font-bold">{{ $trans['clients.leads'] ?? 'Leads' }}</h1>
+        <p class="text-base-content/60 mt-1">{{ $trans['clients.leads_description'] ?? 'Prospective clients captured from various sources.' }}</p>
     </div>
 
     {{-- Stats Cards --}}
@@ -30,7 +30,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $clients->total() }}</p>
-                        <p class="text-xs text-base-content/60">Total Leads</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.total_leads'] ?? 'Total Leads' }}</p>
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@
                             $thisWeekLeads = \App\Models\Client::forHost($hostId)->active()->leads()->where('created_at', '>=', now()->startOfWeek())->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $thisWeekLeads }}</p>
-                        <p class="text-xs text-base-content/60">This Week</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.this_week'] ?? 'This Week' }}</p>
                     </div>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                             $convertedThisMonth = \App\Models\Client::forHost($hostId)->whereIn('status', ['client', 'member'])->where('converted_at', '>=', now()->startOfMonth())->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $convertedThisMonth }}</p>
-                        <p class="text-xs text-base-content/60">Converted This Month</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.converted_this_month'] ?? 'Converted This Month' }}</p>
                     </div>
                 </div>
             </div>
@@ -79,7 +79,7 @@
                             $webLeads = \App\Models\Client::forHost($hostId)->active()->leads()->where('lead_source', 'website')->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $webLeads }}</p>
-                        <p class="text-xs text-base-content/60">From Website</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.from_website'] ?? 'From Website' }}</p>
                     </div>
                 </div>
             </div>
@@ -91,19 +91,19 @@
         <div class="tabs tabs-bordered">
             <a href="{{ route('clients.index') }}" class="tab">
                 <span class="icon-[tabler--users] size-4 mr-2"></span>
-                All Clients
+                {{ $trans['clients.all_clients'] ?? 'All Clients' }}
             </a>
             <a href="{{ route('clients.leads') }}" class="tab tab-active">
                 <span class="icon-[tabler--target] size-4 mr-2"></span>
-                Leads
+                {{ $trans['clients.leads'] ?? 'Leads' }}
             </a>
             <a href="{{ route('clients.members') }}" class="tab">
                 <span class="icon-[tabler--user-check] size-4 mr-2"></span>
-                Members
+                {{ $trans['clients.members'] ?? 'Members' }}
             </a>
             <a href="{{ route('clients.at-risk') }}" class="tab">
                 <span class="icon-[tabler--alert-triangle] size-4 mr-2"></span>
-                At-Risk
+                {{ $trans['clients.at_risk'] ?? 'At-Risk' }}
             </a>
         </div>
 
@@ -111,18 +111,18 @@
             {{-- View Toggle --}}
             <div class="btn-group">
                 <a href="{{ route('clients.leads', array_merge(request()->query(), ['view' => 'list'])) }}"
-                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="List View">
+                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.list_view'] ?? 'List View' }}">
                     <span class="icon-[tabler--list] size-4"></span>
                 </a>
                 <a href="{{ route('clients.leads', array_merge(request()->query(), ['view' => 'grid'])) }}"
-                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="Grid View">
+                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.grid_view'] ?? 'Grid View' }}">
                     <span class="icon-[tabler--layout-grid] size-4"></span>
                 </a>
             </div>
 
             <a href="{{ route('clients.create') }}?status=lead" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Lead
+                {{ $trans['clients.add_lead'] ?? 'Add Lead' }}
             </a>
         </div>
     </div>
@@ -133,18 +133,18 @@
             <form action="{{ route('clients.leads') }}" method="GET" class="flex flex-wrap gap-4 items-end">
                 <input type="hidden" name="view" value="{{ request('view', 'list') }}">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="search">Search</label>
+                    <label class="label-text" for="search">{{ $trans['btn.search'] ?? 'Search' }}</label>
                     <div class="relative">
                         <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"></span>
                         <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="Name, email, or phone..."
+                               placeholder="{{ $trans['clients.search_placeholder'] ?? 'Name, email, or phone...' }}"
                                class="input w-full pl-10">
                     </div>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="source">Source</label>
+                    <label class="label-text" for="source">{{ $trans['field.source'] ?? 'Source' }}</label>
                     <select id="source" name="source" class="select w-full">
-                        <option value="">All Sources</option>
+                        <option value="">{{ $trans['common.all_sources'] ?? 'All Sources' }}</option>
                         @foreach($sources as $key => $label)
                             <option value="{{ $key }}" {{ ($filters['source'] ?? '') === $key ? 'selected' : '' }}>
                                 {{ $label }}
@@ -153,9 +153,9 @@
                     </select>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="tag">Tag</label>
+                    <label class="label-text" for="tag">{{ $trans['field.tag'] ?? 'Tag' }}</label>
                     <select id="tag" name="tag" class="select w-full">
-                        <option value="">All Tags</option>
+                        <option value="">{{ $trans['common.all_tags'] ?? 'All Tags' }}</option>
                         @foreach($tags ?? [] as $tag)
                             <option value="{{ $tag->id }}" {{ ($filters['tag'] ?? '') == $tag->id ? 'selected' : '' }}>
                                 {{ $tag->name }}
@@ -165,12 +165,12 @@
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--filter] size-5"></span>
-                    Filter
+                    {{ $trans['btn.filter'] ?? 'Filter' }}
                 </button>
                 @if(!empty(array_filter($filters ?? [])))
                     <a href="{{ route('clients.leads') }}" class="btn btn-ghost">
                         <span class="icon-[tabler--x] size-4"></span>
-                        Clear
+                        {{ $trans['btn.clear'] ?? 'Clear' }}
                     </a>
                 @endif
             </form>
@@ -182,21 +182,21 @@
     <div class="card bg-base-100">
         <div class="card-body text-center py-12">
             <span class="icon-[tabler--target] size-16 text-base-content/20 mx-auto mb-4"></span>
-            <h3 class="text-lg font-semibold mb-2">No Leads Found</h3>
+            <h3 class="text-lg font-semibold mb-2">{{ $trans['clients.no_leads'] ?? 'No Leads Found' }}</h3>
             <p class="text-base-content/60 mb-4">
                 @if(!empty(array_filter($filters ?? [])))
-                    No leads match your current filters. Try adjusting your search.
+                    {{ $trans['clients.no_leads_filtered'] ?? 'No leads match your current filters. Try adjusting your search.' }}
                 @else
-                    Leads will appear here when captured from your website or marketing campaigns.
+                    {{ $trans['clients.no_leads_desc'] ?? 'Leads will appear here when captured from your website or marketing campaigns.' }}
                 @endif
             </p>
             @if(empty(array_filter($filters ?? [])))
             <a href="{{ route('clients.create') }}?status=lead" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Your First Lead
+                {{ $trans['clients.add_first_lead'] ?? 'Add Your First Lead' }}
             </a>
             @else
-            <a href="{{ route('clients.leads') }}" class="btn btn-ghost">Clear Filters</a>
+            <a href="{{ route('clients.leads') }}" class="btn btn-ghost">{{ $trans['btn.clear_filters'] ?? 'Clear Filters' }}</a>
             @endif
         </div>
     </div>
@@ -221,7 +221,7 @@
                                     </a>
                                     <p class="text-sm text-base-content/60 truncate">{{ $client->email }}</p>
                                 </div>
-                                <span class="badge badge-soft badge-warning badge-sm shrink-0">Lead</span>
+                                <span class="badge badge-soft badge-warning badge-sm shrink-0">{{ $trans['clients.lead'] ?? 'Lead' }}</span>
                             </div>
 
                             @if($client->phone)
@@ -250,22 +250,22 @@
 
                     <div class="flex items-center justify-between text-sm">
                         <div class="flex items-center gap-4 text-base-content/60">
-                            <span title="Source">
+                            <span title="{{ $trans['field.source'] ?? 'Source' }}">
                                 <span class="icon-[tabler--source-code] size-4 inline"></span>
                                 {{ $sources[$client->lead_source] ?? $client->lead_source }}
                             </span>
-                            <span title="Captured">
+                            <span title="{{ $trans['clients.captured'] ?? 'Captured' }}">
                                 <span class="icon-[tabler--calendar] size-4 inline"></span>
                                 {{ $client->created_at->diffForHumans() }}
                             </span>
                         </div>
                         <div class="flex gap-1">
-                            <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                            <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                 <span class="icon-[tabler--eye] size-4"></span>
                             </a>
                             <form method="POST" action="{{ route('clients.convert-to-client', $client) }}">
                                 @csrf
-                                <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="Convert to Client">
+                                <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="{{ $trans['clients.convert_to_client'] ?? 'Convert to Client' }}">
                                     <span class="icon-[tabler--user-check] size-4"></span>
                                 </button>
                             </form>
@@ -283,11 +283,11 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Lead</th>
-                                <th>Source</th>
-                                <th>Tags</th>
-                                <th>Captured</th>
-                                <th class="w-32">Actions</th>
+                                <th>{{ $trans['clients.lead'] ?? 'Lead' }}</th>
+                                <th>{{ $trans['field.source'] ?? 'Source' }}</th>
+                                <th>{{ $trans['field.tags'] ?? 'Tags' }}</th>
+                                <th>{{ $trans['clients.captured'] ?? 'Captured' }}</th>
+                                <th class="w-32">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -331,15 +331,15 @@
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
-                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
                                         <form method="POST" action="{{ route('clients.convert-to-client', $client) }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="Convert to Client">
+                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="{{ $trans['clients.convert_to_client'] ?? 'Convert to Client' }}">
                                                 <span class="icon-[tabler--user-check] size-4"></span>
                                             </button>
                                         </form>

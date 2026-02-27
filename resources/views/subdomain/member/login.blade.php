@@ -1,9 +1,3 @@
-@php
-    $selectedLang = session("language_{$host->id}", $host->default_language_booking ?? 'en');
-    $t = \App\Services\TranslationService::make($host, $selectedLang);
-    $trans = $t->all();
-@endphp
-
 @extends('layouts.subdomain')
 
 @section('title', ($trans['subdomain.auth.login'] ?? 'Member Login') . ' — ' . $host->studio_name)

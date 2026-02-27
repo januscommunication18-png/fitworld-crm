@@ -1,16 +1,16 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Edit ' . $instructor->name . ' — Instructor')
+@section('title', ($trans['btn.edit'] ?? 'Edit') . ' ' . $instructor->name . ' — ' . ($trans['nav.instructor'] ?? 'Instructor'))
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('instructors.index') }}">Instructors</a></li>
+        <li><a href="{{ route('instructors.index') }}">{{ $trans['nav.instructors'] ?? 'Instructors' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li><a href="{{ route('instructors.show', $instructor) }}">{{ $instructor->name }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Edit</li>
+        <li aria-current="page">{{ $trans['btn.edit'] ?? 'Edit' }}</li>
     </ol>
 @endsection
 
@@ -22,8 +22,8 @@
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
-            <h1 class="text-2xl font-bold">Edit Instructor</h1>
-            <p class="text-base-content/60">Update {{ $instructor->name }}'s profile.</p>
+            <h1 class="text-2xl font-bold">{{ $trans['instructors.edit_instructor'] ?? 'Edit Instructor' }}</h1>
+            <p class="text-base-content/60">{{ $trans['instructors.update_profile'] ?? 'Update' }} {{ $instructor->name }}{{ $trans['instructors.profile_suffix'] ?? "'s profile." }}</p>
         </div>
     </div>
 
@@ -32,8 +32,8 @@
     <div class="alert alert-soft alert-warning">
         <span class="icon-[tabler--alert-triangle] size-5"></span>
         <div>
-            <p class="font-medium">Instructor profile is incomplete</p>
-            <p class="text-sm opacity-90">This instructor cannot be assigned to classes until the following fields are completed: <strong>{{ implode(', ', $missingFields) }}</strong></p>
+            <p class="font-medium">{{ $trans['instructors.profile_incomplete'] ?? 'Instructor profile is incomplete' }}</p>
+            <p class="text-sm opacity-90">{{ $trans['instructors.cannot_assign_until'] ?? 'This instructor cannot be assigned to classes until the following fields are completed:' }} <strong>{{ implode(', ', $missingFields) }}</strong></p>
         </div>
     </div>
     @endif

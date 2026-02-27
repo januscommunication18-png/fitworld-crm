@@ -51,7 +51,27 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {{-- Main Tabs --}}
+    <div class="tabs tabs-bordered" role="tablist">
+        <button class="tab {{ $tab === 'overview' ? 'tab-active' : '' }}" data-tab="overview" role="tab">
+            <span class="icon-[tabler--info-circle] size-4 mr-2"></span>Overview
+        </button>
+        <button class="tab {{ $tab === 'schedule' ? 'tab-active' : '' }}" data-tab="schedule" role="tab">
+            <span class="icon-[tabler--calendar] size-4 mr-2"></span>Schedule
+            @php
+                $totalUpcoming = $sessionsByLocation->flatten()->count();
+            @endphp
+            @if($totalUpcoming > 0)
+                <span class="badge badge-sm badge-primary ml-1">{{ $totalUpcoming }}</span>
+            @endif
+        </button>
+    </div>
+
+    {{-- Tab Contents --}}
+    <div class="tab-contents">
+        {{-- Overview Tab --}}
+        <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Main Content --}}
         <div class="lg:col-span-2 space-y-6">
             {{-- Pricing & Details --}}
@@ -294,6 +314,215 @@
                 </div>
             </div>
         </div>
+            </div>
+        </div>
+
+        {{-- Schedule Tab --}}
+        <div class="tab-content {{ $tab === 'schedule' ? 'active' : 'hidden' }}" data-content="schedule">
+            <div class="alert alert-soft alert-info mb-6">
+                <span class="icon-[tabler--info-circle] size-5"></span>
+                <div>
+                    <p class="font-medium">Linked Class Sessions</p>
+                    <p class="text-sm">Showing sessions specifically linked to this membership plan for auto-enrollment.</p>
+                </div>
+            </div>
+
+            @if($locations->isEmpty())
+                <div class="card bg-base-100">
+                    <div class="card-body text-center py-12">
+                        <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
+                        <h3 class="text-lg font-semibold mb-2">No Upcoming Sessions</h3>
+                        <p class="text-base-content/60 mb-4">There are no upcoming sessions for the classes covered by this membership plan.</p>
+                    </div>
+                </div>
+            @else
+                {{-- Location Filter Dropdown --}}
+                <div class="flex justify-end mb-6">
+                    <div class="form-control w-64">
+                        <select id="location-filter" class="select select-bordered select-sm">
+                            <option value="all" selected>
+                                All Locations ({{ $sessionsByLocation->flatten()->count() }})
+                            </option>
+                            @foreach($locations as $location)
+                                <option value="{{ $location->id }}">
+                                    {{ $location->name }}
+                                    @if(isset($sessionsByLocation[$location->id]))
+                                        ({{ $sessionsByLocation[$location->id]->count() }})
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                {{-- All Locations Content --}}
+                <div class="location-content" data-location-content="all">
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--calendar-event] size-5"></span>
+                                    All Upcoming Sessions
+                                </h2>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date & Time</th>
+                                            <th>Class</th>
+                                            <th>Location</th>
+                                            <th>Instructor</th>
+                                            <th>Status</th>
+                                            <th class="text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($sessionsByLocation->flatten()->sortBy('start_time') as $session)
+                                            <tr>
+                                                <td>
+                                                    <div class="font-medium">{{ $session->start_time->format('D, M d, Y') }}</div>
+                                                    <div class="text-sm text-base-content/60">{{ $session->start_time->format('g:i A') }} - {{ $session->end_time->format('g:i A') }}</div>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ route('class-plans.show', $session->classPlan) }}" class="font-medium hover:text-primary">
+                                                        {{ $session->classPlan?->name ?? 'Unknown' }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="icon-[tabler--map-pin] size-4 text-base-content/60"></span>
+                                                        {{ $session->location?->name ?? 'No location' }}
+                                                    </div>
+                                                </td>
+                                                <td>{{ $session->primaryInstructor?->name ?? '-' }}</td>
+                                                <td>
+                                                    <span class="badge badge-soft badge-sm {{ $session->getStatusBadgeClass() }}">{{ ucfirst($session->status) }}</span>
+                                                </td>
+                                                <td class="text-right">
+                                                    <a href="{{ route('class-sessions.show', $session) }}" class="btn btn-ghost btn-xs">
+                                                        <span class="icon-[tabler--eye] size-4"></span>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Individual Location Contents --}}
+                @foreach($locations as $location)
+                    <div class="location-content hidden" data-location-content="{{ $location->id }}">
+                        <div class="card bg-base-100">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h2 class="card-title text-lg">
+                                            <span class="icon-[tabler--map-pin] size-5"></span>
+                                            {{ $location->name }}
+                                        </h2>
+                                        @if($location->full_address)
+                                            <p class="text-sm text-base-content/60 mt-1">{{ $location->full_address }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if(isset($sessionsByLocation[$location->id]) && $sessionsByLocation[$location->id]->count() > 0)
+                                    <div class="overflow-x-auto">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date & Time</th>
+                                                    <th>Class</th>
+                                                    <th>Room</th>
+                                                    <th>Instructor</th>
+                                                    <th>Status</th>
+                                                    <th class="text-right">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($sessionsByLocation[$location->id] as $session)
+                                                    <tr>
+                                                        <td>
+                                                            <div class="font-medium">{{ $session->start_time->format('D, M d, Y') }}</div>
+                                                            <div class="text-sm text-base-content/60">{{ $session->start_time->format('g:i A') }} - {{ $session->end_time->format('g:i A') }}</div>
+                                                        </td>
+                                                        <td>
+                                                            <a href="{{ route('class-plans.show', $session->classPlan) }}" class="font-medium hover:text-primary">
+                                                                {{ $session->classPlan?->name ?? 'Unknown' }}
+                                                            </a>
+                                                        </td>
+                                                        <td>{{ $session->room?->name ?? '-' }}</td>
+                                                        <td>{{ $session->primaryInstructor?->name ?? '-' }}</td>
+                                                        <td>
+                                                            <span class="badge badge-soft badge-sm {{ $session->getStatusBadgeClass() }}">{{ ucfirst($session->status) }}</span>
+                                                        </td>
+                                                        <td class="text-right">
+                                                            <a href="{{ route('class-sessions.show', $session) }}" class="btn btn-ghost btn-xs">
+                                                                <span class="icon-[tabler--eye] size-4"></span>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center py-8">
+                                        <span class="icon-[tabler--calendar-off] size-10 text-base-content/20"></span>
+                                        <p class="text-base-content/60 mt-2">No upcoming sessions at this location.</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            @endif
+        </div>
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Main tab switching
+    const mainTabs = document.querySelectorAll('.tabs.tabs-bordered .tab');
+    const mainContents = document.querySelectorAll('.tab-content');
+
+    mainTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+            const url = new URL(window.location);
+            url.searchParams.set('tab', targetTab);
+            window.history.pushState({}, '', url);
+
+            mainTabs.forEach(t => t.classList.remove('tab-active'));
+            this.classList.add('tab-active');
+
+            mainContents.forEach(content => {
+                content.classList.toggle('hidden', content.dataset.content !== targetTab);
+                content.classList.toggle('active', content.dataset.content === targetTab);
+            });
+        });
+    });
+
+    // Location dropdown filter
+    const locationFilter = document.getElementById('location-filter');
+    const locationContents = document.querySelectorAll('.location-content');
+
+    if (locationFilter) {
+        locationFilter.addEventListener('change', function() {
+            const targetLocation = this.value;
+
+            locationContents.forEach(content => {
+                content.classList.toggle('hidden', content.dataset.locationContent !== targetLocation);
+            });
+        });
+    }
+});
+</script>
+@endpush

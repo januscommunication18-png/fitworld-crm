@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\ServiceSlot;
+use App\Models\SpaceRental;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -45,6 +46,13 @@ class ScheduleController extends Controller
             ->orderBy('start_time')
             ->get();
 
+        $spaceRentals = SpaceRental::where('host_id', $host->id)
+            ->with(['config.location', 'config.room'])
+            ->whereBetween('start_time', [$startDate, $endDate])
+            ->whereNotIn('status', [SpaceRental::STATUS_CANCELLED])
+            ->orderBy('start_time')
+            ->get();
+
         return view('host.schedule.calendar', [
             'locations' => $host->locations()->orderBy('name')->get(),
             'instructors' => $host->instructors()->active()->orderBy('name')->get(),
@@ -52,6 +60,7 @@ class ScheduleController extends Controller
             'servicePlans' => $host->servicePlans()->where('is_active', true)->orderBy('name')->get(),
             'classSessions' => $classSessions,
             'serviceSlots' => $serviceSlots,
+            'spaceRentals' => $spaceRentals,
             'timezone' => $host->timezone ?? config('app.timezone', 'America/New_York'),
         ]);
     }
@@ -93,10 +102,23 @@ class ScheduleController extends Controller
             $serviceSlotsQuery->where('status', $request->status);
         }
 
+        // Space rentals query
+        $spaceRentalsQuery = SpaceRental::where('host_id', $host->id)
+            ->with(['config.location', 'config.room'])
+            ->whereBetween('start_time', [$startDate->startOfDay(), $endDate->endOfDay()])
+            ->whereNotIn('status', [SpaceRental::STATUS_CANCELLED]);
+
+        if ($request->filled('location_id')) {
+            $spaceRentalsQuery->whereHas('config', function ($q) use ($request) {
+                $q->where('location_id', $request->location_id);
+            });
+        }
+
         // Type filter
         $type = $request->input('type', 'all');
         $classSessions = collect();
         $serviceSlots = collect();
+        $spaceRentals = collect();
 
         if ($type === 'all' || $type === 'class') {
             $classSessions = $classSessionsQuery->orderBy('start_time')->get();
@@ -104,6 +126,10 @@ class ScheduleController extends Controller
 
         if ($type === 'all' || $type === 'service') {
             $serviceSlots = $serviceSlotsQuery->orderBy('start_time')->get();
+        }
+
+        if ($type === 'all' || $type === 'space_rental') {
+            $spaceRentals = $spaceRentalsQuery->orderBy('start_time')->get();
         }
 
         // Combine and group by date
@@ -133,6 +159,18 @@ class ScheduleController extends Controller
             ]);
         }
 
+        foreach ($spaceRentals as $rental) {
+            $dateKey = $rental->start_time->format('Y-m-d');
+            if (!$scheduleByDate->has($dateKey)) {
+                $scheduleByDate[$dateKey] = collect();
+            }
+            $scheduleByDate[$dateKey]->push([
+                'type' => 'space_rental',
+                'item' => $rental,
+                'start_time' => $rental->start_time,
+            ]);
+        }
+
         // Sort by date and time
         $scheduleByDate = $scheduleByDate->sortKeys()->map(function ($items) {
             return $items->sortBy('start_time')->values();
@@ -142,12 +180,14 @@ class ScheduleController extends Controller
             'scheduleByDate' => $scheduleByDate,
             'classSessions' => $classSessions,
             'serviceSlots' => $serviceSlots,
+            'spaceRentals' => $spaceRentals,
             'startDate' => $startDate,
             'endDate' => $endDate,
             'locations' => $host->locations()->orderBy('name')->get(),
             'instructors' => $host->instructors()->active()->orderBy('name')->get(),
             'classStatuses' => ClassSession::getStatuses(),
             'serviceStatuses' => ServiceSlot::getStatuses(),
+            'rentalStatuses' => SpaceRental::getStatuses(),
             'filters' => [
                 'location_id' => $request->location_id,
                 'instructor_id' => $request->instructor_id,
@@ -276,6 +316,52 @@ class ScheduleController extends Controller
                         'location' => $slot->location?->name ?? 'TBD',
                         'status' => $slot->status,
                         'isBooked' => $slot->status === ServiceSlot::STATUS_BOOKED,
+                    ],
+                ];
+            }
+        }
+
+        // Get space rentals
+        if ($type === 'all' || $type === 'space_rental') {
+            $spaceRentalsQuery = SpaceRental::where('host_id', $host->id)
+                ->with(['config.location', 'config.room'])
+                ->whereBetween('start_time', [$start, $end])
+                ->whereNotIn('status', [SpaceRental::STATUS_CANCELLED]);
+
+            if ($request->filled('location_id')) {
+                $spaceRentalsQuery->whereHas('config', function ($q) use ($request) {
+                    $q->where('location_id', $request->location_id);
+                });
+            }
+
+            foreach ($spaceRentalsQuery->get() as $rental) {
+                // Determine color based on status
+                $bgColor = match ($rental->status) {
+                    SpaceRental::STATUS_DRAFT => '#f59e0b', // Yellow for draft
+                    SpaceRental::STATUS_PENDING => '#f97316', // Orange for pending
+                    SpaceRental::STATUS_CONFIRMED => '#a855f7', // Purple for confirmed
+                    SpaceRental::STATUS_IN_PROGRESS => '#8b5cf6', // Violet for in progress
+                    SpaceRental::STATUS_COMPLETED => '#6b7280', // Gray for completed
+                    default => '#a855f7',
+                };
+
+                $events[] = [
+                    'id' => 'space_rental_' . $rental->id,
+                    'title' => '🏢 ' . ($rental->config?->name ?? 'Space Rental'),
+                    'start' => $rental->start_time->format('Y-m-d\TH:i:s'),
+                    'end' => $rental->end_time->format('Y-m-d\TH:i:s'),
+                    'backgroundColor' => $bgColor,
+                    'borderColor' => $bgColor,
+                    'extendedProps' => [
+                        'type' => 'space_rental',
+                        'client' => $rental->client_name,
+                        'location' => $rental->config?->location?->name ?? 'TBD',
+                        'space' => $rental->config?->name ?? 'TBD',
+                        'purpose' => $rental->formatted_purpose,
+                        'status' => $rental->status,
+                        'total' => $rental->formatted_total,
+                        'waiverPending' => $rental->isWaiverPending(),
+                        'depositPending' => $rental->isDepositPending(),
                     ],
                 ];
             }

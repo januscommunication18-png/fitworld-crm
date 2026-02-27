@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Help Desk')
+@section('title', $trans['nav.helpdesk'] ?? 'Help Desk')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--help] me-1 size-4"></span> Help Desk</li>
+        <li aria-current="page"><span class="icon-[tabler--help] me-1 size-4"></span> {{ $trans['nav.helpdesk'] ?? 'Help Desk' }}</li>
     </ol>
 @endsection
 
@@ -15,17 +15,17 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold">Help Desk</h1>
-            <p class="text-base-content/60 mt-1">Manage service requests, inquiries, and customer tickets.</p>
+            <h1 class="text-2xl font-bold">{{ $trans['nav.helpdesk'] ?? 'Help Desk' }}</h1>
+            <p class="text-base-content/60 mt-1">{{ $trans['helpdesk.description'] ?? 'Manage service requests, inquiries, and customer tickets.' }}</p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('helpdesk.tags') }}" class="btn btn-ghost btn-sm">
                 <span class="icon-[tabler--tags] size-4"></span>
-                Manage Tags
+                {{ $trans['helpdesk.manage_tags'] ?? 'Manage Tags' }}
             </a>
             <a href="{{ route('helpdesk.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                New Ticket
+                {{ $trans['helpdesk.new_ticket'] ?? 'New Ticket' }}
             </a>
         </div>
     </div>
@@ -40,7 +40,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $counts['all'] }}</p>
-                        <p class="text-xs text-base-content/60">All Tickets</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['helpdesk.all_tickets'] ?? 'All Tickets' }}</p>
                     </div>
                 </div>
             </div>
@@ -53,7 +53,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $counts['open'] }}</p>
-                        <p class="text-xs text-base-content/60">Open</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['helpdesk.open'] ?? 'Open' }}</p>
                     </div>
                 </div>
             </div>
@@ -66,7 +66,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $counts['in_progress'] }}</p>
-                        <p class="text-xs text-base-content/60">In Progress</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['helpdesk.in_progress'] ?? 'In Progress' }}</p>
                     </div>
                 </div>
             </div>
@@ -79,7 +79,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $counts['customer_reply'] }}</p>
-                        <p class="text-xs text-base-content/60">Customer Reply</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['helpdesk.customer_reply'] ?? 'Customer Reply' }}</p>
                     </div>
                 </div>
             </div>
@@ -92,7 +92,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $counts['resolved'] }}</p>
-                        <p class="text-xs text-base-content/60">Resolved</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['helpdesk.resolved'] ?? 'Resolved' }}</p>
                     </div>
                 </div>
             </div>
@@ -104,18 +104,18 @@
         <div class="card-body">
             <form action="{{ route('helpdesk.index') }}" method="GET" class="flex flex-wrap gap-4 items-end">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="search">Search</label>
+                    <label class="label-text" for="search">{{ $trans['btn.search'] ?? 'Search' }}</label>
                     <div class="relative">
                         <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"></span>
                         <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="Name, email, phone, or subject..."
+                               placeholder="{{ $trans['helpdesk.search_placeholder'] ?? 'Name, email, phone, or subject...' }}"
                                class="input w-full pl-10">
                     </div>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="status">Status</label>
+                    <label class="label-text" for="status">{{ $trans['common.status'] ?? 'Status' }}</label>
                     <select id="status" name="status" class="select w-full">
-                        <option value="">All Statuses</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['common.statuses'] ?? 'Statuses' }}</option>
                         @foreach($statuses as $key => $label)
                             <option value="{{ $key }}" {{ ($filters['status'] ?? '') === $key ? 'selected' : '' }}>
                                 {{ $label }}
@@ -124,9 +124,9 @@
                     </select>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="source">Source</label>
+                    <label class="label-text" for="source">{{ $trans['helpdesk.source'] ?? 'Source' }}</label>
                     <select id="source" name="source" class="select w-full">
-                        <option value="">All Sources</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }} {{ $trans['helpdesk.sources'] ?? 'Sources' }}</option>
                         @foreach($sources as $key => $label)
                             <option value="{{ $key }}" {{ ($filters['source'] ?? '') === $key ? 'selected' : '' }}>
                                 {{ $label }}
@@ -135,10 +135,10 @@
                     </select>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="assigned">Assigned</label>
+                    <label class="label-text" for="assigned">{{ $trans['helpdesk.assigned'] ?? 'Assigned' }}</label>
                     <select id="assigned" name="assigned" class="select w-full">
-                        <option value="">All</option>
-                        <option value="unassigned" {{ ($filters['assigned'] ?? '') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
+                        <option value="">{{ $trans['common.all'] ?? 'All' }}</option>
+                        <option value="unassigned" {{ ($filters['assigned'] ?? '') === 'unassigned' ? 'selected' : '' }}>{{ $trans['helpdesk.unassigned'] ?? 'Unassigned' }}</option>
                         @foreach($teamMembers as $member)
                             <option value="{{ $member->id }}" {{ ($filters['assigned'] ?? '') == $member->id ? 'selected' : '' }}>
                                 {{ $member->name }}
@@ -148,11 +148,11 @@
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--filter] size-4"></span>
-                    Filter
+                    {{ $trans['btn.filter'] ?? 'Filter' }}
                 </button>
                 @if(array_filter($filters ?? []))
                     <a href="{{ route('helpdesk.index') }}" class="btn btn-ghost">
-                        Clear
+                        {{ $trans['btn.clear'] ?? 'Clear' }}
                     </a>
                 @endif
             </form>
@@ -165,17 +165,17 @@
             @if($tickets->isEmpty())
                 <div class="text-center py-12">
                     <span class="icon-[tabler--inbox] size-16 text-base-content/20 mx-auto"></span>
-                    <h3 class="text-lg font-medium mt-4">No tickets found</h3>
+                    <h3 class="text-lg font-medium mt-4">{{ $trans['helpdesk.no_tickets'] ?? 'No tickets found' }}</h3>
                     <p class="text-base-content/60 mt-1">
                         @if(array_filter($filters ?? []))
-                            Try adjusting your filters or search terms.
+                            {{ $trans['helpdesk.adjust_filters'] ?? 'Try adjusting your filters or search terms.' }}
                         @else
-                            Create a new ticket or wait for customer inquiries.
+                            {{ $trans['helpdesk.create_or_wait'] ?? 'Create a new ticket or wait for customer inquiries.' }}
                         @endif
                     </p>
                     <a href="{{ route('helpdesk.create') }}" class="btn btn-primary mt-4">
                         <span class="icon-[tabler--plus] size-4"></span>
-                        Create Ticket
+                        {{ $trans['helpdesk.create_ticket'] ?? 'Create Ticket' }}
                     </a>
                 </div>
             @else
@@ -184,12 +184,12 @@
                         <thead>
                             <tr>
                                 <th class="w-12">#</th>
-                                <th>Contact</th>
-                                <th>Subject</th>
-                                <th>Source</th>
-                                <th>Status</th>
-                                <th>Assigned</th>
-                                <th>Created</th>
+                                <th>{{ $trans['helpdesk.contact'] ?? 'Contact' }}</th>
+                                <th>{{ $trans['helpdesk.subject'] ?? 'Subject' }}</th>
+                                <th>{{ $trans['helpdesk.source'] ?? 'Source' }}</th>
+                                <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                                <th>{{ $trans['helpdesk.assigned'] ?? 'Assigned' }}</th>
+                                <th>{{ $trans['common.created'] ?? 'Created' }}</th>
                                 <th class="w-20"></th>
                             </tr>
                         </thead>
@@ -212,7 +212,7 @@
                                     </td>
                                     <td>
                                         <div class="max-w-xs">
-                                            <p class="font-medium truncate">{{ $ticket->subject ?? 'No subject' }}</p>
+                                            <p class="font-medium truncate">{{ $ticket->subject ?? ($trans['helpdesk.no_subject'] ?? 'No subject') }}</p>
                                             @if($ticket->servicePlan)
                                                 <p class="text-xs text-base-content/60">
                                                     <span class="icon-[tabler--sparkles] size-3"></span>
@@ -258,7 +258,7 @@
                                                 <span class="text-sm">{{ $ticket->assignedUser->name }}</span>
                                             </div>
                                         @else
-                                            <span class="text-base-content/40 text-sm">Unassigned</span>
+                                            <span class="text-base-content/40 text-sm">{{ $trans['helpdesk.unassigned'] ?? 'Unassigned' }}</span>
                                         @endif
                                     </td>
                                     <td class="text-sm text-base-content/60">
@@ -271,25 +271,25 @@
                                             </summary>
                                             <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
                                                 <li><a href="{{ route('helpdesk.show', $ticket) }}">
-                                                    <span class="icon-[tabler--eye] size-4"></span> View
+                                                    <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
                                                 </a></li>
                                                 @if(!$ticket->client_id)
                                                     <li>
                                                         <form action="{{ route('helpdesk.convert', $ticket) }}" method="POST">
                                                             @csrf
                                                             <button type="submit" class="w-full text-left">
-                                                                <span class="icon-[tabler--user-plus] size-4"></span> Convert to Client
+                                                                <span class="icon-[tabler--user-plus] size-4"></span> {{ $trans['helpdesk.convert_to_client'] ?? 'Convert to Client' }}
                                                             </button>
                                                         </form>
                                                     </li>
                                                 @endif
                                                 <li class="menu-title pt-2 mt-2 border-t border-base-200"></li>
                                                 <li>
-                                                    <form action="{{ route('helpdesk.destroy', $ticket) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this ticket?')">
+                                                    <form action="{{ route('helpdesk.destroy', $ticket) }}" method="POST" onsubmit="return confirm('{{ $trans['msg.confirm.delete_ticket'] ?? 'Are you sure you want to delete this ticket?' }}')">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="text-error w-full text-left">
-                                                            <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                            <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
                                                         </button>
                                                     </form>
                                                 </li>

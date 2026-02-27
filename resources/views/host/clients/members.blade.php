@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Members')
+@section('title', $trans['clients.members'] ?? 'Members')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('clients.index') }}">Clients</a></li>
+        <li><a href="{{ route('clients.index') }}">{{ $trans['nav.clients'] ?? 'Clients' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--user-check] me-1 size-4"></span> Members</li>
+        <li aria-current="page"><span class="icon-[tabler--user-check] me-1 size-4"></span> {{ $trans['clients.members'] ?? 'Members' }}</li>
     </ol>
 @endsection
 
@@ -16,8 +16,8 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div>
-        <h1 class="text-2xl font-bold">Members</h1>
-        <p class="text-base-content/60 mt-1">Clients with active memberships or subscriptions.</p>
+        <h1 class="text-2xl font-bold">{{ $trans['clients.members'] ?? 'Members' }}</h1>
+        <p class="text-base-content/60 mt-1">{{ $trans['clients.members_description'] ?? 'Clients with active memberships or subscriptions.' }}</p>
     </div>
 
     {{-- Stats Cards --}}
@@ -30,7 +30,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $clients->total() }}</p>
-                        <p class="text-xs text-base-content/60">Total Members</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.total_members'] ?? 'Total Members' }}</p>
                     </div>
                 </div>
             </div>
@@ -47,7 +47,7 @@
                             $activeMembers = \App\Models\Client::forHost($hostId)->active()->members()->where('membership_status', 'active')->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $activeMembers }}</p>
-                        <p class="text-xs text-base-content/60">Active Memberships</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.active_memberships'] ?? 'Active Memberships' }}</p>
                     </div>
                 </div>
             </div>
@@ -63,7 +63,7 @@
                             $pausedMembers = \App\Models\Client::forHost($hostId)->active()->members()->where('membership_status', 'paused')->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $pausedMembers }}</p>
-                        <p class="text-xs text-base-content/60">Paused</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['common.paused'] ?? 'Paused' }}</p>
                     </div>
                 </div>
             </div>
@@ -79,7 +79,7 @@
                             $newThisMonth = \App\Models\Client::forHost($hostId)->active()->members()->where('converted_at', '>=', now()->startOfMonth())->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $newThisMonth }}</p>
-                        <p class="text-xs text-base-content/60">New This Month</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.new_this_month'] ?? 'New This Month' }}</p>
                     </div>
                 </div>
             </div>
@@ -91,19 +91,19 @@
         <div class="tabs tabs-bordered">
             <a href="{{ route('clients.index') }}" class="tab">
                 <span class="icon-[tabler--users] size-4 mr-2"></span>
-                All Clients
+                {{ $trans['clients.all_clients'] ?? 'All Clients' }}
             </a>
             <a href="{{ route('clients.leads') }}" class="tab">
                 <span class="icon-[tabler--target] size-4 mr-2"></span>
-                Leads
+                {{ $trans['clients.leads'] ?? 'Leads' }}
             </a>
             <a href="{{ route('clients.members') }}" class="tab tab-active">
                 <span class="icon-[tabler--user-check] size-4 mr-2"></span>
-                Members
+                {{ $trans['clients.members'] ?? 'Members' }}
             </a>
             <a href="{{ route('clients.at-risk') }}" class="tab">
                 <span class="icon-[tabler--alert-triangle] size-4 mr-2"></span>
-                At-Risk
+                {{ $trans['clients.at_risk'] ?? 'At-Risk' }}
             </a>
         </div>
 
@@ -111,11 +111,11 @@
             {{-- View Toggle --}}
             <div class="btn-group">
                 <a href="{{ route('clients.members', array_merge(request()->query(), ['view' => 'list'])) }}"
-                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="List View">
+                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.list_view'] ?? 'List View' }}">
                     <span class="icon-[tabler--list] size-4"></span>
                 </a>
                 <a href="{{ route('clients.members', array_merge(request()->query(), ['view' => 'grid'])) }}"
-                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="Grid View">
+                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.grid_view'] ?? 'Grid View' }}">
                     <span class="icon-[tabler--layout-grid] size-4"></span>
                 </a>
             </div>
@@ -128,18 +128,18 @@
             <form action="{{ route('clients.members') }}" method="GET" class="flex flex-wrap gap-4 items-end">
                 <input type="hidden" name="view" value="{{ request('view', 'list') }}">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="search">Search</label>
+                    <label class="label-text" for="search">{{ $trans['btn.search'] ?? 'Search' }}</label>
                     <div class="relative">
                         <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"></span>
                         <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="Name, email, or phone..."
+                               placeholder="{{ $trans['clients.search_placeholder'] ?? 'Name, email, or phone...' }}"
                                class="input w-full pl-10">
                     </div>
                 </div>
                 <div class="w-44">
-                    <label class="label-text" for="membership_status">Membership Status</label>
+                    <label class="label-text" for="membership_status">{{ $trans['clients.membership_status'] ?? 'Membership Status' }}</label>
                     <select id="membership_status" name="membership_status" class="select w-full">
-                        <option value="">All Statuses</option>
+                        <option value="">{{ $trans['common.all_statuses'] ?? 'All Statuses' }}</option>
                         @foreach($membershipStatuses as $key => $label)
                             <option value="{{ $key }}" {{ ($filters['membership_status'] ?? '') === $key ? 'selected' : '' }}>
                                 {{ $label }}
@@ -148,9 +148,9 @@
                     </select>
                 </div>
                 <div class="w-40">
-                    <label class="label-text" for="tag">Tag</label>
+                    <label class="label-text" for="tag">{{ $trans['field.tag'] ?? 'Tag' }}</label>
                     <select id="tag" name="tag" class="select w-full">
-                        <option value="">All Tags</option>
+                        <option value="">{{ $trans['common.all_tags'] ?? 'All Tags' }}</option>
                         @foreach($tags ?? [] as $tag)
                             <option value="{{ $tag->id }}" {{ ($filters['tag'] ?? '') == $tag->id ? 'selected' : '' }}>
                                 {{ $tag->name }}
@@ -160,12 +160,12 @@
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--filter] size-5"></span>
-                    Filter
+                    {{ $trans['btn.filter'] ?? 'Filter' }}
                 </button>
                 @if(!empty(array_filter($filters ?? [])))
                     <a href="{{ route('clients.members') }}" class="btn btn-ghost">
                         <span class="icon-[tabler--x] size-4"></span>
-                        Clear
+                        {{ $trans['btn.clear'] ?? 'Clear' }}
                     </a>
                 @endif
             </form>
@@ -177,16 +177,16 @@
     <div class="card bg-base-100">
         <div class="card-body text-center py-12">
             <span class="icon-[tabler--user-check] size-16 text-base-content/20 mx-auto mb-4"></span>
-            <h3 class="text-lg font-semibold mb-2">No Members Found</h3>
+            <h3 class="text-lg font-semibold mb-2">{{ $trans['clients.no_members'] ?? 'No Members Found' }}</h3>
             <p class="text-base-content/60 mb-4">
                 @if(!empty(array_filter($filters ?? [])))
-                    No members match your current filters. Try adjusting your search.
+                    {{ $trans['clients.no_members_filtered'] ?? 'No members match your current filters. Try adjusting your search.' }}
                 @else
-                    Members are clients with active memberships or subscriptions.
+                    {{ $trans['clients.no_members_desc'] ?? 'Members are clients with active memberships or subscriptions.' }}
                 @endif
             </p>
             @if(!empty(array_filter($filters ?? [])))
-            <a href="{{ route('clients.members') }}" class="btn btn-ghost">Clear Filters</a>
+            <a href="{{ route('clients.members') }}" class="btn btn-ghost">{{ $trans['btn.clear_filters'] ?? 'Clear Filters' }}</a>
             @endif
         </div>
     </div>
@@ -250,20 +250,20 @@
 
                     <div class="flex items-center justify-between text-sm">
                         <div class="flex items-center gap-4 text-base-content/60">
-                            <span title="Last Visit">
+                            <span title="{{ $trans['clients.last_visit'] ?? 'Last Visit' }}">
                                 <span class="icon-[tabler--calendar] size-4 inline"></span>
-                                {{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}
+                                {{ $client->last_visit_at?->diffForHumans() ?? ($trans['common.never'] ?? 'Never') }}
                             </span>
-                            <span title="Member Since">
+                            <span title="{{ $trans['clients.member_since'] ?? 'Member Since' }}">
                                 <span class="icon-[tabler--id-badge] size-4 inline"></span>
                                 {{ $client->converted_at?->format('M Y') ?? $client->created_at->format('M Y') }}
                             </span>
                         </div>
                         <div class="flex gap-1">
-                            <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                            <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                 <span class="icon-[tabler--eye] size-4"></span>
                             </a>
-                            <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                            <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                 <span class="icon-[tabler--edit] size-4"></span>
                             </a>
                         </div>
@@ -280,12 +280,12 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Member</th>
-                                <th>Membership Status</th>
-                                <th>Tags</th>
-                                <th>Last Visit</th>
-                                <th>Member Since</th>
-                                <th class="w-32">Actions</th>
+                                <th>{{ $trans['clients.member'] ?? 'Member' }}</th>
+                                <th>{{ $trans['clients.membership_status'] ?? 'Membership Status' }}</th>
+                                <th>{{ $trans['field.tags'] ?? 'Tags' }}</th>
+                                <th>{{ $trans['clients.last_visit'] ?? 'Last Visit' }}</th>
+                                <th>{{ $trans['clients.member_since'] ?? 'Member Since' }}</th>
+                                <th class="w-32">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -330,17 +330,17 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="text-sm">{{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}</span>
+                                    <span class="text-sm">{{ $client->last_visit_at?->diffForHumans() ?? ($trans['common.never'] ?? 'Never') }}</span>
                                 </td>
                                 <td>
                                     <span class="text-sm">{{ $client->converted_at?->format('M d, Y') ?? $client->created_at->format('M d, Y') }}</span>
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
-                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
                                         <div class="relative">
@@ -350,10 +350,10 @@
                                                 </summary>
                                                 <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300 z-[100] absolute right-0 top-full mt-1">
                                                     <li>
-                                                        <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0" onsubmit="return confirm('Archive this member?')">
+                                                        <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0" onsubmit="return confirm('{{ $trans['msg.confirm.archive_member'] ?? 'Archive this member?' }}')">
                                                             @csrf
                                                             <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                                <span class="icon-[tabler--archive] size-4"></span> Archive
+                                                                <span class="icon-[tabler--archive] size-4"></span> {{ $trans['btn.archive'] ?? 'Archive' }}
                                                             </button>
                                                         </form>
                                                     </li>

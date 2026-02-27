@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Booking Details')
+@section('title', $trans['bookings.details'] ?? 'Booking Details')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('bookings.index') }}"><span class="icon-[tabler--book] me-1 size-4"></span> Bookings</a></li>
+        <li><a href="{{ route('bookings.index') }}"><span class="icon-[tabler--book] me-1 size-4"></span> {{ $trans['nav.bookings'] ?? 'Bookings' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Booking #{{ $booking->id }}</li>
+        <li aria-current="page">{{ $trans['bookings.booking_number'] ?? 'Booking' }} #{{ $booking->id }}</li>
     </ol>
 @endsection
 
@@ -21,8 +21,8 @@
                 <span class="icon-[tabler--arrow-left] size-5"></span>
             </a>
             <div>
-                <h1 class="text-2xl font-bold">Booking Details</h1>
-                <p class="text-base-content/60">Booking #{{ $booking->id }}</p>
+                <h1 class="text-2xl font-bold">{{ $trans['bookings.details'] ?? 'Booking Details' }}</h1>
+                <p class="text-base-content/60">{{ $trans['bookings.booking_number'] ?? 'Booking' }} #{{ $booking->id }}</p>
             </div>
         </div>
         <div class="flex items-center gap-2">
@@ -32,7 +32,7 @@
             @if($booking->isCheckedIn())
                 <span class="badge badge-lg badge-success">
                     <span class="icon-[tabler--check] size-4 mr-1"></span>
-                    Checked In
+                    {{ $trans['bookings.checked_in'] ?? 'Checked In' }}
                 </span>
             @endif
         </div>
@@ -51,15 +51,15 @@
         <div class="alert alert-warning">
             <span class="icon-[tabler--file-alert] size-5"></span>
             <div class="flex-1">
-                <div class="font-semibold">Intake Form Pending</div>
-                <div class="text-sm opacity-80">Client has not completed the required intake form(s).</div>
+                <div class="font-semibold">{{ $trans['bookings.intake_pending'] ?? 'Intake Form Pending' }}</div>
+                <div class="text-sm opacity-80">{{ $trans['bookings.intake_pending_desc'] ?? 'Client has not completed the required intake form(s).' }}</div>
             </div>
             @if($booking->client && $booking->client->email)
                 <form action="{{ route('bookings.resend-intake', $booking) }}" method="POST" class="ml-auto">
                     @csrf
                     <button type="submit" class="btn btn-sm btn-warning">
                         <span class="icon-[tabler--mail-forward] size-4"></span>
-                        Resend Email
+                        {{ $trans['btn.resend_email'] ?? 'Resend Email' }}
                     </button>
                 </form>
             @endif
@@ -74,7 +74,7 @@
                 <div class="card-body">
                     <h2 class="card-title mb-4">
                         <span class="icon-[tabler--calendar-event] size-5"></span>
-                        Session Details
+                        {{ $trans['bookings.session_details'] ?? 'Session Details' }}
                     </h2>
 
                     @if($booking->bookable)
@@ -86,7 +86,7 @@
                                 <span class="icon-[tabler--yoga] size-7" style="color: {{ $color }};"></span>
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-semibold">{{ $booking->bookable->display_title ?? $booking->bookable->title ?? 'Class Session' }}</h3>
+                                <h3 class="text-lg font-semibold">{{ $booking->bookable->display_title ?? $booking->bookable->title ?? ($trans['bookings.class_session'] ?? 'Class Session') }}</h3>
                                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-base-content/70">
                                     <span class="flex items-center gap-1">
                                         <span class="icon-[tabler--calendar] size-4"></span>
@@ -120,13 +120,13 @@
                         <div class="mt-4 pt-4 border-t border-base-200">
                             <a href="{{ route('class-sessions.show', $booking->bookable) }}" class="btn btn-outline btn-sm">
                                 <span class="icon-[tabler--external-link] size-4"></span>
-                                View Session
+                                {{ $trans['bookings.view_session'] ?? 'View Session' }}
                             </a>
                         </div>
                     @else
                         <div class="text-center py-6 text-base-content/50">
                             <span class="icon-[tabler--calendar-off] size-8 mx-auto mb-2"></span>
-                            <p>Session has been deleted</p>
+                            <p>{{ $trans['bookings.session_deleted'] ?? 'Session has been deleted' }}</p>
                         </div>
                     @endif
                 </div>
@@ -137,37 +137,37 @@
                 <div class="card-body">
                     <h2 class="card-title mb-4">
                         <span class="icon-[tabler--credit-card] size-5"></span>
-                        Payment Details
+                        {{ $trans['bookings.payment_details'] ?? 'Payment Details' }}
                     </h2>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <div class="text-sm text-base-content/60">Payment Method</div>
+                            <div class="text-sm text-base-content/60">{{ $trans['field.payment_method'] ?? 'Payment Method' }}</div>
                             <div class="font-medium mt-1">
                                 @php
                                     $methodLabels = [
-                                        'stripe' => 'Credit Card (Stripe)',
-                                        'membership' => 'Membership',
-                                        'pack' => 'Class Pack',
-                                        'manual' => 'Manual Payment',
-                                        'cash' => 'Cash',
-                                        'comp' => 'Complimentary',
+                                        'stripe' => $trans['payment.credit_card_stripe'] ?? 'Credit Card (Stripe)',
+                                        'membership' => $trans['field.membership'] ?? 'Membership',
+                                        'pack' => $trans['payment.class_pack'] ?? 'Class Pack',
+                                        'manual' => $trans['payment.manual'] ?? 'Manual Payment',
+                                        'cash' => $trans['payment.cash'] ?? 'Cash',
+                                        'comp' => $trans['payment.complimentary'] ?? 'Complimentary',
                                     ];
                                 @endphp
                                 {{ $methodLabels[$booking->payment_method] ?? ucfirst($booking->payment_method) }}
                             </div>
                         </div>
                         <div>
-                            <div class="text-sm text-base-content/60">Amount Paid</div>
+                            <div class="text-sm text-base-content/60">{{ $trans['bookings.amount_paid'] ?? 'Amount Paid' }}</div>
                             <div class="font-medium mt-1 text-lg">
                                 @if($booking->price_paid > 0)
                                     ${{ number_format($booking->price_paid, 2) }}
                                 @elseif($booking->payment_method === 'comp')
-                                    <span class="text-success">Complimentary</span>
+                                    <span class="text-success">{{ $trans['payment.complimentary'] ?? 'Complimentary' }}</span>
                                 @elseif($booking->payment_method === 'membership')
-                                    <span class="text-info">Membership</span>
+                                    <span class="text-info">{{ $trans['field.membership'] ?? 'Membership' }}</span>
                                 @elseif($booking->payment_method === 'pack')
-                                    <span class="text-info">Class Pack</span>
+                                    <span class="text-info">{{ $trans['payment.class_pack'] ?? 'Class Pack' }}</span>
                                 @else
                                     $0.00
                                 @endif
@@ -188,10 +188,10 @@
                         <div class="mt-4 p-3 bg-info/10 rounded-lg">
                             <div class="flex items-center gap-2 text-info">
                                 <span class="icon-[tabler--package] size-5"></span>
-                                <span class="font-medium">{{ $booking->classPackPurchase->classPack->name ?? 'Class Pack' }}</span>
+                                <span class="font-medium">{{ $booking->classPackPurchase->classPack->name ?? ($trans['payment.class_pack'] ?? 'Class Pack') }}</span>
                             </div>
                             @if($booking->credits_used)
-                                <div class="text-sm text-base-content/60 mt-1">{{ $booking->credits_used }} credit(s) used</div>
+                                <div class="text-sm text-base-content/60 mt-1">{{ $booking->credits_used }} {{ $trans['bookings.credits_used'] ?? 'credit(s) used' }}</div>
                             @endif
                         </div>
                     @endif
@@ -200,7 +200,7 @@
                         <div class="mt-4 p-3 bg-success/10 rounded-lg">
                             <div class="flex items-center gap-2 text-success">
                                 <span class="icon-[tabler--discount-check] size-5"></span>
-                                <span class="font-medium">Trial Class</span>
+                                <span class="font-medium">{{ $trans['bookings.trial_class'] ?? 'Trial Class' }}</span>
                             </div>
                         </div>
                     @endif
@@ -218,11 +218,11 @@
                 <div class="card-body">
                     <h2 class="card-title mb-4">
                         <span class="icon-[tabler--file-text] size-5"></span>
-                        Intake Forms
+                        {{ $trans['bookings.intake_forms'] ?? 'Intake Forms' }}
                         @if($booking->intake_status === 'completed')
-                            <span class="badge badge-success badge-sm ml-2">Completed</span>
+                            <span class="badge badge-success badge-sm ml-2">{{ $trans['common.completed'] ?? 'Completed' }}</span>
                         @elseif($booking->intake_status === 'pending')
-                            <span class="badge badge-warning badge-sm ml-2">Pending</span>
+                            <span class="badge badge-warning badge-sm ml-2">{{ $trans['common.pending'] ?? 'Pending' }}</span>
                         @endif
                     </h2>
 
@@ -237,9 +237,9 @@
                                         <div class="font-medium">{{ $response->version->questionnaire->name ?? 'Questionnaire' }}</div>
                                         <div class="text-sm text-base-content/60">
                                             @if($response->isCompleted())
-                                                Completed {{ $response->completed_at->format('M j, Y g:i A') }}
+                                                {{ $trans['common.completed'] ?? 'Completed' }} {{ $response->completed_at->format('M j, Y g:i A') }}
                                             @else
-                                                Sent {{ $response->created_at->format('M j, Y') }} - Awaiting response
+                                                {{ $trans['bookings.sent'] ?? 'Sent' }} {{ $response->created_at->format('M j, Y') }} - {{ $trans['bookings.awaiting_response'] ?? 'Awaiting response' }}
                                             @endif
                                         </div>
                                     </div>
@@ -248,10 +248,10 @@
                                     @if($response->isCompleted())
                                         <button type="button" class="btn btn-sm btn-outline" onclick="openDrawer('response-{{ $response->id }}', event)">
                                             <span class="icon-[tabler--eye] size-4"></span>
-                                            View Response
+                                            {{ $trans['btn.view_response'] ?? 'View Response' }}
                                         </button>
                                     @else
-                                        <span class="badge badge-warning">Pending</span>
+                                        <span class="badge badge-warning">{{ $trans['common.pending'] ?? 'Pending' }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -266,7 +266,7 @@
                 <div class="card-body">
                     <h2 class="card-title mb-4">
                         <span class="icon-[tabler--history] size-5"></span>
-                        Timeline
+                        {{ $trans['bookings.timeline'] ?? 'Timeline' }}
                     </h2>
 
                     <ul class="timeline timeline-vertical timeline-compact">
@@ -276,12 +276,12 @@
                                 <span class="icon-[tabler--circle-check-filled] size-5 text-success"></span>
                             </div>
                             <div class="timeline-end timeline-box">
-                                <span class="font-medium">Booking Created</span>
+                                <span class="font-medium">{{ $trans['bookings.booking_created'] ?? 'Booking Created' }}</span>
                                 @if($booking->createdBy)
-                                    <span class="text-sm text-base-content/60 block">by {{ $booking->createdBy->full_name }}</span>
+                                    <span class="text-sm text-base-content/60 block">{{ $trans['common.by'] ?? 'by' }} {{ $booking->createdBy->full_name }}</span>
                                 @else
                                     <span class="text-sm text-base-content/60 block">
-                                        via {{ $booking->booking_source === 'online' ? 'Online Booking' : ($booking->booking_source === 'internal_walkin' ? 'Staff Booking' : 'API') }}
+                                        {{ $trans['common.via'] ?? 'via' }} {{ $booking->booking_source === 'online' ? ($trans['bookings.online_booking'] ?? 'Online Booking') : ($booking->booking_source === 'internal_walkin' ? ($trans['bookings.staff_booking'] ?? 'Staff Booking') : 'API') }}
                                     </span>
                                 @endif
                             </div>
@@ -295,15 +295,15 @@
                                 <span class="icon-[tabler--circle-check-filled] size-5 text-success"></span>
                             </div>
                             <div class="timeline-end timeline-box">
-                                <span class="font-medium">Checked In</span>
+                                <span class="font-medium">{{ $trans['bookings.checked_in'] ?? 'Checked In' }}</span>
                                 @if($booking->checkedInBy)
-                                    <span class="text-sm text-base-content/60 block">by {{ $booking->checkedInBy->full_name }}</span>
+                                    <span class="text-sm text-base-content/60 block">{{ $trans['common.by'] ?? 'by' }} {{ $booking->checkedInBy->full_name }}</span>
                                 @elseif($booking->checked_in_method)
                                     @php
                                         $methodLabels = \App\Models\Booking::getCheckInMethods();
                                     @endphp
                                     <span class="text-sm text-base-content/60 block">
-                                        via {{ $methodLabels[$booking->checked_in_method] ?? ucfirst($booking->checked_in_method) }}
+                                        {{ $trans['common.via'] ?? 'via' }} {{ $methodLabels[$booking->checked_in_method] ?? ucfirst($booking->checked_in_method) }}
                                     </span>
                                 @endif
                             </div>
@@ -318,14 +318,14 @@
                                 <span class="icon-[tabler--circle-x-filled] size-5 text-error"></span>
                             </div>
                             <div class="timeline-end timeline-box">
-                                <span class="font-medium">Cancelled</span>
+                                <span class="font-medium">{{ $trans['common.cancelled'] ?? 'Cancelled' }}</span>
                                 @if($booking->cancelledBy)
-                                    <span class="text-sm text-base-content/60 block">by {{ $booking->cancelledBy->full_name }}</span>
+                                    <span class="text-sm text-base-content/60 block">{{ $trans['common.by'] ?? 'by' }} {{ $booking->cancelledBy->full_name }}</span>
                                 @elseif($booking->cancelled_by_user_id)
-                                    <span class="text-sm text-base-content/60 block">by Staff (user removed)</span>
+                                    <span class="text-sm text-base-content/60 block">{{ $trans['bookings.by_staff_removed'] ?? 'by Staff (user removed)' }}</span>
                                 @endif
                                 @if($booking->cancellation_reason)
-                                    <span class="text-sm text-base-content/60 block">Reason: {{ $booking->cancellation_reason }}</span>
+                                    <span class="text-sm text-base-content/60 block">{{ $trans['field.reason'] ?? 'Reason' }}: {{ $booking->cancellation_reason }}</span>
                                 @endif
                                 @if($booking->cancellation_notes)
                                     <span class="text-sm text-base-content/60 block italic">{{ $booking->cancellation_notes }}</span>
@@ -345,7 +345,7 @@
                 <div class="card-body">
                     <h2 class="card-title mb-4">
                         <span class="icon-[tabler--user] size-5"></span>
-                        Client
+                        {{ $trans['nav.client'] ?? 'Client' }}
                     </h2>
 
                     @if($booking->client)
@@ -365,13 +365,13 @@
                         <div class="mt-4 pt-4 border-t border-base-200">
                             <a href="{{ route('clients.show', $booking->client) }}" class="btn btn-outline btn-sm w-full">
                                 <span class="icon-[tabler--user] size-4"></span>
-                                View Profile
+                                {{ $trans['clients.view_profile'] ?? 'View Profile' }}
                             </a>
                         </div>
                     @else
                         <div class="text-center py-4 text-base-content/50">
                             <span class="icon-[tabler--user-off] size-8 mx-auto mb-2"></span>
-                            <p>Client not found</p>
+                            <p>{{ $trans['bookings.client_not_found'] ?? 'Client not found' }}</p>
                         </div>
                     @endif
                 </div>
@@ -382,33 +382,33 @@
                 <div class="card-body">
                     <h2 class="card-title mb-4">
                         <span class="icon-[tabler--bolt] size-5"></span>
-                        Actions
+                        {{ $trans['common.actions'] ?? 'Actions' }}
                     </h2>
 
                     <div class="space-y-2">
                         @if($booking->bookable)
                             <a href="{{ route('class-sessions.show', $booking->bookable) }}" class="btn btn-outline w-full">
                                 <span class="icon-[tabler--calendar-event] size-5"></span>
-                                View Session
+                                {{ $trans['bookings.view_session'] ?? 'View Session' }}
                             </a>
                         @endif
 
                         @if($booking->client)
                             <a href="{{ route('clients.show', $booking->client) }}" class="btn btn-outline w-full">
                                 <span class="icon-[tabler--user] size-5"></span>
-                                View Client
+                                {{ $trans['clients.view_client'] ?? 'View Client' }}
                             </a>
                         @endif
 
                         <a href="{{ route('walk-in.select') }}" class="btn btn-primary w-full">
                             <span class="icon-[tabler--plus] size-5"></span>
-                            New Booking
+                            {{ $trans['bookings.new_booking'] ?? 'New Booking' }}
                         </a>
 
                         @if($booking->canBeCancelled())
                             <button type="button" class="btn btn-error btn-outline w-full" onclick="openCancelBookingModal('cancel-modal-{{ $booking->id }}')">
                                 <span class="icon-[tabler--x] size-5"></span>
-                                Cancel Booking
+                                {{ $trans['bookings.cancel_booking'] ?? 'Cancel Booking' }}
                             </button>
                         @endif
                     </div>
@@ -420,21 +420,21 @@
                 <div class="card-body">
                     <h2 class="card-title mb-4">
                         <span class="icon-[tabler--info-circle] size-5"></span>
-                        Info
+                        {{ $trans['common.info'] ?? 'Info' }}
                     </h2>
 
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-base-content/60">Booking ID</span>
+                            <span class="text-base-content/60">{{ $trans['bookings.booking_id'] ?? 'Booking ID' }}</span>
                             <span class="font-medium">#{{ $booking->id }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-base-content/60">Source</span>
+                            <span class="text-base-content/60">{{ $trans['field.source'] ?? 'Source' }}</span>
                             <span class="badge badge-sm {{ $booking->source_badge_class }} badge-soft">
                                 @php
                                     $sourceLabels = [
-                                        'online' => 'Online',
-                                        'internal_walkin' => 'Staff Booking',
+                                        'online' => $trans['bookings.online'] ?? 'Online',
+                                        'internal_walkin' => $trans['bookings.staff_booking'] ?? 'Staff Booking',
                                         'api' => 'API',
                                     ];
                                 @endphp
@@ -442,12 +442,12 @@
                             </span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-base-content/60">Booked At</span>
+                            <span class="text-base-content/60">{{ $trans['bookings.booked_at'] ?? 'Booked At' }}</span>
                             <span class="font-medium">{{ $booking->booked_at?->format('M j, Y g:i A') ?? $booking->created_at->format('M j, Y g:i A') }}</span>
                         </div>
                         @if($booking->notes)
                             <div class="pt-2 border-t border-base-200">
-                                <div class="text-base-content/60 mb-1">Notes</div>
+                                <div class="text-base-content/60 mb-1">{{ $trans['field.notes'] ?? 'Notes' }}</div>
                                 <div class="text-base-content">{{ $booking->notes }}</div>
                             </div>
                         @endif

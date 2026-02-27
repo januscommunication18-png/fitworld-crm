@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Offers')
+@section('title', $trans['nav.marketing.offers'] ?? 'Offers')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><span class="icon-[tabler--speakerphone] me-1 size-4"></span> Marketing</li>
+        <li><span class="icon-[tabler--speakerphone] me-1 size-4"></span> {{ $trans['nav.marketing'] ?? 'Marketing' }}</li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Offers</li>
+        <li aria-current="page">{{ $trans['nav.marketing.offers'] ?? 'Offers' }}</li>
     </ol>
 @endsection
 
@@ -17,12 +17,12 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold">Offers & Promotions</h1>
-            <p class="text-base-content/60 mt-1">Create targeted discounts and promotional offers for your clients.</p>
+            <h1 class="text-2xl font-bold">{{ $trans['offers.title'] ?? 'Offers & Promotions' }}</h1>
+            <p class="text-base-content/60 mt-1">{{ $trans['offers.description'] ?? 'Create targeted discounts and promotional offers for your clients.' }}</p>
         </div>
         <a href="{{ route('offers.create') }}" class="btn btn-primary">
             <span class="icon-[tabler--plus] size-5"></span>
-            Create Offer
+            {{ $trans['offers.create'] ?? 'Create Offer' }}
         </a>
     </div>
 
@@ -36,7 +36,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ number_format($stats['total_offers']) }}</p>
-                        <p class="text-xs text-base-content/60">Total Offers</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['offers.total_offers'] ?? 'Total Offers' }}</p>
                     </div>
                 </div>
             </div>
@@ -49,7 +49,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ number_format($stats['active_offers']) }}</p>
-                        <p class="text-xs text-base-content/60">Active</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['common.active'] ?? 'Active' }}</p>
                     </div>
                 </div>
             </div>
@@ -62,7 +62,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ number_format($stats['total_redemptions']) }}</p>
-                        <p class="text-xs text-base-content/60">Redemptions</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['offers.redemptions'] ?? 'Redemptions' }}</p>
                     </div>
                 </div>
             </div>
@@ -75,7 +75,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">${{ number_format($stats['total_discount_given'], 0) }}</p>
-                        <p class="text-xs text-base-content/60">Discounts Given</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['offers.discounts_given'] ?? 'Discounts Given' }}</p>
                     </div>
                 </div>
             </div>
@@ -88,7 +88,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">${{ number_format($stats['total_revenue'], 0) }}</p>
-                        <p class="text-xs text-base-content/60">Revenue Generated</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['offers.revenue_generated'] ?? 'Revenue Generated' }}</p>
                     </div>
                 </div>
             </div>
@@ -98,7 +98,7 @@
     {{-- Filters --}}
     <div class="flex items-center gap-4">
         <div class="tabs tabs-boxed">
-            <a href="{{ route('offers.index') }}" class="tab {{ !$status ? 'tab-active' : '' }}">All</a>
+            <a href="{{ route('offers.index') }}" class="tab {{ !$status ? 'tab-active' : '' }}">{{ $trans['common.all'] ?? 'All' }}</a>
             @foreach($statuses as $key => $label)
                 <a href="{{ route('offers.index', ['status' => $key]) }}"
                    class="tab {{ $status === $key ? 'tab-active' : '' }}">{{ $label }}</a>
@@ -111,11 +111,11 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--tag-off] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Offers Yet</h3>
-                <p class="text-base-content/60 mb-4">Create your first offer to attract and retain clients.</p>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['offers.no_offers'] ?? 'No Offers Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['offers.get_started'] ?? 'Create your first offer to attract and retain clients.' }}</p>
                 <a href="{{ route('offers.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Create First Offer
+                    {{ $trans['offers.create_first'] ?? 'Create First Offer' }}
                 </a>
             </div>
         </div>
@@ -126,13 +126,13 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Offer</th>
-                                <th>Discount</th>
-                                <th>Target</th>
-                                <th>Duration</th>
-                                <th>Redemptions</th>
-                                <th>Status</th>
-                                <th class="w-24">Actions</th>
+                                <th>{{ $trans['offers.offer'] ?? 'Offer' }}</th>
+                                <th>{{ $trans['offers.discount'] ?? 'Discount' }}</th>
+                                <th>{{ $trans['offers.target'] ?? 'Target' }}</th>
+                                <th>{{ $trans['offers.duration'] ?? 'Duration' }}</th>
+                                <th>{{ $trans['offers.redemptions'] ?? 'Redemptions' }}</th>
+                                <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                                <th class="w-24">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -187,7 +187,7 @@
                                                 @endif
                                             </span>
                                         @else
-                                            <span class="text-sm text-base-content/60">No limit</span>
+                                            <span class="text-sm text-base-content/60">{{ $trans['offers.no_limit'] ?? 'No limit' }}</span>
                                         @endif
                                     </td>
                                     <td>
@@ -207,13 +207,13 @@
                                                 <span class="icon-[tabler--dots-vertical] size-4"></span>
                                             </summary>
                                             <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
-                                                <li><a href="{{ route('offers.show', $offer) }}"><span class="icon-[tabler--eye] size-4"></span> View</a></li>
-                                                <li><a href="{{ route('offers.edit', $offer) }}"><span class="icon-[tabler--edit] size-4"></span> Edit</a></li>
+                                                <li><a href="{{ route('offers.show', $offer) }}"><span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}</a></li>
+                                                <li><a href="{{ route('offers.edit', $offer) }}"><span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}</a></li>
                                                 <li>
                                                     <form action="{{ route('offers.duplicate', $offer) }}" method="POST">
                                                         @csrf
                                                         <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                            <span class="icon-[tabler--copy] size-4"></span> Duplicate
+                                                            <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
                                                         </button>
                                                     </form>
                                                 </li>
@@ -222,19 +222,19 @@
                                                         @csrf
                                                         <button type="submit" class="w-full text-left flex items-center gap-2">
                                                             @if($offer->status === 'active')
-                                                                <span class="icon-[tabler--player-pause] size-4"></span> Pause
+                                                                <span class="icon-[tabler--player-pause] size-4"></span> {{ $trans['btn.pause'] ?? 'Pause' }}
                                                             @else
-                                                                <span class="icon-[tabler--player-play] size-4"></span> Activate
+                                                                <span class="icon-[tabler--player-play] size-4"></span> {{ $trans['btn.activate'] ?? 'Activate' }}
                                                             @endif
                                                         </button>
                                                     </form>
                                                 </li>
                                                 <li>
-                                                    <form action="{{ route('offers.destroy', $offer) }}" method="POST" onsubmit="return confirm('Delete this offer?')">
+                                                    <form action="{{ route('offers.destroy', $offer) }}" method="POST" onsubmit="return confirm('{{ $trans['msg.confirm.delete_offer'] ?? 'Delete this offer?' }}')">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                            <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                            <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
                                                         </button>
                                                     </form>
                                                 </li>

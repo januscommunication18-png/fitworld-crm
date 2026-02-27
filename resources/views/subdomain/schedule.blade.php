@@ -1,6 +1,6 @@
 @extends('layouts.subdomain')
 
-@section('title', $host->studio_name . ' — Schedule')
+@section('title', $host->studio_name . ' — ' . ($trans['nav.schedule'] ?? 'Schedule'))
 
 @section('content')
 
@@ -13,14 +13,14 @@
     <div class="flex justify-center mb-6">
         <div class="tabs tabs-boxed bg-base-200 p-1">
             <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="tab">
-                <span class="icon-[tabler--home] size-4 me-1"></span> Home
+                <span class="icon-[tabler--home] size-4 me-1"></span> {{ $trans['nav.dashboard'] ?? 'Home' }}
             </a>
             <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="tab tab-active">
-                <span class="icon-[tabler--calendar] size-4 me-1"></span> Schedule
+                <span class="icon-[tabler--calendar] size-4 me-1"></span> {{ $trans['nav.schedule'] ?? 'Schedule' }}
             </a>
             @if($bookingSettings['show_instructors'] ?? true)
             <a href="{{ route('subdomain.instructors', ['subdomain' => $host->subdomain]) }}" class="tab">
-                <span class="icon-[tabler--users] size-4 me-1"></span> Instructors
+                <span class="icon-[tabler--users] size-4 me-1"></span> {{ $trans['nav.instructors'] ?? 'Instructors' }}
             </a>
             @endif
         </div>
@@ -31,12 +31,12 @@
         <div class="card bg-base-100 border border-base-200">
             <div class="card-body py-16 text-center">
                 <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="font-semibold text-lg text-base-content">No Classes Scheduled</h3>
-                <p class="text-base-content/60 mt-1">Check back soon for upcoming classes!</p>
+                <h3 class="font-semibold text-lg text-base-content">{{ $trans['dashboard.no_classes_today'] ?? 'No Classes Scheduled' }}</h3>
+                <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.check_back'] ?? 'Check back soon for upcoming classes!' }}</p>
                 <div class="mt-6">
                     <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="btn btn-primary">
                         <span class="icon-[tabler--arrow-left] size-4"></span>
-                        Back to Home
+                        {{ $trans['btn.back_home'] ?? 'Back to Home' }}
                     </a>
                 </div>
             </div>
@@ -93,28 +93,28 @@
                                         $spotsLeft = $session->capacity - ($session->bookings_count ?? 0);
                                     @endphp
                                     @if($spotsLeft > 0 && $spotsLeft <= 3)
-                                        <span class="badge badge-warning badge-sm">{{ $spotsLeft }} left</span>
+                                        <span class="badge badge-warning badge-sm">{{ $spotsLeft }} {{ $trans['subdomain.home.left'] ?? 'left' }}</span>
                                     @elseif($spotsLeft <= 0)
-                                        <span class="badge badge-error badge-sm">Full</span>
+                                        <span class="badge badge-error badge-sm">{{ $trans['subdomain.schedule.full'] ?? 'Full' }}</span>
                                     @endif
 
                                     @if($spotsLeft <= 0)
                                         <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id, 'waitlist' => 1]) }}"
                                            class="btn btn-warning btn-sm">
                                             <span class="icon-[tabler--list-check] size-4"></span>
-                                            Join Waitlist
+                                            {{ $trans['btn.join_waitlist'] ?? 'Join Waitlist' }}
                                         </a>
                                     @else
                                         <a href="{{ route('subdomain.class', ['subdomain' => $host->subdomain, 'classSession' => $session->id]) }}"
                                            class="btn btn-ghost btn-sm">
                                             <span class="icon-[tabler--info-circle] size-4"></span>
-                                            Details
+                                            {{ $trans['subdomain.class.details'] ?? 'Details' }}
                                         </a>
                                         <form action="{{ route('booking.select-class-session', ['subdomain' => $host->subdomain, 'session' => $session->id]) }}" method="POST">
                                             @csrf
                                             <button type="submit" class="btn btn-primary btn-sm">
                                                 <span class="icon-[tabler--calendar-plus] size-4"></span>
-                                                Book
+                                                {{ $trans['btn.book_now'] ?? 'Book' }}
                                             </button>
                                         </form>
                                     @endif

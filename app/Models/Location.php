@@ -79,6 +79,16 @@ class Location extends Model
         return $this->hasMany(ClassSession::class);
     }
 
+    public function serviceSlots(): HasMany
+    {
+        return $this->hasMany(ServiceSlot::class);
+    }
+
+    public function spaceRentalConfigs(): HasMany
+    {
+        return $this->hasMany(SpaceRentalConfig::class);
+    }
+
     // ========== Scopes ==========
 
     public function scopeInPerson($query)

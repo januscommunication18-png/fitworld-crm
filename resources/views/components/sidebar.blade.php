@@ -10,11 +10,6 @@
     $canViewInsights = $user->hasPermission('insights.attendance') || $user->hasPermission('insights.revenue');
     $canViewPayments = $user->hasPermission('payments.view');
     $canAccessSettings = $user->hasPermission('studio.profile') || $user->hasPermission('team.view') || $user->hasPermission('billing.plan');
-
-    // Load translations for sidebar using selected language from session
-    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
-    $t = \App\Services\TranslationService::make($host, $selectedLang);
-    $trans = $t->forPage('sidebar');
 @endphp
 <aside id="main-sidebar" class="sticky top-0 h-screen bg-base-100 border-e border-base-content/10 flex flex-col">
 
@@ -236,6 +231,23 @@
                     </a></li>
                     <li><a href="{{ url('/rentals/invoice/create') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('rentals/invoice*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--receipt] size-4 mr-2"></span>{{ $trans['nav.rentals.create_invoice'] ?? 'Create Invoice' }}
+                    </a></li>
+                </ul>
+            </li>
+
+            {{-- Space Rentals - Always visible --}}
+            <li class="nav-item {{ request()->is('space-rentals*') ? 'active' : '' }}" data-nav="space-rentals">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+                    <span class="icon-[tabler--building] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">{{ $trans['nav.space_rentals'] ?? 'Space Rentals' }}</span>
+                    <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
+                </button>
+                <ul class="sidebar-submenu {{ request()->is('space-rentals*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ url('/space-rentals') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals') && !request()->is('space-rentals/*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>{{ $trans['nav.space_rentals.bookings'] ?? 'Bookings' }}
+                    </a></li>
+                    <li><a href="{{ url('/space-rentals/config') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals/config*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--settings] size-4 mr-2"></span>{{ $trans['nav.space_rentals.configure'] ?? 'Configure Spaces' }}
                     </a></li>
                 </ul>
             </li>

@@ -5,9 +5,6 @@
 @php
     $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
     $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($selectedCurrency);
-    $selectedLang = session("language_{$host->id}", $host->default_language_booking ?? 'en');
-    $t = \App\Services\TranslationService::make($host, $selectedLang);
-    $trans = $t->all();
 @endphp
 
 @section('content')

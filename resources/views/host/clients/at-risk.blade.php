@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'At-Risk Clients')
+@section('title', $trans['clients.at_risk_clients'] ?? 'At-Risk Clients')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('clients.index') }}">Clients</a></li>
+        <li><a href="{{ route('clients.index') }}">{{ $trans['nav.clients'] ?? 'Clients' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--alert-triangle] me-1 size-4"></span> At-Risk</li>
+        <li aria-current="page"><span class="icon-[tabler--alert-triangle] me-1 size-4"></span> {{ $trans['clients.at_risk'] ?? 'At-Risk' }}</li>
     </ol>
 @endsection
 
@@ -16,8 +16,8 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div>
-        <h1 class="text-2xl font-bold">At-Risk Clients</h1>
-        <p class="text-base-content/60 mt-1">Clients flagged due to inactivity or other risk factors.</p>
+        <h1 class="text-2xl font-bold">{{ $trans['clients.at_risk_clients'] ?? 'At-Risk Clients' }}</h1>
+        <p class="text-base-content/60 mt-1">{{ $trans['clients.at_risk_description'] ?? 'Clients flagged due to inactivity or other risk factors.' }}</p>
     </div>
 
     {{-- Stats Cards --}}
@@ -30,7 +30,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $clients->total() }}</p>
-                        <p class="text-xs text-base-content/60">At-Risk Clients</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.at_risk_clients'] ?? 'At-Risk Clients' }}</p>
                     </div>
                 </div>
             </div>
@@ -49,7 +49,7 @@
                                 ->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $inactiveCount }}</p>
-                        <p class="text-xs text-base-content/60">Inactive 14+ Days</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.inactive_14_days'] ?? 'Inactive 14+ Days' }}</p>
                     </div>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                                 ->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $noBookingsCount }}</p>
-                        <p class="text-xs text-base-content/60">No Upcoming Bookings</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.no_upcoming_bookings'] ?? 'No Upcoming Bookings' }}</p>
                     </div>
                 </div>
             </div>
@@ -86,7 +86,7 @@
                                 ->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $clearedThisWeek }}</p>
-                        <p class="text-xs text-base-content/60">Cleared This Week</p>
+                        <p class="text-xs text-base-content/60">{{ $trans['clients.cleared_this_week'] ?? 'Cleared This Week' }}</p>
                     </div>
                 </div>
             </div>
@@ -98,19 +98,19 @@
         <div class="tabs tabs-bordered">
             <a href="{{ route('clients.index') }}" class="tab">
                 <span class="icon-[tabler--users] size-4 mr-2"></span>
-                All Clients
+                {{ $trans['clients.all_clients'] ?? 'All Clients' }}
             </a>
             <a href="{{ route('clients.leads') }}" class="tab">
                 <span class="icon-[tabler--target] size-4 mr-2"></span>
-                Leads
+                {{ $trans['clients.leads'] ?? 'Leads' }}
             </a>
             <a href="{{ route('clients.members') }}" class="tab">
                 <span class="icon-[tabler--user-check] size-4 mr-2"></span>
-                Members
+                {{ $trans['clients.members'] ?? 'Members' }}
             </a>
             <a href="{{ route('clients.at-risk') }}" class="tab tab-active">
                 <span class="icon-[tabler--alert-triangle] size-4 mr-2"></span>
-                At-Risk
+                {{ $trans['clients.at_risk'] ?? 'At-Risk' }}
             </a>
         </div>
 
@@ -118,11 +118,11 @@
             {{-- View Toggle --}}
             <div class="btn-group">
                 <a href="{{ route('clients.at-risk', array_merge(request()->query(), ['view' => 'list'])) }}"
-                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="List View">
+                   class="btn btn-sm {{ request('view', 'list') === 'list' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.list_view'] ?? 'List View' }}">
                     <span class="icon-[tabler--list] size-4"></span>
                 </a>
                 <a href="{{ route('clients.at-risk', array_merge(request()->query(), ['view' => 'grid'])) }}"
-                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="Grid View">
+                   class="btn btn-sm {{ request('view') === 'grid' ? 'btn-active' : 'btn-ghost' }}" title="{{ $trans['common.grid_view'] ?? 'Grid View' }}">
                     <span class="icon-[tabler--layout-grid] size-4"></span>
                 </a>
             </div>
@@ -133,8 +133,8 @@
     <div class="alert alert-soft alert-warning">
         <span class="icon-[tabler--info-circle] size-5"></span>
         <div>
-            <p class="font-medium">At-Risk Detection</p>
-            <p class="text-sm">Clients are automatically flagged as at-risk when they haven't visited in 14 days or have no upcoming bookings. You can configure these rules in Settings.</p>
+            <p class="font-medium">{{ $trans['clients.at_risk_detection'] ?? 'At-Risk Detection' }}</p>
+            <p class="text-sm">{{ $trans['clients.at_risk_detection_desc'] ?? 'Clients are automatically flagged as at-risk when they haven\'t visited in 14 days or have no upcoming bookings. You can configure these rules in Settings.' }}</p>
         </div>
     </div>
 
@@ -144,30 +144,30 @@
             <form action="{{ route('clients.at-risk') }}" method="GET" class="flex flex-wrap gap-4 items-end">
                 <input type="hidden" name="view" value="{{ request('view', 'list') }}">
                 <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="search">Search</label>
+                    <label class="label-text" for="search">{{ $trans['btn.search'] ?? 'Search' }}</label>
                     <div class="relative">
                         <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"></span>
                         <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="Name, email, or phone..."
+                               placeholder="{{ $trans['clients.search_placeholder'] ?? 'Name, email, or phone...' }}"
                                class="input w-full pl-10">
                     </div>
                 </div>
                 <div class="w-44">
-                    <label class="label-text" for="risk_reason">Risk Reason</label>
+                    <label class="label-text" for="risk_reason">{{ $trans['clients.risk_reason'] ?? 'Risk Reason' }}</label>
                     <select id="risk_reason" name="risk_reason" class="select w-full">
-                        <option value="">All Reasons</option>
-                        <option value="inactive" {{ ($filters['risk_reason'] ?? '') === 'inactive' ? 'selected' : '' }}>Inactive 14+ Days</option>
-                        <option value="no_bookings" {{ ($filters['risk_reason'] ?? '') === 'no_bookings' ? 'selected' : '' }}>No Upcoming Bookings</option>
+                        <option value="">{{ $trans['clients.all_reasons'] ?? 'All Reasons' }}</option>
+                        <option value="inactive" {{ ($filters['risk_reason'] ?? '') === 'inactive' ? 'selected' : '' }}>{{ $trans['clients.inactive_14_days'] ?? 'Inactive 14+ Days' }}</option>
+                        <option value="no_bookings" {{ ($filters['risk_reason'] ?? '') === 'no_bookings' ? 'selected' : '' }}>{{ $trans['clients.no_upcoming_bookings'] ?? 'No Upcoming Bookings' }}</option>
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--filter] size-5"></span>
-                    Filter
+                    {{ $trans['btn.filter'] ?? 'Filter' }}
                 </button>
                 @if(!empty(array_filter($filters ?? [])))
                     <a href="{{ route('clients.at-risk') }}" class="btn btn-ghost">
                         <span class="icon-[tabler--x] size-4"></span>
-                        Clear
+                        {{ $trans['btn.clear'] ?? 'Clear' }}
                     </a>
                 @endif
             </form>
@@ -181,8 +181,8 @@
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 mb-4">
                 <span class="icon-[tabler--check] size-8 text-success"></span>
             </div>
-            <h3 class="text-lg font-semibold mb-2">No At-Risk Clients</h3>
-            <p class="text-base-content/60">Great! All your clients are engaged and active.</p>
+            <h3 class="text-lg font-semibold mb-2">{{ $trans['clients.no_at_risk'] ?? 'No At-Risk Clients' }}</h3>
+            <p class="text-base-content/60">{{ $trans['clients.no_at_risk_desc'] ?? 'Great! All your clients are engaged and active.' }}</p>
         </div>
     </div>
     @else
@@ -234,23 +234,23 @@
 
                     <div class="flex items-center justify-between text-sm">
                         <div class="flex items-center gap-4 text-base-content/60">
-                            <span title="Last Visit">
+                            <span title="{{ $trans['clients.last_visit'] ?? 'Last Visit' }}">
                                 <span class="icon-[tabler--calendar] size-4 inline"></span>
-                                {{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}
+                                {{ $client->last_visit_at?->diffForHumans() ?? ($trans['common.never'] ?? 'Never') }}
                             </span>
-                            <span title="Next Booking">
+                            <span title="{{ $trans['clients.next_booking'] ?? 'Next Booking' }}">
                                 <span class="icon-[tabler--calendar-event] size-4 inline"></span>
-                                {{ $client->next_booking_at?->format('M d') ?? 'None' }}
+                                {{ $client->next_booking_at?->format('M d') ?? ($trans['common.none'] ?? 'None') }}
                             </span>
                         </div>
                         <div class="flex gap-1">
                             <form method="POST" action="{{ route('clients.clear-at-risk', $client) }}">
                                 @csrf
-                                <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="Clear at-risk status">
+                                <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="{{ $trans['clients.clear_at_risk'] ?? 'Clear at-risk status' }}">
                                     <span class="icon-[tabler--check] size-4"></span>
                                 </button>
                             </form>
-                            <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                            <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                 <span class="icon-[tabler--eye] size-4"></span>
                             </a>
                         </div>
@@ -267,11 +267,11 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Client</th>
-                                <th>Risk Reason</th>
-                                <th>Last Visit</th>
-                                <th>Next Booking</th>
-                                <th class="w-32">Actions</th>
+                                <th>{{ $trans['clients.client'] ?? 'Client' }}</th>
+                                <th>{{ $trans['clients.risk_reason'] ?? 'Risk Reason' }}</th>
+                                <th>{{ $trans['clients.last_visit'] ?? 'Last Visit' }}</th>
+                                <th>{{ $trans['clients.next_booking'] ?? 'Next Booking' }}</th>
+                                <th class="w-32">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -304,23 +304,23 @@
                                     <span class="badge badge-soft badge-error">{{ $reason }}</span>
                                 </td>
                                 <td>
-                                    <span class="text-sm">{{ $client->last_visit_at?->diffForHumans() ?? 'Never' }}</span>
+                                    <span class="text-sm">{{ $client->last_visit_at?->diffForHumans() ?? ($trans['common.never'] ?? 'Never') }}</span>
                                 </td>
                                 <td>
-                                    <span class="text-sm text-base-content/60">{{ $client->next_booking_at?->format('M d, Y') ?? 'None' }}</span>
+                                    <span class="text-sm text-base-content/60">{{ $client->next_booking_at?->format('M d, Y') ?? ($trans['common.none'] ?? 'None') }}</span>
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
                                         <form method="POST" action="{{ route('clients.clear-at-risk', $client) }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="Clear at-risk status">
+                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="{{ $trans['clients.clear_at_risk'] ?? 'Clear at-risk status' }}">
                                                 <span class="icon-[tabler--check] size-4"></span>
                                             </button>
                                         </form>
-                                        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
-                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
                                     </div>

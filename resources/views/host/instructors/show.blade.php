@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', $instructor->name . ' — Instructor')
+@section('title', $instructor->name . ' — ' . ($trans['nav.instructor'] ?? 'Instructor'))
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('instructors.index') }}">Instructors</a></li>
+        <li><a href="{{ route('instructors.index') }}">{{ $trans['nav.instructors'] ?? 'Instructors' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">{{ $instructor->name }}</li>
     </ol>
@@ -19,10 +19,10 @@
     <div class="alert alert-soft alert-warning">
         <span class="icon-[tabler--alert-triangle] size-5"></span>
         <div class="flex-1">
-            <p class="font-medium">Instructor profile is incomplete</p>
-            <p class="text-sm opacity-90">Missing: <strong>{{ implode(', ', $instructor->getMissingProfileFields()) }}</strong></p>
+            <p class="font-medium">{{ $trans['instructors.profile_incomplete'] ?? 'Instructor profile is incomplete' }}</p>
+            <p class="text-sm opacity-90">{{ $trans['common.missing'] ?? 'Missing' }}: <strong>{{ implode(', ', $instructor->getMissingProfileFields()) }}</strong></p>
         </div>
-        <a href="{{ route('instructors.edit', $instructor) }}" class="btn btn-warning btn-sm">Complete Profile</a>
+        <a href="{{ route('instructors.edit', $instructor) }}" class="btn btn-warning btn-sm">{{ $trans['instructors.complete_profile'] ?? 'Complete Profile' }}</a>
     </div>
     @endif
 
@@ -56,12 +56,12 @@
                             @if($instructor->status === 'pending' || !$instructor->isProfileComplete())
                                 <span class="badge badge-warning gap-1">
                                     <span class="icon-[tabler--alert-triangle] size-3"></span>
-                                    Pending Setup
+                                    {{ $trans['instructors.pending_setup'] ?? 'Pending Setup' }}
                                 </span>
                             @elseif($instructor->is_active)
-                                <span class="badge badge-success">Active</span>
+                                <span class="badge badge-success">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
-                                <span class="badge badge-neutral">Inactive</span>
+                                <span class="badge badge-neutral">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
                             @endif
                         </div>
                         @if($instructor->email)
@@ -128,22 +128,22 @@
                     @if($instructor->hasAccount())
                         <button type="button" onclick="showResetPasswordModal()" class="btn btn-ghost btn-sm">
                             <span class="icon-[tabler--key] size-4"></span>
-                            Reset Password
+                            {{ $trans['btn.reset_password'] ?? 'Reset Password' }}
                         </button>
                     @endif
                     <a href="{{ route('instructors.edit', $instructor) }}" class="btn btn-primary btn-sm">
                         <span class="icon-[tabler--edit] size-4"></span>
-                        Edit Profile
+                        {{ $trans['btn.edit_profile'] ?? 'Edit Profile' }}
                     </a>
                     @if($instructor->is_active)
                         <button type="button" onclick="showMakeInactiveModal()" class="btn btn-warning btn-sm">
                             <span class="icon-[tabler--user-off] size-4"></span>
-                            Deactivate
+                            {{ $trans['btn.deactivate'] ?? 'Deactivate' }}
                         </button>
                     @else
                         <button type="button" onclick="showActivateModal()" class="btn btn-success btn-sm">
                             <span class="icon-[tabler--user-check] size-4"></span>
-                            Activate
+                            {{ $trans['btn.activate'] ?? 'Activate' }}
                         </button>
                     @endif
                 </div>
@@ -161,7 +161,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ number_format($allTimeStats['total_classes']) }}</p>
-                        <p class="text-sm text-base-content/60">Classes Taught</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['instructors.classes_taught'] ?? 'Classes Taught' }}</p>
                     </div>
                 </div>
             </div>
@@ -174,7 +174,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ number_format($allTimeStats['total_services']) }}</p>
-                        <p class="text-sm text-base-content/60">Services Given</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['instructors.services_given'] ?? 'Services Given' }}</p>
                     </div>
                 </div>
             </div>
@@ -187,7 +187,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ number_format($allTimeStats['total_clients']) }}</p>
-                        <p class="text-sm text-base-content/60">Clients Served</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['instructors.clients_served'] ?? 'Clients Served' }}</p>
                     </div>
                 </div>
             </div>
@@ -200,7 +200,7 @@
                     </div>
                     <div>
                         <p class="text-2xl font-bold">{{ $allTimeStats['years_teaching'] > 0 ? $allTimeStats['years_teaching'] . '+' : '<1' }}</p>
-                        <p class="text-sm text-base-content/60">Years with Studio</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['instructors.years_with_studio'] ?? 'Years with Studio' }}</p>
                     </div>
                 </div>
             </div>
@@ -210,19 +210,19 @@
     {{-- Tabs --}}
     <div class="tabs tabs-bordered" role="tablist">
         <button class="tab {{ $tab === 'overview' ? 'tab-active' : '' }}" data-tab="overview" role="tab">
-            <span class="icon-[tabler--user] size-4 mr-2"></span>Overview
+            <span class="icon-[tabler--user] size-4 mr-2"></span>{{ $trans['tabs.overview'] ?? 'Overview' }}
         </button>
         <button class="tab {{ $tab === 'schedule' ? 'tab-active' : '' }}" data-tab="schedule" role="tab">
-            <span class="icon-[tabler--calendar] size-4 mr-2"></span>Schedule
+            <span class="icon-[tabler--calendar] size-4 mr-2"></span>{{ $trans['tabs.schedule'] ?? 'Schedule' }}
         </button>
         <button class="tab {{ $tab === 'assignments' ? 'tab-active' : '' }}" data-tab="assignments" role="tab">
-            <span class="icon-[tabler--list-check] size-4 mr-2"></span>Classes & Services
+            <span class="icon-[tabler--list-check] size-4 mr-2"></span>{{ $trans['tabs.classes_services'] ?? 'Classes & Services' }}
         </button>
         <button class="tab {{ $tab === 'billing' ? 'tab-active' : '' }}" data-tab="billing" role="tab">
-            <span class="icon-[tabler--wallet] size-4 mr-2"></span>Billing
+            <span class="icon-[tabler--wallet] size-4 mr-2"></span>{{ $trans['tabs.billing'] ?? 'Billing' }}
         </button>
         <button class="tab {{ $tab === 'notes' ? 'tab-active' : '' }}" data-tab="notes" role="tab">
-            <span class="icon-[tabler--notes] size-4 mr-2"></span>Notes
+            <span class="icon-[tabler--notes] size-4 mr-2"></span>{{ $trans['tabs.notes'] ?? 'Notes' }}
             @if($instructor->notes->count() > 0)
                 <span class="badge badge-sm badge-primary ml-1">{{ $instructor->notes->count() }}</span>
             @endif
@@ -242,7 +242,7 @@
                         <div class="card-body">
                             <h2 class="card-title text-lg">
                                 <span class="icon-[tabler--quote] size-5"></span>
-                                About
+                                {{ $trans['instructors.about'] ?? 'About' }}
                             </h2>
                             <p class="mt-2 text-base-content/80 leading-relaxed">{{ $instructor->bio }}</p>
                         </div>
@@ -254,40 +254,40 @@
                         <div class="card-body">
                             <h2 class="card-title text-lg">
                                 <span class="icon-[tabler--user-circle] size-5"></span>
-                                Profile Information
+                                {{ $trans['instructors.profile_information'] ?? 'Profile Information' }}
                             </h2>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mt-4">
                                 <div>
-                                    <label class="text-sm text-base-content/60">Full Name</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.full_name'] ?? 'Full Name' }}</label>
                                     <p class="font-medium">{{ $instructor->name }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Email</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.email'] ?? 'Email' }}</label>
                                     <p class="font-medium">{{ $instructor->email ?? '-' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Phone</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.phone'] ?? 'Phone' }}</label>
                                     <p class="font-medium">{{ $instructor->phone ?? '-' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Employment Type</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.employment_type'] ?? 'Employment Type' }}</label>
                                     <p class="font-medium">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Linked Account</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['instructors.linked_account'] ?? 'Linked Account' }}</label>
                                     <p class="font-medium flex items-center gap-1">
                                         @if($instructor->hasAccount())
-                                            <span class="icon-[tabler--check] size-4 text-success"></span> Yes
+                                            <span class="icon-[tabler--check] size-4 text-success"></span> {{ $trans['common.yes'] ?? 'Yes' }}
                                         @elseif($instructor->hasPendingInvitation())
-                                            <span class="icon-[tabler--clock] size-4 text-warning"></span> Invite Pending
+                                            <span class="icon-[tabler--clock] size-4 text-warning"></span> {{ $trans['instructors.invite_pending'] ?? 'Invite Pending' }}
                                         @else
-                                            <span class="icon-[tabler--x] size-4 text-error"></span> No
+                                            <span class="icon-[tabler--x] size-4 text-error"></span> {{ $trans['common.no'] ?? 'No' }}
                                         @endif
                                     </p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Public Visibility</label>
-                                    <p class="font-medium">{{ $instructor->is_visible ? 'Visible' : 'Hidden' }}</p>
+                                    <label class="text-sm text-base-content/60">{{ $trans['instructors.public_visibility'] ?? 'Public Visibility' }}</label>
+                                    <p class="font-medium">{{ $instructor->is_visible ? ($trans['common.visible'] ?? 'Visible') : ($trans['common.hidden'] ?? 'Hidden') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -298,27 +298,27 @@
                         <div class="card-body">
                             <h2 class="card-title text-lg">
                                 <span class="icon-[tabler--briefcase] size-5"></span>
-                                Employment & Compensation
+                                {{ $trans['instructors.employment_compensation'] ?? 'Employment & Compensation' }}
                             </h2>
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-6 mt-4">
                                 <div>
-                                    <label class="text-sm text-base-content/60">Rate</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.rate'] ?? 'Rate' }}</label>
                                     <p class="font-medium text-lg text-success">{{ $instructor->getFormattedRate() ?? '-' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Hours per Week</label>
-                                    <p class="font-medium">{{ $instructor->hours_per_week ? $instructor->hours_per_week . ' hrs' : '-' }}</p>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.hours_per_week'] ?? 'Hours per Week' }}</label>
+                                    <p class="font-medium">{{ $instructor->hours_per_week ? $instructor->hours_per_week . ' ' . ($trans['common.hrs'] ?? 'hrs') : '-' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Max Classes/Week</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.max_classes_week'] ?? 'Max Classes/Week' }}</label>
                                     <p class="font-medium">{{ $instructor->max_classes_per_week ?? '-' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Working Days</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['instructors.working_days'] ?? 'Working Days' }}</label>
                                     <p class="font-medium">{{ $instructor->getFormattedWorkingDays() ?: '-' }}</p>
                                 </div>
                                 <div>
-                                    <label class="text-sm text-base-content/60">Default Hours</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['instructors.default_hours'] ?? 'Default Hours' }}</label>
                                     <p class="font-medium">
                                         @if($instructor->availability_default_from && $instructor->availability_default_to)
                                             {{ $instructor->availability_default_from }} - {{ $instructor->availability_default_to }}
@@ -330,7 +330,7 @@
                             </div>
                             @if($instructor->compensation_notes)
                                 <div class="mt-4 p-3 bg-base-200/50 rounded-lg">
-                                    <label class="text-sm text-base-content/60">Compensation Notes</label>
+                                    <label class="text-sm text-base-content/60">{{ $trans['field.compensation_notes'] ?? 'Compensation Notes' }}</label>
                                     <p class="mt-1">{{ $instructor->compensation_notes }}</p>
                                 </div>
                             @endif
@@ -343,7 +343,7 @@
                         <div class="card-body">
                             <h2 class="card-title text-lg">
                                 <span class="icon-[tabler--certificate] size-5"></span>
-                                Certifications
+                                {{ $trans['field.certifications'] ?? 'Certifications' }}
                             </h2>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                                 @foreach($instructor->studioCertifications as $cert)
@@ -358,13 +358,13 @@
                                             @endif
                                             <div class="flex items-center gap-2 mt-1 text-xs text-base-content/60">
                                                 @if($cert->issue_date)
-                                                    <span>Issued: {{ $cert->issue_date->format('M Y') }}</span>
+                                                    <span>{{ $trans['common.issued'] ?? 'Issued' }}: {{ $cert->issue_date->format('M Y') }}</span>
                                                 @endif
                                                 @if($cert->expiry_date)
                                                     <span class="{{ $cert->expiry_date->isPast() ? 'text-error' : '' }}">
-                                                        Expires: {{ $cert->expiry_date->format('M Y') }}
+                                                        {{ $trans['common.expires'] ?? 'Expires' }}: {{ $cert->expiry_date->format('M Y') }}
                                                         @if($cert->expiry_date->isPast())
-                                                            <span class="badge badge-error badge-xs ml-1">Expired</span>
+                                                            <span class="badge badge-error badge-xs ml-1">{{ $trans['common.expired'] ?? 'Expired' }}</span>
                                                         @endif
                                                     </span>
                                                 @endif

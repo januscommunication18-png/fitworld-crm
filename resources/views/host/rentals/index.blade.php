@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Rental Items')
+@section('title', $trans['nav.rentals'] ?? 'Rental Items')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Rental Items</li>
+        <li aria-current="page">{{ $trans['nav.rentals'] ?? 'Rental Items' }}</li>
     </ol>
 @endsection
 
@@ -15,17 +15,17 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold">Rental Items</h1>
-            <p class="text-base-content/60 mt-1">Manage equipment and items available for rent.</p>
+            <h1 class="text-2xl font-bold">{{ $trans['nav.rentals'] ?? 'Rental Items' }}</h1>
+            <p class="text-base-content/60 mt-1">{{ $trans['rentals.description'] ?? 'Manage equipment and items available for rent.' }}</p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('rentals.fulfillment.index') }}" class="btn btn-ghost">
                 <span class="icon-[tabler--clipboard-check] size-5"></span>
-                Fulfillment
+                {{ $trans['rentals.fulfillment'] ?? 'Fulfillment' }}
             </a>
             <a href="{{ route('rentals.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
-                Add Item
+                {{ $trans['rentals.add_item'] ?? 'Add Item' }}
             </a>
         </div>
     </div>
@@ -33,15 +33,15 @@
     {{-- Filters --}}
     <div class="flex flex-wrap items-center gap-4">
         <div class="tabs tabs-boxed">
-            <a href="{{ route('rentals.index') }}" class="tab {{ !$status && !$category ? 'tab-active' : '' }}">All</a>
-            <a href="{{ route('rentals.index', ['status' => 'active']) }}" class="tab {{ $status === 'active' ? 'tab-active' : '' }}">Active</a>
-            <a href="{{ route('rentals.index', ['status' => 'low_stock']) }}" class="tab {{ $status === 'low_stock' ? 'tab-active' : '' }}">Low Stock</a>
-            <a href="{{ route('rentals.index', ['status' => 'out_of_stock']) }}" class="tab {{ $status === 'out_of_stock' ? 'tab-active' : '' }}">Out of Stock</a>
+            <a href="{{ route('rentals.index') }}" class="tab {{ !$status && !$category ? 'tab-active' : '' }}">{{ $trans['common.all'] ?? 'All' }}</a>
+            <a href="{{ route('rentals.index', ['status' => 'active']) }}" class="tab {{ $status === 'active' ? 'tab-active' : '' }}">{{ $trans['common.active'] ?? 'Active' }}</a>
+            <a href="{{ route('rentals.index', ['status' => 'low_stock']) }}" class="tab {{ $status === 'low_stock' ? 'tab-active' : '' }}">{{ $trans['rentals.low_stock'] ?? 'Low Stock' }}</a>
+            <a href="{{ route('rentals.index', ['status' => 'out_of_stock']) }}" class="tab {{ $status === 'out_of_stock' ? 'tab-active' : '' }}">{{ $trans['rentals.out_of_stock'] ?? 'Out of Stock' }}</a>
         </div>
 
         @if(count($categories) > 0)
         <select class="select select-bordered select-sm" onchange="window.location.href = this.value">
-            <option value="{{ route('rentals.index', ['status' => $status]) }}" {{ !$category ? 'selected' : '' }}>All Categories</option>
+            <option value="{{ route('rentals.index', ['status' => $status]) }}" {{ !$category ? 'selected' : '' }}>{{ $trans['rentals.all_categories'] ?? 'All Categories' }}</option>
             @foreach($categories as $key => $label)
                 <option value="{{ route('rentals.index', ['category' => $key, 'status' => $status]) }}" {{ $category === $key ? 'selected' : '' }}>{{ $label }}</option>
             @endforeach
@@ -54,11 +54,11 @@
         <div class="card bg-base-100">
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--package] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="text-lg font-semibold mb-2">No Rental Items Yet</h3>
-                <p class="text-base-content/60 mb-4">Add equipment, mats, towels, and other items for members to rent.</p>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['rentals.no_items'] ?? 'No Rental Items Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['rentals.get_started'] ?? 'Add equipment, mats, towels, and other items for members to rent.' }}</p>
                 <a href="{{ route('rentals.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
-                    Add First Item
+                    {{ $trans['rentals.add_first'] ?? 'Add First Item' }}
                 </a>
             </div>
         </div>
@@ -69,13 +69,13 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Item</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Deposit</th>
-                                <th>Inventory</th>
-                                <th>Status</th>
-                                <th class="w-24">Actions</th>
+                                <th>{{ $trans['rentals.item'] ?? 'Item' }}</th>
+                                <th>{{ $trans['field.category'] ?? 'Category' }}</th>
+                                <th>{{ $trans['field.price'] ?? 'Price' }}</th>
+                                <th>{{ $trans['rentals.deposit'] ?? 'Deposit' }}</th>
+                                <th>{{ $trans['rentals.inventory'] ?? 'Inventory' }}</th>
+                                <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                                <th class="w-24">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -113,9 +113,9 @@
                                         <span class="text-base-content/40">/ {{ $item->total_inventory }}</span>
                                     </div>
                                     @if($item->available_inventory <= 0)
-                                        <span class="badge badge-error badge-xs mt-1">Out of Stock</span>
+                                        <span class="badge badge-error badge-xs mt-1">{{ $trans['rentals.out_of_stock'] ?? 'Out of Stock' }}</span>
                                     @elseif($item->isLowStock())
-                                        <span class="badge badge-warning badge-xs mt-1">Low Stock</span>
+                                        <span class="badge badge-warning badge-xs mt-1">{{ $trans['rentals.low_stock'] ?? 'Low Stock' }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -123,22 +123,22 @@
                                         @csrf
                                         @method('PATCH')
                                         <button type="submit" class="badge cursor-pointer {{ $item->is_active ? 'badge-success' : 'badge-neutral' }} badge-soft badge-sm">
-                                            {{ $item->is_active ? 'Active' : 'Inactive' }}
+                                            {{ $item->is_active ? ($trans['common.active'] ?? 'Active') : ($trans['common.inactive'] ?? 'Inactive') }}
                                         </button>
                                     </form>
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <a href="{{ route('rentals.show', $item) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <a href="{{ route('rentals.show', $item) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
-                                        <a href="{{ route('rentals.edit', $item) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <a href="{{ route('rentals.edit', $item) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
-                                        <form action="{{ route('rentals.destroy', $item) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this item?')">
+                                        <form action="{{ route('rentals.destroy', $item) }}" method="POST" onsubmit="return confirm('{{ $trans['msg.confirm.delete'] ?? 'Are you sure you want to delete this item?' }}')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="Delete">
+                                            <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="{{ $trans['btn.delete'] ?? 'Delete' }}">
                                                 <span class="icon-[tabler--trash] size-4"></span>
                                             </button>
                                         </form>

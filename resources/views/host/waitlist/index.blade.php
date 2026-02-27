@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Waitlist')
+@section('title', $trans['nav.waitlist'] ?? 'Waitlist')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--hourglass] me-1 size-4"></span> Waitlist</li>
+        <li aria-current="page"><span class="icon-[tabler--hourglass] me-1 size-4"></span> {{ $trans['nav.waitlist'] ?? 'Waitlist' }}</li>
     </ol>
 @endsection
 
@@ -15,30 +15,30 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold">Waitlist</h1>
-            <p class="text-base-content/60 mt-1">Manage clients waiting for spots in classes.</p>
+            <h1 class="text-2xl font-bold">{{ $trans['nav.waitlist'] ?? 'Waitlist' }}</h1>
+            <p class="text-base-content/60 mt-1">{{ $trans['waitlist.description'] ?? 'Manage clients waiting for spots in classes.' }}</p>
         </div>
     </div>
 
     {{-- Status Tabs --}}
     <div class="flex items-center gap-2 flex-wrap border-b border-base-content/10">
         <a href="{{ route('waitlist.index') }}" class="px-4 py-2 border-b-2 {{ !$currentStatus ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            All <span class="badge badge-sm ml-1">{{ array_sum($statusCounts) }}</span>
+            {{ $trans['common.all'] ?? 'All' }} <span class="badge badge-sm ml-1">{{ array_sum($statusCounts) }}</span>
         </a>
         <a href="{{ route('waitlist.index', ['status' => 'waiting']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'waiting' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Waiting <span class="badge badge-info badge-sm ml-1">{{ $statusCounts['waiting'] }}</span>
+            {{ $trans['waitlist.waiting'] ?? 'Waiting' }} <span class="badge badge-info badge-sm ml-1">{{ $statusCounts['waiting'] }}</span>
         </a>
         <a href="{{ route('waitlist.index', ['status' => 'offered']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'offered' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Offered <span class="badge badge-warning badge-sm ml-1">{{ $statusCounts['offered'] }}</span>
+            {{ $trans['waitlist.offered'] ?? 'Offered' }} <span class="badge badge-warning badge-sm ml-1">{{ $statusCounts['offered'] }}</span>
         </a>
         <a href="{{ route('waitlist.index', ['status' => 'claimed']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'claimed' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Claimed <span class="badge badge-success badge-sm ml-1">{{ $statusCounts['claimed'] }}</span>
+            {{ $trans['waitlist.claimed'] ?? 'Claimed' }} <span class="badge badge-success badge-sm ml-1">{{ $statusCounts['claimed'] }}</span>
         </a>
         <a href="{{ route('waitlist.index', ['status' => 'expired']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'expired' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Expired <span class="badge badge-neutral badge-sm ml-1">{{ $statusCounts['expired'] }}</span>
+            {{ $trans['waitlist.expired'] ?? 'Expired' }} <span class="badge badge-neutral badge-sm ml-1">{{ $statusCounts['expired'] }}</span>
         </a>
         <a href="{{ route('waitlist.index', ['status' => 'cancelled']) }}" class="px-4 py-2 border-b-2 {{ $currentStatus === 'cancelled' ? 'border-primary text-primary font-medium' : 'border-transparent text-base-content/60 hover:text-base-content' }}">
-            Cancelled <span class="badge badge-error badge-sm ml-1">{{ $statusCounts['cancelled'] }}</span>
+            {{ $trans['common.cancelled'] ?? 'Cancelled' }} <span class="badge badge-error badge-sm ml-1">{{ $statusCounts['cancelled'] }}</span>
         </a>
     </div>
 
@@ -50,13 +50,13 @@
                 <input type="hidden" name="status" value="{{ $currentStatus }}">
                 @endif
                 <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="search">Search</label>
-                    <input type="text" id="search" name="search" value="{{ $search }}" class="input input-bordered w-full" placeholder="Name, email, phone...">
+                    <label class="label-text" for="search">{{ $trans['btn.search'] ?? 'Search' }}</label>
+                    <input type="text" id="search" name="search" value="{{ $search }}" class="input input-bordered w-full" placeholder="{{ $trans['waitlist.search_placeholder'] ?? 'Name, email, phone...' }}">
                 </div>
                 <div class="flex-1 min-w-[200px]">
-                    <label class="label-text" for="class_plan_id">Class</label>
+                    <label class="label-text" for="class_plan_id">{{ $trans['field.class'] ?? 'Class' }}</label>
                     <select id="class_plan_id" name="class_plan_id" class="select select-bordered w-full">
-                        <option value="">All Classes</option>
+                        <option value="">{{ $trans['common.all_classes'] ?? 'All Classes' }}</option>
                         @foreach($classPlans as $plan)
                         <option value="{{ $plan->id }}" {{ $currentClassPlan == $plan->id ? 'selected' : '' }}>{{ $plan->name }}</option>
                         @endforeach
@@ -64,11 +64,11 @@
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--filter] size-5"></span>
-                    Filter
+                    {{ $trans['btn.filter'] ?? 'Filter' }}
                 </button>
                 @if($search || $currentClassPlan)
                 <a href="{{ route('waitlist.index', $currentStatus ? ['status' => $currentStatus] : []) }}" class="btn btn-ghost">
-                    Clear
+                    {{ $trans['btn.clear'] ?? 'Clear' }}
                 </a>
                 @endif
             </form>
@@ -80,8 +80,8 @@
     <div class="card bg-base-100">
         <div class="card-body text-center py-12">
             <span class="icon-[tabler--hourglass-off] size-16 text-base-content/20 mx-auto mb-4"></span>
-            <h3 class="text-lg font-semibold mb-2">No Waitlist Entries</h3>
-            <p class="text-base-content/60 mb-4">There are no waitlist entries matching your filters.</p>
+            <h3 class="text-lg font-semibold mb-2">{{ $trans['waitlist.no_entries'] ?? 'No Waitlist Entries' }}</h3>
+            <p class="text-base-content/60 mb-4">{{ $trans['waitlist.no_entries_desc'] ?? 'There are no waitlist entries matching your filters.' }}</p>
         </div>
     </div>
     @else
@@ -91,12 +91,12 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Person</th>
-                            <th>Class</th>
-                            <th>Status</th>
-                            <th>Notes</th>
-                            <th>Added</th>
-                            <th class="w-40">Actions</th>
+                            <th>{{ $trans['waitlist.person'] ?? 'Person' }}</th>
+                            <th>{{ $trans['field.class'] ?? 'Class' }}</th>
+                            <th>{{ $trans['common.status'] ?? 'Status' }}</th>
+                            <th>{{ $trans['field.notes'] ?? 'Notes' }}</th>
+                            <th>{{ $trans['waitlist.added'] ?? 'Added' }}</th>
+                            <th class="w-40">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                         </tr>
                     </thead>
                     <tbody>

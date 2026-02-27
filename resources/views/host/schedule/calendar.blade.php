@@ -1,11 +1,3 @@
-@php
-    $user = auth()->user();
-    $host = $user->currentHost() ?? $user->host;
-    $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
-    $t = \App\Services\TranslationService::make($host, $selectedLang);
-    $trans = $t->all();
-@endphp
-
 @extends('layouts.dashboard')
 
 @section('title', $trans['schedule.calendar'] ?? 'Studio Calendar')
@@ -62,6 +54,12 @@
                             {{ $trans['page.memberships'] ?? 'Membership' }}
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('space-rentals.create') }}">
+                            <span class="icon-[tabler--building] size-5 text-secondary"></span>
+                            {{ $trans['nav.space_rentals'] ?? 'Space Rental' }}
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -101,6 +99,15 @@
                             <span class="text-xs text-base-content/60 ml-7">{{ $trans['schedule.membership_schedule_description'] ?? 'Recurring classes for membership holders' }}</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('space-rentals.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                            <span class="flex items-center gap-2">
+                                <span class="icon-[tabler--building] size-5 text-secondary"></span>
+                                <span class="font-medium">{{ $trans['nav.space_rentals'] ?? 'Space Rental' }}</span>
+                            </span>
+                            <span class="text-xs text-base-content/60 ml-7">{{ $trans['space_rentals.schedule_description'] ?? 'Book a space for professional use' }}</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -118,6 +125,7 @@
                         <option value="class">{{ $trans['page.classes'] ?? 'Classes' }} {{ $trans['common.only'] ?? 'Only' }}</option>
                         <option value="service">{{ $trans['page.services'] ?? 'Services' }} {{ $trans['common.only'] ?? 'Only' }}</option>
                         <option value="membership">{{ $trans['page.memberships'] ?? 'Membership' }} {{ $trans['common.only'] ?? 'Only' }}</option>
+                        <option value="space_rental">{{ $trans['nav.space_rentals'] ?? 'Space Rentals' }} {{ $trans['common.only'] ?? 'Only' }}</option>
                     </select>
                 </div>
 
@@ -180,6 +188,10 @@
                         <span class="text-sm font-medium text-base-content">{{ $trans['page.memberships'] ?? 'Membership' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #a855f7;"></span>
+                        <span class="text-sm font-medium text-base-content">{{ $trans['nav.space_rentals'] ?? 'Space Rental' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #f59e0b;"></span>
                         <span class="text-sm font-medium text-base-content">{{ $trans['common.draft'] ?? 'Draft' }}</span>
                     </div>
@@ -207,6 +219,11 @@
 {{-- Service Slot Drawers --}}
 @foreach($serviceSlots as $slot)
     @include('host.schedule.partials.service-slot-drawer', ['serviceSlot' => $slot])
+@endforeach
+
+{{-- Space Rental Drawers --}}
+@foreach($spaceRentals ?? [] as $rental)
+    @include('host.schedule.partials.space-rental-drawer', ['spaceRental' => $rental])
 @endforeach
 
 @push('styles')
@@ -378,6 +395,20 @@
         color: #ffffff !important;
     }
 
+    /* Space Rentals - Purple */
+    #studio-calendar .fc-event-rental,
+    #studio-calendar .fc .fc-event.fc-event-rental,
+    #studio-calendar .fc-event.fc-event-rental {
+        background-color: #a855f7 !important;
+        border-color: #a855f7 !important;
+        color: #ffffff !important;
+    }
+    #studio-calendar .fc-event-rental *,
+    #studio-calendar .fc .fc-event.fc-event-rental *,
+    #studio-calendar .fc-event.fc-event-rental * {
+        color: #ffffff !important;
+    }
+
     /* Month/DayGrid view - ensure colored backgrounds with proper text */
     #studio-calendar .fc .fc-daygrid-event {
         border-radius: 4px;
@@ -457,6 +488,17 @@
         color: #ffffff !important;
     }
 
+    #studio-calendar .fc .fc-daygrid-event.fc-event-rental,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-rental {
+        background-color: #a855f7 !important;
+    }
+    #studio-calendar .fc .fc-daygrid-event.fc-event-rental .fc-event-title,
+    #studio-calendar .fc .fc-daygrid-event.fc-event-rental .fc-event-time,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-rental .fc-event-title,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-rental .fc-event-time {
+        color: #ffffff !important;
+    }
+
     /* Block events in month view */
     #studio-calendar .fc .fc-daygrid-block-event .fc-event-title,
     #studio-calendar .fc .fc-daygrid-block-event .fc-event-time {
@@ -520,6 +562,16 @@
     #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-time,
     #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-title,
     #studio-calendar .fc .fc-timegrid-event.fc-event-info .fc-event-title-container {
+        color: #ffffff !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-rental,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-rental *,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-main,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-main-frame,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-title,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-title-container {
         color: #ffffff !important;
     }
 
@@ -779,6 +831,9 @@
     #studio-calendar .fc .fc-list-event.fc-event-info .fc-list-event-dot {
         border-color: #3b82f6 !important;
     }
+    #studio-calendar .fc .fc-list-event.fc-event-rental .fc-list-event-dot {
+        border-color: #a855f7 !important;
+    }
 
     #studio-calendar .fc .fc-list-event td {
         border-color: oklch(var(--bc) / 0.1);
@@ -929,7 +984,12 @@ document.addEventListener('DOMContentLoaded', function() {
         eventContent: function(arg) {
             // Custom event rendering for better narrow event handling
             const props = arg.event.extendedProps;
-            const typeIcon = props.type === 'class' ? 'yoga' : 'massage';
+            let typeIcon = 'yoga';
+            if (props.type === 'service') {
+                typeIcon = 'massage';
+            } else if (props.type === 'space_rental') {
+                typeIcon = 'building';
+            }
 
             // Create custom HTML structure
             const timeText = arg.timeText || '';
@@ -979,8 +1039,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             colorClass = 'fc-event-success';
                         } else if (event.extendedProps.type === 'membership' || event.extendedProps.isMembershipSession) {
                             colorClass = 'fc-event-secondary';
+                        } else if (event.extendedProps.type === 'space_rental') {
+                            colorClass = 'fc-event-rental';
                         }
-                        if (event.extendedProps.status === 'draft') {
+                        if (event.extendedProps.status === 'draft' || event.extendedProps.status === 'pending') {
                             colorClass = 'fc-event-warning';
                         }
                         if (event.extendedProps.status === 'completed') {
@@ -1001,9 +1063,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         },
         eventClick: function(info) {
-            // Open drawer
-            const [type, id] = info.event.id.split('_');
-            const drawerId = type === 'class' ? `class-session-${id}` : `service-slot-${id}`;
+            // Open drawer for all event types
+            const eventId = info.event.id;
+            const parts = eventId.split('_');
+            const type = parts[0];
+
+            let drawerId;
+            if (type === 'space' && parts[1] === 'rental') {
+                // Space rental - open drawer
+                drawerId = `space-rental-${parts[2]}`;
+            } else if (type === 'class') {
+                drawerId = `class-session-${parts[1]}`;
+            } else {
+                drawerId = `service-slot-${parts[1]}`;
+            }
+
             openDrawer(drawerId, info.jsEvent);
         },
         eventDidMount: function(info) {
@@ -1043,17 +1117,28 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create popover content (times are already in host timezone from API)
             const startTime = event.start ? event.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
             const endTime = event.end ? event.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
-            const type = props.type === 'class' ? 'Class' : 'Service';
-            const typeIcon = props.type === 'class' ? 'yoga' : 'massage';
-            const typeColor = props.type === 'class' ? 'primary' : 'success';
+            let type = 'Class';
+            let typeIcon = 'yoga';
+            let typeColor = 'primary';
+            if (props.type === 'service') {
+                type = 'Service';
+                typeIcon = 'massage';
+                typeColor = 'success';
+            } else if (props.type === 'space_rental') {
+                type = 'Space Rental';
+                typeIcon = 'building';
+                typeColor = 'secondary';
+            }
 
             let statusBadge = '';
             if (props.status === 'draft') {
                 statusBadge = '<span class="badge badge-warning badge-xs">Draft</span>';
-            } else if (props.status === 'published' || props.status === 'available') {
-                statusBadge = '<span class="badge badge-success badge-xs">Published</span>';
-            } else if (props.status === 'booked') {
-                statusBadge = '<span class="badge badge-info badge-xs">Booked</span>';
+            } else if (props.status === 'pending') {
+                statusBadge = '<span class="badge badge-warning badge-xs">Pending</span>';
+            } else if (props.status === 'published' || props.status === 'available' || props.status === 'confirmed') {
+                statusBadge = '<span class="badge badge-success badge-xs">' + (props.status === 'confirmed' ? 'Confirmed' : 'Published') + '</span>';
+            } else if (props.status === 'booked' || props.status === 'in_progress') {
+                statusBadge = '<span class="badge badge-info badge-xs">' + (props.status === 'in_progress' ? 'In Progress' : 'Booked') + '</span>';
             } else if (props.status === 'completed') {
                 statusBadge = '<span class="badge badge-info badge-xs">Completed</span>';
             }
@@ -1082,6 +1167,55 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${checkedInHtml}
                     ${cancelledHtml}
                 `;
+            } else if (props.type === 'space_rental') {
+                let waiverHtml = props.waiverPending ? `
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--file-certificate] size-3 text-warning"></span>
+                        <span class="text-warning">Waiver Pending</span>
+                    </div>
+                ` : '';
+
+                let depositHtml = props.depositPending ? `
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--cash] size-3 text-warning"></span>
+                        <span class="text-warning">Deposit Pending</span>
+                    </div>
+                ` : '';
+
+                bookingInfo = `
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--user] size-3 text-base-content/60"></span>
+                        <span>Client: <span class="font-medium">${props.client || 'N/A'}</span></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--tag] size-3 text-base-content/60"></span>
+                        <span>Purpose: <span class="font-medium">${props.purpose || 'N/A'}</span></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--currency-dollar] size-3 text-base-content/60"></span>
+                        <span>Total: <span class="font-medium">${props.total || 'N/A'}</span></span>
+                    </div>
+                    ${waiverHtml}
+                    ${depositHtml}
+                `;
+            }
+
+            // Build instructor/space info based on type
+            let infoLine = '';
+            if (props.type === 'space_rental') {
+                infoLine = `
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--building] size-3 text-base-content/60"></span>
+                        <span>${props.space || 'TBD'}</span>
+                    </div>
+                `;
+            } else {
+                infoLine = `
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--user] size-3 text-base-content/60"></span>
+                        <span>${props.instructor || 'TBD'}</span>
+                    </div>
+                `;
             }
 
             const popoverContent = `
@@ -1099,13 +1233,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span class="icon-[tabler--clock] size-3 text-base-content/60"></span>
                             <span>${startTime} - ${endTime}</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="icon-[tabler--user] size-3 text-base-content/60"></span>
-                            <span>${props.instructor}</span>
-                        </div>
+                        ${infoLine}
                         <div class="flex items-center gap-2">
                             <span class="icon-[tabler--map-pin] size-3 text-base-content/60"></span>
-                            <span>${props.location}</span>
+                            <span>${props.location || 'TBD'}</span>
                         </div>
                         ${bookingInfo}
                     </div>

@@ -113,7 +113,7 @@ class ServicePlanController extends Controller
             ->with('success', 'Service plan created successfully.');
     }
 
-    public function show(ServicePlan $servicePlan)
+    public function show(ServicePlan $servicePlan, Request $request)
     {
         $this->authorizeHost($servicePlan);
 
@@ -124,11 +124,36 @@ class ServicePlanController extends Controller
         $defaultCurrency = $host->default_currency ?? 'USD';
         $currencySymbols = MembershipPlan::getCurrencySymbols();
 
+        // Tab support
+        $tab = $request->get('tab', 'overview');
+
+        // Load locations that have slots for this service plan (scoped to host)
+        $locations = $host->locations()
+            ->whereHas('serviceSlots', function ($q) use ($servicePlan, $host) {
+                $q->where('service_plan_id', $servicePlan->id)
+                    ->where('host_id', $host->id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Load upcoming slots grouped by location (scoped to host)
+        $slotsByLocation = $servicePlan->slots()
+            ->where('host_id', $host->id)
+            ->where('start_time', '>', now())
+            ->where('status', '!=', 'cancelled')
+            ->with(['instructor', 'location', 'room'])
+            ->orderBy('start_time')
+            ->get()
+            ->groupBy('location_id');
+
         return view('host.service-plans.show', compact(
             'servicePlan',
             'hostCurrencies',
             'defaultCurrency',
-            'currencySymbols'
+            'currencySymbols',
+            'tab',
+            'locations',
+            'slotsByLocation'
         ));
     }
 

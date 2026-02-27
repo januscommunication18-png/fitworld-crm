@@ -1,6 +1,6 @@
 @extends('layouts.subdomain')
 
-@section('title', $host->studio_name . ' — Instructors')
+@section('title', $host->studio_name . ' — ' . ($trans['nav.instructors'] ?? 'Instructors'))
 
 @section('content')
 
@@ -13,13 +13,13 @@
     <div class="flex justify-center mb-6">
         <div class="tabs tabs-boxed bg-base-200 p-1">
             <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="tab">
-                <span class="icon-[tabler--home] size-4 me-1"></span> Home
+                <span class="icon-[tabler--home] size-4 me-1"></span> {{ $trans['nav.dashboard'] ?? 'Home' }}
             </a>
             <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="tab">
-                <span class="icon-[tabler--calendar] size-4 me-1"></span> Schedule
+                <span class="icon-[tabler--calendar] size-4 me-1"></span> {{ $trans['nav.schedule'] ?? 'Schedule' }}
             </a>
             <a href="{{ route('subdomain.instructors', ['subdomain' => $host->subdomain]) }}" class="tab tab-active">
-                <span class="icon-[tabler--users] size-4 me-1"></span> Instructors
+                <span class="icon-[tabler--users] size-4 me-1"></span> {{ $trans['nav.instructors'] ?? 'Instructors' }}
             </a>
         </div>
     </div>
@@ -29,12 +29,12 @@
         <div class="card bg-base-100 border border-base-200">
             <div class="card-body py-16 text-center">
                 <span class="icon-[tabler--users-off] size-16 text-base-content/20 mx-auto mb-4"></span>
-                <h3 class="font-semibold text-lg text-base-content">No Instructors Yet</h3>
-                <p class="text-base-content/60 mt-1">Check back soon to meet our team!</p>
+                <h3 class="font-semibold text-lg text-base-content">{{ $trans['subdomain.instructors.no_instructors'] ?? 'No Instructors Yet' }}</h3>
+                <p class="text-base-content/60 mt-1">{{ $trans['subdomain.instructors.check_back'] ?? 'Check back soon to meet our team!' }}</p>
                 <div class="mt-6">
                     <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="btn btn-primary">
                         <span class="icon-[tabler--arrow-left] size-4"></span>
-                        Back to Home
+                        {{ $trans['btn.back_home'] ?? 'Back to Home' }}
                     </a>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                                 <p class="text-sm text-base-content/60 mt-3 line-clamp-2">{{ $instructor->bio }}</p>
                             @endif
                             <div class="mt-3 flex items-center gap-1 text-sm text-primary font-medium">
-                                View Profile
+                                {{ $trans['subdomain.instructors.view_profile'] ?? 'View Profile' }}
                                 <span class="icon-[tabler--chevron-right] size-4"></span>
                             </div>
                         </div>

@@ -1,14 +1,14 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Sell Membership')
+@section('title', $trans['page.sell_membership'] ?? 'Sell Membership')
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('schedule.calendar') }}"><span class="icon-[tabler--calendar] me-1 size-4"></span> Calendar</a></li>
+        <li><a href="{{ route('schedule.calendar') }}"><span class="icon-[tabler--calendar] me-1 size-4"></span> {{ $trans['nav.calendar'] ?? 'Calendar' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Sell Membership</li>
+        <li aria-current="page">{{ $trans['page.sell_membership'] ?? 'Sell Membership' }}</li>
     </ol>
 @endsection
 
@@ -20,8 +20,8 @@
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
-            <h1 class="text-2xl font-bold">Sell Membership</h1>
-            <p class="text-base-content/60">Sell a membership plan to a client</p>
+            <h1 class="text-2xl font-bold">{{ $trans['page.sell_membership'] ?? 'Sell Membership' }}</h1>
+            <p class="text-base-content/60">{{ $trans['walk_in.sell_membership_desc'] ?? 'Sell a membership plan to a client' }}</p>
         </div>
     </div>
 
@@ -49,7 +49,7 @@
     <div class="alert alert-error mb-6">
         <span class="icon-[tabler--alert-circle] size-5"></span>
         <div>
-            <div class="font-medium">Please fix the following errors:</div>
+            <div class="font-medium">{{ $trans['common.fix_errors'] ?? 'Please fix the following errors:' }}</div>
             <ul class="mt-1 text-sm list-disc list-inside">
                 @foreach ($errors->all() as $error)
                 <li>{{ $error }}</li>
@@ -82,7 +82,7 @@
                     <div class="card-body">
                         <h2 class="card-title mb-4">
                             <span class="icon-[tabler--user] size-5"></span>
-                            Select Client
+                            {{ $trans['walk_in.select_client'] ?? 'Select Client' }}
                         </h2>
 
                         {{-- Client Type Selection --}}
@@ -91,16 +91,16 @@
                                 <input type="radio" name="client_type" value="existing" class="radio radio-primary" checked>
                                 <span class="icon-[tabler--users] size-6 text-primary"></span>
                                 <div>
-                                    <span class="font-semibold">Existing Client</span>
-                                    <span class="text-xs text-base-content/60 block">Search client list</span>
+                                    <span class="font-semibold">{{ $trans['walk_in.existing_client'] ?? 'Existing Client' }}</span>
+                                    <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.search_client_list'] ?? 'Search client list' }}</span>
                                 </div>
                             </label>
                             <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
                                 <input type="radio" name="client_type" value="new" class="radio radio-success">
                                 <span class="icon-[tabler--user-plus] size-6 text-success"></span>
                                 <div>
-                                    <span class="font-semibold">New Client</span>
-                                    <span class="text-xs text-base-content/60 block">Create new profile</span>
+                                    <span class="font-semibold">{{ $trans['walk_in.new_client'] ?? 'New Client' }}</span>
+                                    <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.create_new_profile'] ?? 'Create new profile' }}</span>
                                 </div>
                             </label>
                         </div>
@@ -113,7 +113,7 @@
                                     <input type="text"
                                            id="client-search"
                                            class="input input-bordered w-full pl-10"
-                                           placeholder="Search by name, email or phone...">
+                                           placeholder="{{ $trans['walk_in.search_placeholder'] ?? 'Search by name, email or phone...' }}">
                                 </div>
                             </div>
                             <div id="client-search-results" class="space-y-2"></div>
@@ -123,25 +123,25 @@
                         <div id="new-client-section" class="hidden space-y-4">
                             <div class="grid grid-cols-2 gap-4">
                                 <div class="form-control">
-                                    <label class="label-text" for="new_first_name">First Name</label>
+                                    <label class="label-text" for="new_first_name">{{ $trans['field.first_name'] ?? 'First Name' }}</label>
                                     <input type="text" id="new_first_name" class="input input-bordered" placeholder="John">
                                 </div>
                                 <div class="form-control">
-                                    <label class="label-text" for="new_last_name">Last Name</label>
+                                    <label class="label-text" for="new_last_name">{{ $trans['field.last_name'] ?? 'Last Name' }}</label>
                                     <input type="text" id="new_last_name" class="input input-bordered" placeholder="Doe">
                                 </div>
                             </div>
                             <div class="form-control">
-                                <label class="label-text" for="new_email">Email</label>
+                                <label class="label-text" for="new_email">{{ $trans['field.email'] ?? 'Email' }}</label>
                                 <input type="email" id="new_email" class="input input-bordered" placeholder="john@example.com">
                             </div>
                             <div class="form-control">
-                                <label class="label-text" for="new_phone">Phone</label>
+                                <label class="label-text" for="new_phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
                                 <input type="tel" id="new_phone" class="input input-bordered" placeholder="+1 234 567 8900">
                             </div>
                             <button type="button" id="create-client-btn" class="btn btn-success btn-sm">
                                 <span class="icon-[tabler--plus] size-4"></span>
-                                Create Client
+                                {{ $trans['btn.create_client'] ?? 'Create Client' }}
                             </button>
                         </div>
 
@@ -215,15 +215,15 @@
                         <div class="card-body">
                             <h2 class="card-title mb-4">
                                 <span class="icon-[tabler--id-badge-2] size-5"></span>
-                                Select Membership Plan
+                                {{ $trans['walk_in.select_membership_plan'] ?? 'Select Membership Plan' }}
                             </h2>
 
                             @if($membershipPlans->isEmpty())
                                 <div class="text-center py-8">
                                     <span class="icon-[tabler--package-off] size-12 text-base-content/20"></span>
-                                    <p class="text-base-content/60 mt-2">No active membership plans available.</p>
+                                    <p class="text-base-content/60 mt-2">{{ $trans['walk_in.no_membership_plans'] ?? 'No active membership plans available.' }}</p>
                                     <a href="{{ route('membership-plans.create') }}" class="btn btn-primary btn-sm mt-4">
-                                        Create Membership Plan
+                                        {{ $trans['btn.create_membership_plan'] ?? 'Create Membership Plan' }}
                                     </a>
                                 </div>
                             @else
@@ -265,14 +265,14 @@
                     <div class="card-body">
                         <h2 class="card-title mb-4">
                             <span class="icon-[tabler--calendar] size-5"></span>
-                            Start Date
+                            {{ $trans['field.start_date'] ?? 'Start Date' }}
                         </h2>
                         <div class="form-control">
                             <input type="date" name="start_date" id="start_date"
                                    class="input input-bordered w-full max-w-xs"
                                    value="{{ now()->format('Y-m-d') }}"
                                    min="{{ now()->format('Y-m-d') }}">
-                            <p class="text-xs text-base-content/60 mt-1">When should the membership start?</p>
+                            <p class="text-xs text-base-content/60 mt-1">{{ $trans['walk_in.membership_start_help'] ?? 'When should the membership start?' }}</p>
                         </div>
                     </div>
                 </div>
@@ -285,35 +285,35 @@
                     <div class="card-body">
                         <h2 class="card-title mb-4">
                             <span class="icon-[tabler--cash] size-5"></span>
-                            Payment
+                            {{ $trans['drawer.payment'] ?? 'Payment' }}
                         </h2>
 
                         <div class="space-y-3">
                             <label class="flex items-center gap-3 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
                                 <input type="radio" name="payment_method" value="manual" class="radio radio-primary" checked>
                                 <span class="icon-[tabler--wallet] size-5 text-primary"></span>
-                                <span class="font-medium">Manual Payment</span>
+                                <span class="font-medium">{{ $trans['walk_in.manual_payment'] ?? 'Manual Payment' }}</span>
                             </label>
                             <label class="flex items-center gap-3 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
                                 <input type="radio" name="payment_method" value="comp" class="radio radio-success">
                                 <span class="icon-[tabler--gift] size-5 text-success"></span>
-                                <span class="font-medium">Complimentary</span>
+                                <span class="font-medium">{{ $trans['walk_in.complimentary'] ?? 'Complimentary' }}</span>
                             </label>
                         </div>
 
                         {{-- Manual Payment Options --}}
                         <div id="manual-payment-options" class="mt-4 space-y-3">
                             <div class="form-control">
-                                <label class="label-text" for="manual_method">Payment Method</label>
+                                <label class="label-text" for="manual_method">{{ $trans['walk_in.payment_method'] ?? 'Payment Method' }}</label>
                                 <select name="manual_method" id="manual_method" class="select select-bordered w-full">
-                                    <option value="cash">Cash</option>
-                                    <option value="card">Card</option>
-                                    <option value="check">Check</option>
-                                    <option value="other">Other</option>
+                                    <option value="cash">{{ $trans['payment.cash'] ?? 'Cash' }}</option>
+                                    <option value="card">{{ $trans['payment.card'] ?? 'Card' }}</option>
+                                    <option value="check">{{ $trans['payment.check'] ?? 'Check' }}</option>
+                                    <option value="other">{{ $trans['payment.other'] ?? 'Other' }}</option>
                                 </select>
                             </div>
                             <div class="form-control">
-                                <label class="label-text" for="price_paid">Amount Paid</label>
+                                <label class="label-text" for="price_paid">{{ $trans['walk_in.amount_paid'] ?? 'Amount Paid' }}</label>
                                 <label class="input input-bordered flex items-center gap-2">
                                     <span class="text-base-content/60">{{ $currencySymbols[$defaultCurrency] ?? '$' }}</span>
                                     <input type="number" name="price_paid" id="price_paid" step="0.01" min="0"
@@ -324,8 +324,8 @@
 
                         {{-- Notes --}}
                         <div class="form-control mt-4">
-                            <label class="label-text" for="notes">Notes (optional)</label>
-                            <textarea name="notes" id="notes" rows="2" class="textarea textarea-bordered" placeholder="Payment notes..."></textarea>
+                            <label class="label-text" for="notes">{{ $trans['field.notes_optional'] ?? 'Notes (optional)' }}</label>
+                            <textarea name="notes" id="notes" rows="2" class="textarea textarea-bordered" placeholder="{{ $trans['walk_in.payment_notes'] ?? 'Payment notes...' }}"></textarea>
                         </div>
 
                         @if($selectedClassSession)
@@ -334,8 +334,8 @@
                                 <label class="cursor-pointer flex items-start gap-3">
                                     <input type="checkbox" name="book_into_class" value="1" class="checkbox checkbox-primary mt-0.5" checked>
                                     <div>
-                                        <span class="font-medium">Also book into class</span>
-                                        <p class="text-xs text-base-content/60">Book the client into "{{ $selectedClassSession->display_title }}" using this membership</p>
+                                        <span class="font-medium">{{ $trans['walk_in.also_book_class'] ?? 'Also book into class' }}</span>
+                                        <p class="text-xs text-base-content/60">{{ $trans['walk_in.book_into_class_desc'] ?? 'Book the client into' }} "{{ $selectedClassSession->display_title }}" {{ $trans['walk_in.using_membership'] ?? 'using this membership' }}</p>
                                     </div>
                                 </label>
                             </div>
@@ -348,31 +348,31 @@
                     <div class="card-body">
                         <h2 class="card-title mb-4">
                             <span class="icon-[tabler--receipt] size-5"></span>
-                            Summary
+                            {{ $trans['walk_in.summary'] ?? 'Summary' }}
                         </h2>
                         <div id="summary-content" class="space-y-2 text-sm">
                             <div class="flex justify-between">
-                                <span class="text-base-content/60">Client</span>
-                                <span id="summary-client" class="font-medium">Not selected</span>
+                                <span class="text-base-content/60">{{ $trans['field.client'] ?? 'Client' }}</span>
+                                <span id="summary-client" class="font-medium">{{ $trans['common.not_selected'] ?? 'Not selected' }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-base-content/60">Membership</span>
-                                <span id="summary-plan" class="font-medium">Not selected</span>
+                                <span class="text-base-content/60">{{ $trans['field.membership'] ?? 'Membership' }}</span>
+                                <span id="summary-plan" class="font-medium">{{ $trans['common.not_selected'] ?? 'Not selected' }}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-base-content/60">Start Date</span>
+                                <span class="text-base-content/60">{{ $trans['field.start_date'] ?? 'Start Date' }}</span>
                                 <span id="summary-date" class="font-medium">{{ now()->format('M j, Y') }}</span>
                             </div>
                             <div class="divider my-2"></div>
                             <div class="flex justify-between text-lg">
-                                <span class="font-semibold">Total</span>
+                                <span class="font-semibold">{{ $trans['field.total'] ?? 'Total' }}</span>
                                 <span id="summary-total" class="font-bold text-primary">$0.00</span>
                             </div>
                         </div>
 
                         <button type="submit" id="submit-btn" class="btn btn-primary w-full mt-4" disabled>
                             <span class="icon-[tabler--check] size-5"></span>
-                            Complete Sale
+                            {{ $trans['btn.complete_sale'] ?? 'Complete Sale' }}
                         </button>
                     </div>
                 </div>
