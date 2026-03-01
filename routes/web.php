@@ -39,6 +39,7 @@ use App\Http\Controllers\Host\ScheduledMembershipController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\QuestionnaireResponseController;
 use App\Http\Controllers\SecurityCodeController;
+use App\Http\Controllers\Public\ProspectWaitlistController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -51,6 +52,13 @@ Route::post('/security-code', [SecurityCodeController::class, 'verify'])->name('
 Route::get('/', function () {
     return view('welcome');
 })->name('welcome');
+
+// Public Prospect Waitlist Form
+Route::prefix('join-waitlist')->name('public.waitlist.')->group(function () {
+    Route::get('/', [ProspectWaitlistController::class, 'show'])->name('form');
+    Route::post('/', [ProspectWaitlistController::class, 'store'])->name('store');
+    Route::get('/success', [ProspectWaitlistController::class, 'success'])->name('success');
+});
 
 // Public Questionnaire Response Routes (no auth required)
 Route::prefix('q')->name('questionnaire.')->group(function () {

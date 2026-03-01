@@ -12,6 +12,7 @@ use App\Http\Controllers\Backoffice\PlanController;
 use App\Http\Controllers\Backoffice\PlaceholderController;
 use App\Http\Controllers\Backoffice\SettingsController;
 use App\Http\Controllers\Backoffice\TranslationController;
+use App\Http\Controllers\Backoffice\WaitlistController;
 use App\Models\Host;
 use Illuminate\Support\Facades\Route;
 
@@ -105,6 +106,13 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                     Route::put('/{id}', [TranslationController::class, 'update'])->name('update');
                     Route::delete('/{id}', [TranslationController::class, 'destroy'])->name('destroy');
                     Route::post('/copy', [TranslationController::class, 'copy'])->name('copy');
+                });
+
+                // Waitlist
+                Route::prefix('waitlist')->name('waitlist.')->group(function () {
+                    Route::get('/', [WaitlistController::class, 'index'])->name('index');
+                    Route::post('/', [WaitlistController::class, 'store'])->name('store');
+                    Route::delete('/{waitlist}', [WaitlistController::class, 'destroy'])->name('destroy');
                 });
 
                 // Coming Soon Placeholders
