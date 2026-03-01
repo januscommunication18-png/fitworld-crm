@@ -106,6 +106,12 @@
                 @if($waitlistEntry->studio_name)
                 <p><strong>Studio:</strong> {{ $waitlistEntry->studio_name }}</p>
                 @endif
+                @if($waitlistEntry->studio_type && count($waitlistEntry->studio_type) > 0)
+                <p><strong>Studio Type:</strong> {{ $waitlistEntry->studio_type_label }}</p>
+                @endif
+                @if($waitlistEntry->member_size)
+                <p><strong>Members:</strong> {{ $waitlistEntry->member_size_label }}</p>
+                @endif
             </div>
 
             <p>We'll reach out soon with updates on our progress. In the meantime, feel free to reply to this email if you have any questions or suggestions — we read every message.</p>
