@@ -30,7 +30,12 @@ class ProspectWaitlistController extends Controller
         $waitlistEntry = ProspectWaitlist::create($validated);
 
         // Send thank you email
-        Mail::to($waitlistEntry->email)->send(new WaitlistThankYouMail($waitlistEntry));
+        try {
+            Mail::to($waitlistEntry->email)->send(new WaitlistThankYouMail($waitlistEntry));
+        } catch (\Exception $e) {
+            // Log the error but don't fail the form submission
+            \Log::error('Failed to send waitlist thank you email: ' . $e->getMessage());
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Thank you for joining our waitlist!']);
