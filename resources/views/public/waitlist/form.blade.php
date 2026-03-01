@@ -37,8 +37,6 @@
                 @endif
 
                 <form action="{{ route('public.waitlist.store') }}" method="POST" id="waitlist-form">
-                    @csrf
-
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {{-- First Name --}}
                         <div>
