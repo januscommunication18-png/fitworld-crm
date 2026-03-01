@@ -35,6 +35,7 @@ class CheckSecurityCode
         'subdomain.',  // All public booking page routes
         'booking.',    // All booking flow routes (guest checkout)
         'member.',     // All member portal routes
+        'public.',     // All public routes (waitlist, etc.)
     ];
 
     /**
@@ -44,6 +45,7 @@ class CheckSecurityCode
         'security-code*',
         '_debugbar/*',
         'livewire/*',
+        'join-waitlist*',  // Public waitlist form
     ];
 
     public function handle(Request $request, Closure $next): Response
