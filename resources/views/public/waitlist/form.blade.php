@@ -15,27 +15,29 @@
             padding: 0;
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+        }
+
         body {
             font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #fff;
+            background: transparent;
             color: #2D2A26;
             line-height: 1.6;
-            padding: 1.5rem;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            padding: 0;
+            margin: 0;
         }
 
         .waitlist__container {
             width: 100%;
-            max-width: 700px;
             background: #fff;
             border-radius: 16px;
             padding: 2rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
             border: 1px solid #E8E4DD;
+            box-sizing: border-box;
         }
 
         .waitlist__form {
