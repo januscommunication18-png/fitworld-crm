@@ -26,6 +26,9 @@ class CheckSecurityCode
         'signup',
         'invitation.show',
         'invitation.accept',
+        'public.waitlist.form',
+        'public.waitlist.store',
+        'public.waitlist.success',
     ];
 
     /**
