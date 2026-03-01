@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WaitlistThankYouMail;
 use App\Models\ProspectWaitlist;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class ProspectWaitlistController extends Controller
 {
@@ -25,7 +27,10 @@ class ProspectWaitlistController extends Controller
             'member_size' => 'nullable|string|in:' . implode(',', array_keys(ProspectWaitlist::MEMBER_SIZES)),
         ]);
 
-        ProspectWaitlist::create($validated);
+        $waitlistEntry = ProspectWaitlist::create($validated);
+
+        // Send thank you email
+        Mail::to($waitlistEntry->email)->send(new WaitlistThankYouMail($waitlistEntry));
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Thank you for joining our waitlist!']);
