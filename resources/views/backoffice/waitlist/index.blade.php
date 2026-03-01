@@ -15,10 +15,10 @@
                 <span class="icon-[tabler--code] size-5"></span>
                 Embed Code
             </button>
-            <button type="button" class="btn btn-primary" id="btn-add-waitlist">
+            <a href="{{ route('backoffice.waitlist.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 Add Waitlist
-            </button>
+            </a>
         </div>
     </div>
 
@@ -137,9 +137,9 @@
                                 <div class="flex flex-col items-center gap-2 text-base-content/60">
                                     <span class="icon-[tabler--list] size-12 opacity-30"></span>
                                     <p>No waitlist entries yet</p>
-                                    <button type="button" class="btn btn-primary btn-sm mt-2 btn-open-waitlist-modal">
+                                    <a href="{{ route('backoffice.waitlist.create') }}" class="btn btn-primary btn-sm mt-2">
                                         Add First Entry
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
@@ -153,37 +153,15 @@
 @endsection
 
 @push('modals')
-    @include('backoffice.waitlist._modal')
     @include('backoffice.waitlist._embed-modal')
 @endpush
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add Waitlist Modal
-        const modal = document.getElementById('add-waitlist-modal');
-        const btnAdd = document.getElementById('btn-add-waitlist');
-        const btnsOpen = document.querySelectorAll('.btn-open-waitlist-modal');
-
         // Embed Code Modal
         const embedModal = document.getElementById('embed-code-modal');
         const btnEmbed = document.getElementById('btn-embed-code');
-
-        if (!modal) {
-            console.error('Waitlist modal not found');
-            return;
-        }
-
-        // Add Waitlist Modal Functions
-        function openModal() {
-            modal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-        }
-
-        function closeModal() {
-            modal.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
-        }
 
         // Embed Modal Functions
         function openEmbedModal() {
@@ -213,19 +191,9 @@
         }
 
         // Expose to global scope for onclick handlers in modals
-        window.openWaitlistModal = openModal;
-        window.closeWaitlistModal = closeModal;
         window.openEmbedModal = openEmbedModal;
         window.closeEmbedModal = closeEmbedModal;
         window.copyToClipboard = copyToClipboard;
-
-        // Button click handlers
-        if (btnAdd) {
-            btnAdd.addEventListener('click', function(e) {
-                e.preventDefault();
-                openModal();
-            });
-        }
 
         if (btnEmbed) {
             btnEmbed.addEventListener('click', function(e) {
@@ -234,29 +202,14 @@
             });
         }
 
-        btnsOpen.forEach(function(btn) {
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                openModal();
-            });
-        });
-
         // Close on Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                if (!modal.classList.contains('hidden')) {
-                    closeModal();
-                }
-                if (!embedModal.classList.contains('hidden')) {
+                if (embedModal && !embedModal.classList.contains('hidden')) {
                     closeEmbedModal();
                 }
             }
         });
-
-        // Open modal if there are validation errors
-        @if($errors->any())
-            openModal();
-        @endif
     });
 </script>
 @endpush

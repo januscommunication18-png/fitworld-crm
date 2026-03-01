@@ -17,11 +17,25 @@
 
         body {
             font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #FAF9F6;
+            background: #fff;
             color: #2D2A26;
             line-height: 1.6;
             padding: 1.5rem;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .waitlist__container {
+            width: 100%;
+            max-width: 700px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            border: 1px solid #E8E4DD;
         }
 
         .waitlist__form {
@@ -62,7 +76,7 @@
             padding: 0.875rem 1rem;
             font-size: 1rem;
             font-family: inherit;
-            border: 1px solid #E5E2DB;
+            border: 1px solid #E8E4DD;
             border-radius: 8px;
             background: #fff;
             color: #2D2A26;
@@ -95,7 +109,7 @@
             padding: 0.875rem 1rem;
             font-size: 1rem;
             font-family: inherit;
-            border: 1px solid #E5E2DB;
+            border: 1px solid #E8E4DD;
             border-radius: 8px;
             background: #fff;
             color: #2D2A26;
@@ -130,7 +144,7 @@
             right: 0;
             top: calc(100% + 4px);
             background: #fff;
-            border: 1px solid #E5E2DB;
+            border: 1px solid #E8E4DD;
             border-radius: 8px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.12);
             z-index: 100;
@@ -143,16 +157,16 @@
 
         .custom-dropdown__search {
             padding: 0.75rem;
-            border-bottom: 1px solid #E5E2DB;
+            border-bottom: 1px solid #E8E4DD;
         }
 
         .custom-dropdown__search input {
             width: 100%;
             padding: 0.5rem 0.75rem;
             font-size: 0.875rem;
-            border: 1px solid #E5E2DB;
+            border: 1px solid #E8E4DD;
             border-radius: 6px;
-            background: #FAF9F6;
+            background: #F9F9F9;
         }
 
         .custom-dropdown__search input:focus {
@@ -178,7 +192,7 @@
         }
 
         .custom-dropdown__option:hover {
-            background: #FAF9F6;
+            background: #F5F5F5;
         }
 
         .custom-dropdown__option input[type="checkbox"] {
@@ -271,17 +285,18 @@
     </style>
 </head>
 <body>
-    @if($errors->any())
-        <div class="error-list">
-            <ul>
-                @foreach($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    <div class="waitlist__container">
+        @if($errors->any())
+            <div class="error-list">
+                <ul>
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
 
-    <form class="waitlist__form" id="waitlist-form" action="{{ route('public.waitlist.store') }}" method="POST" novalidate>
+        <form class="waitlist__form" id="waitlist-form" action="{{ route('public.waitlist.store') }}" method="POST" novalidate>
         <div class="waitlist__form-row">
             <div class="waitlist__field">
                 <label for="first_name">First Name <span class="required">*</span></label>
@@ -374,6 +389,7 @@
     <p class="powered-by">
         Powered by <a href="https://fitcrm.biz" target="_blank">FitCRM</a>
     </p>
+    </div>
 
     <script>
         function toggleStudioDropdown() {

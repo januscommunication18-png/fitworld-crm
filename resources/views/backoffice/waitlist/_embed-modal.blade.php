@@ -36,7 +36,7 @@
                     <label class="label-text font-medium mb-2 block">Iframe Embed</label>
                     <p class="text-sm text-base-content/60 mb-2">Copy this code to embed the form in any website.</p>
                     <div class="relative">
-                        <textarea id="iframe-code" class="textarea w-full font-mono text-sm h-24" readonly><iframe src="{{ route('public.waitlist.form') }}" width="100%" height="700" frameborder="0" style="border: none; max-width: 500px;"></iframe></textarea>
+                        <textarea id="iframe-code" class="textarea w-full font-mono text-sm h-24" readonly><iframe src="{{ route('public.waitlist.form') }}" width="100%" height="750" frameborder="0" style="border: none; max-width: 750px;"></iframe></textarea>
                         <button type="button" class="btn btn-sm btn-outline absolute top-2 right-2" onclick="copyToClipboard('iframe-code')">
                             <span class="icon-[tabler--copy] size-4"></span>
                             Copy
@@ -55,9 +55,9 @@
     var iframe = document.createElement('iframe');
     iframe.src = '{{ route('public.waitlist.form') }}';
     iframe.width = '100%';
-    iframe.height = '700';
+    iframe.height = '750';
     iframe.style.border = 'none';
-    iframe.style.maxWidth = '500px';
+    iframe.style.maxWidth = '750px';
     document.getElementById('fitcrm-waitlist').appendChild(iframe);
 })();
 </script></textarea>

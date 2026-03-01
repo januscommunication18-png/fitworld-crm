@@ -15,6 +15,11 @@ class WaitlistController extends Controller
         return view('backoffice.waitlist.index', compact('waitlists'));
     }
 
+    public function create()
+    {
+        return view('backoffice.waitlist.create');
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([

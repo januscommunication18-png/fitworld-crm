@@ -111,6 +111,7 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                 // Waitlist
                 Route::prefix('waitlist')->name('waitlist.')->group(function () {
                     Route::get('/', [WaitlistController::class, 'index'])->name('index');
+                    Route::get('/create', [WaitlistController::class, 'create'])->name('create');
                     Route::post('/', [WaitlistController::class, 'store'])->name('store');
                     Route::delete('/{waitlist}', [WaitlistController::class, 'destroy'])->name('destroy');
                 });
