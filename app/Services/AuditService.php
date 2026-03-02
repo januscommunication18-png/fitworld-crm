@@ -6,7 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Payment;
 use App\Models\CustomerMembership;
-use App\Models\ClassPackPurchase;
+use App\Models\ClassPassPurchase;
 use Illuminate\Database\Eloquent\Model;
 
 class AuditService
@@ -221,9 +221,9 @@ class AuditService
     }
 
     /**
-     * Log pack purchase
+     * Log pass purchase
      */
-    public function logPackPurchased(ClassPackPurchase $purchase): AuditLog
+    public function logPassPurchased(ClassPassPurchase $purchase): AuditLog
     {
         return $this->log(
             $purchase->host_id,
@@ -232,7 +232,7 @@ class AuditService
             [
                 'context' => [
                     'client_id' => $purchase->client_id,
-                    'class_pack_id' => $purchase->class_pack_id,
+                    'class_pass_id' => $purchase->class_pass_id,
                     'classes_total' => $purchase->classes_total,
                 ],
             ]
@@ -240,9 +240,17 @@ class AuditService
     }
 
     /**
-     * Log pack credit used
+     * @deprecated Use logPassPurchased instead
      */
-    public function logPackCreditUsed(ClassPackPurchase $purchase, Booking $booking): AuditLog
+    public function logPackPurchased(ClassPassPurchase $purchase): AuditLog
+    {
+        return $this->logPassPurchased($purchase);
+    }
+
+    /**
+     * Log pass credit used
+     */
+    public function logPassCreditUsed(ClassPassPurchase $purchase, Booking $booking): AuditLog
     {
         return $this->log(
             $purchase->host_id,
@@ -259,9 +267,17 @@ class AuditService
     }
 
     /**
-     * Log pack credit restored
+     * @deprecated Use logPassCreditUsed instead
      */
-    public function logPackCreditRestored(ClassPackPurchase $purchase, ?Booking $booking = null): AuditLog
+    public function logPackCreditUsed(ClassPassPurchase $purchase, Booking $booking): AuditLog
+    {
+        return $this->logPassCreditUsed($purchase, $booking);
+    }
+
+    /**
+     * Log pass credit restored
+     */
+    public function logPassCreditRestored(ClassPassPurchase $purchase, ?Booking $booking = null): AuditLog
     {
         return $this->log(
             $purchase->host_id,
@@ -275,5 +291,13 @@ class AuditService
                 ],
             ]
         );
+    }
+
+    /**
+     * @deprecated Use logPassCreditRestored instead
+     */
+    public function logPackCreditRestored(ClassPassPurchase $purchase, ?Booking $booking = null): AuditLog
+    {
+        return $this->logPassCreditRestored($purchase, $booking);
     }
 }

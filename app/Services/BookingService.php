@@ -6,7 +6,7 @@ use App\Models\Booking;
 use App\Models\ClassPlan;
 use App\Models\ClassSession;
 use App\Models\Client;
-use App\Models\ClassPackPurchase;
+use App\Models\ClassPassPurchase;
 use App\Models\CustomerMembership;
 use App\Models\Host;
 use App\Models\Payment;
@@ -24,18 +24,18 @@ class BookingService
     protected AuditService $auditService;
     protected PaymentService $paymentService;
     protected MembershipService $membershipService;
-    protected ClassPackService $classPackService;
+    protected ClassPassService $classPassService;
 
     public function __construct(
         AuditService $auditService,
         PaymentService $paymentService,
         MembershipService $membershipService,
-        ClassPackService $classPackService
+        ClassPassService $classPassService
     ) {
         $this->auditService = $auditService;
         $this->paymentService = $paymentService;
         $this->membershipService = $membershipService;
-        $this->classPackService = $classPackService;
+        $this->classPassService = $classPassService;
     }
 
     /**
@@ -321,10 +321,10 @@ class BookingService
                 }
             }
 
-            if ($booking->class_pack_purchase_id) {
-                $packPurchase = $booking->classPackPurchase;
-                if ($packPurchase) {
-                    $this->classPackService->restoreCredit($packPurchase, $booking);
+            if ($booking->class_pass_purchase_id) {
+                $passPurchase = $booking->classPassPurchase;
+                if ($passPurchase) {
+                    $this->classPassService->restoreCredit($passPurchase, $booking);
                 }
             }
 
@@ -426,16 +426,16 @@ class BookingService
                 break;
 
             case Booking::PAYMENT_PACK:
-                $packId = $options['class_pack_purchase_id'] ?? null;
-                $packPurchase = $packId
-                    ? ClassPackPurchase::find($packId)
-                    : ($classPlan ? $this->classPackService->getEligiblePackForClass($client, $classPlan) : null);
+                $passId = $options['class_pass_purchase_id'] ?? $options['class_pack_purchase_id'] ?? null;
+                $passPurchase = $passId
+                    ? ClassPassPurchase::find($passId)
+                    : ($classPlan ? $this->classPassService->getEligiblePassForClass($client, $classPlan) : null);
 
-                if ($packPurchase && $this->classPackService->deductCredit($packPurchase, $booking)) {
-                    $booking->update(['class_pack_purchase_id' => $packPurchase->id]);
-                    $this->paymentService->processPackPayment($host, $client, $packPurchase, $booking);
+                if ($passPurchase && $this->classPassService->deductCredit($passPurchase, $booking)) {
+                    $booking->update(['class_pass_purchase_id' => $passPurchase->id]);
+                    $this->paymentService->processPassPayment($host, $client, $passPurchase, $booking);
                 } else {
-                    throw new \Exception('No eligible pack credits available.');
+                    throw new \Exception('No eligible pass credits available.');
                 }
                 break;
 

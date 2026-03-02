@@ -412,14 +412,30 @@ class Host extends Model
         return $this->hasMany(CustomerMembership::class);
     }
 
-    public function classPacks(): HasMany
+    public function classPasses(): HasMany
     {
-        return $this->hasMany(ClassPack::class);
+        return $this->hasMany(ClassPass::class);
     }
 
+    public function classPassPurchases(): HasMany
+    {
+        return $this->hasMany(ClassPassPurchase::class);
+    }
+
+    /**
+     * @deprecated Use classPasses() instead
+     */
+    public function classPacks(): HasMany
+    {
+        return $this->classPasses();
+    }
+
+    /**
+     * @deprecated Use classPassPurchases() instead
+     */
     public function classPackPurchases(): HasMany
     {
-        return $this->hasMany(ClassPackPurchase::class);
+        return $this->classPassPurchases();
     }
 
     public function payments(): HasMany

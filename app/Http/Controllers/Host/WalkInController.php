@@ -18,7 +18,7 @@ use App\Services\BookingService;
 use App\Services\OfferService;
 use App\Services\PaymentService;
 use App\Services\MembershipService;
-use App\Services\ClassPackService;
+use App\Services\ClassPassService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -28,20 +28,20 @@ class WalkInController extends Controller
     protected OfferService $offerService;
     protected PaymentService $paymentService;
     protected MembershipService $membershipService;
-    protected ClassPackService $classPackService;
+    protected ClassPassService $classPassService;
 
     public function __construct(
         BookingService $bookingService,
         OfferService $offerService,
         PaymentService $paymentService,
         MembershipService $membershipService,
-        ClassPackService $classPackService
+        ClassPassService $classPassService
     ) {
         $this->bookingService = $bookingService;
         $this->offerService = $offerService;
         $this->paymentService = $paymentService;
         $this->membershipService = $membershipService;
-        $this->classPackService = $classPackService;
+        $this->classPassService = $classPassService;
     }
 
     /**
@@ -373,9 +373,25 @@ class WalkInController extends Controller
         $host = auth()->user()->currentHost();
         $classPlanId = $request->get('class_plan_id');
 
+        // Look up the class plan for membership eligibility check
+        $classPlan = $classPlanId ? \App\Models\ClassPlan::find($classPlanId) : null;
+
+        // Get eligible membership (needs ClassPlan object)
+        $membership = null;
+        if ($classPlan) {
+            $eligibleMembership = $this->membershipService->getEligibleMembershipForClass($client, $classPlan);
+            if ($eligibleMembership) {
+                $membership = [
+                    'id' => $eligibleMembership->id,
+                    'name' => $eligibleMembership->membershipPlan->name,
+                    'credits_remaining' => $eligibleMembership->credits_remaining,
+                ];
+            }
+        }
+
         $methods = [
-            'membership' => $this->membershipService->getEligibleMembership($client, $classPlanId),
-            'packs' => $this->classPackService->getEligiblePacks($client, $classPlanId),
+            'membership' => $membership,
+            'packs' => $this->classPassService->getEligiblePasses($client, $classPlanId),
             'manual' => true,
             'comp' => auth()->user()->hasPermission('bookings.comp'),
         ];
@@ -400,7 +416,7 @@ class WalkInController extends Controller
             'payment_method' => 'required|in:membership,pack,manual,comp',
             'manual_method' => 'required_if:payment_method,manual|in:cash,card,check,other',
             'price_paid' => 'nullable|numeric|min:0',
-            'pack_id' => 'required_if:payment_method,pack|exists:class_pack_purchases,id',
+            'pack_id' => 'required_if:payment_method,pack|exists:class_pass_purchases,id',
             'check_in_now' => 'boolean',
             'notes' => 'nullable|string|max:500',
             'send_intake_form' => 'boolean',
@@ -440,7 +456,7 @@ class WalkInController extends Controller
                     'payment_method' => $validated['payment_method'],
                     'manual_method' => $validated['manual_method'] ?? null,
                     'price_paid' => $validated['price_paid'] ?? null,
-                    'class_pack_purchase_id' => $validated['pack_id'] ?? null,
+                    'class_pass_purchase_id' => $validated['pack_id'] ?? null,
                     'check_in_now' => $validated['check_in_now'] ?? false,
                     'payment_notes' => $validated['notes'] ?? null,
                     'capacity_override' => true, // Walk-ins can override capacity

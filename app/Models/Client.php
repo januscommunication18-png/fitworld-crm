@@ -206,14 +206,30 @@ class Client extends Model implements AuthenticatableContract
             ->first();
     }
 
-    public function classPackPurchases(): HasMany
+    public function classPassPurchases(): HasMany
     {
-        return $this->hasMany(ClassPackPurchase::class);
+        return $this->hasMany(ClassPassPurchase::class);
     }
 
+    public function usableClassPassPurchases()
+    {
+        return $this->classPassPurchases()->usable();
+    }
+
+    /**
+     * @deprecated Use classPassPurchases() instead
+     */
+    public function classPackPurchases(): HasMany
+    {
+        return $this->classPassPurchases();
+    }
+
+    /**
+     * @deprecated Use usableClassPassPurchases() instead
+     */
     public function usableClassPackPurchases()
     {
-        return $this->classPackPurchases()->usable();
+        return $this->usableClassPassPurchases();
     }
 
     public function payments(): HasMany

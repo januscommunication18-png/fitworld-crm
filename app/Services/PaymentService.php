@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Booking;
 use App\Models\Client;
-use App\Models\ClassPackPurchase;
+use App\Models\ClassPassPurchase;
 use App\Models\CustomerMembership;
 use App\Models\Host;
 use App\Models\Payment;
@@ -83,25 +83,25 @@ class PaymentService
     }
 
     /**
-     * Process a class pack credit payment (no money exchanged)
+     * Process a class pass credit payment (no money exchanged)
      */
-    public function processPackPayment(
+    public function processPassPayment(
         Host $host,
         Client $client,
-        ClassPackPurchase $packPurchase,
+        ClassPassPurchase $passPurchase,
         ?Booking $booking = null
     ): Payment {
-        return DB::transaction(function () use ($host, $client, $packPurchase, $booking) {
+        return DB::transaction(function () use ($host, $client, $passPurchase, $booking) {
             $payment = Payment::create([
                 'host_id' => $host->id,
                 'client_id' => $client->id,
                 'booking_id' => $booking?->id,
-                'payable_type' => ClassPackPurchase::class,
-                'payable_id' => $packPurchase->id,
+                'payable_type' => ClassPassPurchase::class,
+                'payable_id' => $passPurchase->id,
                 'amount' => 0,
                 'payment_method' => Payment::METHOD_PACK,
                 'status' => Payment::STATUS_COMPLETED,
-                'notes' => 'Paid via class pack credits',
+                'notes' => 'Paid via class pass credits',
                 'processed_by_user_id' => auth()->id(),
             ]);
 
@@ -109,6 +109,18 @@ class PaymentService
 
             return $payment;
         });
+    }
+
+    /**
+     * @deprecated Use processPassPayment instead
+     */
+    public function processPackPayment(
+        Host $host,
+        Client $client,
+        ClassPassPurchase $passPurchase,
+        ?Booking $booking = null
+    ): Payment {
+        return $this->processPassPayment($host, $client, $passPurchase, $booking);
     }
 
     /**

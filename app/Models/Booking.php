@@ -68,7 +68,7 @@ class Booking extends Model
         'payment_method',
         'membership_id',
         'customer_membership_id',
-        'class_pack_purchase_id',
+        'class_pass_purchase_id',
         'price_paid',
         'credits_used',
         'booked_at',
@@ -117,9 +117,17 @@ class Booking extends Model
         return $this->belongsTo(CustomerMembership::class);
     }
 
+    public function classPassPurchase(): BelongsTo
+    {
+        return $this->belongsTo(ClassPassPurchase::class);
+    }
+
+    /**
+     * @deprecated Use classPassPurchase() instead
+     */
     public function classPackPurchase(): BelongsTo
     {
-        return $this->belongsTo(ClassPackPurchase::class);
+        return $this->classPassPurchase();
     }
 
     public function createdBy(): BelongsTo

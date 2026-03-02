@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassPass;
 use App\Models\ClassPlan;
 use App\Models\MembershipPlan;
 use App\Models\RentalItem;
@@ -19,6 +20,7 @@ class CatalogController extends Controller
 
         $classPlans = collect();
         $servicePlans = collect();
+        $classPasses = collect();
         $membershipPlans = collect();
         $spaceRentalConfigs = collect();
         $rentalItems = collect();
@@ -31,6 +33,12 @@ class CatalogController extends Controller
         } elseif ($tab === 'services') {
             $servicePlans = $host->servicePlans()
                 ->withCount('activeInstructors')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get();
+        } elseif ($tab === 'class-passes') {
+            $classPasses = $host->classPasses()
+                ->withCount('purchases')
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
@@ -54,6 +62,20 @@ class CatalogController extends Controller
                 ->get();
         }
 
-        return view('host.catalog.index', compact('tab', 'classPlans', 'servicePlans', 'membershipPlans', 'spaceRentalConfigs', 'rentalItems'));
+        // Multi-currency support for class passes
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+
+        return view('host.catalog.index', compact(
+            'tab',
+            'classPlans',
+            'servicePlans',
+            'classPasses',
+            'membershipPlans',
+            'spaceRentalConfigs',
+            'rentalItems',
+            'hostCurrencies',
+            'defaultCurrency'
+        ));
     }
 }

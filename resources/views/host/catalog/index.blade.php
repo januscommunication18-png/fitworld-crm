@@ -31,6 +31,11 @@
                 <span class="icon-[tabler--user] size-4 mr-2"></span>
                 {{ $trans['nav.catalog.service_plans'] ?? 'Service Plans' }}
             </a>
+            <a href="{{ route('catalog.index', ['tab' => 'class-passes', 'view' => request('view', 'list')]) }}"
+               class="tab {{ $tab === 'class-passes' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--ticket] size-4 mr-2"></span>
+                {{ $trans['nav.catalog.class_passes'] ?? 'Class Passes' }}
+            </a>
             <a href="{{ route('catalog.index', ['tab' => 'memberships', 'view' => request('view', 'list')]) }}"
                class="tab {{ $tab === 'memberships' ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>
@@ -70,6 +75,11 @@
             <a href="{{ route('service-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.catalog.service_plans'] ?? 'Service Plan' }}
+            </a>
+            @elseif($tab === 'class-passes')
+            <a href="{{ route('class-passes.create') }}" class="btn btn-primary">
+                <span class="icon-[tabler--plus] size-5"></span>
+                {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.catalog.class_passes'] ?? 'Class Pass' }}
             </a>
             @elseif($tab === 'memberships')
             <a href="{{ route('membership-plans.create') }}" class="btn btn-primary">
@@ -497,6 +507,183 @@
                             {{ $trans['btn.edit'] ?? 'Edit' }}
                         </a>
                         <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+        @endif
+    @elseif($tab === 'class-passes')
+        {{-- Class Passes Tab --}}
+        @if($classPasses->isEmpty())
+        <div class="card bg-base-100">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--ticket] size-16 text-base-content/20 mx-auto mb-4"></span>
+                <h3 class="text-lg font-semibold mb-2">{{ $trans['catalog.no_class_passes'] ?? 'No Class Passes Yet' }}</h3>
+                <p class="text-base-content/60 mb-4">{{ $trans['catalog.no_class_passes_desc'] ?? 'Create class passes to offer credit bundles for attending classes.' }}</p>
+                <a href="{{ route('class-passes.create') }}" class="btn btn-primary">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    {{ $trans['catalog.create_first_class_pass'] ?? 'Create First Class Pass' }}
+                </a>
+            </div>
+        </div>
+        @else
+        @if(request('view') === 'grid')
+        {{-- Grid View --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            @foreach($classPasses as $classPass)
+            <div class="card bg-base-100 {{ $classPass->status !== 'active' ? 'opacity-60' : '' }}">
+                @if($classPass->image_path)
+                <figure class="h-32">
+                    <img src="{{ $classPass->image_url }}" alt="{{ $classPass->name }}" class="w-full h-full object-cover">
+                </figure>
+                @else
+                <div class="h-32 flex items-center justify-center" style="background-color: {{ $classPass->color ?? '#6366f1' }}20;">
+                    <span class="icon-[tabler--ticket] size-12" style="color: {{ $classPass->color ?? '#6366f1' }};"></span>
+                </div>
+                @endif
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title">{{ $classPass->name }}</h3>
+                            <p class="text-sm text-base-content/60">
+                                {{ $classPass->class_count }} {{ $trans['common.credits'] ?? 'credits' }}
+                                &bull; {{ $classPass->formatted_validity }}
+                            </p>
+                        </div>
+                        <span class="badge badge-soft {{ $classPass->status === 'active' ? 'badge-success' : ($classPass->status === 'draft' ? 'badge-warning' : 'badge-neutral') }} badge-sm">
+                            {{ ucfirst($classPass->status) }}
+                        </span>
+                    </div>
+
+                    @if($classPass->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $classPass->description }}</p>
+                    @endif
+
+                    <div class="mt-4 flex items-center gap-4 text-sm">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
+                            <span>{{ $classPass->purchases_count }} {{ $trans['common.sold'] ?? 'sold' }}</span>
+                        </div>
+                        @if($classPass->is_recurring)
+                        <span class="badge badge-soft badge-info badge-sm">{{ $trans['common.recurring'] ?? 'Recurring' }}</span>
+                        @endif
+                    </div>
+
+                    {{-- Eligibility Badge --}}
+                    <div class="mt-2">
+                        @if($classPass->eligibility_type === 'all')
+                            <span class="badge badge-soft badge-success badge-sm">{{ $trans['class_passes.all_classes'] ?? 'All Classes' }}</span>
+                        @elseif($classPass->eligibility_type === 'categories')
+                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_categories ?? []) }} {{ $trans['common.categories'] ?? 'categories' }}</span>
+                        @elseif($classPass->eligibility_type === 'class_plans')
+                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_class_plan_ids ?? []) }} {{ $trans['common.classes'] ?? 'classes' }}</span>
+                        @elseif($classPass->eligibility_type === 'instructors')
+                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_instructor_ids ?? []) }} {{ $trans['common.instructors'] ?? 'instructors' }}</span>
+                        @elseif($classPass->eligibility_type === 'locations')
+                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_location_ids ?? []) }} {{ $trans['common.locations'] ?? 'locations' }}</span>
+                        @endif
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
+                        <a href="{{ route('class-passes.show', $classPass) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                        </a>
+                        <a href="{{ route('class-passes.edit', $classPass) }}" class="btn btn-sm btn-soft btn-primary flex-1">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </a>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-passes.destroy', $classPass) }}', '{{ $classPass->name }}', '{{ $trans['catalog.class_pass'] ?? 'class pass' }}')">
+                            <span class="icon-[tabler--trash] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @else
+        {{-- List View --}}
+        <div class="space-y-4">
+            @foreach($classPasses as $classPass)
+            <div class="card bg-base-100 card-side {{ $classPass->status !== 'active' ? 'opacity-60' : '' }}">
+                @if($classPass->image_path)
+                <figure class="w-32 shrink-0">
+                    <img src="{{ $classPass->image_url }}" alt="{{ $classPass->name }}" class="w-full h-full object-cover">
+                </figure>
+                @else
+                <div class="w-32 shrink-0 flex items-center justify-center" style="background-color: {{ $classPass->color ?? '#6366f1' }}20;">
+                    <span class="icon-[tabler--ticket] size-10" style="color: {{ $classPass->color ?? '#6366f1' }};"></span>
+                </div>
+                @endif
+                <div class="card-body py-4">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <h3 class="card-title text-base">{{ $classPass->name }}</h3>
+                            <p class="text-sm text-base-content/60">
+                                {{ $classPass->class_count }} {{ $trans['common.credits'] ?? 'credits' }}
+                                &bull; {{ $classPass->formatted_validity }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="badge badge-soft {{ $classPass->status === 'active' ? 'badge-success' : ($classPass->status === 'draft' ? 'badge-warning' : 'badge-neutral') }} badge-sm">
+                                {{ ucfirst($classPass->status) }}
+                            </span>
+                            @if($classPass->eligibility_type === 'all')
+                                <span class="badge badge-soft badge-success badge-sm">{{ $trans['class_passes.all_classes'] ?? 'All Classes' }}</span>
+                            @else
+                                <span class="badge badge-soft badge-secondary badge-sm capitalize">{{ str_replace('_', ' ', $classPass->eligibility_type) }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6 text-sm mt-2">
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
+                            <span class="font-medium">{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
+                            <span>{{ $classPass->purchases_count }} {{ $trans['common.sold'] ?? 'sold' }}</span>
+                        </div>
+                        @if($classPass->is_recurring)
+                        <span class="badge badge-soft badge-info badge-sm">{{ ucfirst($classPass->renewal_interval) }}</span>
+                        @endif
+                        @if($classPass->default_credits_per_class > 1)
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
+                            <span>{{ $classPass->default_credits_per_class }} {{ $trans['class_passes.credits_per_class'] ?? 'credits/class' }}</span>
+                        </div>
+                        @endif
+                        @if($classPass->description)
+                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $classPass->description }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Actions --}}
+                    <div class="card-actions justify-end mt-2">
+                        <a href="{{ route('class-passes.show', $classPass) }}" class="btn btn-sm btn-soft btn-secondary">
+                            <span class="icon-[tabler--eye] size-4"></span>
+                            {{ $trans['btn.view'] ?? 'View' }}
+                        </a>
+                        <a href="{{ route('class-passes.edit', $classPass) }}" class="btn btn-sm btn-soft btn-primary">
+                            <span class="icon-[tabler--edit] size-4"></span>
+                            {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </a>
+                        <form action="{{ route('class-passes.duplicate', $classPass) }}" method="POST" class="inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-soft btn-info" title="{{ $trans['btn.duplicate'] ?? 'Duplicate' }}">
+                                <span class="icon-[tabler--copy] size-4"></span>
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-passes.destroy', $classPass) }}', '{{ $classPass->name }}', '{{ $trans['catalog.class_pass'] ?? 'class pass' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
                         </button>
                     </div>

@@ -28,6 +28,7 @@ use App\Http\Controllers\Host\WaitlistController;
 use App\Http\Controllers\Host\ServicePlanController;
 use App\Http\Controllers\Host\ServiceSlotController;
 use App\Http\Controllers\Host\MembershipPlanController;
+use App\Http\Controllers\Host\ClassPassController;
 use App\Http\Controllers\Host\RentalItemController;
 use App\Http\Controllers\Host\RentalFulfillmentController;
 use App\Http\Controllers\Host\RentalInvoiceController;
@@ -272,6 +273,17 @@ Route::middleware('auth')->group(function () {
     Route::resource('membership-plans', MembershipPlanController::class)->names('membership-plans');
     Route::patch('/membership-plans/{membershipPlan}/toggle-status', [MembershipPlanController::class, 'toggleStatus'])->name('membership-plans.toggle-status');
     Route::patch('/membership-plans/{membershipPlan}/archive', [MembershipPlanController::class, 'archive'])->name('membership-plans.archive');
+
+    // Class Passes
+    Route::resource('class-passes', ClassPassController::class)->names('class-passes');
+    Route::patch('/class-passes/{classPass}/toggle-status', [ClassPassController::class, 'toggleStatus'])->name('class-passes.toggle-status');
+    Route::patch('/class-passes/{classPass}/archive', [ClassPassController::class, 'archive'])->name('class-passes.archive');
+    Route::post('/class-passes/reorder', [ClassPassController::class, 'reorder'])->name('class-passes.reorder');
+    Route::post('/class-passes/{classPass}/duplicate', [ClassPassController::class, 'duplicate'])->name('class-passes.duplicate');
+    Route::get('/class-passes/{classPass}/purchases', [ClassPassController::class, 'purchases'])->name('class-passes.purchases');
+    Route::get('/class-passes/{classPass}/sell', [ClassPassController::class, 'sellForm'])->name('class-passes.sell-form');
+    Route::post('/class-passes/{classPass}/sell', [ClassPassController::class, 'sell'])->name('class-passes.sell');
+    Route::post('/class-pass-purchases/{purchase}/activate', [ClassPassController::class, 'activatePurchase'])->name('class-pass-purchases.activate');
 
     // Rental Fulfillment (must be before resource route)
     Route::prefix('rentals/fulfillment')->name('rentals.fulfillment.')->group(function () {

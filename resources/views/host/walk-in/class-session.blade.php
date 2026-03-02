@@ -487,6 +487,7 @@ function displaySearchResults(clients) {
 }
 
 function selectClient(id, firstName, lastName, email, phone, avatarUrl) {
+    console.log('selectClient called with:', id, firstName, lastName);
     selectedClientId = id;
     document.getElementById('client-id').value = id;
 
@@ -571,9 +572,17 @@ function createClient() {
 
 function loadPaymentOptions(clientId) {
     const classPlanId = {{ $session->class_plan_id }};
+    console.log('Loading payment options for client:', clientId, 'class plan:', classPlanId);
+
     fetch(`/walk-in/payment-methods/${clientId}?class_plan_id=${classPlanId}`)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error('Network response was not ok: ' + res.status);
+            }
+            return res.json();
+        })
         .then(data => {
+            console.log('Payment options response:', data);
             const container = document.getElementById('client-payment-options');
             let html = '';
 
@@ -591,12 +600,19 @@ function loadPaymentOptions(clientId) {
 
             if (data.packs && data.packs.length > 0) {
                 data.packs.forEach(pack => {
+                    let statusText = '';
+                    if (pack.is_pending_activation) {
+                        statusText = '<span class="badge badge-warning badge-xs ml-2">Will activate on booking</span>';
+                    } else if (pack.expires_at) {
+                        const expiringSoonClass = pack.is_expiring_soon ? 'text-warning' : 'text-base-content/60';
+                        statusText = `<span class="${expiringSoonClass}"> (expires ${pack.expires_at})</span>`;
+                    }
                     html += `
                         <label class="flex items-start gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                             <input type="radio" name="payment_method" value="pack" class="radio radio-primary mt-0.5" data-pack-id="${pack.id}">
                             <div>
-                                <div class="font-medium">Use Class Pack</div>
-                                <div class="text-sm text-base-content/60">${pack.name} - ${pack.classes_remaining} classes remaining</div>
+                                <div class="font-medium">Use Class Pass ${statusText}</div>
+                                <div class="text-sm text-base-content/60">${pack.name} - ${pack.classes_remaining} credits remaining</div>
                             </div>
                             <input type="hidden" name="pack_id" value="${pack.id}" disabled>
                         </label>
@@ -607,6 +623,7 @@ function loadPaymentOptions(clientId) {
             if (html) {
                 container.innerHTML = html;
                 container.classList.remove('hidden');
+                console.log('Showing payment options container');
 
                 // Handle pack selection
                 container.querySelectorAll('input[name="payment_method"]').forEach(radio => {
@@ -617,7 +634,12 @@ function loadPaymentOptions(clientId) {
                         }
                     });
                 });
+            } else {
+                console.log('No additional payment options available');
             }
+        })
+        .catch(error => {
+            console.error('Error loading payment options:', error);
         });
 }
 
