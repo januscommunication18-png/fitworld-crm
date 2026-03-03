@@ -69,14 +69,20 @@ class ClientController extends Controller
     {
         $client->load(['owner', 'plan', 'users', 'statusHistory.adminUser']);
 
+        // Get studio's clients (members/students) with pagination
+        $studioClients = \App\Models\Client::where('host_id', $client->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10, ['*'], 'clients_page');
+
         // Get counts for tabs
         $counts = [
             'users' => $client->users()->count(),
-            'instructors' => 0, // Will be implemented later
-            'classes' => 0, // Will be implemented later
+            'clients' => \App\Models\Client::where('host_id', $client->id)->count(),
+            'instructors' => $client->instructors()->count(),
+            'classes' => $client->classPlans()->count(),
         ];
 
-        return view('backoffice.clients.show', compact('client', 'counts'));
+        return view('backoffice.clients.show', compact('client', 'counts', 'studioClients'));
     }
 
     public function edit(Host $client)
