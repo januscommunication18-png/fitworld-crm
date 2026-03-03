@@ -193,21 +193,50 @@ class PaymentService
             ];
         }
 
-        // Check for usable class packs
-        $usablePacks = $client->classPackPurchases()
-            ->usable()
-            ->with('classPack')
+        // Check for usable class passes (including pending activation)
+        $usablePasses = $client->classPassPurchases()
+            ->with('classPass')
+            ->where('classes_remaining', '>', 0)
+            ->where('is_frozen', false)
+            ->whereNull('transferred_to_client_id')
+            ->where(function ($query) {
+                // Either activated and not expired
+                $query->where(function ($q) {
+                    $q->whereNotNull('activated_at')
+                      ->where(function ($q2) {
+                          $q2->whereNull('expires_at')
+                             ->orWhere('expires_at', '>', now());
+                      });
+                })
+                // Or pending activation (on_first_booking)
+                ->orWhere(function ($q) {
+                    $q->whereNull('activated_at')
+                      ->where('activation_type', \App\Models\ClassPassPurchase::ACTIVATION_ON_FIRST_BOOKING);
+                });
+            })
+            ->orderBy('expires_at', 'asc')
             ->get();
 
-        if ($usablePacks->isNotEmpty()) {
+        // Filter passes by class plan eligibility if class_plan_id provided
+        if ($classPlanId && $usablePasses->isNotEmpty()) {
+            $classPlan = \App\Models\ClassPlan::find($classPlanId);
+            if ($classPlan) {
+                $usablePasses = $usablePasses->filter(function ($purchase) use ($classPlan) {
+                    return $purchase->classPass->coversClassPlan($classPlan);
+                });
+            }
+        }
+
+        if ($usablePasses->isNotEmpty()) {
             $methods['pack'] = [
                 'available' => true,
-                'packs' => $usablePacks->map(function ($pack) {
+                'packs' => $usablePasses->map(function ($purchase) {
                     return [
-                        'id' => $pack->id,
-                        'name' => $pack->classPack->name,
-                        'classes_remaining' => $pack->classes_remaining,
-                        'expires_at' => $pack->expires_at?->format('M j, Y'),
+                        'id' => $purchase->id,
+                        'name' => $purchase->classPass->name,
+                        'classes_remaining' => $purchase->classes_remaining,
+                        'expires_at' => $purchase->expires_at?->format('M j, Y'),
+                        'is_pending_activation' => $purchase->is_pending_activation,
                     ];
                 })->toArray(),
             ];

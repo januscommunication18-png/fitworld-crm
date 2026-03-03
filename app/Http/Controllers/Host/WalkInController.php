@@ -368,9 +368,10 @@ class WalkInController extends Controller
     /**
      * Get payment methods for a client (AJAX)
      */
-    public function getPaymentMethods(Request $request, Client $client)
+    public function getPaymentMethods(Request $request, int $client_id)
     {
         $host = auth()->user()->currentHost();
+        $client = Client::where('id', $client_id)->where('host_id', $host->id)->firstOrFail();
         $classPlanId = $request->get('class_plan_id');
 
         // Look up the class plan for membership eligibility check

@@ -330,269 +330,259 @@
             </div>
         </div>
 
-        {{-- Step 2: Pricing & Payment --}}
+        {{-- Step 2: Payment & Booking --}}
         <div id="step-2" class="card bg-base-100 border border-base-200 hidden">
             <div class="card-body">
-                <h2 class="card-title mb-4">
-                    <span class="icon-[tabler--credit-card] size-5"></span>
-                    Pricing & Payment
-                </h2>
-
                 {{-- Booking Summary --}}
-                <div class="bg-base-200/50 rounded-lg p-4 mb-6">
-                    <div class="text-sm font-medium text-base-content/60 mb-2">Booking Summary</div>
-                    <div class="space-y-2">
-                        <div class="flex justify-between">
-                            <span class="text-base-content/70">Client</span>
-                            <span class="font-medium" id="summary-client">--</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-base-content/70">Class</span>
-                            <span class="font-medium" id="summary-class">--</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-base-content/70">Date & Time</span>
-                            <span class="font-medium" id="summary-datetime">--</span>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Price Display --}}
-                <div class="form-control mb-4">
-                    <label class="label">
-                        <span class="label-text font-medium">Class Price</span>
-                    </label>
-                    <div class="flex items-center gap-3">
-                        <div class="text-3xl font-bold text-primary" id="display-price">$0.00</div>
-                        <span id="original-price-display" class="text-xl text-base-content/50 line-through hidden">$0.00</span>
-                    </div>
-                    {{-- Discount Badge --}}
-                    <div id="discount-badge" class="hidden mt-2">
-                        <span class="badge badge-success gap-1">
-                            <span class="icon-[tabler--discount-check] size-4"></span>
-                            <span id="discount-badge-text">Discount Applied</span>
-                        </span>
-                    </div>
-                </div>
-
-                {{-- Promo Code Section --}}
-                <div class="card bg-base-200/50 border border-base-300 mb-4">
-                    <div class="card-body py-4">
-                        <div class="flex items-center justify-between mb-3">
+                <div class="bg-base-200/50 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-1">
                             <div class="flex items-center gap-2">
-                                <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
-                                <span class="font-semibold">Promo Code</span>
+                                <span class="icon-[tabler--user] size-4 text-base-content/50"></span>
+                                <span class="font-medium" id="summary-client">--</span>
                             </div>
-                            <button type="button" onclick="refreshAvailableOffers()" class="btn btn-ghost btn-xs" title="Refresh offers">
-                                <span class="icon-[tabler--refresh] size-4" id="refresh-offers-icon"></span>
-                            </button>
-                        </div>
-                        <p class="text-xs text-base-content/60 mb-3" id="offers-client-info">
-                            Showing offers available for <span class="font-medium" id="offers-client-name">selected client</span>
-                        </p>
-
-                        {{-- Hidden fields for form submission --}}
-                        <input type="hidden" name="offer_id" id="offer_id" value="">
-                        <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
-                        <input type="hidden" name="discount_amount" id="discount_amount" value="0">
-
-                        {{-- Applied Offer Display --}}
-                        <div id="applied-offer" class="hidden mb-3">
-                            <div class="alert bg-success/10 border-success/20">
-                                <span class="icon-[tabler--discount-check] size-5 text-success"></span>
-                                <div class="flex-1">
-                                    <span class="font-semibold text-success" id="applied-offer-name"></span>
-                                    <p class="text-sm text-success/80" id="applied-offer-discount"></p>
-                                </div>
-                                <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
-                                    <span class="icon-[tabler--x] size-4"></span>
-                                </button>
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--yoga] size-4 text-base-content/50"></span>
+                                <span id="summary-class">--</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--calendar] size-4 text-base-content/50"></span>
+                                <span class="text-sm text-base-content/70" id="summary-datetime">--</span>
                             </div>
                         </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-primary" id="display-price">$0.00</div>
+                            <span id="original-price-display" class="text-sm text-base-content/50 line-through hidden">$0.00</span>
+                            <div id="discount-badge" class="hidden mt-1">
+                                <span class="badge badge-success badge-sm gap-1">
+                                    <span class="icon-[tabler--discount-check] size-3"></span>
+                                    <span id="discount-badge-text">Discount</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                        {{-- Available Offers List --}}
-                        <div id="available-offers-section">
-                            {{-- Loading state --}}
-                            <div id="offers-loading" class="hidden py-4 text-center">
+                {{-- Hidden fields for form submission --}}
+                <input type="hidden" name="payment_method" id="payment-method-hidden" value="manual">
+                <input type="hidden" name="pack_id" id="class-pass-purchase-id" value="">
+                <input type="hidden" name="offer_id" id="offer_id" value="">
+                <input type="hidden" name="promo_code" id="promo_code_hidden" value="">
+                <input type="hidden" name="discount_amount" id="discount_amount" value="0">
+
+                {{-- Sections Container --}}
+                <div class="space-y-6">
+
+                    {{-- Section 1: Payment Option --}}
+                    <div class="border border-base-200 rounded-lg">
+                        <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
+                            <div class="flex items-center gap-2 font-medium">
+                                <span class="icon-[tabler--credit-card] size-5 text-primary"></span>
+                                <span>Payment Option</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div id="client-payment-options-loading" class="hidden py-4 text-center">
                                 <span class="loading loading-spinner loading-sm"></span>
-                                <span class="text-sm text-base-content/60 ml-2">Loading offers...</span>
+                                <span class="text-sm text-base-content/60 ml-2">Loading payment options...</span>
                             </div>
-
-                            {{-- No offers --}}
-                            <div id="offers-empty" class="hidden text-center py-3 text-base-content/50 text-sm">
-                                No promo codes available
-                            </div>
-
-                            {{-- Offers grid --}}
-                            <div id="offers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                                {{-- Offers will be loaded here --}}
+                            <div id="client-payment-options-list" class="space-y-2">
+                                {{-- Payment options loaded via AJAX --}}
                             </div>
                         </div>
+                    </div>
 
-                        {{-- Manual Promo Code Input --}}
-                        <div id="promo-input-section">
-                            <div class="divider text-xs text-base-content/50 my-2">OR ENTER CODE</div>
-                            <div class="join w-full">
-                                <input type="text" id="promo_code_input" placeholder="Enter promo code"
-                                       class="input input-bordered input-sm join-item flex-1 uppercase" maxlength="20">
-                                <button type="button" onclick="applyPromoCode()" id="apply-promo-btn"
-                                        class="btn btn-primary btn-sm join-item">
-                                    Apply
-                                </button>
+                    {{-- Section 2: Promo Code (Collapsible) --}}
+                    <div class="border border-base-200 rounded-lg" id="promo-section">
+                        <button type="button" onclick="togglePromoSection()" class="w-full px-4 py-3 bg-base-200/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-base-200/50 transition-colors">
+                            <div class="flex items-center gap-2 font-medium">
+                                <span class="icon-[tabler--discount-2] size-5 text-warning"></span>
+                                <span>Promo Code</span>
+                                <span class="text-xs text-base-content/50 font-normal">(optional)</span>
                             </div>
-                            <p id="promo-error" class="text-error text-sm mt-2 hidden"></p>
-                        </div>
-                    </div>
-                </div>
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform duration-200" id="promo-chevron"></span>
+                        </button>
+                        <div class="hidden" id="promo-content">
+                            <div class="p-4 border-t border-base-200">
+                                <p class="text-xs text-base-content/60 mb-3" id="offers-client-info">
+                                    Showing offers available for <span class="font-medium" id="offers-client-name">selected client</span>
+                                    <button type="button" onclick="refreshAvailableOffers()" class="btn btn-ghost btn-xs ml-2" title="Refresh offers">
+                                        <span class="icon-[tabler--refresh] size-3" id="refresh-offers-icon"></span>
+                                    </button>
+                                </p>
 
-                {{-- Price Input --}}
-                <div class="form-control mb-4" id="price-input-container">
-                    <label class="label" for="price-input">
-                        <span class="label-text font-medium">Amount to Charge</span>
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">$</span>
-                        <input type="number"
-                               id="price-input"
-                               name="price_paid"
-                               step="0.01"
-                               min="0"
-                               class="input input-bordered w-full pl-8"
-                               value="0">
-                    </div>
-                </div>
+                                {{-- Applied Offer Display --}}
+                                <div id="applied-offer" class="hidden mb-3">
+                                    <div class="alert bg-success/10 border-success/20">
+                                        <span class="icon-[tabler--discount-check] size-5 text-success"></span>
+                                        <div class="flex-1">
+                                            <span class="font-semibold text-success" id="applied-offer-name"></span>
+                                            <p class="text-sm text-success/80" id="applied-offer-discount"></p>
+                                        </div>
+                                        <button type="button" onclick="removePromoCode()" class="btn btn-ghost btn-xs btn-circle">
+                                            <span class="icon-[tabler--x] size-4"></span>
+                                        </button>
+                                    </div>
+                                </div>
 
-                {{-- Trial Class Checkbox --}}
-                <div class="form-control mb-4">
-                    <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
-                        <input type="checkbox" id="trial-class" name="is_trial" value="1" class="checkbox checkbox-success">
-                        <div class="flex-1">
-                            <span class="font-semibold">Trial Class</span>
-                            <span class="text-sm text-base-content/60 block">First-time client complimentary session</span>
-                        </div>
-                    </label>
-                </div>
+                                {{-- Available Offers --}}
+                                <div id="available-offers-section">
+                                    <div id="offers-loading" class="hidden py-4 text-center">
+                                        <span class="loading loading-spinner loading-sm"></span>
+                                        <span class="text-sm text-base-content/60 ml-2">Loading offers...</span>
+                                    </div>
+                                    <div id="offers-empty" class="hidden text-center py-3 text-base-content/50 text-sm">
+                                        No promo codes available
+                                    </div>
+                                    <div id="offers-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3"></div>
+                                </div>
 
-                {{-- Trial Amount Input (shown when trial is checked) --}}
-                <div id="trial-amount-container" class="hidden mb-4">
-                    <div class="form-control">
-                        <label class="label" for="trial-amount">
-                            <span class="label-text font-medium">Trial Amount to Charge</span>
-                            <span class="label-text-alt text-base-content/50">Enter 0 for free trial</span>
-                        </label>
-                        <div class="relative">
-                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">$</span>
-                            <input type="number"
-                                   id="trial-amount"
-                                   step="0.01"
-                                   min="0"
-                                   class="input input-bordered w-full pl-8"
-                                   value="0"
-                                   placeholder="0.00">
-                        </div>
-                    </div>
-                    <div id="free-trial-badge" class="mt-2">
-                        <span class="badge badge-success gap-1">
-                            <span class="icon-[tabler--discount-check] size-4"></span>
-                            Free Trial
-                        </span>
-                    </div>
-                </div>
-
-                {{-- Payment Method --}}
-                <div class="form-control mb-6" id="payment-method-container">
-                    <label class="label">
-                        <span class="label-text font-medium">Payment Method</span>
-                    </label>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                            <input type="radio" name="manual_method" value="cash" class="radio radio-primary radio-sm" checked>
-                            <span class="icon-[tabler--cash] size-5 text-success"></span>
-                            <span class="text-sm font-medium">Cash</span>
-                        </label>
-                        <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                            <input type="radio" name="manual_method" value="card" class="radio radio-primary radio-sm">
-                            <span class="icon-[tabler--credit-card] size-5 text-info"></span>
-                            <span class="text-sm font-medium">Card</span>
-                        </label>
-                        <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                            <input type="radio" name="manual_method" value="check" class="radio radio-primary radio-sm">
-                            <span class="icon-[tabler--file-invoice] size-5 text-warning"></span>
-                            <span class="text-sm font-medium">Check</span>
-                        </label>
-                        <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                            <input type="radio" name="manual_method" value="other" class="radio radio-primary radio-sm">
-                            <span class="icon-[tabler--dots] size-5 text-base-content/50"></span>
-                            <span class="text-sm font-medium">Other</span>
-                        </label>
-                    </div>
-                </div>
-
-                {{-- Notes --}}
-                <div class="form-control mb-6">
-                    <label class="label" for="notes">
-                        <span class="label-text font-medium">Notes (optional)</span>
-                    </label>
-                    <textarea id="notes" name="notes" rows="2" class="textarea textarea-bordered" placeholder="Any notes about this booking..."></textarea>
-                </div>
-
-                {{-- Intake Form Section --}}
-                <div id="intake-form-section" class="mb-6 hidden">
-                    <div class="form-control">
-                        <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-info has-[:checked]:bg-info/5 transition-all">
-                            <input type="checkbox" id="send-intake-form" name="send_intake_form" value="1" class="checkbox checkbox-info">
-                            <div class="flex-1">
-                                <span class="font-semibold">Send Intake Form</span>
-                                <span class="text-sm text-base-content/60 block">Email questionnaire(s) to client after booking</span>
+                                {{-- Manual Promo Input --}}
+                                <div id="promo-input-section">
+                                    <div class="divider text-xs text-base-content/50 my-2">OR ENTER CODE</div>
+                                    <div class="join w-full">
+                                        <input type="text" id="promo_code_input" placeholder="Enter promo code" class="input input-bordered input-sm join-item flex-1 uppercase" maxlength="20">
+                                        <button type="button" onclick="applyPromoCode()" id="apply-promo-btn" class="btn btn-primary btn-sm join-item">Apply</button>
+                                    </div>
+                                    <p id="promo-error" class="text-error text-sm mt-2 hidden"></p>
+                                </div>
                             </div>
-                            <span class="icon-[tabler--file-text] size-6 text-info"></span>
-                        </label>
+                        </div>
                     </div>
 
-                    {{-- Questionnaire Selection (shown when checkbox is checked) --}}
-                    <div id="questionnaire-selection" class="hidden mt-4 p-4 bg-base-200/50 rounded-lg">
-                        <div class="text-sm font-medium text-base-content/70 mb-3">Select questionnaires to send:</div>
-
-                        {{-- Loading state --}}
-                        <div id="questionnaires-loading" class="hidden flex items-center justify-center py-4">
-                            <span class="loading loading-spinner loading-sm text-primary"></span>
-                            <span class="ml-2 text-sm text-base-content/60">Loading questionnaires...</span>
+                    {{-- Section 3: Amount & Payment Method --}}
+                    <div class="border border-base-200 rounded-lg">
+                        <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
+                            <div class="flex items-center gap-2 font-medium">
+                                <span class="icon-[tabler--cash] size-5 text-success"></span>
+                                <span>Amount & Payment Method</span>
+                            </div>
                         </div>
+                        <div class="p-4">
+                            {{-- Price Input --}}
+                            <div class="form-control mb-4" id="price-input-container">
+                                <label class="label" for="price-input">
+                                    <span class="label-text font-medium">Amount to Charge</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">$</span>
+                                    <input type="number" id="price-input" name="price_paid" step="0.01" min="0" class="input input-bordered w-full pl-8" value="0">
+                                </div>
+                            </div>
 
-                        {{-- No questionnaires available --}}
-                        <div id="questionnaires-empty" class="hidden text-center py-4">
-                            <span class="icon-[tabler--file-off] size-6 text-base-content/30 mx-auto mb-2"></span>
-                            <p class="text-sm text-base-content/50">No questionnaires attached to this class plan</p>
-                            <a href="{{ route('questionnaires.index') }}" target="_blank" class="text-xs text-primary hover:underline mt-1 inline-block">
-                                Manage questionnaires
-                            </a>
+                            {{-- Trial Amount (hidden by default) --}}
+                            <div id="trial-amount-container" class="hidden mb-4">
+                                <div class="form-control">
+                                    <label class="label" for="trial-amount">
+                                        <span class="label-text font-medium">Trial Amount</span>
+                                        <span class="label-text-alt text-base-content/50">Enter 0 for free trial</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">$</span>
+                                        <input type="number" id="trial-amount" step="0.01" min="0" class="input input-bordered w-full pl-8" value="0" placeholder="0.00">
+                                    </div>
+                                </div>
+                                <div id="free-trial-badge" class="mt-2">
+                                    <span class="badge badge-success gap-1">
+                                        <span class="icon-[tabler--discount-check] size-4"></span>
+                                        Free Trial
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Payment Method --}}
+                            <div class="form-control" id="payment-method-container">
+                                <label class="label">
+                                    <span class="label-text font-medium">Payment Method</span>
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                        <input type="radio" name="manual_method" value="cash" class="radio radio-primary radio-sm" checked>
+                                        <span class="icon-[tabler--cash] size-5 text-success"></span>
+                                        <span class="text-sm font-medium">Cash</span>
+                                    </label>
+                                    <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                        <input type="radio" name="manual_method" value="card" class="radio radio-primary radio-sm">
+                                        <span class="icon-[tabler--credit-card] size-5 text-info"></span>
+                                        <span class="text-sm font-medium">Card</span>
+                                    </label>
+                                    <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                        <input type="radio" name="manual_method" value="check" class="radio radio-primary radio-sm">
+                                        <span class="icon-[tabler--file-invoice] size-5 text-warning"></span>
+                                        <span class="text-sm font-medium">Check</span>
+                                    </label>
+                                    <label class="flex flex-col items-center gap-2 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                        <input type="radio" name="manual_method" value="other" class="radio radio-primary radio-sm">
+                                        <span class="icon-[tabler--dots] size-5 text-base-content/50"></span>
+                                        <span class="text-sm font-medium">Other</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
+                    </div>
 
-                        {{-- No email warning --}}
-                        <div id="no-email-warning" class="hidden alert alert-warning mb-3">
-                            <span class="icon-[tabler--alert-triangle] size-5"></span>
-                            <span class="text-sm">Client has no email address. Please add an email to send intake forms.</span>
+                    {{-- Hidden trial checkbox for form submission --}}
+                    <input type="checkbox" id="trial-class" name="is_trial" value="1" class="hidden">
+
+                    {{-- Section 4: Additional Options --}}
+                    <div class="border border-base-200 rounded-lg">
+                        <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
+                            <div class="flex items-center gap-2 font-medium">
+                                <span class="icon-[tabler--settings] size-5 text-base-content/70"></span>
+                                <span>Additional Options</span>
+                            </div>
                         </div>
+                        <div class="p-4 space-y-4">
+                            {{-- Intake Form --}}
+                            <div id="intake-form-section" class="hidden">
+                                <label class="flex items-center gap-3 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-info has-[:checked]:bg-info/5 transition-all">
+                                    <input type="checkbox" id="send-intake-form" name="send_intake_form" value="1" class="checkbox checkbox-info checkbox-sm">
+                                    <div class="flex-1">
+                                        <span class="font-medium text-sm">Send Intake Form</span>
+                                        <span class="text-xs text-base-content/60 block">Email questionnaire(s) to client</span>
+                                    </div>
+                                </label>
 
-                        {{-- Questionnaire List --}}
-                        <div id="questionnaires-list" class="space-y-2">
-                            {{-- Questionnaires loaded via AJAX --}}
+                                <div id="questionnaire-selection" class="hidden mt-3 p-3 bg-base-200/50 rounded-lg">
+                                    <div class="text-sm font-medium text-base-content/70 mb-2">Select questionnaires:</div>
+                                    <div id="questionnaires-loading" class="hidden flex items-center justify-center py-3">
+                                        <span class="loading loading-spinner loading-sm"></span>
+                                    </div>
+                                    <div id="questionnaires-empty" class="hidden text-center py-3 text-sm text-base-content/50">
+                                        No questionnaires attached
+                                    </div>
+                                    <div id="no-email-warning" class="hidden alert alert-warning alert-sm mb-2">
+                                        <span class="icon-[tabler--alert-triangle] size-4"></span>
+                                        <span class="text-xs">Client has no email</span>
+                                    </div>
+                                    <div id="questionnaires-list" class="space-y-2"></div>
+                                </div>
+                            </div>
+
+                            {{-- Check in now --}}
+                            <div id="check-in-now-container" class="hidden">
+                                <label class="flex items-center gap-3 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                    <input type="checkbox" name="check_in_now" value="1" class="checkbox checkbox-primary checkbox-sm" id="check-in-now-checkbox">
+                                    <div class="flex-1">
+                                        <span class="font-medium text-sm">Check in now</span>
+                                        <span class="text-xs text-base-content/60 block">Mark as arrived immediately</span>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {{-- Notes --}}
+                            <div class="form-control">
+                                <label class="label" for="notes">
+                                    <span class="label-text font-medium text-sm">Notes (optional)</span>
+                                </label>
+                                <textarea id="notes" name="notes" rows="2" class="textarea textarea-bordered textarea-sm" placeholder="Any notes about this booking..."></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {{-- Check in now (only shown for current time slot sessions) --}}
-                <div id="check-in-now-container" class="form-control mb-6 hidden">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" name="check_in_now" value="1" class="checkbox checkbox-primary" id="check-in-now-checkbox">
-                        <div>
-                            <span class="font-medium">Check in client now</span>
-                            <span class="text-sm text-base-content/60 block">Mark as arrived immediately after booking</span>
-                        </div>
-                    </label>
-                </div>
-
-                <input type="hidden" name="payment_method" value="manual">
+                {{-- Dummy element for client-payment-options (to prevent JS errors) --}}
+                <div id="client-payment-options" class="hidden"></div>
 
                 <div class="flex justify-between mt-6">
                     <button type="button" class="btn btn-ghost" id="step2-back">
@@ -855,6 +845,20 @@ function hideModalError() {
     }
 }
 
+// Toggle promo code section
+function togglePromoSection() {
+    const content = document.getElementById('promo-content');
+    const chevron = document.getElementById('promo-chevron');
+
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+    } else {
+        content.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // State
     let currentStep = 1;
@@ -1035,6 +1039,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selected-client').classList.remove('hidden');
         document.getElementById('search-results').classList.add('hidden');
 
+        // Load client's payment options (class passes, memberships)
+        loadClientPaymentOptions(id);
+
         validateStep1();
     };
 
@@ -1045,6 +1052,14 @@ document.addEventListener('DOMContentLoaded', function() {
         isNewClient = false;
         document.getElementById('client-id').value = '';
         document.getElementById('selected-client').classList.add('hidden');
+
+        // Clear payment options
+        document.getElementById('client-payment-options').classList.add('hidden');
+        document.getElementById('client-payment-options-list').innerHTML = '';
+        document.getElementById('class-pass-purchase-id').value = '';
+        document.getElementById('payment-method-hidden').value = 'manual';
+        document.getElementById('payment-method-container').classList.remove('hidden');
+        document.getElementById('price-input-container').classList.remove('hidden');
 
         // Show client type selection again
         document.getElementById('client-type-selection').classList.remove('hidden');
@@ -1066,6 +1081,160 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('new-phone').value = '';
 
         validateStep1();
+    };
+
+    // Load client's payment options (class passes, memberships)
+    async function loadClientPaymentOptions(clientId) {
+        const container = document.getElementById('client-payment-options');
+        const loading = document.getElementById('client-payment-options-loading');
+        const list = document.getElementById('client-payment-options-list');
+
+        // Reset
+        list.innerHTML = '';
+        document.getElementById('class-pass-purchase-id').value = '';
+        document.getElementById('payment-method-hidden').value = 'manual';
+
+        // Show loading
+        container.classList.remove('hidden');
+        loading.classList.remove('hidden');
+
+        try {
+            const classPlanId = selectedClassPlanId || '';
+            const response = await fetch(`/walk-in/payment-methods/${clientId}?class_plan_id=${classPlanId}`);
+            const data = await response.json();
+
+            let html = '';
+
+            // Membership option
+            if (data.membership) {
+                html += `
+                    <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-secondary has-[:checked]:bg-secondary/5 transition-all">
+                        <input type="radio" name="payment_option" value="membership" class="radio radio-secondary mt-0.5" onchange="selectPaymentOption('membership')">
+                        <div class="flex-1">
+                            <div class="font-medium flex items-center gap-2">
+                                <span class="icon-[tabler--id-badge-2] size-5 text-secondary"></span>
+                                Use Membership
+                                <span class="badge badge-secondary badge-sm">Recommended</span>
+                            </div>
+                            <div class="text-sm text-base-content/60 mt-1">${data.membership.name} - ${data.membership.credits_remaining} credits remaining</div>
+                        </div>
+                    </label>
+                `;
+            }
+
+            // Class passes
+            if (data.packs && data.packs.length > 0) {
+                data.packs.forEach(pack => {
+                    const expiryText = pack.expires_at ? `<span class="text-xs text-base-content/50">expires ${pack.expires_at}</span>` : '';
+                    const pendingBadge = pack.is_pending_activation ? '<span class="badge badge-warning badge-xs ml-2">Activates on booking</span>' : '';
+                    html += `
+                        <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-accent has-[:checked]:bg-accent/5 transition-all">
+                            <input type="radio" name="payment_option" value="pack_${pack.id}" class="radio radio-accent mt-0.5" onchange="selectPaymentOption('pack', ${pack.id})">
+                            <div class="flex-1">
+                                <div class="font-medium flex items-center gap-2">
+                                    <span class="icon-[tabler--ticket] size-5 text-accent"></span>
+                                    Use Class Pass ${pendingBadge}
+                                </div>
+                                <div class="text-sm text-base-content/60 mt-1">${pack.name} - ${pack.classes_remaining} credits remaining ${expiryText}</div>
+                            </div>
+                        </label>
+                    `;
+                });
+            }
+
+            // Add "Trial Class" option
+            html += `
+                <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                    <input type="radio" name="payment_option" value="trial" class="radio radio-success mt-0.5" onchange="selectPaymentOption('trial')">
+                    <div class="flex-1">
+                        <div class="font-medium flex items-center gap-2">
+                            <span class="icon-[tabler--gift] size-5 text-success"></span>
+                            Trial Class
+                        </div>
+                        <div class="text-sm text-base-content/60 mt-1">First-time client complimentary session</div>
+                    </div>
+                </label>
+            `;
+
+            // Add "Pay Now" option (default selected)
+            html += `
+                <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                    <input type="radio" name="payment_option" value="manual" class="radio radio-primary mt-0.5" onchange="selectPaymentOption('manual')" checked>
+                    <div class="flex-1">
+                        <div class="font-medium flex items-center gap-2">
+                            <span class="icon-[tabler--cash] size-5 text-primary"></span>
+                            Pay Now
+                        </div>
+                        <div class="text-sm text-base-content/60 mt-1">Cash, card, or other payment</div>
+                    </div>
+                </label>
+            `;
+
+            list.innerHTML = html;
+            container.classList.remove('hidden');
+            document.getElementById('payment-method-container').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error loading payment options:', error);
+            container.classList.add('hidden');
+        } finally {
+            loading.classList.add('hidden');
+        }
+    }
+
+    window.selectPaymentOption = function(option, packId = null) {
+        const paymentMethodHidden = document.getElementById('payment-method-hidden');
+        const classPassPurchaseId = document.getElementById('class-pass-purchase-id');
+        const paymentMethodContainer = document.getElementById('payment-method-container');
+        const priceInputContainer = document.getElementById('price-input-container');
+        const trialAmountContainer = document.getElementById('trial-amount-container');
+        const trialCheckbox = document.getElementById('trial-class');
+
+        const displayPrice = document.getElementById('display-price');
+        const priceInput = document.getElementById('price-input');
+
+        // Reset trial checkbox when switching options
+        if (trialCheckbox) trialCheckbox.checked = false;
+        if (trialAmountContainer) trialAmountContainer.classList.add('hidden');
+
+        if (option === 'membership') {
+            paymentMethodHidden.value = 'membership';
+            classPassPurchaseId.value = '';
+            paymentMethodContainer.classList.add('hidden');
+            priceInputContainer.classList.add('hidden');
+            // Show $0 for membership
+            displayPrice.textContent = '$0.00';
+        } else if (option === 'pack') {
+            paymentMethodHidden.value = 'pack';
+            classPassPurchaseId.value = packId;
+            // Show $0 but keep price input visible for optional additional charge
+            displayPrice.textContent = '$0.00';
+            priceInput.value = '0';
+            priceInputContainer.classList.remove('hidden');
+            paymentMethodContainer.classList.remove('hidden');
+            // Update label to indicate it's optional
+            document.querySelector('#price-input-container .label-text').textContent = 'Additional Amount (Optional)';
+        } else if (option === 'trial') {
+            paymentMethodHidden.value = 'trial';
+            classPassPurchaseId.value = '';
+            // Mark as trial
+            if (trialCheckbox) trialCheckbox.checked = true;
+            // Show trial amount input, hide regular price input
+            priceInputContainer.classList.add('hidden');
+            if (trialAmountContainer) trialAmountContainer.classList.remove('hidden');
+            paymentMethodContainer.classList.remove('hidden');
+            // Show $0 for trial
+            displayPrice.textContent = '$0.00';
+        } else {
+            // Pay Now (manual)
+            paymentMethodHidden.value = 'manual';
+            classPassPurchaseId.value = '';
+            paymentMethodContainer.classList.remove('hidden');
+            priceInputContainer.classList.remove('hidden');
+            // Restore original price and label
+            displayPrice.textContent = '$' + (originalClassPrice || 0).toFixed(2);
+            priceInput.value = (originalClassPrice || 0).toFixed(2);
+            document.querySelector('#price-input-container .label-text').textContent = 'Amount to Charge';
+        }
     };
 
     function validateStep1() {
@@ -1821,6 +1990,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('booking-form').action = `/walk-in/class/${selectedSessionId}`;
 
         goToStep(2);
+
+        // Reload payment options now that class is selected
+        if (selectedClientId) {
+            loadClientPaymentOptions(selectedClientId);
+        }
 
         // Fetch available offers for step 2
         fetchAvailableOffers();

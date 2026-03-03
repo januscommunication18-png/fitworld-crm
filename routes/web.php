@@ -394,7 +394,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
     Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');
     Route::post('/walk-in/service/{service_slot}', [WalkInController::class, 'bookService'])->name('walk-in.service.book');
-    Route::get('/walk-in/payment-methods/{client}', [WalkInController::class, 'getPaymentMethods'])->name('walk-in.payment-methods');
+    Route::get('/walk-in/payment-methods/{client_id}', [WalkInController::class, 'getPaymentMethods'])->name('walk-in.payment-methods');
     Route::post('/walk-in/clients/quick-add', [WalkInController::class, 'quickAddClient'])->name('walk-in.clients.quick-add');
     Route::get('/walk-in/clients/search', [WalkInController::class, 'searchClients'])->name('walk-in.clients.search');
     Route::post('/walk-in/sessions/quick-create', [WalkInController::class, 'quickCreateSession'])->name('walk-in.sessions.quick-create');

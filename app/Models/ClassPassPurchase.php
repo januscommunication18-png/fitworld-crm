@@ -182,7 +182,7 @@ class ClassPassPurchase extends Model
         if (!$this->expires_at) {
             return null;
         }
-        return now()->diffInDays($this->expires_at, false);
+        return (int) now()->diffInDays($this->expires_at, false);
     }
 
     public function getIsExpiringSoonAttribute(): bool

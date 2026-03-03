@@ -466,7 +466,10 @@ async function loadPaymentMethods() {
 
     try {
         const classPlanId = walkInState.sessionData.class_plan_id || '';
-        const response = await fetch(`${apiBase}/walk-in/payment-methods/${walkInState.selectedClient.id}?class_plan_id=${classPlanId}`, {
+        const url = `${apiBase}/walk-in/payment-methods/${walkInState.selectedClient.id}?class_plan_id=${classPlanId}`;
+        console.log('Loading payment methods from:', url);
+
+        const response = await fetch(url, {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
@@ -474,6 +477,7 @@ async function loadPaymentMethods() {
         });
 
         const data = await response.json();
+        console.log('Payment methods response:', data);
         walkInState.paymentMethods = data.payment_methods;
 
         displayPaymentMethods(data.payment_methods);
