@@ -45,16 +45,16 @@
                         <span class="icon-[tabler--layout-dashboard] size-4 mr-2"></span>{{ $trans['nav.dashboard.overview'] ?? 'Overview' }}
                     </a></li>
                     @if($canViewSchedule)
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('dashboard.todays-classes') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.todays-classes') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>{{ $trans['nav.dashboard.todays_classes'] ?? "Today's Classes" }}
                     </a></li>
                     @endif
                     @if($canViewBookings)
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('dashboard.upcoming-bookings') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.upcoming-bookings') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--book] size-4 mr-2"></span>{{ $trans['nav.dashboard.upcoming_bookings'] ?? 'Upcoming Bookings' }}
                     </a></li>
                     @endif
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('dashboard.alerts') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.alerts') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--bell] size-4 mr-2"></span>{{ $trans['nav.dashboard.alerts'] ?? 'Alerts & Reminders' }}
                     </a></li>
                 </ul>
@@ -259,27 +259,30 @@
 
             {{-- Insights - Requires insights permissions --}}
             @if($canViewInsights)
-            <li class="nav-item {{ request()->is('insights*') || request()->is('reports*') ? 'active' : '' }}" data-nav="insights">
+            <li class="nav-item {{ request()->is('reports*') ? 'active' : '' }}" data-nav="insights">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--chart-bar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.insights'] ?? 'Insights' }}</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('insights*') || request()->is('reports*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ request()->is('reports*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    <li><a href="{{ route('reports.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('reports.index') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--layout-dashboard] size-4 mr-2"></span>{{ $trans['nav.insights.overview'] ?? 'Overview' }}
+                    </a></li>
                     @if($user->hasPermission('insights.attendance'))
-                    <li><a href="{{ url('/reports') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('reports.attendance') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('reports.attendance') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--checks] size-4 mr-2"></span>{{ $trans['nav.insights.attendance'] ?? 'Attendance' }}
                     </a></li>
                     @endif
                     @if($user->hasPermission('insights.revenue'))
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('reports.revenue') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('reports.revenue') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--coin] size-4 mr-2"></span>{{ $trans['nav.insights.revenue'] ?? 'Revenue' }}
                     </a></li>
                     @endif
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('reports.class-performance') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('reports.class-performance') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--trophy] size-4 mr-2"></span>{{ $trans['nav.insights.class_performance'] ?? 'Class Performance' }}
                     </a></li>
-                    <li><a href="#" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ route('reports.retention') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('reports.retention') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--trending-up] size-4 mr-2"></span>{{ $trans['nav.insights.retention'] ?? 'Retention' }}
                     </a></li>
                 </ul>

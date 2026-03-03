@@ -169,6 +169,15 @@ Route::middleware('auth')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/todays-classes', [DashboardController::class, 'todaysClasses'])->name('dashboard.todays-classes');
+    Route::get('/dashboard/upcoming-bookings', [DashboardController::class, 'upcomingBookings'])->name('dashboard.upcoming-bookings');
+    Route::get('/dashboard/alerts', [DashboardController::class, 'alerts'])->name('dashboard.alerts');
+
+    // Dashboard API (for charts)
+    Route::prefix('api/dashboard')->group(function () {
+        Route::get('/', [DashboardController::class, 'apiDashboard'])->name('api.dashboard');
+        Route::get('/revenue-chart', [DashboardController::class, 'apiRevenueChart'])->name('api.dashboard.revenue-chart');
+    });
 
     // Schedule
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
@@ -464,8 +473,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/offers/{offer}/toggle-status', [OfferController::class, 'toggleStatus'])->name('offers.toggle-status');
     Route::post('/offers/validate-code', [OfferController::class, 'validateCode'])->name('offers.validate-code');
 
-    // Reports
-    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    // Reports / Insights
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('/attendance', [ReportController::class, 'attendance'])->name('attendance');
+        Route::get('/revenue', [ReportController::class, 'revenue'])->name('revenue');
+        Route::get('/class-performance', [ReportController::class, 'classPerformance'])->name('class-performance');
+        Route::get('/retention', [ReportController::class, 'retention'])->name('retention');
+    });
+
+    // Reports API
+    Route::prefix('api/reports')->group(function () {
+        Route::get('/attendance/chart', [ReportController::class, 'apiAttendanceChart'])->name('api.reports.attendance-chart');
+        Route::get('/membership/chart', [ReportController::class, 'apiMembershipChart'])->name('api.reports.membership-chart');
+    });
 
     // Settings
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');

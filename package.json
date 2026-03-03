@@ -23,12 +23,14 @@
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "@tabler/icons-webfont": "^3.0.0",
+    "apexcharts": "^5.9.0",
     "axios": "^1.13.4",
     "flatpickr": "^4.6.13",
     "flyonui": "^2.4.1",
     "notyf": "^3.10.0",
     "quill": "^2.0.3",
     "sortablejs": "^1.15.7",
-    "vue": "^3.5.0"
+    "vue": "^3.5.0",
+    "vue3-apexcharts": "^1.11.0"
   }
 }

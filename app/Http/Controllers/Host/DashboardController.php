@@ -3,10 +3,22 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
+use App\Models\ClassSession;
+use App\Services\Reporting\ReportingService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
+    protected ReportingService $reportingService;
+
+    public function __construct(ReportingService $reportingService)
+    {
+        $this->reportingService = $reportingService;
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -16,6 +28,363 @@ class DashboardController extends Controller
             return redirect()->route('signup');
         }
 
-        return view('host.dashboard');
+        $host = $user->currentHost();
+
+        // Get dashboard metrics
+        $metrics = $this->reportingService->getDashboardMetrics($host);
+        $quickStats = $this->reportingService->getQuickStats($host);
+        $revenueChart = $this->reportingService->getRevenueChartData($host, 'month');
+
+        return view('host.dashboard', [
+            'metrics' => $metrics,
+            'quickStats' => $quickStats,
+            'revenueChart' => $revenueChart,
+            'currency' => $host->default_currency ?? 'USD',
+        ]);
+    }
+
+    /**
+     * API endpoint for dashboard data (for Vue components)
+     */
+    public function apiDashboard()
+    {
+        $user = Auth::user();
+        $host = $user->currentHost();
+
+        return response()->json([
+            'metrics' => $this->reportingService->getDashboardMetrics($host),
+            'quick_stats' => $this->reportingService->getQuickStats($host),
+            'revenue_chart' => $this->reportingService->getRevenueChartData($host, 'month'),
+        ]);
+    }
+
+    /**
+     * API endpoint for revenue chart data
+     */
+    public function apiRevenueChart(string $period = 'month')
+    {
+        $user = Auth::user();
+        $host = $user->currentHost();
+
+        return response()->json(
+            $this->reportingService->getRevenueChartData($host, $period)
+        );
+    }
+
+    /**
+     * Today's Classes page
+     */
+    public function todaysClasses()
+    {
+        $user = Auth::user();
+        $host = $user->currentHost();
+        $today = Carbon::today();
+
+        $classes = ClassSession::where('host_id', $host->id)
+            ->whereDate('start_time', $today)
+            ->whereIn('status', ['published', 'completed'])
+            ->with(['classPlan', 'primaryInstructor', 'location', 'bookings.client'])
+            ->orderBy('start_time')
+            ->get()
+            ->map(function ($session) {
+                $allBookings = $session->bookings;
+
+                // Count by status
+                $confirmed = $allBookings->where('status', Booking::STATUS_CONFIRMED)->count();
+                $completed = $allBookings->where('status', Booking::STATUS_COMPLETED)->count();
+                $cancelled = $allBookings->where('status', Booking::STATUS_CANCELLED)->count();
+                $noShow = $allBookings->where('status', Booking::STATUS_NO_SHOW)->count();
+                $waitlisted = $allBookings->where('status', Booking::STATUS_WAITLISTED)->count();
+
+                // Checked in count (has checked_in_at timestamp)
+                $checkedIn = $allBookings->whereNotNull('checked_in_at')->count();
+
+                // Active bookings (confirmed + completed)
+                $activeBookings = $allBookings->whereIn('status', [Booking::STATUS_CONFIRMED, Booking::STATUS_COMPLETED]);
+                $bookedCount = $activeBookings->count();
+
+                return [
+                    'id' => $session->id,
+                    'name' => $session->classPlan?->name ?? $session->title ?? 'Class',
+                    'start_time' => $session->start_time,
+                    'end_time' => $session->end_time,
+                    'instructor' => $session->primaryInstructor?->name ?? 'TBA',
+                    'location' => $session->location?->name ?? 'TBA',
+                    'booked' => $bookedCount,
+                    'capacity' => $session->capacity,
+                    'status' => $session->status,
+                    'utilization' => $session->capacity > 0
+                        ? round(($bookedCount / $session->capacity) * 100)
+                        : 0,
+                    // Detailed counts
+                    'confirmed' => $confirmed,
+                    'completed' => $completed,
+                    'checked_in' => $checkedIn,
+                    'cancelled' => $cancelled,
+                    'no_show' => $noShow,
+                    'waitlisted' => $waitlisted,
+                    'bookings' => $activeBookings->map(fn($b) => [
+                        'id' => $b->id,
+                        'client_name' => $b->client?->full_name ?? 'Unknown',
+                        'status' => $b->status,
+                        'checked_in_at' => $b->checked_in_at,
+                    ]),
+                ];
+            });
+
+        // Classes by hour (timeline)
+        $hourlyDistribution = collect();
+        for ($hour = 6; $hour <= 21; $hour++) {
+            $classesInHour = $classes->filter(function ($class) use ($hour) {
+                return $class['start_time']->hour === $hour;
+            });
+            $hourlyDistribution->push([
+                'hour' => Carbon::createFromTime($hour)->format('g A'),
+                'count' => $classesInHour->count(),
+                'booked' => $classesInHour->sum('booked'),
+                'checked_in' => $classesInHour->sum('checked_in'),
+            ]);
+        }
+
+        // Utilization by class (for horizontal bar chart)
+        $utilizationByClass = $classes->map(fn($c) => [
+            'name' => $c['name'],
+            'utilization' => $c['utilization'],
+            'booked' => $c['booked'],
+            'capacity' => $c['capacity'],
+            'checked_in' => $c['checked_in'],
+            'cancelled' => $c['cancelled'],
+            'no_show' => $c['no_show'],
+            'waitlisted' => $c['waitlisted'],
+        ])->values();
+
+        // Overall status breakdown for pie chart
+        $statusBreakdown = [
+            'checked_in' => $classes->sum('checked_in'),
+            'confirmed' => $classes->sum('confirmed') - $classes->sum('checked_in'), // Confirmed but not checked in
+            'completed' => $classes->sum('completed'),
+            'cancelled' => $classes->sum('cancelled'),
+            'no_show' => $classes->sum('no_show'),
+            'waitlisted' => $classes->sum('waitlisted'),
+        ];
+
+        // By instructor
+        $byInstructor = $classes->groupBy('instructor')
+            ->map(fn($group, $name) => [
+                'name' => $name,
+                'classes' => $group->count(),
+                'bookings' => $group->sum('booked'),
+            ])
+            ->sortByDesc('bookings')
+            ->values();
+
+        // Chart data
+        $chartData = [
+            'hourly' => [
+                'labels' => $hourlyDistribution->pluck('hour')->toArray(),
+                'classes' => $hourlyDistribution->pluck('count')->toArray(),
+                'bookings' => $hourlyDistribution->pluck('booked')->toArray(),
+                'checked_in' => $hourlyDistribution->pluck('checked_in')->toArray(),
+            ],
+            'utilization' => [
+                'labels' => $utilizationByClass->pluck('name')->toArray(),
+                'values' => $utilizationByClass->pluck('utilization')->toArray(),
+                'booked' => $utilizationByClass->pluck('booked')->toArray(),
+                'capacity' => $utilizationByClass->pluck('capacity')->toArray(),
+                'checked_in' => $utilizationByClass->pluck('checked_in')->toArray(),
+                'cancelled' => $utilizationByClass->pluck('cancelled')->toArray(),
+                'no_show' => $utilizationByClass->pluck('no_show')->toArray(),
+                'waitlisted' => $utilizationByClass->pluck('waitlisted')->toArray(),
+            ],
+            'byInstructor' => [
+                'labels' => $byInstructor->pluck('name')->toArray(),
+                'classes' => $byInstructor->pluck('classes')->toArray(),
+                'bookings' => $byInstructor->pluck('bookings')->toArray(),
+            ],
+            'statusBreakdown' => $statusBreakdown,
+        ];
+
+        return view('host.dashboard.todays-classes', [
+            'classes' => $classes,
+            'date' => $today,
+            'chartData' => $chartData,
+        ]);
+    }
+
+    /**
+     * Upcoming Bookings page
+     */
+    public function upcomingBookings(Request $request)
+    {
+        $user = Auth::user();
+        $host = $user->currentHost();
+
+        $bookings = Booking::where('host_id', $host->id)
+            ->whereIn('status', [Booking::STATUS_CONFIRMED, Booking::STATUS_WAITLISTED])
+            ->where('bookable_type', ClassSession::class)
+            ->whereHas('bookable', function ($q) {
+                $q->where('start_time', '>', Carbon::now());
+            })
+            ->with(['client', 'bookable.classPlan', 'bookable.primaryInstructor'])
+            ->orderBy('booked_at', 'desc')
+            ->paginate(20);
+
+        // Get all upcoming bookings for charts (not paginated)
+        $allUpcomingBookings = Booking::where('host_id', $host->id)
+            ->whereIn('status', [Booking::STATUS_CONFIRMED, Booking::STATUS_WAITLISTED])
+            ->where('bookable_type', ClassSession::class)
+            ->whereHas('bookable', function ($q) {
+                $q->where('start_time', '>', Carbon::now());
+            })
+            ->with(['bookable.classPlan'])
+            ->get();
+
+        // Summary stats
+        $summary = [
+            'total' => $allUpcomingBookings->count(),
+            'confirmed' => $allUpcomingBookings->where('status', Booking::STATUS_CONFIRMED)->count(),
+            'waitlisted' => $allUpcomingBookings->where('status', Booking::STATUS_WAITLISTED)->count(),
+            'today' => $allUpcomingBookings->filter(fn($b) => $b->bookable?->start_time?->isToday())->count(),
+            'this_week' => $allUpcomingBookings->filter(fn($b) => $b->bookable?->start_time?->isCurrentWeek())->count(),
+        ];
+
+        // Bookings by day (next 7 days)
+        $bookingsByDay = collect();
+        for ($i = 0; $i < 7; $i++) {
+            $date = Carbon::today()->addDays($i);
+            $count = $allUpcomingBookings->filter(function ($booking) use ($date) {
+                return $booking->bookable?->start_time?->isSameDay($date);
+            })->count();
+            $bookingsByDay->push([
+                'date' => $date->format('D'),
+                'full_date' => $date->format('M j'),
+                'count' => $count,
+            ]);
+        }
+
+        // Bookings by class type
+        $bookingsByClass = $allUpcomingBookings
+            ->groupBy(fn($b) => $b->bookable?->classPlan?->name ?? 'Other')
+            ->map(fn($group, $name) => [
+                'name' => $name,
+                'count' => $group->count(),
+            ])
+            ->sortByDesc('count')
+            ->values()
+            ->take(6);
+
+        // Chart data
+        $chartData = [
+            'byDay' => [
+                'labels' => $bookingsByDay->pluck('date')->toArray(),
+                'values' => $bookingsByDay->pluck('count')->toArray(),
+                'fullDates' => $bookingsByDay->pluck('full_date')->toArray(),
+            ],
+            'byClass' => [
+                'labels' => $bookingsByClass->pluck('name')->toArray(),
+                'values' => $bookingsByClass->pluck('count')->toArray(),
+            ],
+        ];
+
+        return view('host.dashboard.upcoming-bookings', [
+            'bookings' => $bookings,
+            'summary' => $summary,
+            'chartData' => $chartData,
+        ]);
+    }
+
+    /**
+     * Alerts & Reminders page
+     */
+    public function alerts()
+    {
+        $user = Auth::user();
+        $host = $user->currentHost();
+
+        // Get various alerts
+        $alerts = collect();
+
+        // Outstanding invoices
+        $outstandingInvoices = $this->reportingService->revenue()->getOutstandingInvoices($host);
+        if ($outstandingInvoices['overdue_count'] > 0) {
+            $alerts->push([
+                'type' => 'warning',
+                'icon' => 'tabler--alert-triangle',
+                'title' => $outstandingInvoices['overdue_count'] . ' Overdue Invoices',
+                'message' => 'Total: $' . number_format($outstandingInvoices['overdue_total'], 2),
+                'action_url' => route('payments.transactions'),
+                'action_text' => 'View Invoices',
+            ]);
+        }
+
+        // Low attendance classes (next 7 days)
+        $lowAttendanceClasses = ClassSession::where('host_id', $host->id)
+            ->where('start_time', '>', Carbon::now())
+            ->where('start_time', '<', Carbon::now()->addDays(7))
+            ->where('status', 'published')
+            ->withCount(['bookings' => function ($q) {
+                $q->where('status', Booking::STATUS_CONFIRMED);
+            }])
+            ->having('bookings_count', '<', 3)
+            ->with('classPlan')
+            ->get();
+
+        foreach ($lowAttendanceClasses as $class) {
+            $alerts->push([
+                'type' => 'info',
+                'icon' => 'tabler--users',
+                'title' => 'Low Attendance: ' . ($class->classPlan?->name ?? 'Class'),
+                'message' => 'Only ' . $class->bookings_count . ' bookings for ' . $class->start_time->format('M j @ g:ia'),
+                'action_url' => route('class-sessions.show', $class->id),
+                'action_text' => 'View Class',
+            ]);
+        }
+
+        // Membership metrics
+        $membershipMetrics = $this->reportingService->membership()->getSummary($host);
+        if ($membershipMetrics['cancelled_30_days'] > 0) {
+            $alerts->push([
+                'type' => 'error',
+                'icon' => 'tabler--user-minus',
+                'title' => $membershipMetrics['cancelled_30_days'] . ' Membership Cancellations',
+                'message' => 'In the last 30 days',
+                'action_url' => route('clients.index'),
+                'action_text' => 'View Members',
+            ]);
+        }
+
+        // New members celebration
+        if ($membershipMetrics['new_30_days'] > 0) {
+            $alerts->push([
+                'type' => 'success',
+                'icon' => 'tabler--user-plus',
+                'title' => $membershipMetrics['new_30_days'] . ' New Members',
+                'message' => 'Joined in the last 30 days',
+                'action_url' => route('clients.members'),
+                'action_text' => 'View Members',
+            ]);
+        }
+
+        // No-show rate alert
+        $attendanceMetrics = $this->reportingService->attendance()->getSummary($host);
+        if ($attendanceMetrics['no_show_rate'] > 10) {
+            $alerts->push([
+                'type' => 'warning',
+                'icon' => 'tabler--clock-off',
+                'title' => 'High No-Show Rate',
+                'message' => $attendanceMetrics['no_show_rate'] . '% no-show rate in the last 30 days',
+                'action_url' => null,
+                'action_text' => null,
+            ]);
+        }
+
+        return view('host.dashboard.alerts', [
+            'alerts' => $alerts,
+            'metrics' => [
+                'outstanding' => $outstandingInvoices,
+                'membership' => $membershipMetrics,
+                'attendance' => $attendanceMetrics,
+            ],
+        ]);
     }
 }
