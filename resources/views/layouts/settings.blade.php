@@ -210,7 +210,7 @@
                         <li><a href="{{ route('settings.advanced.export') }}" class="{{ request()->routeIs('settings.advanced.export') ? 'active' : '' }}">
                             <span class="icon-[tabler--download] size-4"></span> Data Export
                         </a></li>
-                        <li><a href="{{ route('settings.advanced.audit') }}" class="{{ request()->routeIs('settings.advanced.audit') ? 'active' : '' }}">
+                        <li><a href="{{ route('settings.audit') }}" class="{{ request()->routeIs('settings.audit') ? 'active' : '' }}">
                             <span class="icon-[tabler--list-details] size-4"></span> Audit Logs
                         </a></li>
                         <li><a href="{{ route('settings.advanced.danger') }}" class="{{ request()->routeIs('settings.advanced.danger') ? 'active' : '' }}">

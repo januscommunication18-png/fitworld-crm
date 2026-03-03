@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
+use App\Models\AutomationSetting;
 use App\Models\TaxRate;
+use App\Models\User;
+use App\Models\UserSession;
 use App\Services\TaxService;
 use Illuminate\Http\Request;
 
@@ -925,7 +929,46 @@ class SettingsController extends Controller
 
     public function automationRules()
     {
-        return view('host.settings.notifications.automation');
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        // Initialize automation settings for this host if they don't exist
+        AutomationSetting::initializeForHost($host->id);
+
+        // Get all automation settings for this host
+        $settings = AutomationSetting::getSettingsForHost($host->id);
+        $automationTypes = AutomationSetting::getAutomationTypes();
+
+        return view('host.settings.notifications.automation', compact('settings', 'automationTypes'));
+    }
+
+    public function updateAutomationSetting(Request $request, string $key)
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        $setting = AutomationSetting::getForHost($host->id, $key);
+
+        if (!$setting) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Automation setting not found.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'is_enabled' => 'required|boolean',
+            'config' => 'nullable|array',
+        ]);
+
+        $setting->update([
+            'is_enabled' => $validated['is_enabled'],
+            'config' => array_merge($setting->config ?? [], $validated['config'] ?? []),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Automation settings updated. Changes will take effect within 24-48 hours as scheduled tasks run.',
+            'is_enabled' => $setting->is_enabled,
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -996,7 +1039,7 @@ class SettingsController extends Controller
         return view('host.settings.advanced.export');
     }
 
-    public function auditLogs()
+    public function auditLogs(Request $request)
     {
         // Owner only
         if (!auth()->user()->isOwner()) {
@@ -1004,7 +1047,61 @@ class SettingsController extends Controller
                 ->with('error', 'Only the studio owner can access this page.');
         }
 
-        return view('host.settings.advanced.audit');
+        $host = auth()->user()->currentHost();
+        $period = $request->get('period', 30);
+        $userId = $request->get('user');
+        $category = $request->get('category');
+        $tab = $request->get('tab', 'sessions');
+
+        // Get users for filter dropdown
+        $users = User::where('host_id', $host->id)->orderBy('first_name')->get();
+
+        // Get user sessions (login tracking)
+        $sessionsQuery = UserSession::where('host_id', $host->id)
+            ->with('user')
+            ->where('created_at', '>=', now()->subDays($period));
+
+        if ($userId) {
+            $sessionsQuery->where('user_id', $userId);
+        }
+
+        $sessions = $sessionsQuery->orderBy('logged_in_at', 'desc')->paginate(20, ['*'], 'sessions_page');
+
+        // Get concurrent sessions count per user
+        $concurrentSessions = UserSession::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->selectRaw('user_id, COUNT(*) as count')
+            ->groupBy('user_id')
+            ->pluck('count', 'user_id');
+
+        // Get audit logs (activity trail)
+        $logsQuery = AuditLog::where('host_id', $host->id)
+            ->with(['user', 'auditable'])
+            ->where('created_at', '>=', now()->subDays($period));
+
+        if ($userId) {
+            $logsQuery->where('user_id', $userId);
+        }
+        if ($category) {
+            $logsQuery->where('action', 'like', "{$category}.%");
+        }
+
+        $logs = $logsQuery->orderBy('created_at', 'desc')->paginate(20, ['*'], 'logs_page');
+
+        // Get action categories for filter
+        $actionCategories = AuditLog::getActionCategories();
+
+        return view('host.settings.advanced.audit', compact(
+            'sessions',
+            'logs',
+            'users',
+            'concurrentSessions',
+            'actionCategories',
+            'period',
+            'userId',
+            'category',
+            'tab'
+        ));
     }
 
     public function dangerZone()

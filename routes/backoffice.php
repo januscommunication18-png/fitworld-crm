@@ -4,6 +4,7 @@ use App\Http\Controllers\Backoffice\AdminMemberController;
 use App\Http\Controllers\Backoffice\Auth\LoginController;
 use App\Http\Controllers\Backoffice\Auth\PasswordController;
 use App\Http\Controllers\Backoffice\Auth\SecurityController;
+use App\Http\Controllers\Backoffice\AutomationController;
 use App\Http\Controllers\Backoffice\ClientController;
 use App\Http\Controllers\Backoffice\DashboardController;
 use App\Http\Controllers\Backoffice\EmailLogController;
@@ -97,6 +98,11 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                     Route::post('/settings/mail', [SettingsController::class, 'updateMail'])->name('settings.update.mail');
                     Route::post('/settings/test-mail', [SettingsController::class, 'testMail'])->name('settings.test.mail');
                     Route::post('/settings/clear-cache', [SettingsController::class, 'clearCache'])->name('settings.clear-cache');
+
+                    // Automation / Scheduled Tasks
+                    Route::get('/settings/automation', [AutomationController::class, 'index'])->name('settings.automation');
+                    Route::post('/settings/automation/{command}/test', [AutomationController::class, 'test'])->name('settings.automation.test')->where('command', '.*');
+                    Route::post('/settings/automation/{command}/run', [AutomationController::class, 'run'])->name('settings.automation.run')->where('command', '.*');
                 });
 
                 // Translations

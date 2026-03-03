@@ -18,6 +18,7 @@ use App\Http\Controllers\Host\SettingsController;
 use App\Http\Controllers\Host\SignupController;
 use App\Http\Controllers\Host\TeamController;
 use App\Http\Controllers\Host\EmailTemplateController;
+use App\Http\Controllers\Host\ExportController;
 use App\Http\Controllers\Host\ClientController;
 use App\Http\Controllers\Host\TagController;
 use App\Http\Controllers\Host\CatalogController;
@@ -616,6 +617,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/notifications/email', [SettingsController::class, 'emailNotifications'])->name('settings.notifications.email');
     Route::get('/settings/notifications/sms', [SettingsController::class, 'smsNotifications'])->name('settings.notifications.sms');
     Route::get('/settings/notifications/automation', [SettingsController::class, 'automationRules'])->name('settings.notifications.automation');
+    Route::post('/settings/notifications/automation/{key}', [SettingsController::class, 'updateAutomationSetting'])->name('settings.notifications.automation.update');
 
     // Settings - Communication / Email Templates
     Route::get('/settings/communication/email-templates', [EmailTemplateController::class, 'index'])->name('settings.communication.email-templates');
@@ -640,8 +642,18 @@ Route::middleware('auth')->group(function () {
 
     // Settings - Advanced
     Route::get('/settings/advanced/export', [SettingsController::class, 'dataExport'])->name('settings.advanced.export');
-    Route::get('/settings/advanced/audit', [SettingsController::class, 'auditLogs'])->name('settings.advanced.audit');
+    Route::get('/settings/advanced/audit', [SettingsController::class, 'auditLogs'])->name('settings.audit');
     Route::get('/settings/advanced/danger', [SettingsController::class, 'dangerZone'])->name('settings.advanced.danger');
+
+    // Export Routes
+    Route::get('/export/clients', [ExportController::class, 'clients'])->name('export.clients');
+    Route::get('/export/transactions', [ExportController::class, 'transactions'])->name('export.transactions');
+    Route::get('/export/bookings', [ExportController::class, 'bookings'])->name('export.bookings');
+    Route::get('/export/classes', [ExportController::class, 'classes'])->name('export.classes');
+    Route::get('/export/memberships', [ExportController::class, 'memberships'])->name('export.memberships');
+    Route::get('/export/instructors', [ExportController::class, 'instructors'])->name('export.instructors');
+    Route::get('/export/audit-logs', [ExportController::class, 'auditLogs'])->name('export.audit-logs');
+    Route::get('/export/user-sessions', [ExportController::class, 'userSessions'])->name('export.user-sessions');
 
     // Settings - Developer Tools (local only)
     Route::get('/settings/dev/email-logs', [SettingsController::class, 'emailLogs'])->name('settings.dev.email-logs');

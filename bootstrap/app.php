@@ -9,6 +9,7 @@ use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckSecurityCode;
 use App\Http\Middleware\ResolveSubdomainHost;
 use App\Http\Middleware\SetCurrentHost;
+use App\Http\Middleware\TrackUserSession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -50,6 +51,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Set current host context for multi-studio users
         $middleware->appendToGroup('web', SetCurrentHost::class);
+
+        // Track user session activity
+        $middleware->appendToGroup('web', TrackUserSession::class);
 
         // Register admin middleware aliases
         $middleware->alias([

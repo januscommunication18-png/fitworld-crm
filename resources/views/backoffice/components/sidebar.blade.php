@@ -142,9 +142,18 @@
             {{-- Settings --}}
             <li>
                 <a href="{{ route('backoffice.settings.index') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.settings.*') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.settings.index') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
                     <span class="icon-[tabler--settings] size-5 shrink-0"></span>
                     <span>Settings</span>
+                </a>
+            </li>
+
+            {{-- Automation --}}
+            <li>
+                <a href="{{ route('backoffice.settings.automation') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.settings.automation*') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
+                    <span class="icon-[tabler--robot] size-5 shrink-0"></span>
+                    <span>Automation</span>
                 </a>
             </li>
 
