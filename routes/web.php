@@ -5,6 +5,7 @@ use App\Http\Controllers\Host\BookingController;
 use App\Http\Controllers\Host\DashboardController;
 use App\Http\Controllers\Host\InstructorController;
 use App\Http\Controllers\Host\InvitationController;
+use App\Http\Controllers\Host\MarketplaceController;
 use App\Http\Controllers\Host\LocationController;
 use App\Http\Controllers\Host\RoomController;
 use App\Http\Controllers\Host\BookingPageController;
@@ -36,6 +37,8 @@ use App\Http\Controllers\Host\RentalInvoiceController;
 use App\Http\Controllers\Host\SpaceRentalConfigController;
 use App\Http\Controllers\Host\SpaceRentalController;
 use App\Http\Controllers\Host\QuestionnaireController;
+use App\Http\Controllers\Host\ProgressTemplateController;
+use App\Http\Controllers\Host\ClassSessionProgressController;
 use App\Http\Controllers\Host\WalkInController;
 use App\Http\Controllers\Host\ScheduledMembershipController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
@@ -222,6 +225,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/clients/{id}/clear-at-risk', [ClientController::class, 'clearAtRisk'])->name('clients.clear-at-risk')->where('id', '[0-9]+');
     Route::put('/clients/{id}/tags', [ClientController::class, 'updateTags'])->name('clients.tags.update')->where('id', '[0-9]+');
 
+    // Client Progress
+    Route::get('/clients/{client}/progress', [\App\Http\Controllers\Host\ClientProgressController::class, 'index'])->name('clients.progress.index')->where('client', '[0-9]+');
+    Route::get('/clients/{client}/progress/{clientProgressReport}', [\App\Http\Controllers\Host\ClientProgressController::class, 'show'])->name('clients.progress.show')->where(['client' => '[0-9]+', 'clientProgressReport' => '[0-9]+']);
+
     // Help Desk
     Route::get('/helpdesk', [\App\Http\Controllers\Host\HelpdeskController::class, 'index'])->name('helpdesk.index');
     Route::get('/helpdesk/create', [\App\Http\Controllers\Host\HelpdeskController::class, 'create'])->name('helpdesk.create');
@@ -379,6 +386,13 @@ Route::middleware('auth')->group(function () {
         Route::put('/reorder', [QuestionnaireBuilderController::class, 'reorder'])->name('api.questionnaires.reorder');
     });
 
+    // Progress Templates
+    Route::prefix('progress-templates')->name('progress-templates.')->group(function () {
+        Route::get('/', [ProgressTemplateController::class, 'index'])->name('index');
+        Route::get('/{progressTemplate}', [ProgressTemplateController::class, 'show'])->name('show');
+        Route::post('/{progressTemplate}/toggle', [ProgressTemplateController::class, 'toggle'])->name('toggle');
+    });
+
     // Service Slots
     Route::resource('service-slots', ServiceSlotController::class)->names('service-slots');
     Route::post('/service-slots/bulk', [ServiceSlotController::class, 'bulkCreate'])->name('service-slots.bulk');
@@ -391,6 +405,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('/class-sessions/{class_session}/promote-backup', [ClassSessionController::class, 'promoteBackup'])->name('class-sessions.promote-backup');
     Route::post('/class-sessions/{class_session}/duplicate', [ClassSessionController::class, 'duplicate'])->name('class-sessions.duplicate');
     Route::patch('/class-sessions/{class_session}/resolve-conflict', [ClassSessionController::class, 'resolveConflict'])->name('class-sessions.resolve-conflict');
+
+    // Class Session Progress Recording
+    Route::get('/class-sessions/{classSession}/record-progress/{progressTemplate}', [ClassSessionProgressController::class, 'create'])->name('class-sessions.record-progress');
+    Route::post('/class-sessions/{classSession}/record-progress/{progressTemplate}', [ClassSessionProgressController::class, 'store'])->name('class-sessions.store-batch-progress');
+    Route::post('/class-sessions/{classSession}/booking/{booking}/progress/{progressTemplate}', [ClassSessionProgressController::class, 'storeSingle'])->name('class-sessions.store-single-progress');
 
     // Scheduled Membership Classes
     Route::get('/membership-schedules', [ScheduledMembershipController::class, 'index'])->name('membership-schedules.index');
@@ -473,6 +492,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/offers/{offer}/duplicate', [OfferController::class, 'duplicate'])->name('offers.duplicate');
     Route::post('/offers/{offer}/toggle-status', [OfferController::class, 'toggleStatus'])->name('offers.toggle-status');
     Route::post('/offers/validate-code', [OfferController::class, 'validateCode'])->name('offers.validate-code');
+
+    // Feature Marketplace
+    Route::prefix('marketplace')->name('marketplace.')->group(function () {
+        Route::get('/', [MarketplaceController::class, 'index'])->name('index');
+        Route::get('/{feature:slug}', [MarketplaceController::class, 'show'])->name('show');
+        Route::post('/{feature}/toggle', [MarketplaceController::class, 'toggle'])->name('toggle');
+        Route::post('/{feature}/config', [MarketplaceController::class, 'updateConfig'])->name('config');
+    });
 
     // Reports / Insights
     Route::prefix('reports')->name('reports.')->group(function () {

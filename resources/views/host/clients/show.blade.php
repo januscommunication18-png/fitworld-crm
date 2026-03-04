@@ -132,6 +132,15 @@
                 <span class="badge badge-sm badge-primary ml-2">{{ $client->clientNotes->count() }}</span>
             @endif
         </button>
+        @if(isset($progressReports))
+        <button class="tab" data-tab="progress" role="tab">
+            <span class="icon-[tabler--chart-line] size-4 mr-2"></span>
+            Progress
+            @if($progressReports->count() > 0)
+                <span class="badge badge-sm badge-primary ml-2">{{ $progressReports->count() }}</span>
+            @endif
+        </button>
+        @endif
         <button class="tab" data-tab="activity" role="tab">
             <span class="icon-[tabler--activity] size-4 mr-2"></span>
             Activity
@@ -799,6 +808,93 @@
                 </div>
             </div>
         </div>
+
+        {{-- Progress Tab --}}
+        @if(isset($progressReports))
+        <div class="tab-content hidden" data-content="progress">
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="card-title text-lg">
+                            <span class="icon-[tabler--chart-line] size-5"></span>
+                            Progress Reports
+                        </h2>
+                        @if($progressReports->count() > 0)
+                            <a href="{{ route('clients.progress.index', $client) }}" class="btn btn-primary btn-sm gap-1">
+                                <span class="icon-[tabler--history] size-4"></span>
+                                View Full History
+                            </a>
+                        @endif
+                    </div>
+
+                    @if($progressReports->count() > 0)
+                        <div class="space-y-4">
+                            @foreach($progressReports->take(5) as $report)
+                                <a href="{{ route('clients.progress.show', [$client, $report]) }}"
+                                   class="block border border-base-200 rounded-lg p-4 hover:bg-base-50 hover:border-primary/30 transition-colors">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex items-start gap-4">
+                                            <div class="p-3 rounded-xl bg-primary/10">
+                                                <span class="icon-[tabler--{{ $report->template->icon ?? 'chart-line' }}] size-6 text-primary"></span>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-semibold">{{ $report->template->name }}</h4>
+                                                <p class="text-sm text-base-content/60">
+                                                    {{ $report->report_date->format('M j, Y') }}
+                                                    @if($report->classSession)
+                                                        &bull; {{ $report->classSession->classPlan?->name ?? 'Class Session' }}
+                                                    @endif
+                                                </p>
+                                                @if($report->recordedBy)
+                                                    <p class="text-xs text-base-content/50 mt-1">
+                                                        Recorded by {{ $report->recordedBy->name }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-3">
+                                            @if($report->overall_score !== null)
+                                                <div class="text-right">
+                                                    <div class="text-2xl font-bold {{ $report->overall_score >= 70 ? 'text-success' : ($report->overall_score >= 40 ? 'text-warning' : 'text-error') }}">
+                                                        {{ number_format($report->overall_score, 0) }}%
+                                                    </div>
+                                                    <div class="text-xs text-base-content/50">Score</div>
+                                                </div>
+                                            @endif
+                                            <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
+                                        </div>
+                                    </div>
+
+                                    @if($report->trainer_notes)
+                                        <div class="mt-3 pt-3 border-t border-base-200">
+                                            <p class="text-sm text-base-content/70">
+                                                <strong>Notes:</strong> {{ Str::limit($report->trainer_notes, 150) }}
+                                            </p>
+                                        </div>
+                                    @endif
+                                </a>
+                            @endforeach
+                        </div>
+
+                        @if($progressReports->count() > 5)
+                            <div class="text-center mt-4 pt-4 border-t border-base-200">
+                                <a href="{{ route('clients.progress.index', $client) }}" class="btn btn-ghost btn-sm">
+                                    View All {{ $progressReports->count() }} Reports
+                                    <span class="icon-[tabler--arrow-right] size-4"></span>
+                                </a>
+                            </div>
+                        @endif
+                    @else
+                        <div class="text-center py-12">
+                            <span class="icon-[tabler--chart-line-off] size-12 text-base-content/20 mx-auto"></span>
+                            <p class="text-base-content/50 mt-4">No progress reports yet</p>
+                            <p class="text-sm text-base-content/40">Progress reports will appear here when recorded from class sessions.</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
 
         {{-- Activity Tab --}}
         <div class="tab-content hidden" data-content="activity">

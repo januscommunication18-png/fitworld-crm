@@ -68,6 +68,7 @@ class Host extends Model
         'verified_at',
         'plan_id',
         'subscription_status',
+        'has_premium_access',
         'trial_ends_at',
         'subscription_ends_at',
         'booking_page_status',
@@ -92,6 +93,7 @@ class Host extends Model
             'member_portal_settings' => 'array',
             'policies' => 'array',
             'is_live' => 'boolean',
+            'has_premium_access' => 'boolean',
             'show_address' => 'boolean',
             'show_social_links' => 'boolean',
             'onboarding_completed_at' => 'datetime',
@@ -479,6 +481,42 @@ class Host extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    /**
+     * Features enabled for this host
+     */
+    public function features(): BelongsToMany
+    {
+        return $this->belongsToMany(Feature::class, 'host_features')
+            ->withPivot(['is_enabled', 'config', 'activated_at', 'deactivated_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if a feature is enabled for this host
+     */
+    public function hasFeature(string $slug): bool
+    {
+        return Feature::isEnabledForHost($this->id, $slug);
+    }
+
+    /**
+     * Progress templates enabled for this host
+     */
+    public function progressTemplates(): BelongsToMany
+    {
+        return $this->belongsToMany(ProgressTemplate::class, 'host_progress_templates')
+            ->withPivot(['is_enabled', 'custom_config', 'activated_at', 'deactivated_at'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Client progress reports for this host
+     */
+    public function progressReports(): HasMany
+    {
+        return $this->hasMany(ClientProgressReport::class);
     }
 
     /**

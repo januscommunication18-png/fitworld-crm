@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Str;
@@ -103,6 +104,18 @@ class ClassPlan extends Model
     public function questionnaireAttachments(): MorphMany
     {
         return $this->morphMany(QuestionnaireAttachment::class, 'attachable');
+    }
+
+    public function progressTemplateAttachments(): HasMany
+    {
+        return $this->hasMany(ProgressTemplateAttachment::class);
+    }
+
+    public function progressTemplates(): BelongsToMany
+    {
+        return $this->belongsToMany(ProgressTemplate::class, 'progress_template_attachments')
+            ->withPivot('is_required', 'trigger_point', 'notify_instructor')
+            ->withTimestamps();
     }
 
     /**

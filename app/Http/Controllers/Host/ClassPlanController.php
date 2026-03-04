@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Host\Traits\SyncsProgressTemplateAttachments;
 use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Http\Requests\Host\ClassPlanRequest;
 use App\Models\ClassPlan;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 class ClassPlanController extends Controller
 {
     use SyncsQuestionnaireAttachments;
+    use SyncsProgressTemplateAttachments;
 
     public function index(Request $request)
     {
@@ -38,6 +40,7 @@ class ClassPlanController extends Controller
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
         $questionnaires = $this->getPublishedQuestionnaires();
+        $progressTemplates = $this->getEnabledProgressTemplates();
 
         // Multi-currency support
         $hostCurrencies = $host->currencies ?? ['USD'];
@@ -49,6 +52,7 @@ class ClassPlanController extends Controller
             'types',
             'difficultyLevels',
             'questionnaires',
+            'progressTemplates',
             'hostCurrencies',
             'defaultCurrency',
             'currencySymbols'
@@ -106,6 +110,9 @@ class ClassPlanController extends Controller
         // Sync questionnaire attachments
         $this->syncQuestionnaireAttachments($classPlan, $request);
 
+        // Sync progress template attachments
+        $this->syncProgressTemplateAttachments($classPlan, $request);
+
         return redirect()->route('catalog.index', ['tab' => 'classes'])
             ->with('success', 'Class plan created successfully.');
     }
@@ -161,7 +168,8 @@ class ClassPlanController extends Controller
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
         $questionnaires = $this->getPublishedQuestionnaires();
-        $classPlan->load('questionnaireAttachments');
+        $progressTemplates = $this->getEnabledProgressTemplates();
+        $classPlan->load(['questionnaireAttachments', 'progressTemplateAttachments']);
 
         // Multi-currency support
         $hostCurrencies = $host->currencies ?? ['USD'];
@@ -174,6 +182,7 @@ class ClassPlanController extends Controller
             'types',
             'difficultyLevels',
             'questionnaires',
+            'progressTemplates',
             'hostCurrencies',
             'defaultCurrency',
             'currencySymbols'
@@ -243,6 +252,9 @@ class ClassPlanController extends Controller
 
         // Sync questionnaire attachments
         $this->syncQuestionnaireAttachments($classPlan, $request);
+
+        // Sync progress template attachments
+        $this->syncProgressTemplateAttachments($classPlan, $request);
 
         return redirect()->route('catalog.index', ['tab' => 'classes'])
             ->with('success', 'Class plan updated successfully.');

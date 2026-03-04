@@ -235,7 +235,7 @@ class ClassSessionController extends Controller
         $this->authorizeSession($classSession);
 
         $classSession->load([
-            'classPlan',
+            'classPlan.progressTemplates',
             'primaryInstructor',
             'backupInstructors',
             'location',
@@ -255,6 +255,9 @@ class ClassSessionController extends Controller
         $intakeCompleted = $confirmedBookings->filter(fn($b) => $b->intake_status === 'completed')->count();
         $intakePending = $confirmedBookings->filter(fn($b) => $b->intake_status === 'pending')->count();
 
+        // Get progress templates attached to this class plan
+        $progressTemplates = $classSession->classPlan?->progressTemplates ?? collect();
+
         return view('host.class-sessions.show', [
             'classSession' => $classSession,
             'allBookings' => $allBookings,
@@ -263,6 +266,7 @@ class ClassSessionController extends Controller
             'checkedInCount' => $checkedInCount,
             'intakeCompleted' => $intakeCompleted,
             'intakePending' => $intakePending,
+            'progressTemplates' => $progressTemplates,
         ]);
     }
 

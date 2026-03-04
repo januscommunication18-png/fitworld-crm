@@ -187,6 +187,28 @@ class Client extends Model implements AuthenticatableContract
         return $this->hasMany(QuestionnaireResponse::class);
     }
 
+    /**
+     * Progress reports for this client
+     */
+    public function progressReports(): HasMany
+    {
+        return $this->hasMany(ClientProgressReport::class)->latest('report_date');
+    }
+
+    /**
+     * Get the latest progress report for a template
+     */
+    public function getLatestProgressReport(?int $templateId = null): ?ClientProgressReport
+    {
+        $query = $this->progressReports()->completed();
+
+        if ($templateId) {
+            $query->where('progress_template_id', $templateId);
+        }
+
+        return $query->first();
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);

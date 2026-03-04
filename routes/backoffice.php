@@ -9,6 +9,7 @@ use App\Http\Controllers\Backoffice\ClientController;
 use App\Http\Controllers\Backoffice\DashboardController;
 use App\Http\Controllers\Backoffice\EmailLogController;
 use App\Http\Controllers\Backoffice\EmailTemplateController;
+use App\Http\Controllers\Backoffice\FeatureController;
 use App\Http\Controllers\Backoffice\PlanController;
 use App\Http\Controllers\Backoffice\PlaceholderController;
 use App\Http\Controllers\Backoffice\SettingsController;
@@ -66,6 +67,12 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                 Route::middleware('admin.permission:plans')->group(function () {
                     Route::resource('plans', PlanController::class);
                     Route::patch('/plans/{plan}/toggle', [PlanController::class, 'toggleActive'])->name('plans.toggle-active');
+                });
+
+                // Features (Marketplace Management)
+                Route::middleware('admin.permission:settings')->group(function () {
+                    Route::resource('features', FeatureController::class);
+                    Route::patch('/features/{feature}/toggle', [FeatureController::class, 'toggleActive'])->name('features.toggle-active');
                 });
 
                 // Email Templates

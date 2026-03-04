@@ -246,6 +246,14 @@
                 'attachments' => $classPlan?->questionnaireAttachments ?? collect()
             ])
         @endif
+
+        {{-- Progress Template Attachments --}}
+        @if(isset($progressTemplates) && $progressTemplates->count() > 0)
+            @include('host.partials._progress-template-attachments', [
+                'progressTemplates' => $progressTemplates,
+                'attachments' => $classPlan?->progressTemplateAttachments ?? collect()
+            ])
+        @endif
     </div>
 
     {{-- Sidebar --}}

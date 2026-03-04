@@ -403,6 +403,12 @@ class ClientController extends Controller
             ->latest()
             ->first();
 
+        // Load progress reports with template info
+        $progressReports = $client->progressReports()
+            ->with(['template', 'classSession.classPlan', 'recordedBy'])
+            ->orderBy('report_date', 'desc')
+            ->get();
+
         return view('host.clients.show', [
             'client' => $client,
             'customFields' => $customFields,
@@ -411,6 +417,7 @@ class ClientController extends Controller
             'bookingStats' => $bookingStats,
             'questionnaireResponses' => $questionnaireResponses,
             'activeCustomerMembership' => $activeCustomerMembership,
+            'progressReports' => $progressReports,
         ]);
     }
 

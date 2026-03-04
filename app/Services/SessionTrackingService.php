@@ -17,17 +17,21 @@ class SessionTrackingService
         $sessionId = session()->getId();
         $location = $this->getLocationFromIp($request->ip());
 
-        return UserSession::create([
-            'host_id' => $user->host_id,
-            'user_id' => $user->id,
-            'session_id' => $sessionId,
-            'ip_address' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'location' => $location,
-            'logged_in_at' => now(),
-            'last_activity_at' => now(),
-            'is_active' => true,
-        ]);
+        // Use updateOrCreate to handle existing sessions (e.g., re-login with same session)
+        return UserSession::updateOrCreate(
+            ['session_id' => $sessionId],
+            [
+                'host_id' => $user->host_id,
+                'user_id' => $user->id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'location' => $location,
+                'logged_in_at' => now(),
+                'last_activity_at' => now(),
+                'is_active' => true,
+                'logged_out_at' => null,
+            ]
+        );
     }
 
     /**

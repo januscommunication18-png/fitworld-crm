@@ -327,6 +327,14 @@
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">{{ $trans['nav.section.system'] ?? 'System' }}</span>
             </li>
 
+            {{-- Feature Marketplace --}}
+            <li class="nav-item {{ request()->is('marketplace*') ? 'active' : '' }}" data-nav="marketplace">
+                <a href="{{ url('/marketplace') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors {{ request()->is('marketplace*') ? 'bg-primary/10 text-primary font-medium' : '' }}">
+                    <span class="icon-[tabler--apps] size-5 shrink-0"></span>
+                    <span class="sidebar-label">{{ $trans['nav.marketplace'] ?? 'Marketplace' }}</span>
+                </a>
+            </li>
+
             {{-- Settings - Always visible since My Profile is accessible to all --}}
             <li class="nav-item {{ request()->is('settings*') ? 'active' : '' }}" data-nav="settings">
                 <a href="{{ url('/settings') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">

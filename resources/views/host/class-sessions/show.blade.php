@@ -47,6 +47,26 @@
                     </a>
                 @endif
             @endif
+            {{-- Progress Recording Dropdown --}}
+            @if(isset($progressTemplates) && $progressTemplates->count() > 0 && $confirmedBookings->count() > 0)
+                <details class="dropdown dropdown-bottom dropdown-end">
+                    <summary class="btn btn-primary btn-soft list-none cursor-pointer">
+                        <span class="icon-[tabler--chart-line] size-5"></span>
+                        Record Progress
+                        <span class="icon-[tabler--chevron-down] size-4"></span>
+                    </summary>
+                    <ul class="dropdown-content menu bg-base-100 rounded-box w-64 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
+                        @foreach($progressTemplates as $template)
+                            <li>
+                                <a href="{{ route('class-sessions.record-progress', [$classSession, $template]) }}" class="flex items-center gap-2">
+                                    <span class="icon-[tabler--{{ $template->icon ?? 'chart-line' }}] size-4 text-primary"></span>
+                                    {{ $template->name }}
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </details>
+            @endif
             @if($classSession->isDraft())
             <form action="{{ route('class-sessions.publish', $classSession) }}" method="POST" class="inline">
                 @csrf
