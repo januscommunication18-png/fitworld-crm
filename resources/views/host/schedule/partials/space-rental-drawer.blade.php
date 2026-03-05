@@ -29,9 +29,9 @@
 @endphp
 
 <x-detail-drawer id="space-rental-{{ $spaceRental->id }}" title="{{ $spaceRental->config?->name ?? 'Space Rental' }}" size="4xl">
-    {{-- Status Hero Section --}}
-    <div class="bg-gradient-to-r {{ $statusColors[$spaceRental->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-5 -mt-1">
-        <div class="flex items-center justify-between">
+    {{-- Status Hero Section with Stats --}}
+    <div class="bg-gradient-to-r {{ $statusColors[$spaceRental->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-4 -mt-1">
+        <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 rounded-full {{ $statusIconColors[$spaceRental->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
                     <span class="icon-[tabler--{{ $purposeIcons[$spaceRental->purpose] ?? 'building' }}] size-7"></span>
@@ -44,35 +44,67 @@
                     </span>
                 </div>
             </div>
-            <div class="text-right">
-                <div class="text-2xl font-bold">{{ $spaceRental->formatted_total }}</div>
-                <div class="text-sm text-base-content/60">{{ $trans['field.total'] ?? 'total' }}</div>
-            </div>
-        </div>
-    </div>
+            {{-- Quick Actions on right --}}
+            @if(!in_array($spaceRental->status, ['completed', 'cancelled']))
+            <div class="flex flex-wrap gap-2 justify-end">
+                @if(in_array($spaceRental->status, ['draft', 'pending']))
+                    <form action="{{ route('space-rentals.confirm', $spaceRental) }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <span class="icon-[tabler--check] size-4"></span>
+                            {{ $trans['btn.confirm'] ?? 'Confirm' }}
+                        </button>
+                    </form>
+                @endif
 
-    {{-- Stats Row --}}
-    <div class="grid grid-cols-4 gap-3 mb-4">
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            <div class="text-lg font-bold text-primary">{{ number_format($spaceRental->hours_booked, 1) }}</div>
-            <div class="text-xs text-base-content/60">{{ $trans['common.hours'] ?? 'Hours' }}</div>
-        </div>
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            <div class="text-lg font-bold text-info">{{ $spaceRental->formatted_hourly_rate }}</div>
-            <div class="text-xs text-base-content/60">{{ $trans['field.hourly_rate'] ?? 'Hourly Rate' }}</div>
-        </div>
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            <div class="text-lg font-bold text-success">{{ $spaceRental->formatted_subtotal }}</div>
-            <div class="text-xs text-base-content/60">{{ $trans['field.subtotal'] ?? 'Subtotal' }}</div>
-        </div>
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            @if($spaceRental->deposit_amount > 0)
-                <div class="text-lg font-bold text-warning">{{ $spaceRental->formatted_deposit }}</div>
-                <div class="text-xs text-base-content/60">{{ $trans['field.deposit'] ?? 'Deposit' }}</div>
-            @else
-                <div class="text-lg font-bold text-base-content/30">--</div>
-                <div class="text-xs text-base-content/60">{{ $trans['field.deposit'] ?? 'Deposit' }}</div>
+                @if($spaceRental->status === 'confirmed')
+                    <form action="{{ route('space-rentals.start', $spaceRental) }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="btn btn-info btn-sm">
+                            <span class="icon-[tabler--player-play] size-4"></span>
+                            {{ $trans['btn.start'] ?? 'Start' }}
+                        </button>
+                    </form>
+                @endif
+
+                @if($spaceRental->status === 'in_progress')
+                    <a href="{{ route('space-rentals.show', $spaceRental) }}?action=complete" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--circle-check] size-4"></span>
+                        {{ $trans['btn.complete'] ?? 'Complete' }}
+                    </a>
+                @endif
+
+                @if(in_array($spaceRental->status, ['draft', 'pending', 'confirmed']))
+                    <a href="{{ route('space-rentals.show', $spaceRental) }}?action=cancel" class="btn btn-soft btn-error btn-sm">
+                        <span class="icon-[tabler--x] size-4"></span>
+                        {{ $trans['btn.cancel'] ?? 'Cancel' }}
+                    </a>
+                @endif
+            </div>
             @endif
+        </div>
+        {{-- Stats Row inside hero --}}
+        <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-base-content/10">
+            <div class="text-center">
+                <div class="text-lg font-bold text-primary">{{ number_format($spaceRental->hours_booked, 1) }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['common.hours'] ?? 'Hours' }}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-bold text-info">{{ $spaceRental->formatted_hourly_rate }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['field.hourly_rate'] ?? 'Hourly Rate' }}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-bold text-success">{{ $spaceRental->formatted_total }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['field.total'] ?? 'Total' }}</div>
+            </div>
+            <div class="text-center">
+                @if($spaceRental->deposit_amount > 0)
+                    <div class="text-lg font-bold text-warning">{{ $spaceRental->formatted_deposit }}</div>
+                @else
+                    <div class="text-lg font-bold text-base-content/30">--</div>
+                @endif
+                <div class="text-xs text-base-content/60">{{ $trans['field.deposit'] ?? 'Deposit' }}</div>
+            </div>
         </div>
     </div>
 
@@ -82,37 +114,34 @@
             <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
             <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['space_rentals.rental_details'] ?? 'Rental Details' }}</h4>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+        <div class="grid grid-cols-4 gap-2">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--building] size-3.5"></span>
                     {{ $trans['space_rentals.space'] ?? 'Space' }}
                 </div>
-                <div class="font-medium text-sm">{{ $spaceRental->config?->name ?? 'Unknown' }}</div>
-                @if($spaceRental->config?->room)
-                    <div class="text-xs text-base-content/60">{{ $spaceRental->config->room->name }}</div>
-                @endif
+                <div class="font-medium text-sm truncate">{{ $spaceRental->config?->name ?? 'Unknown' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--map-pin] size-3.5"></span>
                     {{ $trans['field.location'] ?? 'Location' }}
                 </div>
-                <div class="font-medium text-sm">{{ $spaceRental->config?->location?->name ?? 'TBD' }}</div>
+                <div class="font-medium text-sm truncate">{{ $spaceRental->config?->location?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--{{ $purposeIcons[$spaceRental->purpose] ?? 'tag' }}] size-3.5"></span>
                     {{ $trans['space_rentals.purpose'] ?? 'Purpose' }}
                 </div>
-                <div class="font-medium text-sm">{{ $spaceRental->formatted_purpose }}</div>
+                <div class="font-medium text-sm truncate">{{ $spaceRental->formatted_purpose }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--clock] size-3.5"></span>
                     {{ $trans['schedule.duration'] ?? 'Duration' }}
                 </div>
-                <div class="font-medium text-sm">{{ number_format($spaceRental->hours_booked, 1) }} {{ $trans['common.hours'] ?? 'hours' }}</div>
+                <div class="font-medium text-sm">{{ number_format($spaceRental->hours_booked, 1) }} {{ $trans['common.hours'] ?? 'hrs' }}</div>
             </div>
         </div>
     </div>
@@ -151,51 +180,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Quick Actions --}}
-    @if(!in_array($spaceRental->status, ['completed', 'cancelled']))
-    <div class="bg-base-200/50 rounded-xl p-4 mb-4">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="icon-[tabler--bolt] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['common.quick_actions'] ?? 'Quick Actions' }}</h4>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            @if(in_array($spaceRental->status, ['draft', 'pending']))
-                <form action="{{ route('space-rentals.confirm', $spaceRental) }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="btn btn-success btn-sm">
-                        <span class="icon-[tabler--check] size-4"></span>
-                        {{ $trans['btn.confirm'] ?? 'Confirm' }}
-                    </button>
-                </form>
-            @endif
-
-            @if($spaceRental->status === 'confirmed')
-                <form action="{{ route('space-rentals.start', $spaceRental) }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="btn btn-info btn-sm">
-                        <span class="icon-[tabler--player-play] size-4"></span>
-                        {{ $trans['btn.start'] ?? 'Start' }}
-                    </button>
-                </form>
-            @endif
-
-            @if($spaceRental->status === 'in_progress')
-                <a href="{{ route('space-rentals.show', $spaceRental) }}?action=complete" class="btn btn-primary btn-sm">
-                    <span class="icon-[tabler--circle-check] size-4"></span>
-                    {{ $trans['btn.complete'] ?? 'Complete' }}
-                </a>
-            @endif
-
-            @if(in_array($spaceRental->status, ['draft', 'pending', 'confirmed']))
-                <a href="{{ route('space-rentals.show', $spaceRental) }}?action=cancel" class="btn btn-soft btn-error btn-sm">
-                    <span class="icon-[tabler--x] size-4"></span>
-                    {{ $trans['btn.cancel'] ?? 'Cancel' }}
-                </a>
-            @endif
-        </div>
-    </div>
-    @endif
 
     {{-- Pending Actions / Checklist --}}
     @if($spaceRental->config?->requires_waiver || $spaceRental->deposit_amount > 0)

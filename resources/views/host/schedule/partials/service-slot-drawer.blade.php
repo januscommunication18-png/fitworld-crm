@@ -21,9 +21,9 @@
 @endphp
 
 <x-detail-drawer id="service-slot-{{ $serviceSlot->id }}" title="{{ $serviceSlot->servicePlan?->name ?? ($trans['page.service_slot'] ?? 'Service Slot') }}" size="4xl">
-    {{-- Status Hero Section --}}
-    <div class="bg-gradient-to-r {{ $statusColors[$serviceSlot->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-5 -mt-1">
-        <div class="flex items-center justify-between">
+    {{-- Status Hero Section with Stats --}}
+    <div class="bg-gradient-to-r {{ $statusColors[$serviceSlot->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-4 -mt-1">
+        <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 rounded-full {{ $statusIconColors[$serviceSlot->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
                     <span class="icon-[tabler--massage] size-7"></span>
@@ -36,17 +36,49 @@
                     </span>
                 </div>
             </div>
-            @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_BOOKED)
-                <div class="flex items-center gap-2 bg-info/20 text-info px-3 py-2 rounded-lg">
-                    <span class="icon-[tabler--calendar-check] size-5"></span>
-                    <span class="font-medium text-sm">{{ $trans['schedule.booked'] ?? 'Booked' }}</span>
-                </div>
-            @elseif($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE)
-                <div class="flex items-center gap-2 bg-success/20 text-success px-3 py-2 rounded-lg">
-                    <span class="icon-[tabler--calendar-plus] size-5"></span>
-                    <span class="font-medium text-sm">{{ $trans['schedule.available'] ?? 'Available' }}</span>
-                </div>
+            {{-- Quick Actions on right --}}
+            @if(!$serviceSlot->isCancelled())
+            <div class="flex flex-wrap gap-2 justify-end">
+                @if($serviceSlot->isDraft())
+                    <form action="{{ route('service-slots.update', $serviceSlot) }}" method="POST" class="inline">
+                        @csrf
+                        @method('PUT')
+                        <input type="hidden" name="status" value="available">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <span class="icon-[tabler--check] size-4"></span>
+                            {{ $trans['btn.make_available'] ?? 'Make Available' }}
+                        </button>
+                    </form>
+                @endif
+                @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE)
+                    <a href="{{ route('walk-in.select-service', ['slot' => $serviceSlot->id]) }}" class="btn btn-soft btn-primary btn-sm">
+                        <span class="icon-[tabler--user-plus] size-4"></span>
+                        {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
+                    </a>
+                @endif
+            </div>
             @endif
+        </div>
+        {{-- Stats Row inside hero --}}
+        <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-base-content/10">
+            <div class="text-center">
+                <div class="text-lg font-bold text-primary">{{ $serviceSlot->duration_minutes }} {{ $trans['common.min'] ?? 'min' }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['schedule.duration'] ?? 'Duration' }}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-bold text-info">{{ $serviceSlot->formatted_price }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['field.price'] ?? 'Price' }}</div>
+            </div>
+            <div class="text-center">
+                @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_BOOKED)
+                    <div class="text-lg font-bold text-info">{{ $trans['schedule.booked'] ?? 'Booked' }}</div>
+                @elseif($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE)
+                    <div class="text-lg font-bold text-success">{{ $trans['schedule.available'] ?? 'Available' }}</div>
+                @else
+                    <div class="text-lg font-bold">{{ $statuses[$serviceSlot->status] ?? $serviceSlot->status }}</div>
+                @endif
+                <div class="text-xs text-base-content/60">{{ $trans['field.status'] ?? 'Status' }}</div>
+            </div>
         </div>
     </div>
 
@@ -56,33 +88,30 @@
             <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
             <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.service_details'] ?? 'Service Details' }}</h4>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+        <div class="grid grid-cols-4 gap-2">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--user] size-3.5"></span>
                     {{ $trans['field.provider'] ?? 'Provider' }}
                 </div>
-                <div class="font-medium text-sm">{{ $serviceSlot->instructor?->name ?? 'TBD' }}</div>
+                <div class="font-medium text-sm truncate">{{ $serviceSlot->instructor?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--map-pin] size-3.5"></span>
                     {{ $trans['field.location'] ?? 'Location' }}
                 </div>
-                <div class="font-medium text-sm">{{ $serviceSlot->location?->name ?? 'TBD' }}</div>
-                @if($serviceSlot->room)
-                    <div class="text-xs text-base-content/60">{{ $serviceSlot->room->name }}</div>
-                @endif
+                <div class="font-medium text-sm truncate">{{ $serviceSlot->location?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--clock] size-3.5"></span>
                     {{ $trans['schedule.duration'] ?? 'Duration' }}
                 </div>
                 <div class="font-medium text-sm">{{ $serviceSlot->duration_minutes }} {{ $trans['common.min'] ?? 'min' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--currency-dollar] size-3.5"></span>
                     {{ $trans['field.price'] ?? 'Price' }}
                 </div>
@@ -166,35 +195,6 @@
                 </a>
             </div>
         </div>
-    @endif
-
-    {{-- Quick Actions --}}
-    @if(!$serviceSlot->isCancelled())
-    <div class="bg-base-200/50 rounded-xl p-4 mb-4">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="icon-[tabler--bolt] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['common.quick_actions'] ?? 'Quick Actions' }}</h4>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            @if($serviceSlot->isDraft())
-                <form action="{{ route('service-slots.update', $serviceSlot) }}" method="POST" class="inline">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="status" value="available">
-                    <button type="submit" class="btn btn-success btn-sm">
-                        <span class="icon-[tabler--check] size-4"></span>
-                        {{ $trans['btn.make_available'] ?? 'Make Available' }}
-                    </button>
-                </form>
-            @endif
-            @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE)
-                <a href="{{ route('walk-in.select-service', ['slot' => $serviceSlot->id]) }}" class="btn btn-soft btn-primary btn-sm">
-                    <span class="icon-[tabler--user-plus] size-4"></span>
-                    {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
-                </a>
-            @endif
-        </div>
-    </div>
     @endif
 
     {{-- Notes --}}

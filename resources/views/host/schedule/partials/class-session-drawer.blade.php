@@ -19,9 +19,9 @@
 @endphp
 
 <x-detail-drawer id="class-session-{{ $classSession->id }}" title="{{ $classSession->display_title }}" size="4xl">
-    {{-- Status Hero Section --}}
-    <div class="bg-gradient-to-r {{ $statusColors[$classSession->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-5 -mt-1">
-        <div class="flex items-center justify-between">
+    {{-- Status Hero Section with Stats --}}
+    <div class="bg-gradient-to-r {{ $statusColors[$classSession->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-4 -mt-1">
+        <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
                 <div class="w-14 h-14 rounded-full {{ $statusIconColors[$classSession->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
                     <span class="icon-[tabler--yoga] size-7"></span>
@@ -34,30 +34,60 @@
                     </span>
                 </div>
             </div>
-            <div class="text-right">
-                <div class="text-2xl font-bold">{{ $confirmedBookings->count() }}/{{ $classSession->getEffectiveCapacity() }}</div>
-                <div class="text-sm text-base-content/60">{{ $trans['schedule.booked'] ?? 'booked' }}</div>
+            {{-- Quick Actions on right --}}
+            @if(!$classSession->isCancelled())
+            <div class="flex flex-wrap gap-2 justify-end">
+                @if($classSession->isDraft())
+                    <form action="{{ route('class-sessions.publish', $classSession) }}" method="POST" class="inline">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <span class="icon-[tabler--check] size-4"></span>
+                            {{ $trans['btn.publish'] ?? 'Publish' }}
+                        </button>
+                    </form>
+                @else
+                    <form action="{{ route('class-sessions.unpublish', $classSession) }}" method="POST" class="inline">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit" class="btn btn-warning btn-sm">
+                            <span class="icon-[tabler--eye-off] size-4"></span>
+                            {{ $trans['btn.unpublish'] ?? 'Unpublish' }}
+                        </button>
+                    </form>
+                @endif
+                @if($isMembershipSchedule)
+                    <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-soft btn-warning btn-sm">
+                        <span class="icon-[tabler--id-badge-2] size-4"></span>
+                        {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
+                    </a>
+                @else
+                    <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-soft btn-primary btn-sm">
+                        <span class="icon-[tabler--user-plus] size-4"></span>
+                        {{ $trans['common.booking'] ?? 'Booking' }}
+                    </a>
+                @endif
             </div>
+            @endif
         </div>
-    </div>
-
-    {{-- Stats Row --}}
-    <div class="grid grid-cols-4 gap-3 mb-4">
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            <div class="text-lg font-bold text-primary">{{ $classSession->getEffectiveCapacity() }}</div>
-            <div class="text-xs text-base-content/60">{{ $trans['schedule.capacity'] ?? 'Capacity' }}</div>
-        </div>
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            <div class="text-lg font-bold text-info">{{ $confirmedBookings->count() }}</div>
-            <div class="text-xs text-base-content/60">{{ $trans['schedule.booked'] ?? 'Booked' }}</div>
-        </div>
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            <div class="text-lg font-bold text-success">{{ $checkedInCount }}</div>
-            <div class="text-xs text-base-content/60">{{ $trans['status.checked_in'] ?? 'Checked In' }}</div>
-        </div>
-        <div class="bg-base-200/50 rounded-lg p-3 text-center">
-            <div class="text-lg font-bold">{{ $classSession->getEffectiveCapacity() - $confirmedBookings->count() }}</div>
-            <div class="text-xs text-base-content/60">{{ $trans['schedule.available'] ?? 'Available' }}</div>
+        {{-- Stats Row inside hero --}}
+        <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-base-content/10">
+            <div class="text-center">
+                <div class="text-lg font-bold text-primary">{{ $classSession->getEffectiveCapacity() }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['schedule.capacity'] ?? 'Capacity' }}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-bold text-info">{{ $confirmedBookings->count() }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['schedule.booked'] ?? 'Booked' }}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-bold text-success">{{ $checkedInCount }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['status.checked_in'] ?? 'Checked In' }}</div>
+            </div>
+            <div class="text-center">
+                <div class="text-lg font-bold">{{ $classSession->getEffectiveCapacity() - $confirmedBookings->count() }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['schedule.available'] ?? 'Available' }}</div>
+            </div>
         </div>
     </div>
 
@@ -67,33 +97,30 @@
             <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
             <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.class_details'] ?? 'Class Details' }}</h4>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+        <div class="grid grid-cols-4 gap-2">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--user] size-3.5"></span>
                     {{ $trans['field.instructor'] ?? 'Instructor' }}
                 </div>
-                <div class="font-medium text-sm">{{ $classSession->primaryInstructor?->name ?? 'TBD' }}</div>
+                <div class="font-medium text-sm truncate">{{ $classSession->primaryInstructor?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--map-pin] size-3.5"></span>
                     {{ $trans['field.location'] ?? 'Location' }}
                 </div>
-                <div class="font-medium text-sm">{{ $classSession->location?->name ?? 'TBD' }}</div>
-                @if($classSession->room)
-                    <div class="text-xs text-base-content/60">{{ $classSession->room->name }}</div>
-                @endif
+                <div class="font-medium text-sm truncate">{{ $classSession->location?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--clock] size-3.5"></span>
                     {{ $trans['schedule.duration'] ?? 'Duration' }}
                 </div>
                 <div class="font-medium text-sm">{{ $classSession->formatted_duration }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-3">
-                <div class="flex items-center gap-2 text-xs text-base-content/60 mb-1">
+            <div class="bg-base-100 rounded-lg p-2.5">
+                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
                     <span class="icon-[tabler--currency-dollar] size-3.5"></span>
                     {{ $trans['field.price'] ?? 'Price' }}
                 </div>
@@ -101,48 +128,6 @@
             </div>
         </div>
     </div>
-
-    {{-- Quick Actions --}}
-    @if(!$classSession->isCancelled())
-    <div class="bg-base-200/50 rounded-xl p-4 mb-4">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="icon-[tabler--bolt] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['common.quick_actions'] ?? 'Quick Actions' }}</h4>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            @if($classSession->isDraft())
-                <form action="{{ route('class-sessions.publish', $classSession) }}" method="POST" class="inline">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" class="btn btn-success btn-sm">
-                        <span class="icon-[tabler--check] size-4"></span>
-                        {{ $trans['btn.publish'] ?? 'Publish' }}
-                    </button>
-                </form>
-            @else
-                <form action="{{ route('class-sessions.unpublish', $classSession) }}" method="POST" class="inline">
-                    @csrf
-                    @method('PATCH')
-                    <button type="submit" class="btn btn-warning btn-sm">
-                        <span class="icon-[tabler--eye-off] size-4"></span>
-                        {{ $trans['btn.unpublish'] ?? 'Unpublish' }}
-                    </button>
-                </form>
-            @endif
-            @if($isMembershipSchedule)
-                <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-soft btn-warning btn-sm">
-                    <span class="icon-[tabler--id-badge-2] size-4"></span>
-                    {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
-                </a>
-            @else
-                <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-soft btn-primary btn-sm">
-                    <span class="icon-[tabler--user-plus] size-4"></span>
-                    {{ $trans['common.booking'] ?? 'Booking' }}
-                </a>
-            @endif
-        </div>
-    </div>
-    @endif
 
     {{-- Enrolled People Section --}}
     <div class="bg-base-200/50 rounded-xl p-4">
@@ -177,9 +162,9 @@
                 @endif
             </div>
         @else
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
                 <table class="table table-sm">
-                    <thead>
+                    <thead class="sticky top-0 bg-base-200/50 z-10">
                         <tr>
                             <th>{{ $trans['field.client'] ?? 'Client' }}</th>
                             <th class="text-center">{{ $trans['field.status'] ?? 'Status' }}</th>
