@@ -830,8 +830,9 @@
                     @if($progressReports->count() > 0)
                         <div class="space-y-4">
                             @foreach($progressReports->take(5) as $report)
-                                <a href="{{ route('clients.progress.show', [$client, $report]) }}"
-                                   class="block border border-base-200 rounded-lg p-4 hover:bg-base-50 hover:border-primary/30 transition-colors">
+                                <button type="button"
+                                        onclick="openProgressDrawer('progress-report-{{ $report->id }}')"
+                                        class="w-full text-left border border-base-200 rounded-lg p-4 hover:bg-base-50 hover:border-primary/30 transition-colors cursor-pointer">
                                     <div class="flex items-start justify-between">
                                         <div class="flex items-start gap-4">
                                             <div class="p-3 rounded-xl bg-primary/10">
@@ -861,7 +862,7 @@
                                                     <div class="text-xs text-base-content/50">Score</div>
                                                 </div>
                                             @endif
-                                            <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
+                                            <span class="icon-[tabler--eye] size-5 text-base-content/30"></span>
                                         </div>
                                     </div>
 
@@ -872,7 +873,7 @@
                                             </p>
                                         </div>
                                     @endif
-                                </a>
+                                </button>
                             @endforeach
                         </div>
 
@@ -1037,6 +1038,225 @@
     @include('host.bookings.partials.cancel-modal-shared')
 @endif
 
+{{-- Progress Report Drawers --}}
+@if(isset($progressReports) && $progressReports->count() > 0)
+<div id="progress-drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeProgressDrawer()"></div>
+
+@foreach($progressReports->take(5) as $report)
+<div
+    id="drawer-progress-report-{{ $report->id }}"
+    class="fixed top-0 right-0 h-full w-full max-w-4xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex flex-col"
+    role="dialog"
+    tabindex="-1"
+>
+    {{-- Header --}}
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <div class="flex items-center gap-3">
+            <div class="p-2 rounded-lg bg-primary/10">
+                <span class="icon-[tabler--{{ $report->template->icon ?? 'chart-line' }}] size-5 text-primary"></span>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold">{{ $report->template->name }}</h3>
+                <p class="text-sm text-base-content/60">{{ $report->report_date->format('F d, Y') }}</p>
+            </div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" aria-label="Close" onclick="closeProgressDrawer()">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+
+    {{-- Body --}}
+    <div class="flex-1 overflow-y-auto p-4">
+        {{-- Overall Score --}}
+        @if($report->overall_score !== null)
+        <div class="mb-5">
+            <div class="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-base-content/60 uppercase tracking-wide">Overall Score</p>
+                        <p class="text-3xl font-bold mt-1 {{ $report->overall_score >= 70 ? 'text-success' : ($report->overall_score >= 40 ? 'text-warning' : 'text-error') }}">
+                            {{ number_format($report->overall_score, 1) }}%
+                        </p>
+                    </div>
+                    <div class="radial-progress text-primary" style="--value:{{ min(100, $report->overall_score) }}; --size:4rem;" role="progressbar">
+                        <span class="text-sm font-semibold">{{ round($report->overall_score) }}%</span>
+                    </div>
+                </div>
+                <div class="w-full bg-base-300 rounded-full h-2 mt-3">
+                    <div class="h-2 rounded-full {{ $report->overall_score >= 70 ? 'bg-success' : ($report->overall_score >= 40 ? 'bg-warning' : 'bg-error') }}"
+                         style="width: {{ min(100, $report->overall_score) }}%"></div>
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Before/After Photos --}}
+        @php
+            $beforePhoto = $report->photos->where('photo_type', 'before')->first();
+            $afterPhoto = $report->photos->where('photo_type', 'after')->first();
+        @endphp
+        @if($beforePhoto || $afterPhoto)
+        <div class="mb-5">
+            <div class="bg-base-200/50 rounded-xl p-4">
+                <h4 class="font-semibold flex items-center gap-2 mb-3">
+                    <span class="icon-[tabler--camera] size-4 text-primary"></span>
+                    Progress Photos
+                </h4>
+                <div class="grid grid-cols-2 gap-4">
+                    @if($beforePhoto)
+                    <div>
+                        <p class="text-xs text-base-content/60 uppercase tracking-wide mb-2">Before</p>
+                        <a href="{{ $beforePhoto->url }}" target="_blank" class="block">
+                            <img src="{{ $beforePhoto->url }}" alt="Before photo" class="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity cursor-zoom-in">
+                        </a>
+                    </div>
+                    @else
+                    <div class="flex items-center justify-center h-48 bg-base-300/50 rounded-lg">
+                        <div class="text-center">
+                            <span class="icon-[tabler--photo-off] size-8 text-base-content/20"></span>
+                            <p class="text-xs text-base-content/40 mt-1">No before photo</p>
+                        </div>
+                    </div>
+                    @endif
+
+                    @if($afterPhoto)
+                    <div>
+                        <p class="text-xs text-base-content/60 uppercase tracking-wide mb-2">After</p>
+                        <a href="{{ $afterPhoto->url }}" target="_blank" class="block">
+                            <img src="{{ $afterPhoto->url }}" alt="After photo" class="w-full h-48 object-cover rounded-lg hover:opacity-90 transition-opacity cursor-zoom-in">
+                        </a>
+                    </div>
+                    @else
+                    <div class="flex items-center justify-center h-48 bg-base-300/50 rounded-lg">
+                        <div class="text-center">
+                            <span class="icon-[tabler--photo-off] size-8 text-base-content/20"></span>
+                            <p class="text-xs text-base-content/40 mt-1">No after photo</p>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Metrics by Section --}}
+        <div class="space-y-4">
+            @foreach($report->template->sections as $section)
+            <div class="bg-base-200/50 rounded-xl p-4">
+                <h4 class="font-semibold flex items-center gap-2 mb-3">
+                    <span class="icon-[tabler--{{ $section->icon ?? 'folder' }}] size-4 text-primary"></span>
+                    {{ $section->name }}
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    @foreach($section->metrics as $metric)
+                        @php
+                            $value = $report->values->where('progress_template_metric_id', $metric->id)->first();
+                        @endphp
+                        <div class="bg-base-100 p-3 rounded-lg">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-medium text-base-content/70">{{ $metric->name }}</span>
+                                @if($metric->unit && !in_array($metric->metric_type, ['slider', 'number']))
+                                    <span class="text-xs text-base-content/40">{{ $metric->unit }}</span>
+                                @endif
+                            </div>
+                            @if($value)
+                                @switch($metric->metric_type)
+                                    @case('slider')
+                                    @case('number')
+                                        <div class="text-lg font-bold text-primary">
+                                            {{ number_format($value->value_numeric, ($metric->step ?? 1) < 1 ? 1 : 0) }}
+                                            @if($metric->unit)
+                                                <span class="text-xs font-normal text-base-content/60">{{ $metric->unit }}</span>
+                                            @endif
+                                        </div>
+                                        @if($metric->metric_type === 'slider' && $metric->min_value !== null && $metric->max_value !== null)
+                                            @php
+                                                $percentage = (($value->value_numeric - $metric->min_value) / ($metric->max_value - $metric->min_value)) * 100;
+                                            @endphp
+                                            <div class="w-full bg-base-300 rounded-full h-1.5 mt-1">
+                                                <div class="bg-primary h-1.5 rounded-full" style="width: {{ $percentage }}%"></div>
+                                            </div>
+                                            <div class="flex justify-between text-xs text-base-content/40 mt-0.5">
+                                                <span>{{ $metric->min_value }}</span>
+                                                <span>{{ $metric->max_value }}</span>
+                                            </div>
+                                        @endif
+                                        @break
+
+                                    @case('rating')
+                                        <div class="flex items-center gap-0.5">
+                                            @for($i = 1; $i <= ($metric->max_value ?? 5); $i++)
+                                                <span class="mask mask-star-2 size-4 {{ $i <= $value->value_numeric ? 'bg-warning' : 'bg-base-300' }}"></span>
+                                            @endfor
+                                        </div>
+                                        <div class="text-xs text-base-content/60">{{ $value->value_numeric }} / {{ $metric->max_value ?? 5 }}</div>
+                                        @break
+
+                                    @case('select')
+                                        <div class="font-semibold">{{ $value->value_text ?? '-' }}</div>
+                                        @break
+
+                                    @case('checkbox_list')
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach($value->value_json ?? [] as $item)
+                                                <span class="badge badge-primary badge-soft badge-sm">{{ $item }}</span>
+                                            @endforeach
+                                        </div>
+                                        @break
+
+                                    @case('text')
+                                    @default
+                                        <div class="text-sm">{{ $value->value_text ?: '-' }}</div>
+                                        @break
+                                @endswitch
+                            @else
+                                <div class="text-base-content/40 italic text-sm">Not recorded</div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endforeach
+        </div>
+
+        {{-- Trainer Notes --}}
+        @if($report->trainer_notes)
+        <div class="mt-5">
+            <div class="bg-base-200/50 rounded-xl p-4">
+                <h4 class="font-semibold flex items-center gap-2 mb-2">
+                    <span class="icon-[tabler--notes] size-4 text-primary"></span>
+                    Trainer Notes
+                </h4>
+                <p class="text-base-content/80 whitespace-pre-wrap">{{ $report->trainer_notes }}</p>
+            </div>
+        </div>
+        @endif
+
+        {{-- Meta Info --}}
+        <div class="mt-5 pt-4 border-t border-base-200">
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                @if($report->recordedBy)
+                <div>
+                    <span class="text-base-content/60">Recorded by</span>
+                    <p class="font-medium">{{ $report->recordedBy->name }}</p>
+                </div>
+                @endif
+                @if($report->classSession)
+                <div>
+                    <span class="text-base-content/60">Class Session</span>
+                    <p class="font-medium">{{ $report->classSession->classPlan?->name ?? 'Class Session' }}</p>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- Footer --}}
+    <div class="p-4 border-t border-base-200"></div>
+</div>
+@endforeach
+@endif
+
 @push('scripts')
 <script>
 function copyLink(url) {
@@ -1102,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check URL for tab parameter on page load
     const urlParams = new URLSearchParams(window.location.search);
     const activeTab = urlParams.get('tab');
-    if (activeTab && ['info', 'bookings', 'questionnaires', 'notes', 'activity'].includes(activeTab)) {
+    if (activeTab && ['info', 'bookings', 'questionnaires', 'notes', 'progress', 'activity'].includes(activeTab)) {
         switchToTab(activeTab);
     }
 
@@ -1123,6 +1343,52 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+});
+
+// Progress Report Drawer Functions
+function openProgressDrawer(id) {
+    const drawer = document.getElementById('drawer-' + id);
+    const backdrop = document.getElementById('progress-drawer-backdrop');
+
+    if (drawer) {
+        // Close any other open progress drawers
+        document.querySelectorAll('[id^="drawer-progress-report-"]').forEach(d => {
+            if (d.id !== 'drawer-' + id) {
+                d.classList.add('translate-x-full', 'hidden');
+            }
+        });
+
+        backdrop.classList.remove('hidden');
+        drawer.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => {
+            drawer.classList.remove('translate-x-full');
+        }, 10);
+    }
+}
+
+function closeProgressDrawer() {
+    const backdrop = document.getElementById('progress-drawer-backdrop');
+
+    document.querySelectorAll('[id^="drawer-progress-report-"]').forEach(drawer => {
+        drawer.classList.add('translate-x-full');
+        setTimeout(() => {
+            drawer.classList.add('hidden');
+        }, 300);
+    });
+
+    if (backdrop) {
+        backdrop.classList.add('hidden');
+    }
+
+    document.body.style.overflow = '';
+}
+
+// Close drawer on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeProgressDrawer();
+    }
 });
 </script>
 @endpush

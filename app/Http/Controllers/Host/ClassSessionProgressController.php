@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Host;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\ClientProgressPhoto;
 use App\Models\ClientProgressReport;
 use App\Models\ClientProgressValue;
 use App\Models\ProgressTemplate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ClassSessionProgressController extends Controller
 {
@@ -44,7 +46,7 @@ class ClassSessionProgressController extends Controller
         // Get existing progress reports for this session/template combination, keyed by booking_id
         $existingReports = ClientProgressReport::where('class_session_id', $classSession->id)
             ->where('progress_template_id', $progressTemplate->id)
-            ->with('values')
+            ->with(['values', 'photos'])
             ->get()
             ->keyBy('booking_id');
 
@@ -155,6 +157,23 @@ class ClassSessionProgressController extends Controller
                 }
             }
 
+            // Handle photo uploads
+            if ($request->hasFile("reports.{$bookingId}.photos.before")) {
+                $this->saveProgressPhoto(
+                    $report,
+                    $request->file("reports.{$bookingId}.photos.before"),
+                    ClientProgressPhoto::TYPE_BEFORE
+                );
+            }
+
+            if ($request->hasFile("reports.{$bookingId}.photos.after")) {
+                $this->saveProgressPhoto(
+                    $report,
+                    $request->file("reports.{$bookingId}.photos.after"),
+                    ClientProgressPhoto::TYPE_AFTER
+                );
+            }
+
             // Calculate overall score
             $report->calculateOverallScore();
 
@@ -239,5 +258,46 @@ class ClassSessionProgressController extends Controller
         if ($classSession->host_id !== auth()->user()->host_id) {
             abort(403);
         }
+    }
+
+    /**
+     * Save a progress photo for a report.
+     */
+    private function saveProgressPhoto(ClientProgressReport $report, $file, string $type): void
+    {
+        $host = auth()->user()->host;
+        $disk = config('filesystems.uploads');
+
+        // Generate path: progress-photos/{host_id}/{client_id}/{filename}
+        $path = sprintf(
+            'progress-photos/%d/%d/%s_%s.%s',
+            $host->id,
+            $report->client_id,
+            $type,
+            now()->format('Y-m-d_His'),
+            $file->getClientOriginalExtension()
+        );
+
+        // Store the file
+        Storage::disk($disk)->put($path, file_get_contents($file));
+
+        // Delete existing photo of this type for this report
+        $existingPhoto = ClientProgressPhoto::where('client_progress_report_id', $report->id)
+            ->where('photo_type', $type)
+            ->first();
+
+        if ($existingPhoto) {
+            $existingPhoto->delete();
+        }
+
+        // Create the photo record
+        ClientProgressPhoto::create([
+            'client_progress_report_id' => $report->id,
+            'photo_type' => $type,
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+            'sort_order' => $type === ClientProgressPhoto::TYPE_BEFORE ? 1 : 2,
+            'is_private' => false,
+        ]);
     }
 }

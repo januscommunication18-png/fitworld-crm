@@ -417,7 +417,7 @@ class WalkInController extends Controller
             'payment_method' => 'required|in:membership,pack,manual,comp',
             'manual_method' => 'required_if:payment_method,manual|in:cash,card,check,other',
             'price_paid' => 'nullable|numeric|min:0',
-            'pack_id' => 'required_if:payment_method,pack|exists:class_pass_purchases,id',
+            'pack_id' => 'nullable|required_if:payment_method,pack|exists:class_pass_purchases,id',
             'check_in_now' => 'boolean',
             'notes' => 'nullable|string|max:500',
             'send_intake_form' => 'boolean',

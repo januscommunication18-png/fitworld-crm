@@ -53,6 +53,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/security-code', [SecurityCodeController::class, 'show'])->name('security-code');
 Route::post('/security-code', [SecurityCodeController::class, 'verify'])->name('security-code.verify');
 
+// Debug route (no auth)
+Route::get('/debug-test-route', function () {
+    return "Debug route works! No auth required.";
+});
+
 // Public
 Route::get('/', function () {
     return view('welcome');
@@ -91,6 +96,21 @@ Route::post('/setup/invite/{token}', [InvitationController::class, 'accept'])->n
 
 // Auth-required routes
 Route::middleware('auth')->group(function () {
+    // Debug route (with auth)
+    Route::get('/debug-auth-test', function () {
+        return "Auth debug route works! User: " . auth()->user()->name;
+    });
+
+    // Debug multi-segment route
+    Route::get('/debug/{a}/test/{b}', function ($a, $b) {
+        return "Multi-segment works! a=$a, b=$b";
+    })->where(['a' => '[0-9]+', 'b' => '[0-9]+']);
+
+    // Debug exact pattern - test without "progress"
+    Route::get('/clients/{client}/reports/{report}', function ($client, $report) {
+        return "Clients REPORTS pattern works! client=$client, report=$report";
+    })->name('debug.clients.reports')->where(['client' => '[0-9]+', 'report' => '[0-9]+']);
+
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Set studio language preference
@@ -227,7 +247,14 @@ Route::middleware('auth')->group(function () {
 
     // Client Progress
     Route::get('/clients/{client}/progress', [\App\Http\Controllers\Host\ClientProgressController::class, 'index'])->name('clients.progress.index')->where('client', '[0-9]+');
+
+    // Debug test route
+    Route::get('/test-progress/{client}/{report}', function($client, $report) {
+        return "Test route works! Client: $client, Report: $report";
+    })->where(['client' => '[0-9]+', 'report' => '[0-9]+']);
+
     Route::get('/clients/{client}/progress/{clientProgressReport}', [\App\Http\Controllers\Host\ClientProgressController::class, 'show'])->name('clients.progress.show')->where(['client' => '[0-9]+', 'clientProgressReport' => '[0-9]+']);
+    Route::get('/clients/{client}/progress/{clientProgressReport}/json', [\App\Http\Controllers\Host\ClientProgressController::class, 'getReportJson'])->name('clients.progress.json')->where(['client' => '[0-9]+', 'clientProgressReport' => '[0-9]+']);
 
     // Help Desk
     Route::get('/helpdesk', [\App\Http\Controllers\Host\HelpdeskController::class, 'index'])->name('helpdesk.index');

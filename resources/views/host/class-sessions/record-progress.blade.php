@@ -44,7 +44,7 @@
             </div>
         </div>
     @else
-        <form action="{{ route('class-sessions.store-batch-progress', [$classSession, $progressTemplate]) }}" method="POST">
+        <form action="{{ route('class-sessions.store-batch-progress', [$classSession, $progressTemplate]) }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             {{-- Info Card --}}
@@ -237,6 +237,80 @@
                                     </div>
                                 @endforeach
 
+                                {{-- Before/After Photos --}}
+                                @php
+                                    $existingPhotos = $existingReport?->photos ?? collect();
+                                    $beforePhoto = $existingPhotos->where('photo_type', 'before')->first();
+                                    $afterPhoto = $existingPhotos->where('photo_type', 'after')->first();
+                                @endphp
+                                <div class="pt-4 border-t border-base-200">
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <span class="icon-[tabler--camera] size-5 text-primary"></span>
+                                        <h4 class="font-semibold">Progress Photos</h4>
+                                        <span class="text-sm text-base-content/50">(Optional)</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {{-- Before Photo --}}
+                                        <div class="form-control">
+                                            <label class="label" for="before_photo_{{ $booking->id }}">
+                                                <span class="label-text">Before Photo</span>
+                                            </label>
+                                            <div class="border-2 border-dashed border-base-300 rounded-lg p-4 text-center hover:border-primary transition-colors">
+                                                <input
+                                                    type="file"
+                                                    id="before_photo_{{ $booking->id }}"
+                                                    name="reports[{{ $booking->id }}][photos][before]"
+                                                    accept="image/*"
+                                                    class="hidden"
+                                                    onchange="previewImage(this, 'before_preview_{{ $booking->id }}')"
+                                                >
+                                                <label for="before_photo_{{ $booking->id }}" class="cursor-pointer block">
+                                                    <div id="before_preview_{{ $booking->id }}" class="{{ $beforePhoto ? '' : 'hidden' }} mb-2">
+                                                        <img src="{{ $beforePhoto?->url ?? '' }}" alt="Before preview" class="max-h-32 mx-auto rounded-lg">
+                                                    </div>
+                                                    <div id="before_placeholder_{{ $booking->id }}" class="{{ $beforePhoto ? 'hidden' : '' }}">
+                                                        <span class="icon-[tabler--photo-plus] size-10 text-base-content/30 mx-auto block mb-2"></span>
+                                                        <span class="text-sm text-base-content/50">Click to upload before photo</span>
+                                                    </div>
+                                                    @if($beforePhoto)
+                                                        <span class="text-xs text-base-content/50 mt-2 block">Click to replace</span>
+                                                    @endif
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        {{-- After Photo --}}
+                                        <div class="form-control">
+                                            <label class="label" for="after_photo_{{ $booking->id }}">
+                                                <span class="label-text">After Photo</span>
+                                            </label>
+                                            <div class="border-2 border-dashed border-base-300 rounded-lg p-4 text-center hover:border-primary transition-colors">
+                                                <input
+                                                    type="file"
+                                                    id="after_photo_{{ $booking->id }}"
+                                                    name="reports[{{ $booking->id }}][photos][after]"
+                                                    accept="image/*"
+                                                    class="hidden"
+                                                    onchange="previewImage(this, 'after_preview_{{ $booking->id }}')"
+                                                >
+                                                <label for="after_photo_{{ $booking->id }}" class="cursor-pointer block">
+                                                    <div id="after_preview_{{ $booking->id }}" class="{{ $afterPhoto ? '' : 'hidden' }} mb-2">
+                                                        <img src="{{ $afterPhoto?->url ?? '' }}" alt="After preview" class="max-h-32 mx-auto rounded-lg">
+                                                    </div>
+                                                    <div id="after_placeholder_{{ $booking->id }}" class="{{ $afterPhoto ? 'hidden' : '' }}">
+                                                        <span class="icon-[tabler--photo-plus] size-10 text-base-content/30 mx-auto block mb-2"></span>
+                                                        <span class="text-sm text-base-content/50">Click to upload after photo</span>
+                                                    </div>
+                                                    @if($afterPhoto)
+                                                        <span class="text-xs text-base-content/50 mt-2 block">Click to replace</span>
+                                                    @endif
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {{-- Trainer Notes --}}
                                 <div class="form-control pt-4 border-t border-base-200">
                                     <label class="label" for="trainer_notes_{{ $booking->id }}">
@@ -297,3 +371,31 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function previewImage(input, previewId) {
+    const preview = document.getElementById(previewId);
+    const placeholder = document.getElementById(previewId.replace('_preview_', '_placeholder_'));
+
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            preview.querySelector('img').src = e.target.result;
+            preview.classList.remove('hidden');
+            if (placeholder) {
+                placeholder.classList.add('hidden');
+            }
+        };
+
+        reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.classList.add('hidden');
+        if (placeholder) {
+            placeholder.classList.remove('hidden');
+        }
+    }
+}
+</script>
+@endpush

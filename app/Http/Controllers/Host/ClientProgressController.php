@@ -65,22 +65,38 @@ class ClientProgressController extends Controller
      */
     public function show(int $client, int $clientProgressReport)
     {
+        \Log::info('Progress show called', [
+            'client_param' => $client,
+            'report_param' => $clientProgressReport,
+        ]);
+
         $client = Client::findOrFail($client);
         $this->authorizeClient($client);
 
+        \Log::info('Client found', ['client_id' => $client->id]);
+
         $report = ClientProgressReport::findOrFail($clientProgressReport);
+
+        \Log::info('Report found', ['report_id' => $report->id, 'report_client_id' => $report->client_id]);
 
         $host = auth()->user()->host;
 
         // Check if host has the progress-templates feature
         if (!$host->hasFeature('progress-templates')) {
+            \Log::warning('Progress templates feature not enabled');
             abort(403, 'Progress Templates feature is not enabled.');
         }
 
         // Verify report belongs to this client
         if ($report->client_id !== $client->id) {
+            \Log::warning('Report client_id mismatch', [
+                'report_client_id' => $report->client_id,
+                'client_id' => $client->id,
+            ]);
             abort(404);
         }
+
+        \Log::info('All checks passed, rendering view');
 
         // Load all related data
         $report->load([
@@ -136,6 +152,82 @@ class ClientProgressController extends Controller
             'templateReports',
             'valuesBySection'
         ));
+    }
+
+    /**
+     * Get progress report details as JSON for modal display.
+     */
+    public function getReportJson(int $client, int $clientProgressReport)
+    {
+        $client = Client::findOrFail($client);
+        $this->authorizeClient($client);
+
+        $report = ClientProgressReport::findOrFail($clientProgressReport);
+
+        $host = auth()->user()->host;
+
+        // Check if host has the progress-templates feature
+        if (!$host->hasFeature('progress-templates')) {
+            return response()->json(['error' => 'Feature not enabled'], 403);
+        }
+
+        // Verify report belongs to this client
+        if ($report->client_id !== $client->id) {
+            return response()->json(['error' => 'Not found'], 404);
+        }
+
+        // Load all related data
+        $report->load([
+            'template.sections.metrics',
+            'values.metric.section',
+            'classSession.classPlan',
+            'recordedBy',
+        ]);
+
+        // Organize values by section for display
+        $sections = [];
+        foreach ($report->template->sections as $section) {
+            $sectionData = [
+                'id' => $section->id,
+                'name' => $section->name,
+                'icon' => $section->icon ?? 'folder',
+                'metrics' => [],
+            ];
+
+            foreach ($section->metrics as $metric) {
+                $value = $report->values->where('progress_template_metric_id', $metric->id)->first();
+                $sectionData['metrics'][] = [
+                    'id' => $metric->id,
+                    'name' => $metric->name,
+                    'metric_type' => $metric->metric_type,
+                    'unit' => $metric->unit,
+                    'min_value' => $metric->min_value,
+                    'max_value' => $metric->max_value,
+                    'step' => $metric->step ?? 1,
+                    'value_numeric' => $value?->value_numeric,
+                    'value_text' => $value?->value_text,
+                    'value_json' => $value?->value_json,
+                ];
+            }
+
+            $sections[] = $sectionData;
+        }
+
+        return response()->json([
+            'id' => $report->id,
+            'template_name' => $report->template->name,
+            'template_icon' => $report->template->icon ?? 'chart-line',
+            'report_date' => $report->report_date->format('F d, Y'),
+            'overall_score' => $report->overall_score,
+            'trainer_notes' => $report->trainer_notes,
+            'recorded_by' => $report->recordedBy?->name,
+            'completed_at' => $report->completed_at?->format('M d, Y g:i A'),
+            'class_session' => $report->classSession ? [
+                'name' => $report->classSession->classPlan?->name ?? 'Class Session',
+                'start_time' => $report->classSession->start_time->format('M d, Y g:i A'),
+            ] : null,
+            'sections' => $sections,
+        ]);
     }
 
     /**

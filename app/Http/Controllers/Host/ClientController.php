@@ -403,9 +403,15 @@ class ClientController extends Controller
             ->latest()
             ->first();
 
-        // Load progress reports with template info
+        // Load progress reports with all details for drawer display
         $progressReports = $client->progressReports()
-            ->with(['template', 'classSession.classPlan', 'recordedBy'])
+            ->with([
+                'template.sections.metrics',
+                'values.metric.section',
+                'classSession.classPlan',
+                'recordedBy',
+                'photos',
+            ])
             ->orderBy('report_date', 'desc')
             ->get();
 
