@@ -28,21 +28,22 @@
     ];
 @endphp
 
-<x-detail-drawer id="space-rental-{{ $spaceRental->id }}" title="{{ $spaceRental->config?->name ?? 'Space Rental' }}" size="4xl">
-    {{-- Status Hero Section with Stats --}}
+<x-detail-drawer id="space-rental-{{ $spaceRental->id }}" title="{{ $spaceRental->config?->name ?? 'Space Rental' }}" size="5xl">
+    {{-- Combined Hero Section with Stats & Details --}}
     <div class="bg-gradient-to-r {{ $statusColors[$spaceRental->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-4 -mt-1">
+        {{-- Top Row: Info + Actions --}}
         <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full {{ $statusIconColors[$spaceRental->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
-                    <span class="icon-[tabler--{{ $purposeIcons[$spaceRental->purpose] ?? 'building' }}] size-7"></span>
+                <div class="w-12 h-12 rounded-full {{ $statusIconColors[$spaceRental->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
+                    <span class="icon-[tabler--{{ $purposeIcons[$spaceRental->purpose] ?? 'building' }}] size-6"></span>
                 </div>
                 <div>
                     <div class="font-semibold text-lg">{{ $spaceRental->start_time->format('l, M j') }}</div>
                     <div class="text-base-content/70">{{ $spaceRental->formatted_time_range }}</div>
-                    <span class="badge {{ $spaceRental->status_badge_class }} mt-1">
-                        {{ $spaceRental->formatted_status }}
-                    </span>
                 </div>
+                <span class="badge {{ $spaceRental->status_badge_class }}">
+                    {{ $spaceRental->formatted_status }}
+                </span>
             </div>
             {{-- Quick Actions on right --}}
             @if(!in_array($spaceRental->status, ['completed', 'cancelled']))
@@ -83,15 +84,17 @@
             </div>
             @endif
         </div>
-        {{-- Stats Row inside hero --}}
-        <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-base-content/10">
+
+        {{-- Stats + Details Row --}}
+        <div class="grid grid-cols-8 gap-2 pt-3 border-t border-base-content/10">
+            {{-- Stats --}}
             <div class="text-center">
                 <div class="text-lg font-bold text-primary">{{ number_format($spaceRental->hours_booked, 1) }}</div>
                 <div class="text-xs text-base-content/60">{{ $trans['common.hours'] ?? 'Hours' }}</div>
             </div>
             <div class="text-center">
                 <div class="text-lg font-bold text-info">{{ $spaceRental->formatted_hourly_rate }}</div>
-                <div class="text-xs text-base-content/60">{{ $trans['field.hourly_rate'] ?? 'Hourly Rate' }}</div>
+                <div class="text-xs text-base-content/60">{{ $trans['field.hourly_rate'] ?? 'Rate' }}</div>
             </div>
             <div class="text-center">
                 <div class="text-lg font-bold text-success">{{ $spaceRental->formatted_total }}</div>
@@ -105,43 +108,34 @@
                 @endif
                 <div class="text-xs text-base-content/60">{{ $trans['field.deposit'] ?? 'Deposit' }}</div>
             </div>
-        </div>
-    </div>
-
-    {{-- Rental Details Card --}}
-    <div class="bg-base-200/50 rounded-xl p-4 mb-4">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['space_rentals.rental_details'] ?? 'Rental Details' }}</h4>
-        </div>
-        <div class="grid grid-cols-4 gap-2">
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--building] size-3.5"></span>
+            {{-- Details --}}
+            <div class="text-center">
+                <div class="text-sm font-medium truncate">{{ $spaceRental->config?->name ?? 'Unknown' }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--building] size-3"></span>
                     {{ $trans['space_rentals.space'] ?? 'Space' }}
                 </div>
-                <div class="font-medium text-sm truncate">{{ $spaceRental->config?->name ?? 'Unknown' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--map-pin] size-3.5"></span>
+            <div class="text-center">
+                <div class="text-sm font-medium truncate">{{ $spaceRental->config?->location?->name ?? 'TBD' }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--map-pin] size-3"></span>
                     {{ $trans['field.location'] ?? 'Location' }}
                 </div>
-                <div class="font-medium text-sm truncate">{{ $spaceRental->config?->location?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--{{ $purposeIcons[$spaceRental->purpose] ?? 'tag' }}] size-3.5"></span>
+            <div class="text-center">
+                <div class="text-sm font-medium truncate">{{ $spaceRental->formatted_purpose }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--{{ $purposeIcons[$spaceRental->purpose] ?? 'tag' }}] size-3"></span>
                     {{ $trans['space_rentals.purpose'] ?? 'Purpose' }}
                 </div>
-                <div class="font-medium text-sm truncate">{{ $spaceRental->formatted_purpose }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--clock] size-3.5"></span>
+            <div class="text-center">
+                <div class="text-sm font-medium">{{ number_format($spaceRental->hours_booked, 1) }} hrs</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--clock] size-3"></span>
                     {{ $trans['schedule.duration'] ?? 'Duration' }}
                 </div>
-                <div class="font-medium text-sm">{{ number_format($spaceRental->hours_booked, 1) }} {{ $trans['common.hours'] ?? 'hrs' }}</div>
             </div>
         </div>
     </div>

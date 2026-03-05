@@ -258,6 +258,43 @@ class ClientProgressController extends Controller
     }
 
     /**
+     * Show page to select a class session for recording progress.
+     */
+    public function selectClass(int $client)
+    {
+        $client = Client::findOrFail($client);
+        $this->authorizeClient($client);
+
+        $host = auth()->user()->host;
+
+        // Check if host has the progress-templates feature
+        if (!$host->hasFeature('progress-templates')) {
+            abort(403, 'Progress Templates feature is not enabled.');
+        }
+
+        // Get today's class sessions this client is booked for
+        $todaysClasses = \App\Models\ClassSession::whereHas('bookings', function ($q) use ($client) {
+                $q->where('client_id', $client->id)
+                  ->where('status', 'confirmed');
+            })
+            ->whereDate('start_time', now()->toDateString())
+            ->with(['classPlan.progressTemplates', 'primaryInstructor', 'location'])
+            ->orderBy('start_time')
+            ->get();
+
+        // Get active progress templates
+        $progressTemplates = \App\Models\ProgressTemplate::where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+
+        return view('host.clients.progress.select-class', compact(
+            'client',
+            'todaysClasses',
+            'progressTemplates'
+        ));
+    }
+
+    /**
      * Authorize that the client belongs to the current host.
      */
     private function authorizeClient(Client $client): void

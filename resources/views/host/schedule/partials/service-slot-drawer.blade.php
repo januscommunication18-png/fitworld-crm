@@ -20,21 +20,22 @@
     $booking = $serviceSlot->bookings->first();
 @endphp
 
-<x-detail-drawer id="service-slot-{{ $serviceSlot->id }}" title="{{ $serviceSlot->servicePlan?->name ?? ($trans['page.service_slot'] ?? 'Service Slot') }}" size="4xl">
-    {{-- Status Hero Section with Stats --}}
+<x-detail-drawer id="service-slot-{{ $serviceSlot->id }}" title="{{ $serviceSlot->servicePlan?->name ?? ($trans['page.service_slot'] ?? 'Service Slot') }}" size="5xl">
+    {{-- Combined Hero Section with Stats & Details --}}
     <div class="bg-gradient-to-r {{ $statusColors[$serviceSlot->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-4 -mt-1">
+        {{-- Top Row: Info + Actions --}}
         <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full {{ $statusIconColors[$serviceSlot->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
-                    <span class="icon-[tabler--massage] size-7"></span>
+                <div class="w-12 h-12 rounded-full {{ $statusIconColors[$serviceSlot->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
+                    <span class="icon-[tabler--massage] size-6"></span>
                 </div>
                 <div>
                     <div class="font-semibold text-lg">{{ $serviceSlot->start_time->format('l, M j') }}</div>
                     <div class="text-base-content/70">{{ $serviceSlot->formatted_time_range }}</div>
-                    <span class="badge {{ $serviceSlot->getStatusBadgeClass() }} mt-1">
-                        {{ $statuses[$serviceSlot->status] ?? $serviceSlot->status }}
-                    </span>
                 </div>
+                <span class="badge {{ $serviceSlot->getStatusBadgeClass() }}">
+                    {{ $statuses[$serviceSlot->status] ?? $serviceSlot->status }}
+                </span>
             </div>
             {{-- Quick Actions on right --}}
             @if(!$serviceSlot->isCancelled())
@@ -59,8 +60,10 @@
             </div>
             @endif
         </div>
-        {{-- Stats Row inside hero --}}
-        <div class="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-base-content/10">
+
+        {{-- Stats + Details Row --}}
+        <div class="grid grid-cols-6 gap-2 pt-3 border-t border-base-content/10">
+            {{-- Stats --}}
             <div class="text-center">
                 <div class="text-lg font-bold text-primary">{{ $serviceSlot->duration_minutes }} {{ $trans['common.min'] ?? 'min' }}</div>
                 <div class="text-xs text-base-content/60">{{ $trans['schedule.duration'] ?? 'Duration' }}</div>
@@ -79,43 +82,27 @@
                 @endif
                 <div class="text-xs text-base-content/60">{{ $trans['field.status'] ?? 'Status' }}</div>
             </div>
-        </div>
-    </div>
-
-    {{-- Service Details Card --}}
-    <div class="bg-base-200/50 rounded-xl p-4 mb-4">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.service_details'] ?? 'Service Details' }}</h4>
-        </div>
-        <div class="grid grid-cols-4 gap-2">
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--user] size-3.5"></span>
+            {{-- Details --}}
+            <div class="text-center">
+                <div class="text-sm font-medium truncate">{{ $serviceSlot->instructor?->name ?? 'TBD' }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--user] size-3"></span>
                     {{ $trans['field.provider'] ?? 'Provider' }}
                 </div>
-                <div class="font-medium text-sm truncate">{{ $serviceSlot->instructor?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--map-pin] size-3.5"></span>
+            <div class="text-center">
+                <div class="text-sm font-medium truncate">{{ $serviceSlot->location?->name ?? 'TBD' }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--map-pin] size-3"></span>
                     {{ $trans['field.location'] ?? 'Location' }}
                 </div>
-                <div class="font-medium text-sm truncate">{{ $serviceSlot->location?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--clock] size-3.5"></span>
-                    {{ $trans['schedule.duration'] ?? 'Duration' }}
+            <div class="text-center">
+                <div class="text-sm font-medium">{{ $serviceSlot->servicePlan?->name ?? '-' }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--massage] size-3"></span>
+                    {{ $trans['field.service'] ?? 'Service' }}
                 </div>
-                <div class="font-medium text-sm">{{ $serviceSlot->duration_minutes }} {{ $trans['common.min'] ?? 'min' }}</div>
-            </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--currency-dollar] size-3.5"></span>
-                    {{ $trans['field.price'] ?? 'Price' }}
-                </div>
-                <div class="font-medium text-sm">{{ $serviceSlot->formatted_price }}</div>
             </div>
         </div>
     </div>

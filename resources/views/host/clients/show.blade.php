@@ -27,7 +27,18 @@
             </div>
             <div>
                 <h1 class="text-2xl font-bold">{{ $client->full_name }}</h1>
-                <p class="text-base-content/60">{{ $client->email }}</p>
+                <div class="flex flex-wrap items-center gap-3 text-base-content/60">
+                    <span class="flex items-center gap-1">
+                        <span class="icon-[tabler--mail] size-4"></span>
+                        {{ $client->email }}
+                    </span>
+                    @if($client->phone)
+                    <span class="flex items-center gap-1">
+                        <span class="icon-[tabler--phone] size-4"></span>
+                        {{ $client->phone }}
+                    </span>
+                    @endif
+                </div>
                 <div class="flex flex-wrap items-center gap-2 mt-2">
                     @php
                         $statusBadge = match($client->status) {
@@ -51,6 +62,40 @@
         </div>
         {{-- Right-aligned buttons --}}
         <div class="flex items-center gap-2 md:ml-auto">
+            {{-- Add Booking Dropdown --}}
+            <div class="relative">
+                <button type="button" class="btn btn-success" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                    <span class="icon-[tabler--plus] size-5"></span>
+                    Book
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <ul class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
+                    <li>
+                        <a href="{{ route('walk-in.select', ['client_id' => $client->id]) }}">
+                            <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                            Class Session
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('walk-in.select-service', ['client_id' => $client->id]) }}">
+                            <span class="icon-[tabler--massage] size-5 text-success"></span>
+                            Service Slot
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('walk-in.select-membership', ['client_id' => $client->id]) }}">
+                            <span class="icon-[tabler--id-badge-2] size-5 text-warning"></span>
+                            Membership
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            @if(isset($todaysClasses) && $todaysClasses->count() > 0 && isset($hasProgressTemplates) && $hasProgressTemplates)
+            <button type="button" class="btn btn-success" onclick="document.getElementById('record-progress-modal').classList.remove('hidden')">
+                <span class="icon-[tabler--chart-line] size-5"></span>
+                Record Progress
+            </button>
+            @endif
             <a href="{{ route('clients.edit', $client) }}" class="btn btn-primary">
                 <span class="icon-[tabler--edit] size-5"></span>
                 Edit
@@ -108,8 +153,8 @@
     {{-- Tabs --}}
     <div class="tabs tabs-bordered relative z-10" role="tablist">
         <button class="tab tab-active" data-tab="info" role="tab">
-            <span class="icon-[tabler--user] size-4 mr-2"></span>
-            Client Info
+            <span class="icon-[tabler--layout-dashboard] size-4 mr-2"></span>
+            Overview
         </button>
         <button class="tab" data-tab="bookings" role="tab">
             <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>
@@ -136,8 +181,8 @@
         <button class="tab" data-tab="progress" role="tab">
             <span class="icon-[tabler--chart-line] size-4 mr-2"></span>
             Progress
-            @if($progressReports->count() > 0)
-                <span class="badge badge-sm badge-primary ml-2">{{ $progressReports->count() }}</span>
+            @if($progressReports->total() > 0)
+                <span class="badge badge-sm badge-primary ml-2">{{ $progressReports->total() }}</span>
             @endif
         </button>
         @endif
@@ -149,214 +194,428 @@
 
     {{-- Tab Content --}}
     <div class="tab-contents relative z-0">
-        {{-- Client Info Tab --}}
+        {{-- Overview Tab --}}
         <div class="tab-content active" data-content="info">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 space-y-6">
-                    {{-- Contact Information --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">
-                                <span class="icon-[tabler--address-book] size-5"></span>
-                                Contact Information
-                            </h2>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                <div>
-                                    <label class="text-sm text-base-content/60">Email</label>
-                                    <p class="font-medium">{{ $client->email }}</p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Phone</label>
-                                    <p class="font-medium">{{ $client->phone ?? 'Not set' }}</p>
-                                </div>
-                                @if($client->secondary_phone)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Secondary Phone</label>
-                                    <p class="font-medium">{{ $client->secondary_phone }}</p>
-                                </div>
+                    {{-- Accordion Sections --}}
+                    <div class="accordion divide-y divide-base-200 rounded-lg bg-base-100" id="client-info-accordion">
+                        {{-- Quick Notes - Open by default --}}
+                        <div class="accordion-item">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="notes-content" aria-expanded="true">
+                                <span class="icon-[tabler--notes] size-5 text-primary"></span>
+                                Notes
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform" style="transform: rotate(180deg)"></span>
+                                @if($client->clientNotes->count() > 0)
+                                    <span class="badge badge-primary badge-sm">{{ $client->clientNotes->count() }}</span>
                                 @endif
-                                <div>
-                                    <label class="text-sm text-base-content/60">Preferred Contact</label>
-                                    <p class="font-medium">{{ \App\Models\Client::getContactMethods()[$client->preferred_contact_method] ?? 'Email' }}</p>
+                            </button>
+                            <div id="notes-content" class="accordion-content w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    <form id="quick-note-form">
+                                        <div class="space-y-3">
+                                            <div>
+                                                <textarea id="quick-note-input" name="content" rows="2"
+                                                    class="textarea textarea-bordered w-full"
+                                                    placeholder="What would you like to note about this client?" required></textarea>
+                                            </div>
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-sm text-base-content/60">Type:</span>
+                                                    <div class="flex gap-1">
+                                                        <label class="cursor-pointer">
+                                                            <input type="radio" name="note_type" value="note" class="hidden peer" checked>
+                                                            <span class="badge badge-outline peer-checked:badge-primary peer-checked:text-primary-content transition-all">
+                                                                <span class="icon-[tabler--note] size-3 mr-1"></span> Note
+                                                            </span>
+                                                        </label>
+                                                        <label class="cursor-pointer">
+                                                            <input type="radio" name="note_type" value="call" class="hidden peer">
+                                                            <span class="badge badge-outline peer-checked:badge-primary peer-checked:text-primary-content transition-all">
+                                                                <span class="icon-[tabler--phone] size-3 mr-1"></span> Call
+                                                            </span>
+                                                        </label>
+                                                        <label class="cursor-pointer">
+                                                            <input type="radio" name="note_type" value="email" class="hidden peer">
+                                                            <span class="badge badge-outline peer-checked:badge-primary peer-checked:text-primary-content transition-all">
+                                                                <span class="icon-[tabler--mail] size-3 mr-1"></span> Email
+                                                            </span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary btn-sm" id="quick-note-btn">
+                                                    <span class="icon-[tabler--send] size-4"></span>
+                                                    Add Note
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    @if($client->clientNotes->count() > 0)
+                                        @php $latestNote = $client->clientNotes->first(); @endphp
+                                        <div class="flex gap-3 p-3 mt-4 rounded-lg bg-base-200/50 border border-base-300" id="latest-note-display">
+                                            <span class="{{ \App\Models\ClientNote::getNoteTypeIcon($latestNote->note_type) }} size-4 mt-0.5 shrink-0 text-base-content/60"></span>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm">{{ $latestNote->content }}</p>
+                                                <p class="text-xs text-base-content/50 mt-1">{{ $latestNote->created_at->diffForHumans() }}</p>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-ghost btn-xs mt-2" onclick="document.querySelector('[data-tab=notes]').click()">
+                                            View All Notes
+                                            <span class="icon-[tabler--arrow-right] size-4"></span>
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
-                            @if($client->address_line_1 || $client->city)
-                            <div class="divider my-2"></div>
-                            <div>
-                                <label class="text-sm text-base-content/60">Address</label>
-                                <p class="font-medium">
-                                    @if($client->address_line_1){{ $client->address_line_1 }}<br>@endif
-                                    @if($client->address_line_2){{ $client->address_line_2 }}<br>@endif
-                                    @if($client->city){{ $client->city }}, @endif{{ $client->state_province }} {{ $client->postal_code }}
-                                    @if($client->country)<br>{{ $client->country }}@endif
-                                </p>
-                            </div>
-                            @endif
                         </div>
-                    </div>
+                        {{-- Progress Tracking --}}
+                        <div class="accordion-item">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="progress-content" aria-expanded="false">
+                                <span class="icon-[tabler--chart-line] size-5 text-primary"></span>
+                                Progress Tracking
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                                @if(isset($progressByTemplate) && $progressByTemplate->count() > 0)
+                                    <span class="badge badge-primary badge-sm">{{ $progressByTemplate->count() }}</span>
+                                @endif
+                            </button>
+                            <div id="progress-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    @if(isset($progressByTemplate) && $progressByTemplate->count() > 0)
+                                        <div class="space-y-4">
+                                            @foreach($progressByTemplate as $templateData)
+                                                <div class="border border-base-200 rounded-xl p-4">
+                                                    <div class="flex items-center justify-between mb-3">
+                                                        <div class="flex items-center gap-3">
+                                                            <div class="p-2 rounded-lg bg-primary/10">
+                                                                <span class="icon-[tabler--{{ $templateData['template_icon'] }}] size-5 text-primary"></span>
+                                                            </div>
+                                                            <div>
+                                                                <h3 class="font-semibold">{{ $templateData['template_name'] }}</h3>
+                                                                <p class="text-xs text-base-content/60">{{ $templateData['total_reports'] }} reports &bull; Last: {{ $templateData['latest_date'] }}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-right">
+                                                            <div class="text-2xl font-bold {{ $templateData['latest_score'] >= 70 ? 'text-success' : ($templateData['latest_score'] >= 40 ? 'text-warning' : 'text-error') }}">
+                                                                {{ $templateData['latest_score'] }}%
+                                                            </div>
+                                                            <div class="flex items-center justify-end gap-1 text-sm {{ $templateData['trend'] >= 0 ? 'text-success' : 'text-error' }}">
+                                                                <span class="icon-[tabler--trending-{{ $templateData['trend'] >= 0 ? 'up' : 'down' }}] size-4"></span>
+                                                                {{ $templateData['trend'] >= 0 ? '+' : '' }}{{ $templateData['trend'] }}%
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    @if($templateData['chart_data']->count() > 1)
+                                                        <div class="h-20 flex items-end justify-between gap-1 mb-3">
+                                                            @foreach($templateData['chart_data'] as $point)
+                                                                <div class="flex-1 flex flex-col items-center gap-1 group relative">
+                                                                    <div class="w-full rounded-t cursor-pointer transition-all hover:opacity-80 {{ $point['score'] >= 70 ? 'bg-success' : ($point['score'] >= 40 ? 'bg-warning' : 'bg-error') }}"
+                                                                         style="height: {{ max(4, $point['score'] * 0.75) }}px;"
+                                                                         title="{{ $point['class'] }}: {{ $point['score'] }}%"></div>
+                                                                    <span class="text-[10px] text-base-content/50">{{ $point['date'] }}</span>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                    @endif
+                                                    @if($templateData['by_class']->count() > 0)
+                                                        <div class="border-t border-base-200 pt-3">
+                                                            <p class="text-xs font-medium text-base-content/60 uppercase tracking-wide mb-2">By Class</p>
+                                                            <div class="grid grid-cols-2 gap-2">
+                                                                @foreach($templateData['by_class'] as $className => $classData)
+                                                                    <div class="flex items-center justify-between p-2 bg-base-200/50 rounded-lg">
+                                                                        <span class="text-sm truncate max-w-[100px]" title="{{ $className }}">{{ $className }}</span>
+                                                                        <span class="font-semibold text-sm {{ $classData['latest_score'] >= 70 ? 'text-success' : ($classData['latest_score'] >= 40 ? 'text-warning' : 'text-error') }}">
+                                                                            {{ $classData['latest_score'] }}%
+                                                                        </span>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-sm text-base-content/50">No progress data yet.</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
 
-                    {{-- Personal Details --}}
-                    @if($client->date_of_birth || $client->gender)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">
-                                <span class="icon-[tabler--user-circle] size-5"></span>
+                        {{-- This Week's Schedule --}}
+                        <div class="accordion-item">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="schedule-content" aria-expanded="false">
+                                <span class="icon-[tabler--calendar-week] size-5 text-primary"></span>
+                                This Week's Schedule
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                                @if(isset($thisWeekSchedule) && $thisWeekSchedule->count() > 0)
+                                    <span class="badge badge-primary badge-sm">{{ $thisWeekSchedule->count() }}</span>
+                                @endif
+                            </button>
+                            <div id="schedule-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    @if(isset($thisWeekSchedule) && $thisWeekSchedule->count() > 0)
+                                        <div class="space-y-2">
+                                            @foreach($thisWeekSchedule as $booking)
+                                                @php
+                                                    $isServiceSlot = $booking->bookable instanceof \App\Models\ServiceSlot;
+                                                    $icon = $isServiceSlot ? 'icon-[tabler--massage]' : 'icon-[tabler--yoga]';
+                                                    $title = $isServiceSlot
+                                                        ? ($booking->bookable->servicePlan->name ?? 'Service')
+                                                        : ($booking->bookable->display_title ?? $booking->bookable->classPlan->name ?? 'Class');
+                                                    $isToday = $booking->bookable->start_time->isToday();
+                                                    $isPast = $booking->bookable->start_time->isPast();
+                                                @endphp
+                                                <div class="flex items-center gap-3 p-2 rounded-lg {{ $isToday ? 'bg-primary/10' : 'bg-base-200/50' }} {{ $isPast && !$isToday ? 'opacity-60' : '' }}">
+                                                    <span class="{{ $icon }} size-5 {{ $isServiceSlot ? 'text-secondary' : 'text-primary' }}"></span>
+                                                    <div class="flex-1 min-w-0">
+                                                        <div class="font-medium text-sm">{{ $title }}</div>
+                                                        <div class="text-xs text-base-content/60">{{ $booking->bookable->start_time->format('D, M j \a\t g:i A') }}</div>
+                                                    </div>
+                                                    @if($isToday)
+                                                        <span class="badge badge-primary badge-xs">Today</span>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-sm text-base-content/50 mb-3">No bookings this week.</p>
+                                        <div class="flex gap-2">
+                                            <a href="{{ route('walk-in.select', ['client_id' => $client->id]) }}" class="btn btn-primary btn-xs">Book Class</a>
+                                            <a href="{{ route('walk-in.select-service', ['client_id' => $client->id]) }}" class="btn btn-secondary btn-xs">Book Service</a>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Personal Details --}}
+                        @if($client->date_of_birth || $client->gender)
+                        <div class="accordion-item">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="personal-content" aria-expanded="false">
+                                <span class="icon-[tabler--user-circle] size-5 text-primary"></span>
                                 Personal Details
-                            </h2>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                @if($client->date_of_birth)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Date of Birth</label>
-                                    <p class="font-medium">{{ $client->date_of_birth->format('M d, Y') }}</p>
-                                </div>
-                                @endif
-                                @if($client->gender)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Gender</label>
-                                    <p class="font-medium">{{ \App\Models\Client::getGenders()[$client->gender] ?? ucfirst($client->gender) }}</p>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-
-                    {{-- Emergency Contact --}}
-                    @if($client->emergency_contact_name || $client->emergency_contact_phone)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">
-                                <span class="icon-[tabler--emergency-bed] size-5"></span>
-                                Emergency Contact
-                            </h2>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                @if($client->emergency_contact_name)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Name</label>
-                                    <p class="font-medium">{{ $client->emergency_contact_name }}</p>
-                                </div>
-                                @endif
-                                @if($client->emergency_contact_relationship)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Relationship</label>
-                                    <p class="font-medium">{{ $client->emergency_contact_relationship }}</p>
-                                </div>
-                                @endif
-                                @if($client->emergency_contact_phone)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Phone</label>
-                                    <p class="font-medium">{{ $client->emergency_contact_phone }}</p>
-                                </div>
-                                @endif
-                                @if($client->emergency_contact_email)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Email</label>
-                                    <p class="font-medium">{{ $client->emergency_contact_email }}</p>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-
-                    {{-- Health & Fitness --}}
-                    @if($client->experience_level || $client->fitness_goals || $client->medical_conditions || $client->injuries || $client->limitations)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">
-                                <span class="icon-[tabler--heartbeat] size-5"></span>
-                                Health & Fitness
-                            </h2>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                @if($client->experience_level)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Experience Level</label>
-                                    <p class="font-medium">{{ \App\Models\Client::getExperienceLevels()[$client->experience_level] ?? ucfirst($client->experience_level) }}</p>
-                                </div>
-                                @endif
-                                @if($client->pregnancy_status)
-                                <div>
-                                    <label class="text-sm text-base-content/60">Pregnancy Status</label>
-                                    <span class="badge badge-warning">Currently Pregnant</span>
-                                </div>
-                                @endif
-                            </div>
-                            @if($client->fitness_goals)
-                            <div class="mt-4">
-                                <label class="text-sm text-base-content/60">Fitness Goals</label>
-                                <p class="font-medium mt-1">{{ $client->fitness_goals }}</p>
-                            </div>
-                            @endif
-                            @if($client->medical_conditions)
-                            <div class="mt-4">
-                                <label class="text-sm text-base-content/60">Medical Conditions</label>
-                                <p class="font-medium mt-1 text-warning">{{ $client->medical_conditions }}</p>
-                            </div>
-                            @endif
-                            @if($client->injuries)
-                            <div class="mt-4">
-                                <label class="text-sm text-base-content/60">Injuries</label>
-                                <p class="font-medium mt-1 text-warning">{{ $client->injuries }}</p>
-                            </div>
-                            @endif
-                            @if($client->limitations)
-                            <div class="mt-4">
-                                <label class="text-sm text-base-content/60">Limitations</label>
-                                <p class="font-medium mt-1 text-warning">{{ $client->limitations }}</p>
-                            </div>
-                            @endif
-                        </div>
-                    </div>
-                    @endif
-
-                    {{-- Custom Fields --}}
-                    @if($customFields['sections']->count() > 0 || $customFields['unsectionedFields']->count() > 0)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">
-                                <span class="icon-[tabler--forms] size-5"></span>
-                                Additional Information
-                            </h2>
-
-                            @foreach($customFields['sections'] as $section)
-                                @if($section->activeFieldDefinitions->count() > 0)
-                                <div class="mt-4">
-                                    <h3 class="font-semibold text-sm text-base-content/70 uppercase tracking-wider mb-3">{{ $section->name }}</h3>
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                            </button>
+                            <div id="personal-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
                                     <div class="grid grid-cols-2 gap-4">
-                                        @foreach($section->activeFieldDefinitions as $field)
-                                            @php
-                                                $value = $customFields['values'][$field->id] ?? null;
-                                            @endphp
+                                        @if($client->date_of_birth)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Date of Birth</label>
+                                            <p class="font-medium">{{ $client->date_of_birth->format('M d, Y') }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->gender)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Gender</label>
+                                            <p class="font-medium">{{ \App\Models\Client::getGenders()[$client->gender] ?? ucfirst($client->gender) }}</p>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Emergency Contact --}}
+                        @if($client->emergency_contact_name || $client->emergency_contact_phone)
+                        <div class="accordion-item">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="emergency-content" aria-expanded="false">
+                                <span class="icon-[tabler--emergency-bed] size-5 text-primary"></span>
+                                Emergency Contact
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                            </button>
+                            <div id="emergency-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    <div class="grid grid-cols-2 gap-4">
+                                        @if($client->emergency_contact_name)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Name</label>
+                                            <p class="font-medium">{{ $client->emergency_contact_name }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->emergency_contact_relationship)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Relationship</label>
+                                            <p class="font-medium">{{ $client->emergency_contact_relationship }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->emergency_contact_phone)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Phone</label>
+                                            <p class="font-medium">{{ $client->emergency_contact_phone }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->emergency_contact_email)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Email</label>
+                                            <p class="font-medium">{{ $client->emergency_contact_email }}</p>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Health & Fitness --}}
+                        @if($client->experience_level || $client->fitness_goals || $client->medical_conditions || $client->injuries || $client->limitations)
+                        <div class="accordion-item">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="health-content" aria-expanded="false">
+                                <span class="icon-[tabler--heartbeat] size-5 text-primary"></span>
+                                Health & Fitness
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                                @if($client->medical_conditions || $client->injuries || $client->limitations)
+                                    <span class="badge badge-warning badge-sm">!</span>
+                                @endif
+                            </button>
+                            <div id="health-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    <div class="space-y-3">
+                                        @if($client->experience_level)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Experience Level</label>
+                                            <p class="font-medium">{{ \App\Models\Client::getExperienceLevels()[$client->experience_level] ?? ucfirst($client->experience_level) }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->pregnancy_status)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Pregnancy Status</label>
+                                            <span class="badge badge-warning">Currently Pregnant</span>
+                                        </div>
+                                        @endif
+                                        @if($client->fitness_goals)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Fitness Goals</label>
+                                            <p class="font-medium">{{ $client->fitness_goals }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->medical_conditions)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Medical Conditions</label>
+                                            <p class="font-medium text-warning">{{ $client->medical_conditions }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->injuries)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Injuries</label>
+                                            <p class="font-medium text-warning">{{ $client->injuries }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->limitations)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Limitations</label>
+                                            <p class="font-medium text-warning">{{ $client->limitations }}</p>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Custom Fields --}}
+                        @if($customFields['sections']->count() > 0 || $customFields['unsectionedFields']->count() > 0)
+                        <div class="accordion-item">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="custom-content" aria-expanded="false">
+                                <span class="icon-[tabler--forms] size-5 text-primary"></span>
+                                Additional Information
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                            </button>
+                            <div id="custom-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    @foreach($customFields['sections'] as $section)
+                                        @if($section->activeFieldDefinitions->count() > 0)
+                                        <div class="mb-4">
+                                            <h3 class="font-semibold text-sm text-base-content/70 uppercase tracking-wider mb-2">{{ $section->name }}</h3>
+                                            <div class="grid grid-cols-2 gap-3">
+                                                @foreach($section->activeFieldDefinitions as $field)
+                                                    @php $value = $customFields['values'][$field->id] ?? null; @endphp
+                                                    <div>
+                                                        <label class="text-sm text-base-content/60">{{ $field->field_label }}</label>
+                                                        <p class="font-medium">{{ $value?->formatted_value ?? 'Not set' }}</p>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        @endif
+                                    @endforeach
+                                    @if($customFields['unsectionedFields']->count() > 0)
+                                    <div class="grid grid-cols-2 gap-3">
+                                        @foreach($customFields['unsectionedFields'] as $field)
+                                            @php $value = $customFields['values'][$field->id] ?? null; @endphp
                                             <div>
                                                 <label class="text-sm text-base-content/60">{{ $field->field_label }}</label>
                                                 <p class="font-medium">{{ $value?->formatted_value ?? 'Not set' }}</p>
                                             </div>
                                         @endforeach
                                     </div>
+                                    @endif
                                 </div>
-                                @endif
-                            @endforeach
-
-                            @if($customFields['unsectionedFields']->count() > 0)
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                @foreach($customFields['unsectionedFields'] as $field)
-                                    @php
-                                        $value = $customFields['values'][$field->id] ?? null;
-                                    @endphp
-                                    <div>
-                                        <label class="text-sm text-base-content/60">{{ $field->field_label }}</label>
-                                        <p class="font-medium">{{ $value?->formatted_value ?? 'Not set' }}</p>
-                                    </div>
-                                @endforeach
                             </div>
-                            @endif
                         </div>
+                        @endif
                     </div>
-                    @endif
                 </div>
 
                 {{-- Sidebar --}}
                 <div class="space-y-6">
+                    {{-- Client Score Card --}}
+                    <div class="card bg-base-100">
+                        <div class="card-body p-4">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-base">
+                                    <span class="icon-[tabler--chart-donut-3] size-5 text-primary"></span>
+                                    Client Score
+                                </h2>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-3xl font-bold">{{ $clientScore['overall'] }}</span>
+                                    <div class="badge badge-lg badge-{{ $clientScore['grade']['color'] }}">{{ $clientScore['grade']['label'] }}</div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-2 mt-4">
+                                {{-- Engagement --}}
+                                <div class="text-center p-2 rounded-lg bg-base-200/50">
+                                    <span class="icon-[tabler--activity-heartbeat] size-4 text-primary"></span>
+                                    <div class="text-lg font-bold text-primary">{{ $clientScore['engagement']['score'] }}</div>
+                                    <div class="text-[10px] text-base-content/60 uppercase">Engage</div>
+                                    <div class="w-full bg-base-300 rounded-full h-1 mt-1">
+                                        <div class="bg-primary h-1 rounded-full" style="width: {{ $clientScore['engagement']['score'] }}%"></div>
+                                    </div>
+                                </div>
+
+                                {{-- Usage --}}
+                                <div class="text-center p-2 rounded-lg bg-base-200/50">
+                                    <span class="icon-[tabler--chart-bar] size-4 text-secondary"></span>
+                                    <div class="text-lg font-bold text-secondary">{{ $clientScore['usage']['score'] }}</div>
+                                    <div class="text-[10px] text-base-content/60 uppercase">Usage</div>
+                                    <div class="w-full bg-base-300 rounded-full h-1 mt-1">
+                                        <div class="bg-secondary h-1 rounded-full" style="width: {{ $clientScore['usage']['score'] }}%"></div>
+                                    </div>
+                                </div>
+
+                                {{-- Revenue --}}
+                                <div class="text-center p-2 rounded-lg bg-base-200/50">
+                                    <span class="icon-[tabler--currency-dollar] size-4 text-success"></span>
+                                    <div class="text-lg font-bold text-success">{{ $clientScore['revenue']['score'] }}</div>
+                                    <div class="text-[10px] text-base-content/60 uppercase">Revenue</div>
+                                    <div class="w-full bg-base-300 rounded-full h-1 mt-1">
+                                        <div class="bg-success h-1 rounded-full" style="width: {{ $clientScore['revenue']['score'] }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center mt-3 space-y-1">
+                                <span class="text-xs text-base-content/50">{{ $clientScore['grade']['description'] }} · Last visit {{ $clientScore['engagement']['days_since_visit'] }}d ago</span>
+                                <div>
+                                    <button type="button" onclick="document.getElementById('score-calculation-modal').classList.remove('hidden')" class="text-xs text-primary hover:underline">
+                                        Score calculation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Quick Stats --}}
                     <div class="card bg-base-100">
                         <div class="card-body">
@@ -445,6 +704,10 @@
                             <h2 class="card-title text-lg">Communication</h2>
                             <div class="space-y-3 mt-4">
                                 <div class="flex items-center justify-between">
+                                    <span class="text-base-content/60">Preferred Contact</span>
+                                    <span class="font-medium">{{ \App\Models\Client::getContactMethods()[$client->preferred_contact_method] ?? 'Email' }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
                                     <span class="text-base-content/60">Email Opt-in</span>
                                     @if($client->email_opt_in)
                                         <span class="badge badge-soft badge-success badge-sm">Yes</span>
@@ -487,6 +750,159 @@
 
         {{-- Bookings Tab --}}
         <div class="tab-content hidden" data-content="bookings">
+            {{-- Booking Summary Card --}}
+            @if(isset($bookingSummary))
+            <div class="card bg-base-100 mb-6">
+                <div class="card-body">
+                    <h2 class="card-title text-lg mb-4">
+                        <span class="icon-[tabler--report-analytics] size-5"></span>
+                        Activity Summary
+                    </h2>
+
+                    <div class="grid grid-cols-5 gap-6">
+                        {{-- Left Column - Totals (2 cols = 40%) --}}
+                        <div class="col-span-2">
+                            <div class="grid grid-cols-2 gap-3">
+                                {{-- Classes --}}
+                                <div class="p-3 rounded-xl bg-primary/10 border border-primary/20 text-center">
+                                    <span class="icon-[tabler--yoga] size-6 text-primary"></span>
+                                    <p class="text-2xl font-bold mt-1">{{ $bookingSummary['total_classes'] }}</p>
+                                    <p class="text-xs text-base-content/60">Classes</p>
+                                </div>
+                                {{-- Services --}}
+                                <div class="p-3 rounded-xl bg-secondary/10 border border-secondary/20 text-center">
+                                    <span class="icon-[tabler--massage] size-6 text-secondary"></span>
+                                    <p class="text-2xl font-bold mt-1">{{ $bookingSummary['total_services'] }}</p>
+                                    <p class="text-xs text-base-content/60">Services</p>
+                                </div>
+                                {{-- Memberships --}}
+                                <div class="p-3 rounded-xl bg-warning/10 border border-warning/20 text-center">
+                                    <span class="icon-[tabler--id-badge-2] size-6 text-warning"></span>
+                                    <p class="text-2xl font-bold mt-1">{{ $bookingSummary['total_memberships'] ?? 0 }}</p>
+                                    <p class="text-xs text-base-content/60">Memberships</p>
+                                </div>
+                                {{-- Catalog Items --}}
+                                <div class="p-3 rounded-xl bg-info/10 border border-info/20 text-center">
+                                    <span class="icon-[tabler--package] size-6 text-info"></span>
+                                    <p class="text-2xl font-bold mt-1">{{ $bookingSummary['total_catalog'] ?? 0 }}</p>
+                                    <p class="text-xs text-base-content/60">Packages</p>
+                                </div>
+                            </div>
+
+                            {{-- Top Items --}}
+                            @if($bookingSummary['top_class'] || $bookingSummary['top_service'])
+                            <div class="mt-4 space-y-2">
+                                @if($bookingSummary['top_class'])
+                                <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/50">
+                                    <span class="icon-[tabler--crown] size-4 text-primary"></span>
+                                    <span class="text-xs text-base-content/60">Top Class:</span>
+                                    <span class="text-sm font-medium truncate">{{ $bookingSummary['top_class'] }}</span>
+                                    <span class="badge badge-primary badge-xs ml-auto">{{ $bookingSummary['top_class_count'] }}x</span>
+                                </div>
+                                @endif
+                                @if($bookingSummary['top_service'])
+                                <div class="flex items-center gap-2 p-2 rounded-lg bg-base-200/50">
+                                    <span class="icon-[tabler--crown] size-4 text-secondary"></span>
+                                    <span class="text-xs text-base-content/60">Top Service:</span>
+                                    <span class="text-sm font-medium truncate">{{ $bookingSummary['top_service'] }}</span>
+                                    <span class="badge badge-secondary badge-xs ml-auto">{{ $bookingSummary['top_service_count'] }}x</span>
+                                </div>
+                                @endif
+                            </div>
+                            @endif
+                        </div>
+
+                        {{-- Right Column - Breakdown Lists (3 cols = 60%) --}}
+                        <div class="col-span-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                {{-- Classes Breakdown --}}
+                                <div>
+                                    <h3 class="text-xs font-semibold text-base-content/70 uppercase tracking-wide mb-2">Classes</h3>
+                                    @if($bookingSummary['classes']->count() > 0)
+                                    <div class="space-y-1">
+                                        @foreach($bookingSummary['classes']->take(5) as $className => $data)
+                                        <div class="flex items-center justify-between gap-2 px-2 py-1 rounded bg-base-200/50 text-xs">
+                                            <span>{{ $className }}</span>
+                                            <span class="badge badge-primary badge-xs shrink-0">{{ $data['count'] }}</span>
+                                        </div>
+                                        @endforeach
+                                        @if($bookingSummary['classes']->count() > 5)
+                                        <p class="text-xs text-base-content/50">+ {{ $bookingSummary['classes']->count() - 5 }} more</p>
+                                        @endif
+                                    </div>
+                                    @else
+                                    <p class="text-xs text-base-content/40">No classes yet</p>
+                                    @endif
+                                </div>
+
+                                {{-- Services Breakdown --}}
+                                <div>
+                                    <h3 class="text-xs font-semibold text-base-content/70 uppercase tracking-wide mb-2">Services</h3>
+                                    @if($bookingSummary['services']->count() > 0)
+                                    <div class="space-y-1">
+                                        @foreach($bookingSummary['services']->take(5) as $serviceName => $data)
+                                        <div class="flex items-center justify-between gap-2 px-2 py-1 rounded bg-base-200/50 text-xs">
+                                            <span>{{ $serviceName }}</span>
+                                            <span class="badge badge-secondary badge-xs shrink-0">{{ $data['count'] }}</span>
+                                        </div>
+                                        @endforeach
+                                        @if($bookingSummary['services']->count() > 5)
+                                        <p class="text-xs text-base-content/50">+ {{ $bookingSummary['services']->count() - 5 }} more</p>
+                                        @endif
+                                    </div>
+                                    @else
+                                    <p class="text-xs text-base-content/40">No services yet</p>
+                                    @endif
+                                </div>
+
+                                {{-- Memberships Breakdown --}}
+                                <div>
+                                    <h3 class="text-xs font-semibold text-base-content/70 uppercase tracking-wide mb-2">Memberships</h3>
+                                    @if(isset($bookingSummary['memberships']) && $bookingSummary['memberships']->count() > 0)
+                                    <div class="space-y-1">
+                                        @foreach($bookingSummary['memberships']->take(5) as $membershipName => $data)
+                                        <div class="flex items-center justify-between gap-2 px-2 py-1 rounded bg-base-200/50 text-xs">
+                                            <span>{{ $membershipName }}</span>
+                                            <div class="flex items-center gap-1 shrink-0">
+                                                @if($data['active'] > 0)
+                                                <span class="badge badge-success badge-xs">Active</span>
+                                                @endif
+                                                <span class="badge badge-warning badge-xs">{{ $data['count'] }}</span>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                    @else
+                                    <p class="text-xs text-base-content/40">No memberships yet</p>
+                                    @endif
+                                </div>
+
+                                {{-- Catalog Items Breakdown --}}
+                                <div>
+                                    <h3 class="text-xs font-semibold text-base-content/70 uppercase tracking-wide mb-2">Packages & Credits</h3>
+                                    @if(isset($bookingSummary['catalog']) && $bookingSummary['catalog']->count() > 0)
+                                    <div class="space-y-1">
+                                        @foreach($bookingSummary['catalog']->take(5) as $itemName => $data)
+                                        <div class="flex items-center justify-between gap-2 px-2 py-1 rounded bg-base-200/50 text-xs">
+                                            <span>{{ $itemName }}</span>
+                                            <span class="badge badge-info badge-xs shrink-0">{{ $data['count'] }}</span>
+                                        </div>
+                                        @endforeach
+                                        @if($bookingSummary['catalog']->count() > 5)
+                                        <p class="text-xs text-base-content/50">+ {{ $bookingSummary['catalog']->count() - 5 }} more</p>
+                                        @endif
+                                    </div>
+                                    @else
+                                    <p class="text-xs text-base-content/40">No packages yet</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             <div class="card bg-base-100">
                 <div class="card-body">
                     <div class="flex items-center justify-between mb-6">
@@ -494,16 +910,6 @@
                             <span class="icon-[tabler--calendar-event] size-5"></span>
                             All Bookings
                         </h2>
-                        <div class="flex gap-2">
-                            <a href="{{ route('walk-in.select') }}" class="btn btn-primary btn-sm">
-                                <span class="icon-[tabler--plus] size-4"></span>
-                                Book Class
-                            </a>
-                            <a href="{{ route('walk-in.select-service') }}" class="btn btn-soft btn-primary btn-sm">
-                                <span class="icon-[tabler--plus] size-4"></span>
-                                Book Service
-                            </a>
-                        </div>
                     </div>
 
                     {{-- Booking Stats --}}
@@ -811,7 +1217,7 @@
 
         {{-- Progress Tab --}}
         @if(isset($progressReports))
-        <div class="tab-content hidden" data-content="progress">
+        <div class="tab-content hidden" data-content="progress" id="progress">
             <div class="card bg-base-100">
                 <div class="card-body">
                     <div class="flex items-center justify-between mb-4">
@@ -819,17 +1225,11 @@
                             <span class="icon-[tabler--chart-line] size-5"></span>
                             Progress Reports
                         </h2>
-                        @if($progressReports->count() > 0)
-                            <a href="{{ route('clients.progress.index', $client) }}" class="btn btn-primary btn-sm gap-1">
-                                <span class="icon-[tabler--history] size-4"></span>
-                                View Full History
-                            </a>
-                        @endif
                     </div>
 
                     @if($progressReports->count() > 0)
                         <div class="space-y-4">
-                            @foreach($progressReports->take(5) as $report)
+                            @foreach($progressReports as $report)
                                 <button type="button"
                                         onclick="openProgressDrawer('progress-report-{{ $report->id }}')"
                                         class="w-full text-left border border-base-200 rounded-lg p-4 hover:bg-base-50 hover:border-primary/30 transition-colors cursor-pointer">
@@ -877,12 +1277,34 @@
                             @endforeach
                         </div>
 
-                        @if($progressReports->count() > 5)
-                            <div class="text-center mt-4 pt-4 border-t border-base-200">
-                                <a href="{{ route('clients.progress.index', $client) }}" class="btn btn-ghost btn-sm">
-                                    View All {{ $progressReports->count() }} Reports
-                                    <span class="icon-[tabler--arrow-right] size-4"></span>
-                                </a>
+                        @if($progressReports->hasPages())
+                            <div class="mt-4 pt-4 border-t border-base-200">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-base-content/60">
+                                        Showing {{ $progressReports->firstItem() }}-{{ $progressReports->lastItem() }} of {{ $progressReports->total() }} reports
+                                    </span>
+                                    <div class="join">
+                                        @if($progressReports->onFirstPage())
+                                            <button class="join-item btn btn-sm btn-disabled">
+                                                <span class="icon-[tabler--chevron-left] size-4"></span>
+                                            </button>
+                                        @else
+                                            <a href="{{ $progressReports->previousPageUrl() }}" class="join-item btn btn-sm">
+                                                <span class="icon-[tabler--chevron-left] size-4"></span>
+                                            </a>
+                                        @endif
+                                        <button class="join-item btn btn-sm btn-active">{{ $progressReports->currentPage() }}</button>
+                                        @if($progressReports->hasMorePages())
+                                            <a href="{{ $progressReports->nextPageUrl() }}" class="join-item btn btn-sm">
+                                                <span class="icon-[tabler--chevron-right] size-4"></span>
+                                            </a>
+                                        @else
+                                            <button class="join-item btn btn-sm btn-disabled">
+                                                <span class="icon-[tabler--chevron-right] size-4"></span>
+                                            </button>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
                         @endif
                     @else
@@ -1028,6 +1450,239 @@
     </form>
 </dialog>
 
+{{-- Record Progress Modal --}}
+@if(isset($todaysClasses) && $todaysClasses->count() > 0 && isset($hasProgressTemplates) && $hasProgressTemplates)
+<div id="record-progress-modal" class="fixed inset-0 z-[9999] hidden">
+    {{-- Backdrop --}}
+    <div class="fixed inset-0 bg-black/50" onclick="document.getElementById('record-progress-modal').classList.add('hidden')"></div>
+    {{-- Modal Content --}}
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-base-100 rounded-xl shadow-2xl w-full max-w-lg pointer-events-auto">
+            <div class="flex items-center justify-between p-4 border-b border-base-200">
+                <h3 class="text-lg font-bold">Record Progress for {{ $client->first_name }}</h3>
+                <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="document.getElementById('record-progress-modal').classList.add('hidden')">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
+            </div>
+            <div class="p-4 max-h-[70vh] overflow-y-auto">
+                <p class="text-sm text-base-content/60 mb-4">Select a class from today to record progress.</p>
+                <div class="space-y-3">
+                    @foreach($todaysClasses as $classSession)
+                        @if($classSession->classPlan && $classSession->classPlan->progressTemplates->count() > 0)
+                        <div class="border border-base-300 rounded-lg p-4 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-semibold">{{ $classSession->classPlan->name }}</div>
+                                    <div class="text-sm text-base-content/60">
+                                        {{ $classSession->start_time->format('g:i A') }} - {{ $classSession->end_time->format('g:i A') }}
+                                        @if($classSession->primaryInstructor)
+                                            &bull; {{ $classSession->primaryInstructor->name }}
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($classSession->classPlan->progressTemplates as $template)
+                                    <a href="{{ route('class-sessions.record-progress', [$classSession, $template]) }}?client={{ $client->id }}"
+                                       class="btn btn-sm btn-primary">
+                                        <span class="icon-[tabler--{{ $template->icon ?? 'chart-line' }}] size-4"></span>
+                                        {{ $template->name }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                    @endforeach
+                </div>
+            </div>
+            <div class="flex justify-end p-4 border-t border-base-200">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('record-progress-modal').classList.add('hidden')">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Score Calculation Modal --}}
+<div id="score-calculation-modal" class="fixed inset-0 z-[9999] hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="document.getElementById('score-calculation-modal').classList.add('hidden')"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-box shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-base-200">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    <span class="icon-[tabler--calculator] size-5 text-primary"></span>
+                    Client Score Calculation
+                </h3>
+                <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="document.getElementById('score-calculation-modal').classList.add('hidden')">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
+            </div>
+            <div class="p-4 space-y-6">
+                {{-- Overview --}}
+                <div class="alert alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <div>
+                        <p class="font-medium">Overall Score = (Engagement × 40%) + (Usage × 30%) + (Revenue × 30%)</p>
+                        <p class="text-sm mt-1">Each component is scored from 0-100, then weighted to calculate the final score.</p>
+                    </div>
+                </div>
+
+                {{-- This Client's Calculation --}}
+                <div class="bg-base-200/50 rounded-lg p-4">
+                    <h4 class="font-semibold mb-3">{{ $client->full_name }}'s Score Breakdown</h4>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-2xl font-bold text-primary">{{ $clientScore['engagement']['score'] }}</div>
+                            <div class="text-xs text-base-content/60">Engagement × 40%</div>
+                            <div class="text-sm font-medium">= {{ round($clientScore['engagement']['score'] * 0.4, 1) }}</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-secondary">{{ $clientScore['usage']['score'] }}</div>
+                            <div class="text-xs text-base-content/60">Usage × 30%</div>
+                            <div class="text-sm font-medium">= {{ round($clientScore['usage']['score'] * 0.3, 1) }}</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-bold text-success">{{ $clientScore['revenue']['score'] }}</div>
+                            <div class="text-xs text-base-content/60">Revenue × 30%</div>
+                            <div class="text-sm font-medium">= {{ round($clientScore['revenue']['score'] * 0.3, 1) }}</div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4 pt-4 border-t border-base-300">
+                        <span class="text-base-content/60">Total:</span>
+                        <span class="text-3xl font-bold ml-2">{{ $clientScore['overall'] }}</span>
+                        <span class="badge badge-{{ $clientScore['grade']['color'] }} ml-2">{{ $clientScore['grade']['label'] }}</span>
+                    </div>
+                </div>
+
+                {{-- Engagement Details --}}
+                <div>
+                    <h4 class="font-semibold flex items-center gap-2 mb-3">
+                        <span class="icon-[tabler--activity-heartbeat] size-5 text-primary"></span>
+                        Engagement Score (0-100)
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Factor</th>
+                                    <th>Weight</th>
+                                    <th>How It's Calculated</th>
+                                    <th class="text-right">This Client</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Attendance Rate</td>
+                                    <td>40 pts</td>
+                                    <td class="text-xs text-base-content/60">(Attended ÷ Booked) × 40</td>
+                                    <td class="text-right font-medium">{{ $clientScore['engagement']['attendance_rate'] }}%</td>
+                                </tr>
+                                <tr>
+                                    <td>Recency</td>
+                                    <td>30 pts</td>
+                                    <td class="text-xs text-base-content/60">≤7d: 30 | ≤14d: 25 | ≤30d: 20 | ≤60d: 10 | ≤90d: 5</td>
+                                    <td class="text-right font-medium">{{ $clientScore['engagement']['days_since_visit'] }} days ago</td>
+                                </tr>
+                                <tr>
+                                    <td>Frequency</td>
+                                    <td>30 pts</td>
+                                    <td class="text-xs text-base-content/60">≥8/mo: 30 | ≥4/mo: 25 | ≥2/mo: 20 | ≥1/mo: 15 | ≥0.5/mo: 10</td>
+                                    <td class="text-right font-medium">{{ $clientScore['engagement']['bookings_per_month'] }}/mo</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Usage Details --}}
+                <div>
+                    <h4 class="font-semibold flex items-center gap-2 mb-3">
+                        <span class="icon-[tabler--chart-bar] size-5 text-secondary"></span>
+                        Usage Score (0-100)
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Factor</th>
+                                    <th>Weight</th>
+                                    <th>How It's Calculated</th>
+                                    <th class="text-right">This Client</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Classes Attended</td>
+                                    <td>40 pts</td>
+                                    <td class="text-xs text-base-content/60">Relative to studio average (2× avg = 40 pts)</td>
+                                    <td class="text-right font-medium">{{ $clientScore['usage']['total_classes'] }} classes</td>
+                                </tr>
+                                <tr>
+                                    <td>Services Booked</td>
+                                    <td>30 pts</td>
+                                    <td class="text-xs text-base-content/60">10 services = 30 pts (max)</td>
+                                    <td class="text-right font-medium">{{ $clientScore['usage']['total_services'] }} services</td>
+                                </tr>
+                                <tr>
+                                    <td>Membership Status</td>
+                                    <td>30 pts</td>
+                                    <td class="text-xs text-base-content/60">Active: 30 | Paused: 15 | Member status: 20 | Client: 10</td>
+                                    <td class="text-right font-medium">{{ ucfirst($clientScore['usage']['membership_status']) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Revenue Details --}}
+                <div>
+                    <h4 class="font-semibold flex items-center gap-2 mb-3">
+                        <span class="icon-[tabler--currency-dollar] size-5 text-success"></span>
+                        Revenue Score (0-100)
+                    </h4>
+                    <div class="overflow-x-auto">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Factor</th>
+                                    <th>How It's Calculated</th>
+                                    <th class="text-right">This Client</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Lifetime Value vs Average</td>
+                                    <td class="text-xs text-base-content/60">≥2× avg: 100 | ≥1.5×: 85 | ≥1×: 70 | ≥0.75×: 55 | ≥0.5×: 40 | ≥0.25×: 25 | >0: 15</td>
+                                    <td class="text-right font-medium">${{ number_format($clientScore['revenue']['lifetime_value'], 0) }} (avg: ${{ number_format($clientScore['revenue']['avg_lifetime_value'], 0) }})</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Grade Scale --}}
+                <div>
+                    <h4 class="font-semibold mb-3">Grade Scale</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="badge badge-success gap-1"><strong>A+</strong> 90-100</span>
+                        <span class="badge badge-success gap-1"><strong>A</strong> 80-89</span>
+                        <span class="badge badge-info gap-1"><strong>B</strong> 70-79</span>
+                        <span class="badge badge-warning gap-1"><strong>C</strong> 60-69</span>
+                        <span class="badge badge-warning gap-1"><strong>D</strong> 50-59</span>
+                        <span class="badge badge-error gap-1"><strong>F</strong> 0-49</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-end p-4 border-t border-base-200">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('score-calculation-modal').classList.add('hidden')">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Booking Details Drawers --}}
 @if(isset($bookings))
     @foreach($bookings as $booking)
@@ -1042,7 +1697,7 @@
 @if(isset($progressReports) && $progressReports->count() > 0)
 <div id="progress-drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeProgressDrawer()"></div>
 
-@foreach($progressReports->take(5) as $report)
+@foreach($progressReports as $report)
 <div
     id="drawer-progress-report-{{ $report->id }}"
     class="fixed top-0 right-0 h-full w-full max-w-4xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex flex-col"
@@ -1259,9 +1914,25 @@
 
 @push('scripts')
 <script>
+// Simple Toast Notification
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 z-[9999] alert alert-${type} shadow-lg max-w-sm animate-in slide-in-from-right`;
+    toast.innerHTML = `
+        <span class="icon-[tabler--${type === 'success' ? 'check' : 'x'}] size-5"></span>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 function copyLink(url) {
     navigator.clipboard.writeText(url).then(() => {
-        alert('Link copied to clipboard!');
+        showToast('Link copied to clipboard!');
     });
 }
 
@@ -1343,6 +2014,108 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Accordion Toggle Handler (Exclusive - only one open at a time)
+    document.querySelectorAll('.accordion-toggle').forEach(button => {
+        button.addEventListener('click', function() {
+            const content = document.getElementById(this.getAttribute('aria-controls'));
+            const icon = this.querySelector('.accordion-icon');
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+            // Close all other accordions first
+            document.querySelectorAll('.accordion-toggle').forEach(otherButton => {
+                if (otherButton !== this) {
+                    const otherContent = document.getElementById(otherButton.getAttribute('aria-controls'));
+                    const otherIcon = otherButton.querySelector('.accordion-icon');
+                    if (otherContent) {
+                        otherContent.classList.add('hidden');
+                        otherButton.setAttribute('aria-expanded', 'false');
+                        if (otherIcon) otherIcon.style.transform = 'rotate(0deg)';
+                    }
+                }
+            });
+
+            // Toggle current accordion
+            if (isExpanded) {
+                content.classList.add('hidden');
+                this.setAttribute('aria-expanded', 'false');
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.classList.remove('hidden');
+                this.setAttribute('aria-expanded', 'true');
+                icon.style.transform = 'rotate(180deg)';
+            }
+        });
+    });
+
+    // Quick Note Form AJAX Handler
+    const quickNoteForm = document.getElementById('quick-note-form');
+    if (quickNoteForm) {
+        quickNoteForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const input = document.getElementById('quick-note-input');
+            const btn = document.getElementById('quick-note-btn');
+            const noteType = quickNoteForm.querySelector('input[name="note_type"]:checked')?.value || 'note';
+            const content = input.value.trim();
+
+            if (!content) return;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>';
+
+            try {
+                const response = await fetch('{{ route('clients.note', $client) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        note_type: noteType,
+                        content: content
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success toast
+                    showToast(data.message, 'success');
+
+                    // Clear input
+                    input.value = '';
+
+                    // Update the latest note display
+                    const cardBody = quickNoteForm.closest('.card-body');
+                    let latestNote = document.getElementById('latest-note-display');
+
+                    const noteHtml = `
+                        <div class="flex gap-3 p-3 mt-4 rounded-lg bg-base-200/50 border border-base-300" id="latest-note-display">
+                            <span class="${data.note.icon} size-4 mt-0.5 shrink-0 text-base-content/60"></span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm">${data.note.content}</p>
+                                <p class="text-xs text-base-content/50 mt-1">${data.note.created_at}</p>
+                            </div>
+                        </div>
+                    `;
+
+                    if (latestNote) {
+                        latestNote.outerHTML = noteHtml;
+                    } else {
+                        quickNoteForm.insertAdjacentHTML('afterend', noteHtml);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('Failed to add note. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span class="icon-[tabler--send] size-4"></span> Add Note';
+            }
+        });
+    }
 });
 
 // Progress Report Drawer Functions

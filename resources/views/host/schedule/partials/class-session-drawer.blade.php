@@ -18,21 +18,22 @@
     $isMembershipSchedule = $isMembershipSchedule ?? false;
 @endphp
 
-<x-detail-drawer id="class-session-{{ $classSession->id }}" title="{{ $classSession->display_title }}" size="4xl">
-    {{-- Status Hero Section with Stats --}}
+<x-detail-drawer id="class-session-{{ $classSession->id }}" title="{{ $classSession->display_title }}" size="5xl">
+    {{-- Combined Hero Section with Stats & Details --}}
     <div class="bg-gradient-to-r {{ $statusColors[$classSession->status] ?? 'from-primary/10 to-primary/5' }} rounded-xl p-4 mb-4 -mt-1">
+        {{-- Top Row: Info + Actions --}}
         <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full {{ $statusIconColors[$classSession->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
-                    <span class="icon-[tabler--yoga] size-7"></span>
+                <div class="w-12 h-12 rounded-full {{ $statusIconColors[$classSession->status] ?? 'bg-primary/20 text-primary' }} flex items-center justify-center">
+                    <span class="icon-[tabler--yoga] size-6"></span>
                 </div>
                 <div>
                     <div class="font-semibold text-lg">{{ $classSession->start_time->format('l, M j') }}</div>
                     <div class="text-base-content/70">{{ $classSession->formatted_time_range }}</div>
-                    <span class="badge {{ $classSession->getStatusBadgeClass() }} mt-1">
-                        {{ $statuses[$classSession->status] ?? $classSession->status }}
-                    </span>
                 </div>
+                <span class="badge {{ $classSession->getStatusBadgeClass() }}">
+                    {{ $statuses[$classSession->status] ?? $classSession->status }}
+                </span>
             </div>
             {{-- Quick Actions on right --}}
             @if(!$classSession->isCancelled())
@@ -70,8 +71,10 @@
             </div>
             @endif
         </div>
-        {{-- Stats Row inside hero --}}
-        <div class="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-base-content/10">
+
+        {{-- Stats + Details Row --}}
+        <div class="grid grid-cols-8 gap-2 pt-3 border-t border-base-content/10">
+            {{-- Stats --}}
             <div class="text-center">
                 <div class="text-lg font-bold text-primary">{{ $classSession->getEffectiveCapacity() }}</div>
                 <div class="text-xs text-base-content/60">{{ $trans['schedule.capacity'] ?? 'Capacity' }}</div>
@@ -88,43 +91,34 @@
                 <div class="text-lg font-bold">{{ $classSession->getEffectiveCapacity() - $confirmedBookings->count() }}</div>
                 <div class="text-xs text-base-content/60">{{ $trans['schedule.available'] ?? 'Available' }}</div>
             </div>
-        </div>
-    </div>
-
-    {{-- Class Details Card --}}
-    <div class="bg-base-200/50 rounded-xl p-4 mb-4">
-        <div class="flex items-center gap-2 mb-3">
-            <span class="icon-[tabler--info-circle] size-4 text-primary"></span>
-            <h4 class="text-sm font-semibold uppercase tracking-wide">{{ $trans['drawer.class_details'] ?? 'Class Details' }}</h4>
-        </div>
-        <div class="grid grid-cols-4 gap-2">
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--user] size-3.5"></span>
+            {{-- Details --}}
+            <div class="text-center">
+                <div class="text-sm font-medium truncate">{{ $classSession->primaryInstructor?->name ?? 'TBD' }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--user] size-3"></span>
                     {{ $trans['field.instructor'] ?? 'Instructor' }}
                 </div>
-                <div class="font-medium text-sm truncate">{{ $classSession->primaryInstructor?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--map-pin] size-3.5"></span>
+            <div class="text-center">
+                <div class="text-sm font-medium truncate">{{ $classSession->location?->name ?? 'TBD' }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--map-pin] size-3"></span>
                     {{ $trans['field.location'] ?? 'Location' }}
                 </div>
-                <div class="font-medium text-sm truncate">{{ $classSession->location?->name ?? 'TBD' }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--clock] size-3.5"></span>
+            <div class="text-center">
+                <div class="text-sm font-medium">{{ $classSession->formatted_duration }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--clock] size-3"></span>
                     {{ $trans['schedule.duration'] ?? 'Duration' }}
                 </div>
-                <div class="font-medium text-sm">{{ $classSession->formatted_duration }}</div>
             </div>
-            <div class="bg-base-100 rounded-lg p-2.5">
-                <div class="flex items-center gap-1.5 text-xs text-base-content/60 mb-1">
-                    <span class="icon-[tabler--currency-dollar] size-3.5"></span>
+            <div class="text-center">
+                <div class="text-sm font-medium">{{ $classSession->formatted_price }}</div>
+                <div class="text-xs text-base-content/60 flex items-center justify-center gap-1">
+                    <span class="icon-[tabler--currency-dollar] size-3"></span>
                     {{ $trans['field.price'] ?? 'Price' }}
                 </div>
-                <div class="font-medium text-sm">{{ $classSession->formatted_price }}</div>
             </div>
         </div>
     </div>
@@ -162,7 +156,7 @@
                 @endif
             </div>
         @else
-            <div class="overflow-x-auto max-h-[420px] overflow-y-auto">
+            <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
                 <table class="table table-sm">
                     <thead class="sticky top-0 bg-base-200/50 z-10">
                         <tr>

@@ -6,9 +6,15 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('class-sessions.index') }}"><span class="icon-[tabler--calendar-event] me-1 size-4"></span> Class Sessions</a></li>
-        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('class-sessions.show', $classSession) }}">{{ $classSession->display_title }}</a></li>
+        @if(isset($singleClientMode) && $singleClientMode && isset($singleClient))
+            <li><a href="{{ route('clients.index') }}">Clients</a></li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li><a href="{{ route('clients.show', $singleClient) }}">{{ $singleClient->full_name }}</a></li>
+        @else
+            <li><a href="{{ route('class-sessions.index') }}"><span class="icon-[tabler--calendar-event] me-1 size-4"></span> Class Sessions</a></li>
+            <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+            <li><a href="{{ route('class-sessions.show', $classSession) }}">{{ $classSession->display_title }}</a></li>
+        @endif
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">Record Progress</li>
     </ol>
@@ -18,16 +24,26 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div class="flex items-center gap-4">
-        <a href="{{ route('class-sessions.show', $classSession) }}" class="btn btn-ghost btn-sm btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+        @if(isset($singleClientMode) && $singleClientMode && isset($singleClient))
+            <a href="{{ route('clients.show', $singleClient) }}" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--arrow-left] size-5"></span>
+            </a>
+        @else
+            <a href="{{ route('class-sessions.show', $classSession) }}" class="btn btn-ghost btn-sm btn-circle">
+                <span class="icon-[tabler--arrow-left] size-5"></span>
+            </a>
+        @endif
         <div class="flex-1">
             <div class="flex items-center gap-3">
                 <span class="icon-[tabler--{{ $progressTemplate->icon ?? 'chart-line' }}] size-6 text-primary"></span>
                 <h1 class="text-2xl font-bold">Record Progress: {{ $progressTemplate->name }}</h1>
             </div>
             <p class="text-base-content/60 mt-1">
-                {{ $classSession->display_title }} &bull; {{ $classSession->formatted_date }}
+                @if(isset($singleClientMode) && $singleClientMode && isset($singleClient))
+                    {{ $singleClient->full_name }} &bull; {{ $classSession->display_title }} &bull; {{ $classSession->formatted_date }}
+                @else
+                    {{ $classSession->display_title }} &bull; {{ $classSession->formatted_date }}
+                @endif
             </p>
         </div>
     </div>
@@ -48,13 +64,23 @@
             @csrf
 
             {{-- Info Card --}}
-            <div class="alert alert-info mb-6">
-                <span class="icon-[tabler--info-circle] size-5"></span>
-                <div>
-                    <strong>Recording progress for {{ $bookings->count() }} attendee(s).</strong>
-                    <p class="text-sm mt-1">Click on each attendee to expand and fill in their progress. You can skip clients if no data is available.</p>
+            @if(isset($singleClientMode) && $singleClientMode && isset($singleClient))
+                <div class="alert alert-success mb-6">
+                    <span class="icon-[tabler--user] size-5"></span>
+                    <div>
+                        <strong>Recording progress for {{ $singleClient->full_name }}</strong>
+                        <p class="text-sm mt-1">Fill in the progress data below and click save when done.</p>
+                    </div>
                 </div>
-            </div>
+            @else
+                <div class="alert alert-info mb-6">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <div>
+                        <strong>Recording progress for {{ $bookings->count() }} attendee(s).</strong>
+                        <p class="text-sm mt-1">Click on each attendee to expand and fill in their progress. You can skip clients if no data is available.</p>
+                    </div>
+                </div>
+            @endif
 
             {{-- Progress Recording Accordion --}}
             <div class="accordion divide-y divide-base-content/10 rounded-lg border border-base-content/10 bg-base-100" data-accordion-always-open>
@@ -66,11 +92,11 @@
                             ? $existingReport->values->keyBy('progress_template_metric_id')
                             : collect();
                     @endphp
-                    <div class="accordion-item" id="client-accordion-{{ $booking->id }}">
+                    <div class="accordion-item {{ (isset($singleClientMode) && $singleClientMode) ? 'active' : '' }}" id="client-accordion-{{ $booking->id }}" data-client-id="{{ $booking->client_id }}">
                         <button type="button"
                                 class="accordion-toggle inline-flex items-center justify-between gap-x-4 px-5 py-4 text-start w-full"
                                 aria-controls="client-collapse-{{ $booking->id }}"
-                                aria-expanded="false">
+                                aria-expanded="{{ (isset($singleClientMode) && $singleClientMode) ? 'true' : 'false' }}">
                             <div class="flex items-center gap-4 flex-1">
                                 @if($booking->client?->avatar_url)
                                     <div class="avatar">
@@ -108,7 +134,7 @@
                              class="accordion-content w-full overflow-hidden transition-[height] duration-300"
                              aria-labelledby="client-accordion-{{ $booking->id }}"
                              role="region"
-                             style="display: none;">
+                             style="{{ (isset($singleClientMode) && $singleClientMode) ? '' : 'display: none;' }}">
                             <div class="px-5 pb-5 space-y-6">
                                 @foreach($progressTemplate->sections as $section)
                                     <div class="space-y-4">
@@ -335,7 +361,7 @@
                                             name="reports[{{ $booking->id }}][enabled]"
                                             value="1"
                                             class="switch switch-primary"
-                                            {{ $hasExistingReport ? 'checked' : '' }}
+                                            {{ ($hasExistingReport || (isset($singleClientMode) && $singleClientMode)) ? 'checked' : '' }}
                                         >
                                         <label for="enable_{{ $booking->id }}" class="cursor-pointer">
                                             <span class="font-medium">Save progress for {{ $booking->client?->first_name ?? 'this client' }}</span>
@@ -397,5 +423,6 @@ function previewImage(input, previewId) {
         }
     }
 }
+
 </script>
 @endpush

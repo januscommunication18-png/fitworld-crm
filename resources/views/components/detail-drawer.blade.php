@@ -1,7 +1,7 @@
 @props([
     'id',
     'title' => 'Details',
-    'size' => 'lg', // sm, md, lg, xl, 2xl, 3xl
+    'size' => 'lg', // sm, md, lg, xl, 2xl, 3xl, 4xl, 5xl, 6xl
     'showFooter' => true,
 ])
 
@@ -14,6 +14,8 @@ $sizeClasses = [
     '2xl' => 'max-w-2xl',    // 672px
     '3xl' => 'max-w-3xl',    // 768px
     '4xl' => 'max-w-4xl',    // 896px
+    '5xl' => 'max-w-5xl',    // 1024px
+    '6xl' => 'max-w-6xl',    // 1152px
 ];
 $maxWidth = $sizeClasses[$size] ?? $sizeClasses['lg'];
 @endphp

@@ -247,6 +247,7 @@ Route::middleware('auth')->group(function () {
 
     // Client Progress
     Route::get('/clients/{client}/progress', [\App\Http\Controllers\Host\ClientProgressController::class, 'index'])->name('clients.progress.index')->where('client', '[0-9]+');
+    Route::get('/clients/{client}/record-progress', [\App\Http\Controllers\Host\ClientProgressController::class, 'selectClass'])->name('clients.progress.select-class')->where('client', '[0-9]+');
 
     // Debug test route
     Route::get('/test-progress/{client}/{report}', function($client, $report) {

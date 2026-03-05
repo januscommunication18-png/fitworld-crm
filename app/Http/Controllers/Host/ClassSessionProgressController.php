@@ -17,7 +17,7 @@ class ClassSessionProgressController extends Controller
     /**
      * Show the batch progress recording form for a class session.
      */
-    public function create(ClassSession $classSession, ProgressTemplate $progressTemplate)
+    public function create(Request $request, ClassSession $classSession, ProgressTemplate $progressTemplate)
     {
         $this->authorizeHost($classSession);
 
@@ -34,9 +34,19 @@ class ClassSessionProgressController extends Controller
         }
 
         // Get confirmed bookings with clients
-        $bookings = $classSession->confirmedBookings()
-            ->with('client')
-            ->get();
+        $bookingsQuery = $classSession->confirmedBookings()->with('client');
+
+        // If a specific client is requested, filter to only that client
+        $singleClientMode = false;
+        $singleClient = null;
+        if ($request->has('client')) {
+            $clientId = $request->input('client');
+            $bookingsQuery->where('client_id', $clientId);
+            $singleClientMode = true;
+            $singleClient = \App\Models\Client::find($clientId);
+        }
+
+        $bookings = $bookingsQuery->get();
 
         // Load template with sections and metrics
         $progressTemplate->load(['sections.metrics' => function ($query) {
@@ -54,7 +64,9 @@ class ClassSessionProgressController extends Controller
             'classSession',
             'progressTemplate',
             'bookings',
-            'existingReports'
+            'existingReports',
+            'singleClientMode',
+            'singleClient'
         ));
     }
 

@@ -379,6 +379,62 @@ class ClientController extends Controller
             'no_show' => $bookings->where('status', 'no_show')->count(),
         ];
 
+        // Calculate booking summary by class/service
+        $classesTaken = $bookings->filter(fn($b) => $b->bookable instanceof \App\Models\ClassSession)
+            ->groupBy(fn($b) => $b->bookable->classPlan->name ?? 'Unknown Class')
+            ->map(fn($group) => [
+                'count' => $group->count(),
+                'attended' => $group->whereNotNull('checked_in_at')->count(),
+                'icon' => 'yoga',
+            ])
+            ->sortByDesc('count');
+
+        $servicesTaken = $bookings->filter(fn($b) => $b->bookable instanceof \App\Models\ServiceSlot)
+            ->groupBy(fn($b) => $b->bookable->servicePlan->name ?? 'Unknown Service')
+            ->map(fn($group) => [
+                'count' => $group->count(),
+                'attended' => $group->whereNotNull('checked_in_at')->count(),
+                'icon' => 'massage',
+            ])
+            ->sortByDesc('count');
+
+        // Get memberships for this client
+        $membershipsTaken = $client->customerMemberships()
+            ->with('membershipPlan')
+            ->get()
+            ->groupBy(fn($m) => $m->membershipPlan->name ?? 'Unknown Membership')
+            ->map(fn($group) => [
+                'count' => $group->count(),
+                'active' => $group->where('status', 'active')->count(),
+            ])
+            ->sortByDesc('count');
+
+        // Get class pass/package purchases
+        $catalogPurchases = $client->classPassPurchases()
+            ->with('classPass')
+            ->get()
+            ->groupBy(fn($p) => $p->classPass->name ?? 'Unknown Package')
+            ->map(fn($group) => [
+                'count' => $group->count(),
+                'total_spent' => $group->sum('price_paid'),
+            ])
+            ->sortByDesc('count');
+
+        $bookingSummary = [
+            'classes' => $classesTaken,
+            'services' => $servicesTaken,
+            'memberships' => $membershipsTaken,
+            'catalog' => $catalogPurchases,
+            'top_class' => $classesTaken->keys()->first(),
+            'top_class_count' => $classesTaken->first()['count'] ?? 0,
+            'top_service' => $servicesTaken->keys()->first(),
+            'top_service_count' => $servicesTaken->first()['count'] ?? 0,
+            'total_classes' => $classesTaken->sum('count'),
+            'total_services' => $servicesTaken->sum('count'),
+            'total_memberships' => $membershipsTaken->sum('count'),
+            'total_catalog' => $catalogPurchases->sum('count'),
+        ];
+
         // Load questionnaire responses with their bookings
         $questionnaireResponses = $client->questionnaireResponses()
             ->with(['version.questionnaire', 'booking.bookable'])
@@ -403,7 +459,7 @@ class ClientController extends Controller
             ->latest()
             ->first();
 
-        // Load progress reports with all details for drawer display
+        // Load progress reports with pagination for display
         $progressReports = $client->progressReports()
             ->with([
                 'template.sections.metrics',
@@ -413,7 +469,87 @@ class ClientController extends Controller
                 'photos',
             ])
             ->orderBy('report_date', 'desc')
+            ->paginate(10, ['*'], 'progress_page')
+            ->appends(['tab' => 'progress']);
+
+        // Get progress data grouped by template
+        $progressByTemplate = $client->progressReports()
+            ->whereNotNull('overall_score')
+            ->with(['template', 'classSession.classPlan'])
+            ->orderBy('report_date', 'desc')
+            ->get()
+            ->groupBy('progress_template_id')
+            ->map(function ($reports) {
+                $template = $reports->first()->template;
+                $latestScore = $reports->first()->overall_score;
+                $previousScore = $reports->count() > 1 ? $reports->skip(1)->first()->overall_score : null;
+                $trend = $previousScore !== null ? $latestScore - $previousScore : 0;
+
+                // Group by class
+                $byClass = $reports->groupBy(fn($r) => $r->classSession?->classPlan?->name ?? 'General')
+                    ->map(function ($classReports) {
+                        return [
+                            'count' => $classReports->count(),
+                            'latest_score' => $classReports->first()->overall_score,
+                            'average_score' => round($classReports->avg('overall_score'), 1),
+                        ];
+                    });
+
+                return [
+                    'template_id' => $template->id,
+                    'template_name' => $template->name,
+                    'template_icon' => $template->icon ?? 'chart-line',
+                    'total_reports' => $reports->count(),
+                    'latest_score' => round($latestScore, 1),
+                    'average_score' => round($reports->avg('overall_score'), 1),
+                    'trend' => round($trend, 1),
+                    'latest_date' => $reports->first()->report_date->format('M j, Y'),
+                    'by_class' => $byClass,
+                    'chart_data' => $reports->take(10)->reverse()->values()->map(fn($r) => [
+                        'date' => $r->report_date->format('M j'),
+                        'score' => round($r->overall_score, 1),
+                        'class' => $r->classSession?->classPlan?->name ?? 'General',
+                    ]),
+                ];
+            });
+
+        // Get this week's schedule for the client
+        $weekStart = now()->startOfWeek();
+        $weekEnd = now()->endOfWeek();
+        $thisWeekSchedule = \App\Models\Booking::forClient($client->id)
+            ->whereHas('bookable', function ($q) use ($weekStart, $weekEnd) {
+                $q->whereBetween('start_time', [$weekStart, $weekEnd]);
+            })
+            ->with(['bookable.location'])
+            ->get()
+            ->map(function ($booking) {
+                $booking->bookable->load(
+                    $booking->bookable instanceof \App\Models\ClassSession
+                        ? ['classPlan', 'primaryInstructor']
+                        : ['servicePlan', 'instructor']
+                );
+                return $booking;
+            })
+            ->sortBy(fn($b) => $b->bookable->start_time);
+
+        // Get today's class sessions this client is booked for (for Record Progress modal)
+        // Include the class plan's associated progress templates
+        $todaysClasses = \App\Models\ClassSession::whereHas('bookings', function ($q) use ($client) {
+                $q->where('client_id', $client->id)
+                  ->where('status', 'confirmed');
+            })
+            ->whereDate('start_time', now()->toDateString())
+            ->with(['classPlan.progressTemplates', 'primaryInstructor', 'location'])
+            ->orderBy('start_time')
             ->get();
+
+        // Check if any of today's classes have progress templates
+        $hasProgressTemplates = $todaysClasses->contains(function ($class) {
+            return $class->classPlan && $class->classPlan->progressTemplates->count() > 0;
+        });
+
+        // Calculate Client Score (Engagement, Usage, Revenue)
+        $clientScore = $this->calculateClientScore($client, $bookings, $bookingStats);
 
         return view('host.clients.show', [
             'client' => $client,
@@ -421,9 +557,15 @@ class ClientController extends Controller
             'statuses' => Client::getStatuses(),
             'bookings' => $bookings,
             'bookingStats' => $bookingStats,
+            'bookingSummary' => $bookingSummary,
             'questionnaireResponses' => $questionnaireResponses,
             'activeCustomerMembership' => $activeCustomerMembership,
             'progressReports' => $progressReports,
+            'progressByTemplate' => $progressByTemplate,
+            'thisWeekSchedule' => $thisWeekSchedule,
+            'todaysClasses' => $todaysClasses,
+            'hasProgressTemplates' => $hasProgressTemplates,
+            'clientScore' => $clientScore,
         ]);
     }
 
@@ -664,12 +806,26 @@ class ClientController extends Controller
             'content' => ['required', 'string'],
         ]);
 
-        ClientNote::create([
+        $note = ClientNote::create([
             'client_id' => $client->id,
             'user_id' => Auth::id(),
             'note_type' => $validated['note_type'],
             'content' => $validated['content'],
         ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Note added successfully.',
+                'note' => [
+                    'id' => $note->id,
+                    'content' => $note->content,
+                    'note_type' => $note->note_type,
+                    'icon' => ClientNote::getNoteTypeIcon($note->note_type),
+                    'created_at' => $note->created_at->diffForHumans(),
+                ],
+            ]);
+        }
 
         return redirect()->route('clients.show', ['id' => $client->id, 'tab' => 'notes'])
             ->with('success', 'Note added successfully.');
@@ -768,6 +924,148 @@ class ClientController extends Controller
         if ($client->host_id !== $host->id) {
             abort(403, 'This client belongs to a different studio. Please switch to the correct studio to view this client.');
         }
+    }
+
+    /**
+     * Calculate client score based on engagement, usage, and revenue.
+     */
+    protected function calculateClientScore(Client $client, $bookings, array $bookingStats): array
+    {
+        // Get host's average values for comparison (for relative scoring)
+        $host = $this->getHost();
+        $hostClients = Client::forHost($host->id)->active()->get();
+        $avgLifetimeValue = $hostClients->avg('lifetime_value') ?: 100;
+        $avgClassesAttended = $hostClients->avg('total_classes_attended') ?: 5;
+
+        // === ENGAGEMENT SCORE (0-100) ===
+        // Based on: attendance rate, recency, frequency
+        $engagementScore = 0;
+
+        // Attendance rate (40 points max)
+        $totalBooked = $bookingStats['total'] ?: 1;
+        $attendedCount = $bookingStats['attended'] ?: 0;
+        $attendanceRate = ($attendedCount / $totalBooked) * 100;
+        $engagementScore += min(40, ($attendanceRate / 100) * 40);
+
+        // Recency - days since last visit (30 points max)
+        $daysSinceLastVisit = $client->last_visit_at
+            ? now()->diffInDays($client->last_visit_at)
+            : 365;
+        if ($daysSinceLastVisit <= 7) {
+            $engagementScore += 30;
+        } elseif ($daysSinceLastVisit <= 14) {
+            $engagementScore += 25;
+        } elseif ($daysSinceLastVisit <= 30) {
+            $engagementScore += 20;
+        } elseif ($daysSinceLastVisit <= 60) {
+            $engagementScore += 10;
+        } elseif ($daysSinceLastVisit <= 90) {
+            $engagementScore += 5;
+        }
+
+        // Frequency - bookings per month (30 points max)
+        $clientAge = $client->created_at ? max(1, now()->diffInMonths($client->created_at)) : 1;
+        $bookingsPerMonth = $bookingStats['total'] / $clientAge;
+        if ($bookingsPerMonth >= 8) {
+            $engagementScore += 30;
+        } elseif ($bookingsPerMonth >= 4) {
+            $engagementScore += 25;
+        } elseif ($bookingsPerMonth >= 2) {
+            $engagementScore += 20;
+        } elseif ($bookingsPerMonth >= 1) {
+            $engagementScore += 15;
+        } elseif ($bookingsPerMonth >= 0.5) {
+            $engagementScore += 10;
+        }
+
+        // === USAGE SCORE (0-100) ===
+        // Based on: total classes, services, membership status
+        $usageScore = 0;
+
+        // Total classes attended (40 points max)
+        $classScore = min(40, ($client->total_classes_attended / max(1, $avgClassesAttended * 2)) * 40);
+        $usageScore += $classScore;
+
+        // Total services booked (30 points max)
+        $serviceScore = min(30, ($client->total_services_booked / 10) * 30);
+        $usageScore += $serviceScore;
+
+        // Membership status (30 points max)
+        if ($client->membership_status === 'active') {
+            $usageScore += 30;
+        } elseif ($client->membership_status === 'paused') {
+            $usageScore += 15;
+        } elseif ($client->status === 'member') {
+            $usageScore += 20;
+        } elseif ($client->status === 'client') {
+            $usageScore += 10;
+        }
+
+        // === REVENUE SCORE (0-100) ===
+        // Based on: lifetime value compared to average
+        $revenueScore = 0;
+        $lifetimeValue = (float) ($client->lifetime_value ?? $client->total_spent ?? 0);
+
+        if ($avgLifetimeValue > 0) {
+            $revenueRatio = $lifetimeValue / $avgLifetimeValue;
+            if ($revenueRatio >= 2) {
+                $revenueScore = 100;
+            } elseif ($revenueRatio >= 1.5) {
+                $revenueScore = 85;
+            } elseif ($revenueRatio >= 1) {
+                $revenueScore = 70;
+            } elseif ($revenueRatio >= 0.75) {
+                $revenueScore = 55;
+            } elseif ($revenueRatio >= 0.5) {
+                $revenueScore = 40;
+            } elseif ($revenueRatio >= 0.25) {
+                $revenueScore = 25;
+            } elseif ($lifetimeValue > 0) {
+                $revenueScore = 15;
+            }
+        } elseif ($lifetimeValue > 0) {
+            $revenueScore = 50; // Has revenue but no comparison
+        }
+
+        // === OVERALL SCORE ===
+        // Weighted average: Engagement 40%, Usage 30%, Revenue 30%
+        $overallScore = round(
+            ($engagementScore * 0.4) +
+            ($usageScore * 0.3) +
+            ($revenueScore * 0.3)
+        );
+
+        // Determine grade
+        $grade = match (true) {
+            $overallScore >= 90 => ['label' => 'A+', 'color' => 'success', 'description' => 'Excellent'],
+            $overallScore >= 80 => ['label' => 'A', 'color' => 'success', 'description' => 'Great'],
+            $overallScore >= 70 => ['label' => 'B', 'color' => 'info', 'description' => 'Good'],
+            $overallScore >= 60 => ['label' => 'C', 'color' => 'warning', 'description' => 'Average'],
+            $overallScore >= 50 => ['label' => 'D', 'color' => 'warning', 'description' => 'Below Average'],
+            default => ['label' => 'F', 'color' => 'error', 'description' => 'Needs Attention'],
+        };
+
+        return [
+            'overall' => $overallScore,
+            'grade' => $grade,
+            'engagement' => [
+                'score' => round($engagementScore),
+                'attendance_rate' => round($attendanceRate),
+                'days_since_visit' => $daysSinceLastVisit,
+                'bookings_per_month' => round($bookingsPerMonth, 1),
+            ],
+            'usage' => [
+                'score' => round($usageScore),
+                'total_classes' => $client->total_classes_attended ?? 0,
+                'total_services' => $client->total_services_booked ?? 0,
+                'membership_status' => $client->membership_status,
+            ],
+            'revenue' => [
+                'score' => round($revenueScore),
+                'lifetime_value' => $lifetimeValue,
+                'avg_lifetime_value' => round($avgLifetimeValue, 2),
+            ],
+        ];
     }
 
     /**
