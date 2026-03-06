@@ -124,7 +124,7 @@
         <div class="bg-base-100 rounded-2xl shadow-xl overflow-hidden border border-base-200/50">
 
             {{-- Back Button --}}
-            <div class="px-6 pt-5">
+            <div class="px-6 pt-8">
                 <a href="{{ route('subdomain.instructor', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}"
                    class="inline-flex items-center gap-1.5 text-sm text-base-content/50 hover:text-primary transition-colors group">
                     <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
@@ -133,10 +133,10 @@
             </div>
 
             {{-- 3 Column Layout --}}
-            <div class="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-base-200">
+            <div class="grid grid-cols-1 lg:grid-cols-3">
 
                 {{-- Column 1: Instructor Info --}}
-                <div class="p-6">
+                <div class="p-6 border-b lg:border-b-0 lg:border-r border-base-200">
                     {{-- Instructor Avatar & Name --}}
                     <div class="flex items-center gap-4 mb-4">
                         @if($instructor->photo_url)
@@ -221,106 +221,79 @@
                     </p>
                 </div>
 
-                {{-- Column 2: Calendar --}}
-                <div class="p-6">
-                    <h3 class="text-sm font-semibold text-base-content/50 uppercase tracking-wider mb-4">Select Date</h3>
-                    <div id="calendar-inline"></div>
-                </div>
+                {{-- Columns 2 & 3: Calendar & Slots (shown initially) --}}
+                <div id="calendar-slots-section" class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-base-200">
+                    {{-- Calendar --}}
+                    <div class="p-6">
+                        <h3 class="text-sm font-semibold text-base-content/50 uppercase tracking-wider mb-4">Select Date</h3>
+                        <div id="calendar-inline"></div>
+                    </div>
 
-                {{-- Column 3: Time Slots --}}
-                <div class="p-6">
-                    <div id="time-slots-container" class="min-h-[320px]">
-                        <div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8">
-                            <span class="icon-[tabler--calendar-event] size-12 mb-3"></span>
-                            <p class="font-medium text-base-content/50 text-sm">Select a date</p>
-                            <p class="text-xs mt-1">to view available times</p>
+                    {{-- Time Slots --}}
+                    <div class="p-6">
+                        <div id="time-slots-container" class="min-h-[320px]">
+                            <div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8">
+                                <span class="icon-[tabler--calendar-event] size-12 mb-3"></span>
+                                <p class="font-medium text-base-content/50 text-sm">Select a date</p>
+                                <p class="text-xs mt-1">to view available times</p>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                {{-- Form Section (replaces calendar & slots) --}}
+                <div id="form-section" class="hidden lg:col-span-2 p-6">
+                    {{-- Selected Time Summary --}}
+                    <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="icon-[tabler--calendar-check] size-5 text-primary"></span>
+                            <div>
+                                <p class="font-medium text-base-content text-sm" id="summary-datetime"></p>
+                                <p class="text-xs text-base-content/50" id="summary-details"></p>
+                            </div>
+                        </div>
+                        <button type="button" id="change-time" class="text-xs text-primary hover:underline font-medium">Change</button>
+                    </div>
+
+                    {{-- Form --}}
+                    <h3 class="text-base font-semibold text-base-content mb-4">Your Details</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-base-content/60 mb-1.5 block" for="first_name">First Name <span class="text-error">*</span></label>
+                            <input type="text" id="first_name" class="input input-bordered w-full" placeholder="John" required>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60 mb-1.5 block" for="last_name">Last Name <span class="text-error">*</span></label>
+                            <input type="text" id="last_name" class="input input-bordered w-full" placeholder="Doe" required>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
+                            <input type="email" id="email" class="input input-bordered w-full" placeholder="john@example.com" required>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
+                            <input type="tel" id="phone" class="input input-bordered w-full" placeholder="+1 (555) 000-0000">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-sm text-base-content/60 mb-1.5 block" for="notes">Notes <span class="text-base-content/30">(optional)</span></label>
+                            <textarea id="notes" class="textarea textarea-bordered w-full" rows="2" placeholder="Any additional information..."></textarea>
+                        </div>
+                    </div>
+
+                    <div id="booking-error" class="alert alert-error hidden mt-4">
+                        <span class="icon-[tabler--alert-circle] size-5"></span>
+                        <span id="error-message"></span>
+                    </div>
+
+                    <button type="button" id="submit-booking" class="btn btn-primary w-full h-12 text-base font-semibold mt-4">
+                        <span class="loading loading-spinner loading-sm hidden"></span>
+                        <span class="btn-text">Schedule Meeting</span>
+                    </button>
                 </div>
 
             </div>
         </div>
 
-        {{-- Powered By --}}
-        <p class="text-center text-xs text-base-content/30 mt-6">
-            Powered by <span class="font-medium">{{ $host->studio_name }}</span>
-        </p>
-    </div>
-
-    {{-- Step 2: Contact Form --}}
-    <div id="step-form" class="hidden w-full max-w-xl">
-        <div class="bg-base-100 rounded-2xl shadow-xl border border-base-200/50 p-6 lg:p-8">
-            {{-- Back Button --}}
-            <button type="button" id="back-to-calendar" class="flex items-center gap-2 text-sm text-base-content/50 hover:text-primary transition-colors mb-5 group">
-                <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
-                Back to calendar
-            </button>
-
-            {{-- Booking Summary --}}
-            <div class="bg-base-200/50 rounded-xl p-4 mb-6">
-                <div class="flex items-center gap-4">
-                    @if($instructor->photo_url)
-                        <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
-                             class="w-12 h-12 rounded-full object-cover flex-shrink-0">
-                    @else
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
-                            <span class="text-base font-bold text-primary-content">{{ $initials }}</span>
-                        </div>
-                    @endif
-                    <div class="flex-1">
-                        <h3 class="font-semibold text-base-content">{{ $profile->display_name ?? $instructor->name }}</h3>
-                        <p class="text-sm text-base-content/60" id="summary-datetime"></p>
-                        <p class="text-xs text-base-content/40" id="summary-details"></p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Form --}}
-            <div class="space-y-4">
-                <h3 class="text-lg font-semibold text-base-content">Your Details</h3>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-sm text-base-content/60 mb-1.5 block" for="first_name">First Name <span class="text-error">*</span></label>
-                        <input type="text" id="first_name" class="input input-bordered w-full" placeholder="John" required>
-                    </div>
-                    <div>
-                        <label class="text-sm text-base-content/60 mb-1.5 block" for="last_name">Last Name <span class="text-error">*</span></label>
-                        <input type="text" id="last_name" class="input input-bordered w-full" placeholder="Doe" required>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
-                    <input type="email" id="email" class="input input-bordered w-full" placeholder="john@example.com" required>
-                </div>
-
-                <div>
-                    <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
-                    <input type="tel" id="phone" class="input input-bordered w-full" placeholder="+1 (555) 000-0000">
-                </div>
-
-                <div>
-                    <label class="text-sm text-base-content/60 mb-1.5 block" for="notes">Notes <span class="text-base-content/30">(optional)</span></label>
-                    <textarea id="notes" class="textarea textarea-bordered w-full" rows="3" placeholder="Any additional information..."></textarea>
-                </div>
-
-                <div id="booking-error" class="alert alert-error hidden">
-                    <span class="icon-[tabler--alert-circle] size-5"></span>
-                    <span id="error-message"></span>
-                </div>
-
-                <button type="button" id="submit-booking" class="btn btn-primary w-full h-12 text-base font-semibold mt-2">
-                    <span class="loading loading-spinner loading-sm hidden"></span>
-                    <span class="btn-text">Schedule Meeting</span>
-                </button>
-            </div>
-        </div>
-
-        {{-- Powered By --}}
-        <p class="text-center text-xs text-base-content/30 mt-6">
-            Powered by <span class="font-medium">{{ $host->studio_name }}</span>
-        </p>
     </div>
 
 </div>
@@ -503,13 +476,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
         document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
 
-        document.getElementById('step-calendar').classList.add('hidden');
-        document.getElementById('step-form').classList.remove('hidden');
+        document.getElementById('calendar-slots-section').classList.add('hidden');
+        document.getElementById('form-section').classList.remove('hidden');
     }
 
-    document.getElementById('back-to-calendar').addEventListener('click', function() {
-        document.getElementById('step-form').classList.add('hidden');
-        document.getElementById('step-calendar').classList.remove('hidden');
+    document.getElementById('change-time').addEventListener('click', function() {
+        document.getElementById('form-section').classList.add('hidden');
+        document.getElementById('calendar-slots-section').classList.remove('hidden');
     });
 
     document.getElementById('submit-booking').addEventListener('click', function() {
