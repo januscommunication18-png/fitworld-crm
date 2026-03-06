@@ -8,6 +8,7 @@ use App\Models\BookingProfile;
 use App\Models\Feature;
 use App\Models\Instructor;
 use App\Models\OneOnOneBooking;
+use App\Models\OneOnOneInvite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -73,30 +74,42 @@ class OneOnOneBookingController extends Controller
 
         // Filter by status
         $status = $request->get('status', 'pending');
-        if ($status === 'pending') {
-            $query->where('status', OneOnOneBooking::STATUS_PENDING)
-                ->where('start_time', '>=', now());
-        } elseif ($status === 'upcoming') {
-            $query->whereIn('status', [
-                OneOnOneBooking::STATUS_CONFIRMED,
-            ])->where('start_time', '>=', now());
-        } elseif ($status === 'past') {
-            $query->where(function ($q) {
-                $q->where('start_time', '<', now())
-                    ->orWhereIn('status', [
-                        OneOnOneBooking::STATUS_COMPLETED,
-                        OneOnOneBooking::STATUS_NO_SHOW,
-                    ]);
-            });
-        } elseif ($status === 'cancelled') {
-            $query->whereIn('status', [
-                OneOnOneBooking::STATUS_CANCELLED,
-                OneOnOneBooking::STATUS_DECLINED,
-            ]);
-        }
+        $bookings = collect();
+        $invites = collect();
 
-        $bookings = $query->orderBy('start_time', $status === 'upcoming' ? 'asc' : 'desc')
-            ->paginate(20);
+        // Handle invites tab (owner only)
+        if ($status === 'invites' && $isOwner) {
+            $invites = OneOnOneInvite::where('host_id', $host->id)
+                ->with(['instructor', 'sentBy'])
+                ->orderBy('sent_at', 'desc')
+                ->paginate(20);
+        } else {
+            // Regular booking filters
+            if ($status === 'pending') {
+                $query->where('status', OneOnOneBooking::STATUS_PENDING)
+                    ->where('start_time', '>=', now());
+            } elseif ($status === 'upcoming') {
+                $query->whereIn('status', [
+                    OneOnOneBooking::STATUS_CONFIRMED,
+                ])->where('start_time', '>=', now());
+            } elseif ($status === 'past') {
+                $query->where(function ($q) {
+                    $q->where('start_time', '<', now())
+                        ->orWhereIn('status', [
+                            OneOnOneBooking::STATUS_COMPLETED,
+                            OneOnOneBooking::STATUS_NO_SHOW,
+                        ]);
+                });
+            } elseif ($status === 'cancelled') {
+                $query->whereIn('status', [
+                    OneOnOneBooking::STATUS_CANCELLED,
+                    OneOnOneBooking::STATUS_DECLINED,
+                ]);
+            }
+
+            $bookings = $query->orderBy('start_time', $status === 'upcoming' ? 'asc' : 'desc')
+                ->paginate(20);
+        }
 
         // Build view data
         $viewData = [
@@ -109,6 +122,7 @@ class OneOnOneBookingController extends Controller
             'selectedInstructorId' => $request->instructor_id,
             'showConfiguration' => $showConfiguration,
             'host' => $host,
+            'invites' => $invites,
         ];
 
         // If showing configuration, add setup data
@@ -478,5 +492,131 @@ class OneOnOneBookingController extends Controller
 
         return redirect()->route('one-on-one.index')
             ->with('success', 'Booking has been declined.');
+    }
+
+    /**
+     * Send a booking invite to a client.
+     */
+    public function sendInvite(Request $request)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+        $isOwner = $user->isOwner($host);
+
+        // Only owners/admins can send invites
+        if (!$isOwner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to send invites.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'instructor_id' => 'required|exists:instructors,id',
+            'email' => 'required|email',
+        ]);
+
+        // Get the instructor and verify they belong to this host
+        $instructor = Instructor::where('host_id', $host->id)
+            ->where('id', $validated['instructor_id'])
+            ->first();
+
+        if (!$instructor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Instructor not found.',
+            ], 404);
+        }
+
+        // Check if instructor has a booking profile
+        $profile = $instructor->bookingProfile;
+        if (!$profile || !$profile->is_enabled || !$profile->is_setup_complete) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This instructor does not have 1:1 booking enabled.',
+            ], 400);
+        }
+
+        // Send the invite email
+        try {
+            Mail::to($validated['email'])->send(
+                new \App\Mail\OneOnOneBookingInviteMail($instructor, $host)
+            );
+
+            // Store the invite
+            OneOnOneInvite::create([
+                'host_id' => $host->id,
+                'instructor_id' => $instructor->id,
+                'sent_by_user_id' => $user->id,
+                'email' => $validated['email'],
+                'sent_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invite sent successfully.',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send 1:1 booking invite email', [
+                'instructor_id' => $instructor->id,
+                'email' => $validated['email'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send invite email.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Resend an existing invite.
+     */
+    public function resendInvite(OneOnOneInvite $invite)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+        $isOwner = $user->isOwner($host);
+
+        // Only owners/admins can resend invites
+        if (!$isOwner) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to resend invites.',
+            ], 403);
+        }
+
+        // Verify invite belongs to this host
+        if ($invite->host_id !== $host->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invite not found.',
+            ], 404);
+        }
+
+        try {
+            Mail::to($invite->email)->send(
+                new \App\Mail\OneOnOneBookingInviteMail($invite->instructor, $host)
+            );
+
+            // Update sent_at
+            $invite->update(['sent_at' => now()]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invite resent successfully.',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to resend 1:1 booking invite email', [
+                'invite_id' => $invite->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to resend invite.',
+            ], 500);
+        }
     }
 }

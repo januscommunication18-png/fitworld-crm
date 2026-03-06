@@ -504,4 +504,74 @@ class OneOnOnePublicController extends Controller
             'instructor' => $booking->bookingProfile->instructor,
         ]);
     }
+
+    /**
+     * Download ICS calendar file for a booking.
+     */
+    public function downloadCalendar(Request $request, string $token)
+    {
+        $host = $this->getHost($request);
+
+        // Token could be confirmation_token or manage_token
+        $booking = OneOnOneBooking::where('host_id', $host->id)
+            ->where(function ($q) use ($token) {
+                $q->where('confirmation_token', $token)
+                    ->orWhere('manage_token', $token);
+            })
+            ->with('bookingProfile.instructor')
+            ->firstOrFail();
+
+        $profile = $booking->bookingProfile;
+        $hostName = $profile?->display_name ?? $profile?->instructor?->name ?? 'Host';
+
+        // Build location
+        $location = '';
+        if ($booking->meeting_type === 'in_person' && $profile?->in_person_location) {
+            $location = $profile->in_person_location;
+        } elseif ($booking->meeting_type === 'video' && $profile?->video_link) {
+            $location = $profile->video_link;
+        }
+
+        // Build description
+        $description = "1:1 Meeting with {$hostName}\\n";
+        $description .= "Duration: {$booking->formatted_duration}\\n";
+        $description .= "Type: {$booking->meeting_type_label}\\n";
+        if ($booking->meeting_type === 'video' && $profile?->video_link) {
+            $description .= "Video Link: {$profile->video_link}\\n";
+        } elseif ($booking->meeting_type === 'phone' && $profile?->phone_number) {
+            $description .= "Phone: {$profile->phone_number}\\n";
+        }
+
+        // Generate ICS content
+        $uid = $booking->id . '@' . $host->subdomain . '.fitcrm.biz';
+        $dtstamp = now()->format('Ymd\THis\Z');
+        $dtstart = $booking->start_time->format('Ymd\THis');
+        $dtend = $booking->end_time->format('Ymd\THis');
+        $summary = "1:1 Meeting with {$hostName}";
+
+        $ics = "BEGIN:VCALENDAR\r\n";
+        $ics .= "VERSION:2.0\r\n";
+        $ics .= "PRODID:-//FitCRM//1:1 Meetings//EN\r\n";
+        $ics .= "CALSCALE:GREGORIAN\r\n";
+        $ics .= "METHOD:PUBLISH\r\n";
+        $ics .= "BEGIN:VEVENT\r\n";
+        $ics .= "UID:{$uid}\r\n";
+        $ics .= "DTSTAMP:{$dtstamp}\r\n";
+        $ics .= "DTSTART:{$dtstart}\r\n";
+        $ics .= "DTEND:{$dtend}\r\n";
+        $ics .= "SUMMARY:{$summary}\r\n";
+        if ($location) {
+            $ics .= "LOCATION:{$location}\r\n";
+        }
+        $ics .= "DESCRIPTION:{$description}\r\n";
+        $ics .= "STATUS:CONFIRMED\r\n";
+        $ics .= "END:VEVENT\r\n";
+        $ics .= "END:VCALENDAR\r\n";
+
+        $filename = 'meeting-' . $booking->start_time->format('Y-m-d') . '.ics';
+
+        return response($ics)
+            ->header('Content-Type', 'text/calendar; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
 }

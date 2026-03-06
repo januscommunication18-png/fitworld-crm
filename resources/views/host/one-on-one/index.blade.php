@@ -41,9 +41,9 @@
             </a>
             @endif
 
-            {{-- Send Invite Button (Owner only) --}}
+            {{-- Send Invite Button (Owner/Admin only) --}}
             @if($isOwner)
-            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="openInviteModal()">
                 <span class="icon-[tabler--send] size-5"></span>
                 <span class="hidden sm:inline">Send Invite</span>
             </button>
@@ -111,6 +111,13 @@
                 <span class="icon-[tabler--calendar-off] size-4 me-1"></span>
                 Cancelled
             </a>
+            @if($isOwner)
+            <a href="{{ route('one-on-one.index', ['status' => 'invites']) }}"
+                class="tab {{ $currentStatus === 'invites' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--send] size-4 me-1"></span>
+                Sent Invites
+            </a>
+            @endif
         </div>
 
         {{-- Instructor Filter (Owner only) --}}
@@ -129,6 +136,93 @@
         @endif
     </div>
 
+    {{-- Invites Tab Content --}}
+    @if($currentStatus === 'invites' && $isOwner)
+        @if($invites->isEmpty())
+        <div class="card bg-base-100">
+            <div class="card-body text-center py-12">
+                <span class="icon-[tabler--send] size-16 text-base-content/20 mx-auto"></span>
+                <h3 class="text-lg font-semibold mt-4">No Invites Sent</h3>
+                <p class="text-base-content/60 mt-1">You haven't sent any booking invites yet.</p>
+                <button type="button" onclick="openInviteModal()" class="btn btn-primary btn-sm mt-4">
+                    <span class="icon-[tabler--send] size-4"></span>
+                    Send Your First Invite
+                </button>
+            </div>
+        </div>
+        @else
+        <div class="card bg-base-100">
+            <div class="card-body p-0">
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Staff Member</th>
+                                <th>Sent By</th>
+                                <th>Sent At</th>
+                                <th>Status</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($invites as $invite)
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <span class="icon-[tabler--mail] size-4 text-base-content/50"></span>
+                                        {{ $invite->email }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        @if($invite->instructor?->photo_url)
+                                            <img src="{{ $invite->instructor->photo_url }}" alt="{{ $invite->instructor->name }}" class="w-8 h-8 rounded-full object-cover">
+                                        @else
+                                            <div class="avatar avatar-placeholder">
+                                                <div class="bg-primary text-primary-content w-8 h-8 rounded-full text-xs font-bold">
+                                                    {{ strtoupper(substr($invite->instructor?->name ?? 'U', 0, 1)) }}
+                                                </div>
+                                            </div>
+                                        @endif
+                                        <span class="text-sm">{{ $invite->instructor?->name ?? 'Unknown' }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-sm text-base-content/70">
+                                    {{ $invite->sentBy?->name ?? 'Unknown' }}
+                                </td>
+                                <td>
+                                    <div class="text-sm">{{ $invite->sent_at->format('M j, Y') }}</div>
+                                    <div class="text-xs text-base-content/50">{{ $invite->sent_at->format('g:i A') }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge {{ $invite->status_badge }} badge-soft badge-sm">
+                                        {{ ucfirst($invite->status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="flex items-center justify-end gap-1">
+                                        <button type="button" class="btn btn-ghost btn-xs" title="Resend Invite" onclick="resendInvite({{ $invite->id }})">
+                                            <span class="icon-[tabler--refresh] size-4"></span>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {{-- Pagination --}}
+        @if($invites->hasPages())
+        <div class="flex justify-center">
+            {{ $invites->links() }}
+        </div>
+        @endif
+        @endif
+    @else
     {{-- Bookings List --}}
     @if($bookings->isEmpty())
     <div class="card bg-base-100">
@@ -159,7 +253,7 @@
             <span class="icon-[tabler--history] size-16 text-base-content/20 mx-auto"></span>
             <h3 class="text-lg font-semibold mt-4">No Past Bookings</h3>
             <p class="text-base-content/60 mt-1">{{ $isOwner ? 'There are' : 'You don\'t have' }} no past 1:1 meetings yet.</p>
-            @else
+            @elseif($currentStatus === 'cancelled')
             <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto"></span>
             <h3 class="text-lg font-semibold mt-4">No Cancelled Bookings</h3>
             <p class="text-base-content/60 mt-1">{{ $isOwner ? 'There are' : 'You don\'t have' }} no cancelled 1:1 meetings.</p>
@@ -358,55 +452,75 @@
     </div>
     @endif
     @endif
+    @endif {{-- End of invites/bookings conditional --}}
 
     @endif {{-- End of @else (listing view) --}}
 </div>
 
-{{-- Send Invite Modal (Owner only) --}}
+{{-- Send Invite Modal (Owner/Admin only) --}}
 @if($isOwner)
-<div id="invite-modal" class="overlay modal overlay-open:opacity-100 hidden" role="dialog" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Send 1:1 Meeting Invite</h3>
-                <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" onclick="document.getElementById('invite-modal').classList.add('hidden')">
-                    <span class="icon-[tabler--x] size-4"></span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <p class="text-base-content/70 mb-4">Select a team member to grant 1:1 booking access. They will receive an email with setup instructions.</p>
+<div id="invite-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeInviteModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-xl shadow-xl max-w-2xl w-full relative">
+            <div class="p-8">
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span class="icon-[tabler--send] size-8 text-primary"></span>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-semibold">Send Booking Invite</h3>
+                        <p class="text-base text-base-content/60">Invite a client to book a 1:1 meeting</p>
+                    </div>
+                </div>
 
                 @php
-                    $allInstructors = \App\Models\Instructor::where('host_id', $host->id)->with('bookingProfile')->get();
-                    $availableInstructors = $allInstructors->filter(fn($i) => !$i->bookingProfile || !$i->bookingProfile->is_enabled);
+                    $instructorsWithBooking = \App\Models\Instructor::where('host_id', $host->id)
+                        ->whereHas('bookingProfile', fn($q) => $q->where('is_enabled', true)->where('is_setup_complete', true))
+                        ->get();
                 @endphp
 
-                @if($availableInstructors->isEmpty())
-                <div class="alert alert-soft alert-info">
-                    <span class="icon-[tabler--info-circle] size-5"></span>
-                    <span>All team members already have 1:1 booking access.</span>
+                @if($instructorsWithBooking->isEmpty())
+                <div class="alert alert-soft alert-warning">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span>No team members have completed their 1:1 booking setup yet.</span>
                 </div>
                 @else
-                <form id="invite-form" method="POST" action="{{ route('marketplace.one-on-one.grant-access') }}">
-                    @csrf
-                    <div class="space-y-4">
-                        <div>
-                            <label class="label-text" for="invite_instructor_id">Select Team Member</label>
-                            <select name="instructor_id" id="invite_instructor_id" class="select w-full" required>
-                                <option value="">Choose a team member...</option>
-                                @foreach($availableInstructors as $inst)
-                                    <option value="{{ $inst->id }}">{{ $inst->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                <form id="invite-form" class="space-y-6">
+                    <div>
+                        <label class="label-text mb-2 block text-base" for="invite_instructor_id">Select Staff / Instructor</label>
+                        <select id="invite_instructor_id" class="hidden" required
+                            data-select='{
+                                "hasSearch": true,
+                                "searchPlaceholder": "Search staff...",
+                                "placeholder": "Choose a team member...",
+                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                                "toggleClasses": "advance-select-toggle w-full",
+                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+                                "optionClasses": "advance-select-option selected:select-active",
+                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+                            }'>
+                            <option value="">Choose a team member...</option>
+                            @foreach($instructorsWithBooking as $inst)
+                                <option value="{{ $inst->id }}">
+                                    {{ $inst->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-text mb-2 block text-base" for="invite_email">Email Address</label>
+                        <input type="email" id="invite_email" class="input input-bordered w-full input-lg" placeholder="client@example.com" required>
                     </div>
                 </form>
                 @endif
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-ghost" onclick="document.getElementById('invite-modal').classList.add('hidden')">Cancel</button>
-                @if($availableInstructors->isNotEmpty())
-                <button type="submit" form="invite-form" class="btn btn-primary">
+            <div class="flex justify-end gap-3 p-6 border-t border-base-200">
+                <button type="button" class="btn btn-ghost btn-lg" onclick="closeInviteModal()">Cancel</button>
+                @if($instructorsWithBooking->isNotEmpty())
+                <button type="button" class="btn btn-primary btn-lg" id="send-invite-btn" onclick="sendInvite()">
+                    <span class="loading loading-spinner loading-sm hidden"></span>
                     <span class="icon-[tabler--send] size-5"></span>
                     Send Invite
                 </button>
@@ -503,6 +617,121 @@
 <script>
 let bookingToCancel = null;
 let bookingToDecline = null;
+
+function openInviteModal() {
+    const selectEl = document.getElementById('invite_instructor_id');
+    const emailEl = document.getElementById('invite_email');
+
+    // Reset email field
+    if (emailEl) emailEl.value = '';
+
+    // Reset select - handle advance-select
+    if (selectEl) {
+        selectEl.value = '';
+        // If using HSSelect, reset it
+        if (window.HSSelect) {
+            const hsSelectInstance = HSSelect.getInstance(selectEl);
+            if (hsSelectInstance) {
+                hsSelectInstance.setValue('');
+            }
+        }
+    }
+
+    document.getElementById('invite-modal').classList.remove('hidden');
+
+    // Reinitialize advance-select after modal opens
+    setTimeout(() => {
+        if (window.HSSelect) {
+            HSSelect.autoInit();
+        }
+    }, 100);
+}
+
+function closeInviteModal() {
+    document.getElementById('invite-modal').classList.add('hidden');
+}
+
+function showNotification(type, message) {
+    if (window.notyf) {
+        window.notyf[type](message);
+    } else if (typeof Notyf !== 'undefined') {
+        new Notyf()[type](message);
+    } else {
+        alert(message);
+    }
+}
+
+async function sendInvite() {
+    const instructorSelect = document.getElementById('invite_instructor_id');
+    const emailInput = document.getElementById('invite_email');
+    const instructorId = instructorSelect.value;
+    const email = emailInput.value;
+
+    if (!instructorId || !email) {
+        showNotification('error', 'Please select a staff member and enter an email address');
+        return;
+    }
+
+    const btn = document.getElementById('send-invite-btn');
+    const spinner = btn.querySelector('.loading');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    try {
+        const response = await fetch('{{ route("one-on-one.send-invite") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                instructor_id: instructorId,
+                email: email,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showNotification('success', 'Invite sent successfully!');
+            closeInviteModal();
+        } else {
+            showNotification('error', result.message || 'Failed to send invite');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('error', 'An error occurred while sending invite');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+    }
+}
+
+async function resendInvite(inviteId) {
+    if (!confirm('Resend this invite?')) return;
+
+    try {
+        const response = await fetch(`/one-on-one/resend-invite/${inviteId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showNotification('success', 'Invite resent successfully!');
+        } else {
+            showNotification('error', result.message || 'Failed to resend invite');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('error', 'An error occurred');
+    }
+}
 
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(function() {

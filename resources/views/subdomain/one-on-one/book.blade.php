@@ -117,24 +117,26 @@
     $firstMeetingType = $meetingTypes[0] ?? 'video';
 @endphp
 
-@include('subdomain.partials.navbar')
+<div class="min-h-screen bg-gradient-to-br from-base-200/50 to-base-100 flex items-center justify-center px-4 py-8">
 
-<div class="min-h-screen bg-gradient-to-br from-base-200/50 to-base-100 py-8 md:py-12">
-    <div class="container-fixed">
+    {{-- Step 1: Date & Time Selection --}}
+    <div id="step-calendar" class="w-[40%]">
+        <div class="bg-base-100 rounded-2xl shadow-xl overflow-hidden border border-base-200/50">
 
-        {{-- Main Card --}}
-        <div class="bg-base-100 rounded-2xl shadow-xl max-w-5xl mx-auto overflow-hidden border border-base-200/50">
-            <div class="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
+            {{-- Back Button --}}
+            <div class="px-6 pt-5">
+                <a href="{{ route('subdomain.instructor', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}"
+                   class="inline-flex items-center gap-1.5 text-sm text-base-content/50 hover:text-primary transition-colors group">
+                    <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
+                    Back
+                </a>
+            </div>
 
-                {{-- Left Panel - Instructor Info --}}
-                <div class="bg-gradient-to-b from-base-200/80 to-base-200/40 p-6 lg:p-8 border-b lg:border-b-0 lg:border-r border-base-200 lg:max-h-[600px] lg:overflow-y-auto">
-                    {{-- Back Link --}}
-                    <a href="{{ route('subdomain.instructor', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}"
-                       class="inline-flex items-center gap-1.5 text-sm text-base-content/50 hover:text-primary transition-colors mb-5 group">
-                        <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
-                        Back
-                    </a>
+            {{-- 3 Column Layout --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-base-200">
 
+                {{-- Column 1: Instructor Info --}}
+                <div class="p-6">
                     {{-- Instructor Avatar & Name --}}
                     <div class="flex items-center gap-4 mb-4">
                         @if($instructor->photo_url)
@@ -154,7 +156,7 @@
                     </div>
 
                     {{-- Meeting Title --}}
-                    <h1 class="text-xl font-bold text-base-content mb-4">1:1 Meeting</h1>
+                    <h1 class="text-lg font-bold text-base-content mb-4">1:1 Meeting</h1>
 
                     {{-- Meeting Info --}}
                     <div class="space-y-2 text-sm text-base-content/70 mb-5">
@@ -174,208 +176,68 @@
                         </div>
                     </div>
 
-                    {{-- Bio --}}
-                    @if($profile->bio ?? $instructor->bio)
-                    <div class="mb-5">
-                        <p class="text-sm text-base-content/60 leading-relaxed">{{ $profile->bio ?? $instructor->bio }}</p>
-                    </div>
-                    @endif
-
-                    {{-- Specialties --}}
-                    @if($instructor->specialties && count($instructor->specialties) > 0)
-                    <div class="mb-5">
-                        <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Specialties</p>
-                        <div class="flex flex-wrap gap-1.5">
-                            @foreach($instructor->specialties as $specialty)
-                                <span class="px-2.5 py-1 text-xs font-medium bg-base-100 text-base-content/70 rounded-full">{{ $specialty }}</span>
+                    {{-- Duration Picker --}}
+                    @if(count($allowedDurations) > 1)
+                    <div class="mb-4">
+                        <label class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2 block">Duration</label>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($allowedDurations as $index => $duration)
+                                <button type="button"
+                                        class="px-3 py-1.5 text-sm rounded-lg border-2 transition-all duration-btn font-medium {{ $index === 0 ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
+                                        data-duration="{{ $duration }}">
+                                    {{ $duration }}m
+                                </button>
                             @endforeach
                         </div>
                     </div>
                     @endif
 
-                    {{-- Options --}}
-                    @if(count($allowedDurations) > 1 || count($meetingTypes) > 1)
-                    <div class="pt-5 border-t border-base-content/10 space-y-4">
-                        @if(count($allowedDurations) > 1)
-                        <div>
-                            <label class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2 block">Duration</label>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach($allowedDurations as $index => $duration)
-                                    <button type="button"
-                                            class="px-3 py-1.5 text-sm rounded-full border-2 transition-all duration-btn font-medium {{ $index === 0 ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
-                                            data-duration="{{ $duration }}">
-                                        {{ $duration }}m
-                                    </button>
-                                @endforeach
-                            </div>
+                    {{-- Type Picker --}}
+                    @if(count($meetingTypes) > 1)
+                    <div class="mb-4">
+                        <label class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2 block">Type</label>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($meetingTypes as $index => $type)
+                                <button type="button"
+                                        class="px-3 py-1.5 text-sm rounded-lg border-2 transition-all meeting-type-btn flex items-center gap-1.5 font-medium {{ $index === 0 ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
+                                        data-type="{{ $type }}">
+                                    @if($type === 'in_person')
+                                        <span class="icon-[tabler--map-pin] size-4"></span> In Person
+                                    @elseif($type === 'phone')
+                                        <span class="icon-[tabler--phone] size-4"></span> Phone
+                                    @elseif($type === 'video')
+                                        <span class="icon-[tabler--video] size-4"></span> Video
+                                    @endif
+                                </button>
+                            @endforeach
                         </div>
-                        @endif
-
-                        @if(count($meetingTypes) > 1)
-                        <div>
-                            <label class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2 block">Type</label>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach($meetingTypes as $index => $type)
-                                    <button type="button"
-                                            class="px-3 py-1.5 text-sm rounded-full border-2 transition-all meeting-type-btn flex items-center gap-1.5 font-medium {{ $index === 0 ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
-                                            data-type="{{ $type }}">
-                                        @if($type === 'in_person')
-                                            <span class="icon-[tabler--map-pin] size-4"></span> In Person
-                                        @elseif($type === 'phone')
-                                            <span class="icon-[tabler--phone] size-4"></span> Phone
-                                        @elseif($type === 'video')
-                                            <span class="icon-[tabler--video] size-4"></span> Video
-                                        @endif
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                        @endif
                     </div>
                     @endif
 
-                    {{-- Meeting Details --}}
-                    <div id="meeting-details" class="mt-5 pt-5 border-t border-base-content/10">
-                        @if($profile->video_link)
-                        <div id="detail-video" class="{{ $firstMeetingType !== 'video' ? 'hidden' : '' }}">
-                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Video Link</p>
-                            <div class="flex items-center gap-2 text-sm text-base-content/70 bg-base-100 rounded-lg p-3">
-                                <span class="icon-[tabler--video] size-4 text-primary"></span>
-                                <span class="truncate">{{ $profile->video_link }}</span>
-                            </div>
-                        </div>
-                        @endif
+                    {{-- Timezone --}}
+                    <p class="text-xs text-base-content/40 flex items-center gap-1.5 mt-5">
+                        <span class="icon-[tabler--world] size-3.5"></span>
+                        <span id="user-timezone"></span>
+                    </p>
+                </div>
 
-                        @if($profile->phone_number)
-                        <div id="detail-phone" class="{{ $firstMeetingType !== 'phone' ? 'hidden' : '' }}">
-                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Phone Number</p>
-                            <div class="flex items-center gap-2 text-sm text-base-content/70 bg-base-100 rounded-lg p-3">
-                                <span class="icon-[tabler--phone] size-4 text-primary"></span>
-                                <span>{{ $profile->phone_number }}</span>
-                            </div>
-                        </div>
-                        @endif
+                {{-- Column 2: Calendar --}}
+                <div class="p-6">
+                    <h3 class="text-sm font-semibold text-base-content/50 uppercase tracking-wider mb-4">Select Date</h3>
+                    <div id="calendar-inline"></div>
+                </div>
 
-                        @if($profile->in_person_location)
-                        <div id="detail-in_person" class="{{ $firstMeetingType !== 'in_person' ? 'hidden' : '' }}">
-                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Location</p>
-                            <div class="flex items-start gap-2 text-sm text-base-content/70 bg-base-100 rounded-lg p-3">
-                                <span class="icon-[tabler--map-pin] size-4 text-primary flex-shrink-0 mt-0.5"></span>
-                                <span>{{ $profile->in_person_location }}</span>
-                            </div>
+                {{-- Column 3: Time Slots --}}
+                <div class="p-6">
+                    <div id="time-slots-container" class="min-h-[320px]">
+                        <div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8">
+                            <span class="icon-[tabler--calendar-event] size-12 mb-3"></span>
+                            <p class="font-medium text-base-content/50 text-sm">Select a date</p>
+                            <p class="text-xs mt-1">to view available times</p>
                         </div>
-                        @endif
                     </div>
                 </div>
 
-                {{-- Right Panel - Calendar & Slots --}}
-                <div class="p-6 lg:p-8">
-
-                    {{-- Step 1: Date & Time Selection --}}
-                    <div id="step-calendar">
-                        <h2 class="text-lg font-semibold mb-6 text-base-content">Select a Date & Time</h2>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {{-- Calendar --}}
-                            <div>
-                                <div id="calendar-inline" class="mb-3"></div>
-                                <p class="text-xs text-base-content/40 flex items-center gap-1.5">
-                                    <span class="icon-[tabler--world] size-3.5"></span>
-                                    <span id="user-timezone"></span>
-                                </p>
-                            </div>
-
-                            {{-- Time Slots --}}
-                            <div id="time-slots-container" class="h-[340px] flex flex-col">
-                                <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-200 rounded-xl bg-base-200/20">
-                                    <span class="icon-[tabler--calendar-event] size-14 mb-4"></span>
-                                    <p class="font-semibold text-base-content/50">Select a date</p>
-                                    <p class="text-sm mt-1">to view available times</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Step 2: Contact Form --}}
-                    <div id="step-form" class="hidden">
-                        {{-- Back Button --}}
-                        <button type="button" id="back-to-calendar" class="flex items-center gap-2 text-sm text-base-content/50 hover:text-primary transition-colors mb-5 group">
-                            <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
-                            Back
-                        </button>
-
-                        {{-- Instructor Info Card --}}
-                        <div class="flex items-start gap-4 mb-5 pb-5 border-b border-base-200">
-                            @if($instructor->photo_url)
-                                <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
-                                     class="w-12 h-12 rounded-full object-cover flex-shrink-0">
-                            @else
-                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
-                                    <span class="text-base font-bold text-primary-content">{{ $initials }}</span>
-                                </div>
-                            @endif
-                            <div class="flex-1 min-w-0">
-                                <h3 class="font-semibold text-base-content">{{ $profile->display_name ?? $instructor->name }}</h3>
-                                @if($profile->bio)
-                                    <p class="text-sm text-base-content/60 mt-1 line-clamp-2">{{ $profile->bio }}</p>
-                                @endif
-                            </div>
-                        </div>
-
-                        {{-- Booking Summary --}}
-                        <div class="bg-base-200/50 rounded-xl p-4 mb-6">
-                            <div class="flex items-center gap-3">
-                                <span class="icon-[tabler--calendar-check] size-5 text-primary"></span>
-                                <div>
-                                    <p class="font-medium text-base-content text-sm" id="summary-datetime"></p>
-                                    <p class="text-xs text-base-content/50" id="summary-details"></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Form --}}
-                        <div class="space-y-4">
-                            <h3 class="text-base font-semibold text-base-content">Your Information</h3>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-sm text-base-content/60 mb-1.5 block" for="first_name">First Name <span class="text-error">*</span></label>
-                                    <input type="text" id="first_name" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="John" required>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60 mb-1.5 block" for="last_name">Last Name <span class="text-error">*</span></label>
-                                    <input type="text" id="last_name" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="Doe" required>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
-                                <input type="email" id="email" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="john@example.com" required>
-                            </div>
-
-                            <div>
-                                <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
-                                <input type="tel" id="phone" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="+1 (555) 000-0000">
-                            </div>
-
-                            <div>
-                                <label class="text-sm text-base-content/60 mb-1.5 block" for="notes">Notes <span class="text-base-content/30">(optional)</span></label>
-                                <textarea id="notes" class="textarea w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" rows="3" placeholder="Any additional information..."></textarea>
-                            </div>
-
-                            <div id="booking-error" class="alert alert-error hidden">
-                                <span class="icon-[tabler--alert-circle] size-5"></span>
-                                <span id="error-message"></span>
-                            </div>
-
-                            <button type="button" id="submit-booking" class="btn btn-primary w-full h-12 text-base font-semibold mt-2 text-white">
-                                <span class="loading loading-spinner loading-sm hidden"></span>
-                                <span class="btn-text">Schedule Meeting</span>
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
             </div>
         </div>
 
@@ -384,6 +246,83 @@
             Powered by <span class="font-medium">{{ $host->studio_name }}</span>
         </p>
     </div>
+
+    {{-- Step 2: Contact Form --}}
+    <div id="step-form" class="hidden w-full max-w-xl">
+        <div class="bg-base-100 rounded-2xl shadow-xl border border-base-200/50 p-6 lg:p-8">
+            {{-- Back Button --}}
+            <button type="button" id="back-to-calendar" class="flex items-center gap-2 text-sm text-base-content/50 hover:text-primary transition-colors mb-5 group">
+                <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
+                Back to calendar
+            </button>
+
+            {{-- Booking Summary --}}
+            <div class="bg-base-200/50 rounded-xl p-4 mb-6">
+                <div class="flex items-center gap-4">
+                    @if($instructor->photo_url)
+                        <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
+                             class="w-12 h-12 rounded-full object-cover flex-shrink-0">
+                    @else
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
+                            <span class="text-base font-bold text-primary-content">{{ $initials }}</span>
+                        </div>
+                    @endif
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-base-content">{{ $profile->display_name ?? $instructor->name }}</h3>
+                        <p class="text-sm text-base-content/60" id="summary-datetime"></p>
+                        <p class="text-xs text-base-content/40" id="summary-details"></p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Form --}}
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-base-content">Your Details</h3>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm text-base-content/60 mb-1.5 block" for="first_name">First Name <span class="text-error">*</span></label>
+                        <input type="text" id="first_name" class="input input-bordered w-full" placeholder="John" required>
+                    </div>
+                    <div>
+                        <label class="text-sm text-base-content/60 mb-1.5 block" for="last_name">Last Name <span class="text-error">*</span></label>
+                        <input type="text" id="last_name" class="input input-bordered w-full" placeholder="Doe" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
+                    <input type="email" id="email" class="input input-bordered w-full" placeholder="john@example.com" required>
+                </div>
+
+                <div>
+                    <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
+                    <input type="tel" id="phone" class="input input-bordered w-full" placeholder="+1 (555) 000-0000">
+                </div>
+
+                <div>
+                    <label class="text-sm text-base-content/60 mb-1.5 block" for="notes">Notes <span class="text-base-content/30">(optional)</span></label>
+                    <textarea id="notes" class="textarea textarea-bordered w-full" rows="3" placeholder="Any additional information..."></textarea>
+                </div>
+
+                <div id="booking-error" class="alert alert-error hidden">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span id="error-message"></span>
+                </div>
+
+                <button type="button" id="submit-booking" class="btn btn-primary w-full h-12 text-base font-semibold mt-2">
+                    <span class="loading loading-spinner loading-sm hidden"></span>
+                    <span class="btn-text">Schedule Meeting</span>
+                </button>
+            </div>
+        </div>
+
+        {{-- Powered By --}}
+        <p class="text-center text-xs text-base-content/30 mt-6">
+            Powered by <span class="font-medium">{{ $host->studio_name }}</span>
+        </p>
+    </div>
+
 </div>
 @endsection
 
@@ -452,20 +391,53 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.remove('border-base-300', 'text-base-content/70');
             selectedMeetingType = this.dataset.type;
             document.getElementById('display-type').textContent = meetingTypeLabels[selectedMeetingType] || selectedMeetingType;
-
-            // Toggle meeting details visibility
-            ['video', 'phone', 'in_person'].forEach(function(type) {
-                var el = document.getElementById('detail-' + type);
-                if (el) {
-                    el.classList.toggle('hidden', type !== selectedMeetingType);
-                }
-            });
         });
     });
 
+    let allSlots = [];
+    let activeTab = 'all';
+
+    function categorizeSlot(timeStr) {
+        const hour = parseInt(timeStr.split(':')[0]);
+        if (hour < 12) return 'morning';
+        if (hour < 17) return 'afternoon';
+        return 'evening';
+    }
+
+    function renderSlots() {
+        const container = document.getElementById('slots-grid');
+        if (!container) return;
+
+        let filteredSlots = allSlots;
+        if (activeTab !== 'all') {
+            filteredSlots = allSlots.filter(function(slot) {
+                return categorizeSlot(slot.time) === activeTab;
+            });
+        }
+
+        if (filteredSlots.length === 0) {
+            container.innerHTML = '<div class="col-span-3 text-center py-6 text-base-content/40 text-sm">No times in this period</div>';
+            return;
+        }
+
+        let html = '';
+        filteredSlots.forEach(function(slot) {
+            html += '<button type="button" class="time-slot-btn py-2.5 px-2 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center" data-time="' + slot.time + '" data-display="' + slot.display + '">' + slot.display + '</button>';
+        });
+        container.innerHTML = html;
+
+        document.querySelectorAll('.time-slot-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                selectedTime = this.dataset.time;
+                selectedTimeDisplay = this.dataset.display;
+                showForm();
+            });
+        });
+    }
+
     function fetchTimeSlots() {
         const container = document.getElementById('time-slots-container');
-        container.innerHTML = '<div class="flex-1 flex items-center justify-center"><span class="loading loading-spinner loading-lg text-primary"></span></div>';
+        container.innerHTML = '<div class="h-full flex items-center justify-center py-12"><span class="loading loading-spinner loading-lg text-primary"></span></div>';
 
         fetch(availabilityUrl + '?date=' + selectedDate + '&duration=' + selectedDuration, {
             headers: { 'Accept': 'application/json' }
@@ -473,37 +445,54 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(function(response) { return response.json(); })
         .then(function(data) {
             if (!data.success || !data.slots || data.slots.length === 0) {
-                container.innerHTML = '<div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-200 rounded-xl bg-base-200/20"><span class="icon-[tabler--calendar-x] size-12 mb-3"></span><p class="font-semibold text-base-content/50">No times available</p><p class="text-sm mt-1">Try selecting another date</p></div>';
+                container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8"><span class="icon-[tabler--calendar-x] size-12 mb-3"></span><p class="font-semibold text-base-content/50">No times available</p><p class="text-sm mt-1">Try another date</p></div>';
                 return;
             }
+
+            allSlots = data.slots;
+            activeTab = 'morning';
 
             const dateObj = new Date(selectedDate + 'T12:00:00');
             const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
-            let html = '<div class="mb-4 flex-shrink-0">';
-            html += '<p class="font-semibold text-base-content">' + dateDisplay + '</p>';
-            html += '<p class="text-sm text-base-content/50">' + data.slots.length + ' available time' + (data.slots.length > 1 ? 's' : '') + '</p>';
+            // Count slots by period
+            const morningCount = allSlots.filter(s => categorizeSlot(s.time) === 'morning').length;
+            const afternoonCount = allSlots.filter(s => categorizeSlot(s.time) === 'afternoon').length;
+            const eveningCount = allSlots.filter(s => categorizeSlot(s.time) === 'evening').length;
+
+            let html = '<p class="font-semibold text-base-content mb-1">' + dateDisplay + '</p>';
+            html += '<p class="text-sm text-base-content/50 mb-4">' + data.slots.length + ' available</p>';
+
+            // Tabs
+            html += '<div class="flex gap-1 mb-4 border-b border-base-200 pb-2">';
+            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-content' + (morningCount === 0 ? ' opacity-40' : '') + '" data-tab="morning">Morning' + (morningCount > 0 ? ' (' + morningCount + ')' : '') + '</button>';
+            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg text-base-content/60 hover:bg-base-200' + (afternoonCount === 0 ? ' opacity-40' : '') + '" data-tab="afternoon">Afternoon' + (afternoonCount > 0 ? ' (' + afternoonCount + ')' : '') + '</button>';
+            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg text-base-content/60 hover:bg-base-200' + (eveningCount === 0 ? ' opacity-40' : '') + '" data-tab="evening">Evening' + (eveningCount > 0 ? ' (' + eveningCount + ')' : '') + '</button>';
             html += '</div>';
-            html += '<div class="flex-1 overflow-y-auto pr-1 -mr-1"><div class="grid grid-cols-4 gap-2">';
 
-            data.slots.forEach(function(slot) {
-                html += '<button type="button" class="time-slot-btn py-2.5 px-1 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center" data-time="' + slot.time + '" data-display="' + slot.display + '">' + slot.display + '</button>';
-            });
+            html += '<div id="slots-grid" class="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-1"></div>';
 
-            html += '</div></div>';
             container.innerHTML = html;
 
-            document.querySelectorAll('.time-slot-btn').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    selectedTime = this.dataset.time;
-                    selectedTimeDisplay = this.dataset.display;
-                    showForm();
+            // Tab click handlers
+            document.querySelectorAll('.slot-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.slot-tab').forEach(function(t) {
+                        t.classList.remove('bg-primary', 'text-primary-content');
+                        t.classList.add('text-base-content/60');
+                    });
+                    this.classList.add('bg-primary', 'text-primary-content');
+                    this.classList.remove('text-base-content/60');
+                    activeTab = this.dataset.tab;
+                    renderSlots();
                 });
             });
+
+            renderSlots();
         })
         .catch(function(err) {
             console.error(err);
-            container.innerHTML = '<div class="flex-1 flex flex-col items-center justify-center text-error/60"><span class="icon-[tabler--alert-triangle] size-12 mb-3"></span><p class="font-semibold">Error loading times</p><p class="text-sm mt-1">Please try again</p></div>';
+            container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-error/60 py-8"><span class="icon-[tabler--alert-triangle] size-12 mb-3"></span><p class="font-semibold">Error loading times</p><p class="text-sm mt-1">Please try again</p></div>';
         });
     }
 

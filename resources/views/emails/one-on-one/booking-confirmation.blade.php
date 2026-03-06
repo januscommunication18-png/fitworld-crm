@@ -25,11 +25,26 @@ Your meeting with **{{ $hostName }}** has been confirmed.
 
 ---
 
+## Add to Your Calendar
+
+<x-mail::button :url="$googleCalendarUrl" color="primary">
+Add to Google Calendar
+</x-mail::button>
+
+<x-mail::table>
+| Calendar | |
+|:---------|:--|
+| [Add to Outlook]({{ $outlookCalendarUrl }}) | [Add to Yahoo]({{ $yahooCalendarUrl }}) |
+| [Download .ics file]({{ $icsUrl }}) | |
+</x-mail::table>
+
+---
+
 ## Need to Make Changes?
 
 You can reschedule or cancel your meeting using the link below:
 
-<x-mail::button :url="$manageUrl">
+<x-mail::button :url="$manageUrl" color="secondary">
 Manage My Booking
 </x-mail::button>
 
