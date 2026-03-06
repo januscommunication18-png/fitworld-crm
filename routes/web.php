@@ -547,6 +547,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('one-on-one')->name('one-on-one.')->group(function () {
         Route::get('/', [OneOnOneBookingController::class, 'index'])->name('index');
         Route::get('/{booking}', [OneOnOneBookingController::class, 'show'])->name('show');
+        Route::post('/{booking}/accept', [OneOnOneBookingController::class, 'accept'])->name('accept');
+        Route::post('/{booking}/decline', [OneOnOneBookingController::class, 'decline'])->name('decline');
         Route::post('/{booking}/cancel', [OneOnOneBookingController::class, 'cancel'])->name('cancel');
         Route::post('/{booking}/complete', [OneOnOneBookingController::class, 'complete'])->name('complete');
         Route::post('/{booking}/no-show', [OneOnOneBookingController::class, 'noShow'])->name('no-show');

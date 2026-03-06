@@ -1,517 +1,588 @@
 @extends('layouts.subdomain')
 
-@section('title', 'Book 1:1 Meeting with ' . $instructor->name . ' — ' . $host->studio_name)
+@section('title', 'Book with ' . $instructor->name . ' — ' . $host->studio_name)
+
+@push('styles')
+<link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
+<style>
+    /* Flatpickr Custom Theme */
+    .flatpickr-calendar {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        width: 100% !important;
+        background: transparent !important;
+    }
+    .flatpickr-calendar.inline {
+        top: 0 !important;
+    }
+    .flatpickr-months {
+        padding: 0 0 0.75rem 0;
+        border-bottom: 1px solid oklch(var(--bc) / 0.08);
+        margin-bottom: 0.5rem;
+    }
+    .flatpickr-month {
+        height: auto !important;
+        background: transparent !important;
+    }
+    .flatpickr-current-month {
+        font-size: 1.1rem !important;
+        font-weight: 600;
+        padding: 0;
+        color: oklch(var(--bc)) !important;
+    }
+    .flatpickr-current-month .flatpickr-monthDropdown-months {
+        background: transparent !important;
+        font-weight: 600;
+    }
+    .flatpickr-prev-month, .flatpickr-next-month {
+        padding: 0.5rem !important;
+        fill: oklch(var(--bc) / 0.6) !important;
+        transition: all 0.15s ease;
+    }
+    .flatpickr-prev-month:hover, .flatpickr-next-month:hover {
+        background: oklch(var(--p) / 0.1) !important;
+        border-radius: 0.5rem;
+    }
+    .flatpickr-prev-month:hover svg, .flatpickr-next-month:hover svg {
+        fill: oklch(var(--p)) !important;
+    }
+    .flatpickr-weekdays {
+        background: transparent !important;
+        margin-bottom: 0.25rem;
+    }
+    .flatpickr-weekday {
+        color: oklch(var(--bc) / 0.4) !important;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .flatpickr-days {
+        width: 100% !important;
+    }
+    .dayContainer {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+    }
+    .flatpickr-day {
+        max-width: none !important;
+        height: 42px !important;
+        line-height: 42px !important;
+        border-radius: 50% !important;
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: oklch(var(--bc));
+        border: none !important;
+        transition: all 0.15s ease;
+    }
+    .flatpickr-day:hover:not(.flatpickr-disabled):not(.selected) {
+        background: oklch(var(--p) / 0.1) !important;
+        color: oklch(var(--p)) !important;
+    }
+    .flatpickr-day.selected {
+        background: oklch(var(--p)) !important;
+        color: oklch(var(--pc)) !important;
+        font-weight: 600;
+    }
+    .flatpickr-day.today:not(.selected) {
+        background: oklch(var(--bc) / 0.05) !important;
+        font-weight: 700;
+    }
+    .flatpickr-day.flatpickr-disabled {
+        color: oklch(var(--bc) / 0.2) !important;
+    }
+    .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
+        color: oklch(var(--bc) / 0.25) !important;
+    }
+
+    /* Time slot button styles */
+    .time-slot-btn {
+        transition: all 0.15s ease;
+    }
+    .time-slot-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px oklch(var(--p) / 0.2);
+    }
+</style>
+@endpush
 
 @section('content')
 @php
     $initials = collect(explode(' ', $instructor->name))->map(fn($n) => strtoupper(substr($n, 0, 1)))->take(2)->join('');
+    $workingDaysJson = json_encode($profile->working_days ?? [1,2,3,4,5]);
+    $meetingTypeLabelsJson = json_encode($meetingTypeLabels);
+    $firstDuration = $allowedDurations[0] ?? 30;
+    $firstMeetingType = $meetingTypes[0] ?? 'video';
 @endphp
 
 @include('subdomain.partials.navbar')
 
-{{-- Main Content --}}
-<div class="min-h-screen bg-gradient-to-br from-base-200/50 to-base-100">
-    <div class="container-fixed py-8">
-        <div class="max-w-5xl mx-auto">
+<div class="min-h-screen bg-gradient-to-br from-base-200/50 to-base-100 py-8 md:py-12">
+    <div class="container-fixed">
 
-            {{-- Back Link --}}
-            <a href="{{ route('subdomain.instructor', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}"
-               class="inline-flex items-center gap-1 text-sm text-base-content/60 hover:text-primary transition-colors mb-6">
-                <span class="icon-[tabler--arrow-left] size-4"></span>
-                Back to {{ $instructor->name }}'s Profile
-            </a>
+        {{-- Main Card --}}
+        <div class="bg-base-100 rounded-2xl shadow-xl max-w-5xl mx-auto overflow-hidden border border-base-200/50">
+            <div class="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
 
-            {{-- Header Card --}}
-            <div class="card bg-gradient-to-r from-primary to-primary/80 text-primary-content mb-6 overflow-hidden">
-                <div class="card-body p-6 md:p-8">
-                    <div class="flex flex-col md:flex-row items-center gap-6">
-                        {{-- Instructor Photo --}}
-                        <div class="shrink-0">
-                            @if($instructor->photo_url)
-                                <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
-                                     class="w-24 h-24 rounded-2xl object-cover ring-4 ring-white/20 shadow-lg">
+                {{-- Left Panel - Instructor Info --}}
+                <div class="bg-gradient-to-b from-base-200/80 to-base-200/40 p-6 lg:p-8 border-b lg:border-b-0 lg:border-r border-base-200 lg:max-h-[600px] lg:overflow-y-auto">
+                    {{-- Back Link --}}
+                    <a href="{{ route('subdomain.instructor', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}"
+                       class="inline-flex items-center gap-1.5 text-sm text-base-content/50 hover:text-primary transition-colors mb-5 group">
+                        <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
+                        Back
+                    </a>
+
+                    {{-- Instructor Avatar & Name --}}
+                    <div class="flex items-center gap-4 mb-4">
+                        @if($instructor->photo_url)
+                            <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
+                                 class="w-14 h-14 rounded-full object-cover ring-2 ring-base-100 shadow">
+                        @else
+                            <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center ring-2 ring-base-100 shadow">
+                                <span class="text-lg font-bold text-primary-content">{{ $initials }}</span>
+                            </div>
+                        @endif
+                        <div>
+                            <h2 class="font-bold text-base-content">{{ $profile->display_name ?? $instructor->name }}</h2>
+                            @if($profile->title ?? $instructor->title)
+                                <p class="text-sm text-base-content/50">{{ $profile->title ?? $instructor->title }}</p>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Meeting Title --}}
+                    <h1 class="text-xl font-bold text-base-content mb-4">1:1 Meeting</h1>
+
+                    {{-- Meeting Info --}}
+                    <div class="space-y-2 text-sm text-base-content/70 mb-5">
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--clock] size-4 text-base-content/40"></span>
+                            <span id="display-duration">{{ $firstDuration }} min</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($firstMeetingType === 'video')
+                                <span class="icon-[tabler--video] size-4 text-base-content/40"></span>
+                            @elseif($firstMeetingType === 'phone')
+                                <span class="icon-[tabler--phone] size-4 text-base-content/40"></span>
                             @else
-                                <div class="w-24 h-24 rounded-2xl bg-white/20 flex items-center justify-center ring-4 ring-white/20 shadow-lg">
-                                    <span class="text-3xl font-bold">{{ $initials }}</span>
-                                </div>
+                                <span class="icon-[tabler--map-pin] size-4 text-base-content/40"></span>
                             @endif
+                            <span id="display-type">{{ $meetingTypeLabels[$firstMeetingType] ?? 'Meeting' }}</span>
                         </div>
+                    </div>
 
-                        {{-- Info --}}
-                        <div class="text-center md:text-left flex-1">
-                            <h1 class="text-2xl md:text-3xl font-bold">Book a Meeting</h1>
-                            <p class="text-primary-content/80 mt-1">with {{ $profile->display_name }}</p>
-                            @if($profile->title_display)
-                                <p class="text-sm text-primary-content/60 mt-1">{{ $profile->title_display }}</p>
-                            @endif
-                        </div>
+                    {{-- Bio --}}
+                    @if($profile->bio ?? $instructor->bio)
+                    <div class="mb-5">
+                        <p class="text-sm text-base-content/60 leading-relaxed">{{ $profile->bio ?? $instructor->bio }}</p>
+                    </div>
+                    @endif
 
-                        {{-- Quick Info --}}
-                        <div class="flex flex-wrap justify-center md:justify-end gap-3">
-                            @foreach($meetingTypes as $type)
-                                <div class="flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-1.5 text-sm">
-                                    @if($type === 'in_person')
-                                        <span class="icon-[tabler--map-pin] size-4"></span>
-                                    @elseif($type === 'phone')
-                                        <span class="icon-[tabler--phone] size-4"></span>
-                                    @elseif($type === 'video')
-                                        <span class="icon-[tabler--video] size-4"></span>
-                                    @endif
-                                    <span>{{ $meetingTypeLabels[$type] ?? ucfirst($type) }}</span>
-                                </div>
+                    {{-- Specialties --}}
+                    @if($instructor->specialties && count($instructor->specialties) > 0)
+                    <div class="mb-5">
+                        <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Specialties</p>
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach($instructor->specialties as $specialty)
+                                <span class="px-2.5 py-1 text-xs font-medium bg-base-100 text-base-content/70 rounded-full">{{ $specialty }}</span>
                             @endforeach
                         </div>
                     </div>
-                </div>
-            </div>
+                    @endif
 
-            {{-- Booking Form --}}
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                {{-- Left: Steps --}}
-                <div class="lg:col-span-3 space-y-4">
-
-                    {{-- Step 1: Duration & Type --}}
-                    <div class="card bg-base-100 shadow-sm">
-                        <div class="card-body">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">1</div>
-                                <h3 class="font-semibold text-lg">Choose Duration & Type</h3>
-                            </div>
-
-                            {{-- Duration --}}
-                            <div class="mb-5">
-                                <label class="text-sm font-medium text-base-content/70 mb-2 block">Meeting Duration</label>
-                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="duration-options">
-                                    @foreach($allowedDurations as $index => $duration)
-                                        <button type="button"
-                                                class="btn {{ $index === 0 ? 'btn-primary' : 'btn-outline' }} duration-btn h-auto py-3 flex-col gap-0.5"
-                                                data-duration="{{ $duration }}">
-                                            <span class="text-lg font-bold">{{ $duration }}</span>
-                                            <span class="text-xs opacity-70">minutes</span>
-                                        </button>
-                                    @endforeach
-                                </div>
-                                <input type="hidden" name="duration" id="selected-duration" value="{{ $allowedDurations[0] ?? 30 }}">
-                            </div>
-
-                            {{-- Meeting Type --}}
-                            <div>
-                                <label class="text-sm font-medium text-base-content/70 mb-2 block">How would you like to meet?</label>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="meeting-type-options">
-                                    @foreach($meetingTypes as $index => $type)
-                                        <button type="button"
-                                                class="btn {{ $index === 0 ? 'btn-primary' : 'btn-outline' }} meeting-type-btn h-auto py-4 flex-col gap-1"
-                                                data-type="{{ $type }}">
-                                            @if($type === 'in_person')
-                                                <span class="icon-[tabler--map-pin] size-6"></span>
-                                                <span>In Person</span>
-                                            @elseif($type === 'phone')
-                                                <span class="icon-[tabler--phone] size-6"></span>
-                                                <span>Phone Call</span>
-                                            @elseif($type === 'video')
-                                                <span class="icon-[tabler--video] size-6"></span>
-                                                <span>Video Call</span>
-                                            @endif
-                                        </button>
-                                    @endforeach
-                                </div>
-                                <input type="hidden" name="meeting_type" id="selected-meeting-type" value="{{ $meetingTypes[0] ?? 'in_person' }}">
+                    {{-- Options --}}
+                    @if(count($allowedDurations) > 1 || count($meetingTypes) > 1)
+                    <div class="pt-5 border-t border-base-content/10 space-y-4">
+                        @if(count($allowedDurations) > 1)
+                        <div>
+                            <label class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2 block">Duration</label>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($allowedDurations as $index => $duration)
+                                    <button type="button"
+                                            class="px-3 py-1.5 text-sm rounded-full border-2 transition-all duration-btn font-medium {{ $index === 0 ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
+                                            data-duration="{{ $duration }}">
+                                        {{ $duration }}m
+                                    </button>
+                                @endforeach
                             </div>
                         </div>
-                    </div>
+                        @endif
 
-                    {{-- Step 2: Date & Time --}}
-                    <div class="card bg-base-100 shadow-sm">
-                        <div class="card-body">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">2</div>
-                                <h3 class="font-semibold text-lg">Select Date & Time</h3>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {{-- Date Picker --}}
-                                <div>
-                                    <label class="text-sm font-medium text-base-content/70 mb-2 block">
-                                        <span class="icon-[tabler--calendar] size-4 inline-block mr-1"></span>
-                                        Pick a Date
-                                    </label>
-                                    <input type="date"
-                                           id="booking-date"
-                                           class="input input-bordered w-full text-lg"
-                                           min="{{ $minDate }}"
-                                           max="{{ $maxDate }}"
-                                           required>
-                                    <p class="text-xs text-base-content/50 mt-1.5">
-                                        Book between {{ \Carbon\Carbon::parse($minDate)->format('M j') }} - {{ \Carbon\Carbon::parse($maxDate)->format('M j, Y') }}
-                                    </p>
-                                </div>
-
-                                {{-- Time Slots --}}
-                                <div>
-                                    <label class="text-sm font-medium text-base-content/70 mb-2 block">
-                                        <span class="icon-[tabler--clock] size-4 inline-block mr-1"></span>
-                                        Available Times
-                                    </label>
-                                    <div id="time-slots-container" class="min-h-[120px]">
-                                        <div class="flex flex-col items-center justify-center h-[120px] text-base-content/40 border-2 border-dashed border-base-300 rounded-lg">
-                                            <span class="icon-[tabler--calendar-event] size-8 mb-2"></span>
-                                            <p class="text-sm">Select a date to see available times</p>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" name="time" id="selected-time" value="">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Step 3: Contact Info --}}
-                    <div class="card bg-base-100 shadow-sm">
-                        <div class="card-body">
-                            <div class="flex items-center gap-3 mb-4">
-                                <div class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center font-bold text-sm">3</div>
-                                <h3 class="font-semibold text-lg">Your Information</h3>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-sm font-medium text-base-content/70 mb-1 block" for="first_name">First Name *</label>
-                                    <input type="text" id="first_name" name="first_name"
-                                           class="input input-bordered w-full"
-                                           placeholder="John" required>
-                                </div>
-                                <div>
-                                    <label class="text-sm font-medium text-base-content/70 mb-1 block" for="last_name">Last Name *</label>
-                                    <input type="text" id="last_name" name="last_name"
-                                           class="input input-bordered w-full"
-                                           placeholder="Smith" required>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                                <div>
-                                    <label class="text-sm font-medium text-base-content/70 mb-1 block" for="email">Email *</label>
-                                    <input type="email" id="email" name="email"
-                                           class="input input-bordered w-full"
-                                           placeholder="john@example.com" required>
-                                </div>
-                                <div>
-                                    <label class="text-sm font-medium text-base-content/70 mb-1 block" for="phone">Phone (Optional)</label>
-                                    <input type="tel" id="phone" name="phone"
-                                           class="input input-bordered w-full"
-                                           placeholder="+1 (555) 123-4567">
-                                </div>
-                            </div>
-
-                            <div class="mt-4">
-                                <label class="text-sm font-medium text-base-content/70 mb-1 block" for="notes">
-                                    Additional Notes (Optional)
-                                </label>
-                                <textarea id="notes" name="notes" rows="2"
-                                          class="textarea textarea-bordered w-full"
-                                          placeholder="Anything you'd like {{ $profile->display_name }} to know before the meeting?"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Right: Summary --}}
-                <div class="lg:col-span-2">
-                    <div class="card bg-base-100 shadow-sm sticky top-24">
-                        <div class="card-body">
-                            <h3 class="font-semibold text-lg mb-4">Booking Summary</h3>
-
-                            {{-- Selected Details --}}
-                            <div class="space-y-3 text-sm">
-                                <div class="flex items-center justify-between py-2 border-b border-base-200">
-                                    <span class="text-base-content/60">Duration</span>
-                                    <span class="font-medium" id="summary-duration">{{ $allowedDurations[0] ?? 30 }} minutes</span>
-                                </div>
-                                <div class="flex items-center justify-between py-2 border-b border-base-200">
-                                    <span class="text-base-content/60">Meeting Type</span>
-                                    <span class="font-medium" id="summary-type">
-                                        @if(($meetingTypes[0] ?? '') === 'in_person')
-                                            <span class="icon-[tabler--map-pin] size-4 inline-block mr-1"></span>In Person
-                                        @elseif(($meetingTypes[0] ?? '') === 'phone')
-                                            <span class="icon-[tabler--phone] size-4 inline-block mr-1"></span>Phone
-                                        @elseif(($meetingTypes[0] ?? '') === 'video')
-                                            <span class="icon-[tabler--video] size-4 inline-block mr-1"></span>Video
+                        @if(count($meetingTypes) > 1)
+                        <div>
+                            <label class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2 block">Type</label>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($meetingTypes as $index => $type)
+                                    <button type="button"
+                                            class="px-3 py-1.5 text-sm rounded-full border-2 transition-all meeting-type-btn flex items-center gap-1.5 font-medium {{ $index === 0 ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
+                                            data-type="{{ $type }}">
+                                        @if($type === 'in_person')
+                                            <span class="icon-[tabler--map-pin] size-4"></span> In Person
+                                        @elseif($type === 'phone')
+                                            <span class="icon-[tabler--phone] size-4"></span> Phone
+                                        @elseif($type === 'video')
+                                            <span class="icon-[tabler--video] size-4"></span> Video
                                         @endif
-                                    </span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+
+                    {{-- Meeting Details --}}
+                    <div id="meeting-details" class="mt-5 pt-5 border-t border-base-content/10">
+                        @if($profile->video_link)
+                        <div id="detail-video" class="{{ $firstMeetingType !== 'video' ? 'hidden' : '' }}">
+                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Video Link</p>
+                            <div class="flex items-center gap-2 text-sm text-base-content/70 bg-base-100 rounded-lg p-3">
+                                <span class="icon-[tabler--video] size-4 text-primary"></span>
+                                <span class="truncate">{{ $profile->video_link }}</span>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if($profile->phone_number)
+                        <div id="detail-phone" class="{{ $firstMeetingType !== 'phone' ? 'hidden' : '' }}">
+                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Phone Number</p>
+                            <div class="flex items-center gap-2 text-sm text-base-content/70 bg-base-100 rounded-lg p-3">
+                                <span class="icon-[tabler--phone] size-4 text-primary"></span>
+                                <span>{{ $profile->phone_number }}</span>
+                            </div>
+                        </div>
+                        @endif
+
+                        @if($profile->in_person_location)
+                        <div id="detail-in_person" class="{{ $firstMeetingType !== 'in_person' ? 'hidden' : '' }}">
+                            <p class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2">Location</p>
+                            <div class="flex items-start gap-2 text-sm text-base-content/70 bg-base-100 rounded-lg p-3">
+                                <span class="icon-[tabler--map-pin] size-4 text-primary flex-shrink-0 mt-0.5"></span>
+                                <span>{{ $profile->in_person_location }}</span>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Right Panel - Calendar & Slots --}}
+                <div class="p-6 lg:p-8">
+
+                    {{-- Step 1: Date & Time Selection --}}
+                    <div id="step-calendar">
+                        <h2 class="text-lg font-semibold mb-6 text-base-content">Select a Date & Time</h2>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {{-- Calendar --}}
+                            <div>
+                                <div id="calendar-inline" class="mb-3"></div>
+                                <p class="text-xs text-base-content/40 flex items-center gap-1.5">
+                                    <span class="icon-[tabler--world] size-3.5"></span>
+                                    <span id="user-timezone"></span>
+                                </p>
+                            </div>
+
+                            {{-- Time Slots --}}
+                            <div id="time-slots-container" class="h-[340px] flex flex-col">
+                                <div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-200 rounded-xl bg-base-200/20">
+                                    <span class="icon-[tabler--calendar-event] size-14 mb-4"></span>
+                                    <p class="font-semibold text-base-content/50">Select a date</p>
+                                    <p class="text-sm mt-1">to view available times</p>
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b border-base-200">
-                                    <span class="text-base-content/60">Date</span>
-                                    <span class="font-medium" id="summary-date">Not selected</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Step 2: Contact Form --}}
+                    <div id="step-form" class="hidden">
+                        {{-- Back Button --}}
+                        <button type="button" id="back-to-calendar" class="flex items-center gap-2 text-sm text-base-content/50 hover:text-primary transition-colors mb-5 group">
+                            <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
+                            Back
+                        </button>
+
+                        {{-- Instructor Info Card --}}
+                        <div class="flex items-start gap-4 mb-5 pb-5 border-b border-base-200">
+                            @if($instructor->photo_url)
+                                <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
+                                     class="w-12 h-12 rounded-full object-cover flex-shrink-0">
+                            @else
+                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0">
+                                    <span class="text-base font-bold text-primary-content">{{ $initials }}</span>
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b border-base-200">
-                                    <span class="text-base-content/60">Time</span>
-                                    <span class="font-medium" id="summary-time">Not selected</span>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-base-content">{{ $profile->display_name ?? $instructor->name }}</h3>
+                                @if($profile->bio)
+                                    <p class="text-sm text-base-content/60 mt-1 line-clamp-2">{{ $profile->bio }}</p>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Booking Summary --}}
+                        <div class="bg-base-200/50 rounded-xl p-4 mb-6">
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--calendar-check] size-5 text-primary"></span>
+                                <div>
+                                    <p class="font-medium text-base-content text-sm" id="summary-datetime"></p>
+                                    <p class="text-xs text-base-content/50" id="summary-details"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Form --}}
+                        <div class="space-y-4">
+                            <h3 class="text-base font-semibold text-base-content">Your Information</h3>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-sm text-base-content/60 mb-1.5 block" for="first_name">First Name <span class="text-error">*</span></label>
+                                    <input type="text" id="first_name" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="John" required>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60 mb-1.5 block" for="last_name">Last Name <span class="text-error">*</span></label>
+                                    <input type="text" id="last_name" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="Doe" required>
                                 </div>
                             </div>
 
-                            {{-- Price (Free) --}}
-                            <div class="mt-4 p-3 bg-success/10 rounded-lg">
-                                <div class="flex items-center justify-between">
-                                    <span class="font-medium">Total</span>
-                                    <span class="text-lg font-bold text-success">Free</span>
-                                </div>
+                            <div>
+                                <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
+                                <input type="email" id="email" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="john@example.com" required>
                             </div>
 
-                            {{-- Error Message --}}
-                            <div id="booking-error" class="alert alert-error mt-4 hidden">
+                            <div>
+                                <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
+                                <input type="tel" id="phone" class="input w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" placeholder="+1 (555) 000-0000">
+                            </div>
+
+                            <div>
+                                <label class="text-sm text-base-content/60 mb-1.5 block" for="notes">Notes <span class="text-base-content/30">(optional)</span></label>
+                                <textarea id="notes" class="textarea w-full bg-base-200/50 border-0 focus:bg-base-100 focus:ring-2 focus:ring-primary/20" rows="3" placeholder="Any additional information..."></textarea>
+                            </div>
+
+                            <div id="booking-error" class="alert alert-error hidden">
                                 <span class="icon-[tabler--alert-circle] size-5"></span>
                                 <span id="error-message"></span>
                             </div>
 
-                            {{-- Submit Button --}}
-                            <button type="button" id="submit-booking" class="btn btn-primary w-full mt-4 h-12 text-base" disabled>
+                            <button type="button" id="submit-booking" class="btn btn-primary w-full h-12 text-base font-semibold mt-2 text-white">
                                 <span class="loading loading-spinner loading-sm hidden"></span>
-                                <span class="icon-[tabler--calendar-check] size-5 btn-icon"></span>
-                                <span class="btn-text">Confirm Booking</span>
+                                <span class="btn-text">Schedule Meeting</span>
                             </button>
-
-                            <p class="text-xs text-center text-base-content/50 mt-3">
-                                You will receive a confirmation email with meeting details
-                            </p>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
+
+        {{-- Powered By --}}
+        <p class="text-center text-xs text-base-content/30 mt-6">
+            Powered by <span class="font-medium">{{ $host->studio_name }}</span>
+        </p>
     </div>
 </div>
 @endsection
 
 @push('scripts')
+<script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const availabilityUrl = '{{ route('subdomain.instructor.availability', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}';
-    const bookUrl = '{{ route('subdomain.instructor.book', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}';
+    const availabilityUrl = '{{ route("subdomain.instructor.availability", ["subdomain" => $host->subdomain, "instructor" => $instructor->id]) }}';
+    const bookUrl = '{{ route("subdomain.instructor.book", ["subdomain" => $host->subdomain, "instructor" => $instructor->id]) }}';
     const csrfToken = '{{ csrf_token() }}';
+    const minDateStr = '{{ $minDate }}';
+    const maxDateStr = '{{ $maxDate }}';
+    const workingDays = {!! $workingDaysJson !!};
+    const meetingTypeLabels = {!! $meetingTypeLabelsJson !!};
 
-    let selectedDuration = {{ $allowedDurations[0] ?? 30 }};
-    let selectedMeetingType = '{{ $meetingTypes[0] ?? "in_person" }}';
+    let selectedDuration = {{ $firstDuration }};
+    let selectedMeetingType = '{{ $firstMeetingType }}';
     let selectedDate = null;
     let selectedTime = null;
+    let selectedTimeDisplay = '';
 
-    const meetingTypeLabels = {
-        'in_person': '<span class="icon-[tabler--map-pin] size-4 inline-block mr-1"></span>In Person',
-        'phone': '<span class="icon-[tabler--phone] size-4 inline-block mr-1"></span>Phone',
-        'video': '<span class="icon-[tabler--video] size-4 inline-block mr-1"></span>Video'
-    };
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.getElementById('user-timezone').textContent = timezone;
 
-    // Duration selection
-    document.querySelectorAll('.duration-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.duration-btn').forEach(b => {
-                b.classList.remove('btn-primary');
-                b.classList.add('btn-outline');
-            });
-            this.classList.add('btn-primary');
-            this.classList.remove('btn-outline');
-            selectedDuration = parseInt(this.dataset.duration);
-            document.getElementById('selected-duration').value = selectedDuration;
-            document.getElementById('summary-duration').textContent = selectedDuration + ' minutes';
-
-            // Refresh time slots if date is selected
-            if (selectedDate) {
-                fetchTimeSlots();
+    // Initialize Flatpickr
+    const calendar = flatpickr('#calendar-inline', {
+        inline: true,
+        dateFormat: 'Y-m-d',
+        minDate: minDateStr,
+        maxDate: maxDateStr,
+        disable: [
+            function(date) {
+                return !workingDays.includes(date.getDay());
             }
-        });
-    });
-
-    // Meeting type selection
-    document.querySelectorAll('.meeting-type-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.meeting-type-btn').forEach(b => {
-                b.classList.remove('btn-primary');
-                b.classList.add('btn-outline');
-            });
-            this.classList.add('btn-primary');
-            this.classList.remove('btn-outline');
-            selectedMeetingType = this.dataset.type;
-            document.getElementById('selected-meeting-type').value = selectedMeetingType;
-            document.getElementById('summary-type').innerHTML = meetingTypeLabels[selectedMeetingType] || selectedMeetingType;
-            validateForm();
-        });
-    });
-
-    // Date selection
-    document.getElementById('booking-date').addEventListener('change', function() {
-        selectedDate = this.value;
-        selectedTime = null;
-        document.getElementById('selected-time').value = '';
-        document.getElementById('summary-time').textContent = 'Not selected';
-
-        // Format date for summary
-        if (selectedDate) {
-            const dateObj = new Date(selectedDate + 'T12:00:00');
-            const formatted = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-            document.getElementById('summary-date').textContent = formatted;
+        ],
+        onChange: function(selectedDates, dateStr) {
+            selectedDate = dateStr;
+            selectedTime = null;
+            fetchTimeSlots();
         }
-
-        fetchTimeSlots();
     });
 
-    // Fetch time slots
-    async function fetchTimeSlots() {
-        const container = document.getElementById('time-slots-container');
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center h-[120px] text-base-content/60">
-                <span class="loading loading-spinner loading-md mb-2"></span>
-                <p class="text-sm">Loading available times...</p>
-            </div>
-        `;
+    // Duration buttons
+    document.querySelectorAll('.duration-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.duration-btn').forEach(function(b) {
+                b.classList.remove('bg-primary', 'text-primary-content', 'border-primary');
+                b.classList.add('border-base-300', 'text-base-content/70');
+            });
+            this.classList.add('bg-primary', 'text-primary-content', 'border-primary');
+            this.classList.remove('border-base-300', 'text-base-content/70');
+            selectedDuration = parseInt(this.dataset.duration);
+            document.getElementById('display-duration').textContent = selectedDuration + ' min';
+            if (selectedDate) fetchTimeSlots();
+        });
+    });
 
-        try {
-            const response = await fetch(`${availabilityUrl}?date=${selectedDate}&duration=${selectedDuration}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+    // Meeting type buttons
+    document.querySelectorAll('.meeting-type-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.meeting-type-btn').forEach(function(b) {
+                b.classList.remove('bg-primary', 'text-primary-content', 'border-primary');
+                b.classList.add('border-base-300', 'text-base-content/70');
+            });
+            this.classList.add('bg-primary', 'text-primary-content', 'border-primary');
+            this.classList.remove('border-base-300', 'text-base-content/70');
+            selectedMeetingType = this.dataset.type;
+            document.getElementById('display-type').textContent = meetingTypeLabels[selectedMeetingType] || selectedMeetingType;
+
+            // Toggle meeting details visibility
+            ['video', 'phone', 'in_person'].forEach(function(type) {
+                var el = document.getElementById('detail-' + type);
+                if (el) {
+                    el.classList.toggle('hidden', type !== selectedMeetingType);
                 }
             });
+        });
+    });
 
-            const data = await response.json();
+    function fetchTimeSlots() {
+        const container = document.getElementById('time-slots-container');
+        container.innerHTML = '<div class="flex-1 flex items-center justify-center"><span class="loading loading-spinner loading-lg text-primary"></span></div>';
 
-            if (!data.success) {
-                container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-[120px] text-warning">
-                        <span class="icon-[tabler--alert-triangle] size-8 mb-2"></span>
-                        <p class="text-sm text-center">${data.message || 'No times available'}</p>
-                    </div>
-                `;
-                validateForm();
+        fetch(availabilityUrl + '?date=' + selectedDate + '&duration=' + selectedDuration, {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (!data.success || !data.slots || data.slots.length === 0) {
+                container.innerHTML = '<div class="flex-1 flex flex-col items-center justify-center text-base-content/30 border-2 border-dashed border-base-200 rounded-xl bg-base-200/20"><span class="icon-[tabler--calendar-x] size-12 mb-3"></span><p class="font-semibold text-base-content/50">No times available</p><p class="text-sm mt-1">Try selecting another date</p></div>';
                 return;
             }
 
-            if (!data.slots || data.slots.length === 0) {
-                container.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-[120px] text-base-content/50">
-                        <span class="icon-[tabler--calendar-off] size-8 mb-2"></span>
-                        <p class="text-sm text-center">No available times for this date</p>
-                        <p class="text-xs mt-1">Please try another date</p>
-                    </div>
-                `;
-                validateForm();
-                return;
-            }
+            const dateObj = new Date(selectedDate + 'T12:00:00');
+            const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
 
-            let slotsHtml = '<div class="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-1">';
-            data.slots.forEach(slot => {
-                slotsHtml += `
-                    <button type="button"
-                            class="btn btn-outline btn-sm time-slot-btn hover:btn-primary"
-                            data-time="${slot.time}">
-                        ${slot.display}
-                    </button>
-                `;
+            let html = '<div class="mb-4 flex-shrink-0">';
+            html += '<p class="font-semibold text-base-content">' + dateDisplay + '</p>';
+            html += '<p class="text-sm text-base-content/50">' + data.slots.length + ' available time' + (data.slots.length > 1 ? 's' : '') + '</p>';
+            html += '</div>';
+            html += '<div class="flex-1 overflow-y-auto pr-1 -mr-1"><div class="grid grid-cols-4 gap-2">';
+
+            data.slots.forEach(function(slot) {
+                html += '<button type="button" class="time-slot-btn py-2.5 px-1 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center" data-time="' + slot.time + '" data-display="' + slot.display + '">' + slot.display + '</button>';
             });
-            slotsHtml += '</div>';
-            container.innerHTML = slotsHtml;
 
-            // Add click handlers
-            document.querySelectorAll('.time-slot-btn').forEach(btn => {
+            html += '</div></div>';
+            container.innerHTML = html;
+
+            document.querySelectorAll('.time-slot-btn').forEach(function(btn) {
                 btn.addEventListener('click', function() {
-                    document.querySelectorAll('.time-slot-btn').forEach(b => {
-                        b.classList.remove('btn-primary');
-                        b.classList.add('btn-outline');
-                    });
-                    this.classList.add('btn-primary');
-                    this.classList.remove('btn-outline');
                     selectedTime = this.dataset.time;
-                    document.getElementById('selected-time').value = selectedTime;
-                    document.getElementById('summary-time').textContent = this.textContent.trim();
-                    validateForm();
+                    selectedTimeDisplay = this.dataset.display;
+                    showForm();
                 });
             });
-
-            validateForm();
-        } catch (error) {
-            console.error('Error fetching time slots:', error);
-            container.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-[120px] text-error">
-                    <span class="icon-[tabler--alert-circle] size-8 mb-2"></span>
-                    <p class="text-sm text-center">Failed to load times</p>
-                    <button type="button" onclick="location.reload()" class="btn btn-ghost btn-xs mt-2">
-                        <span class="icon-[tabler--refresh] size-4"></span> Retry
-                    </button>
-                </div>
-            `;
-        }
+        })
+        .catch(function(err) {
+            console.error(err);
+            container.innerHTML = '<div class="flex-1 flex flex-col items-center justify-center text-error/60"><span class="icon-[tabler--alert-triangle] size-12 mb-3"></span><p class="font-semibold">Error loading times</p><p class="text-sm mt-1">Please try again</p></div>';
+        });
     }
 
-    // Validate form
-    function validateForm() {
+    function showForm() {
+        const dateObj = new Date(selectedDate + 'T12:00:00');
+        const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+        document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
+        document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
+
+        document.getElementById('step-calendar').classList.add('hidden');
+        document.getElementById('step-form').classList.remove('hidden');
+    }
+
+    document.getElementById('back-to-calendar').addEventListener('click', function() {
+        document.getElementById('step-form').classList.add('hidden');
+        document.getElementById('step-calendar').classList.remove('hidden');
+    });
+
+    document.getElementById('submit-booking').addEventListener('click', function() {
+        const btn = this;
+        const spinner = btn.querySelector('.loading');
+        const text = btn.querySelector('.btn-text');
+
         const firstName = document.getElementById('first_name').value.trim();
         const lastName = document.getElementById('last_name').value.trim();
         const email = document.getElementById('email').value.trim();
 
-        const isValid = selectedDuration && selectedMeetingType && selectedDate && selectedTime && firstName && lastName && email;
-        document.getElementById('submit-booking').disabled = !isValid;
-    }
-
-    // Add input listeners for validation
-    ['first_name', 'last_name', 'email'].forEach(id => {
-        document.getElementById(id).addEventListener('input', validateForm);
-    });
-
-    // Submit booking
-    document.getElementById('submit-booking').addEventListener('click', async function() {
-        const btn = this;
-        const spinner = btn.querySelector('.loading');
-        const icon = btn.querySelector('.btn-icon');
-        const text = btn.querySelector('.btn-text');
+        if (!firstName || !lastName || !email) {
+            document.getElementById('booking-error').classList.remove('hidden');
+            document.getElementById('error-message').textContent = 'Please fill in all required fields.';
+            return;
+        }
 
         btn.disabled = true;
         spinner.classList.remove('hidden');
-        icon.classList.add('hidden');
-        text.textContent = 'Booking...';
+        text.textContent = 'Scheduling...';
+        document.getElementById('booking-error').classList.add('hidden');
 
-        const errorDiv = document.getElementById('booking-error');
-        errorDiv.classList.add('hidden');
-
-        try {
-            const response = await fetch(bookUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    date: selectedDate,
-                    time: selectedTime,
-                    duration: selectedDuration,
-                    meeting_type: selectedMeetingType,
-                    first_name: document.getElementById('first_name').value.trim(),
-                    last_name: document.getElementById('last_name').value.trim(),
-                    email: document.getElementById('email').value.trim(),
-                    phone: document.getElementById('phone').value.trim(),
-                    notes: document.getElementById('notes').value.trim(),
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                }),
-            });
-
-            const data = await response.json();
-
+        fetch(bookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                date: selectedDate,
+                time: selectedTime,
+                duration: selectedDuration,
+                meeting_type: selectedMeetingType,
+                first_name: firstName,
+                last_name: lastName,
+                email: email,
+                phone: document.getElementById('phone').value.trim(),
+                notes: document.getElementById('notes').value.trim(),
+                timezone: timezone
+            })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data.success) {
                 window.location.href = data.confirmation_url;
             } else {
-                errorDiv.classList.remove('hidden');
-                document.getElementById('error-message').textContent = data.message || 'Failed to book. Please try again.';
+                document.getElementById('booking-error').classList.remove('hidden');
+                document.getElementById('error-message').textContent = data.message || 'Booking failed. Please try again.';
                 btn.disabled = false;
                 spinner.classList.add('hidden');
-                icon.classList.remove('hidden');
-                text.textContent = 'Confirm Booking';
+                text.textContent = 'Schedule Meeting';
             }
-        } catch (error) {
-            console.error('Error booking:', error);
-            errorDiv.classList.remove('hidden');
+        })
+        .catch(function(err) {
+            console.error(err);
+            document.getElementById('booking-error').classList.remove('hidden');
             document.getElementById('error-message').textContent = 'An error occurred. Please try again.';
             btn.disabled = false;
             spinner.classList.add('hidden');
-            icon.classList.remove('hidden');
-            text.textContent = 'Confirm Booking';
-        }
+            text.textContent = 'Schedule Meeting';
+        });
     });
 });
 </script>

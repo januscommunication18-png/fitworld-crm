@@ -200,7 +200,7 @@ class OneOnOneSetupController extends Controller
             ]);
         }
 
-        return redirect()->route('one-on-one-setup.index')
-            ->with('success', 'Your 1:1 booking profile has been saved.');
+        return redirect()->route('one-on-one.index')
+            ->with('success', 'Your 1:1 booking profile has been saved. You can now accept bookings!');
     }
 }

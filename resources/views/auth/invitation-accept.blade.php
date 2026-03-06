@@ -63,16 +63,24 @@
                     {{-- New User - Create account --}}
                     <p class="text-sm text-base-content/60 mb-4">Create your account to accept this invitation.</p>
 
+                    {{-- Email (read-only) --}}
+                    <div class="mb-4">
+                        <label class="label-text" for="email">Email</label>
+                        <input type="email" id="email" name="email" value="{{ $invitation->email }}"
+                            class="input w-full bg-base-200 cursor-not-allowed"
+                            readonly disabled />
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="label-text" for="first_name">First Name</label>
-                            <input type="text" id="first_name" name="first_name" value="{{ old('first_name') }}"
+                            <input type="text" id="first_name" name="first_name" value="{{ old('first_name', $invitation->first_name) }}"
                                 class="input w-full @error('first_name') input-error @enderror"
                                 placeholder="John" required autofocus />
                         </div>
                         <div>
                             <label class="label-text" for="last_name">Last Name</label>
-                            <input type="text" id="last_name" name="last_name" value="{{ old('last_name') }}"
+                            <input type="text" id="last_name" name="last_name" value="{{ old('last_name', $invitation->last_name) }}"
                                 class="input w-full @error('last_name') input-error @enderror"
                                 placeholder="Doe" required />
                         </div>

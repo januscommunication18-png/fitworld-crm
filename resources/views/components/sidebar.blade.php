@@ -101,13 +101,8 @@
                     <li class="border-t border-base-content/10 mt-2 pt-2">
                         <span class="block px-3 py-1 text-xs font-semibold text-base-content/40 uppercase">1:1 Meetings</span>
                     </li>
-                    @if($hasOneOnOneAccess)
-                    <li><a href="{{ route('one-on-one-setup.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('one-on-one-setup.*') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--settings] size-4 mr-2"></span>{{ $trans['nav.one_on_one.setup'] ?? 'My Booking Setup' }}
-                    </a></li>
-                    @endif
-                    <li><a href="{{ route('one-on-one.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('one-on-one.index') || request()->routeIs('one-on-one.show') ? 'bg-primary/10 text-primary' : '' }}">
-                        <span class="icon-[tabler--calendar-check] size-4 mr-2"></span>{{ $isStudioOwner ? ($trans['nav.one_on_one.all_bookings'] ?? 'All 1:1 Bookings') : ($trans['nav.one_on_one.my_bookings'] ?? 'My 1:1 Bookings') }}
+                    <li><a href="{{ route('one-on-one.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('one-on-one.*') || request()->routeIs('one-on-one-setup.*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-user] size-4 mr-2"></span>{{ $trans['nav.one_on_one.meetings'] ?? '1:1 Meetings' }}
                     </a></li>
                     @endif
                 </ul>

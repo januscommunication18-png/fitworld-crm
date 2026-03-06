@@ -1,40 +1,70 @@
 @extends('layouts.dashboard')
 
-@section('title', $isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings')
+@section('title', ($showConfiguration ?? false) ? '1:1 Meeting Setup' : ($isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings'))
 
 @section('breadcrumbs')
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">{{ $isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings' }}</li>
+        <li aria-current="page">1:1 Meetings</li>
     </ol>
 @endsection
 
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold">{{ $isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings' }}</h1>
+            <h1 class="text-2xl font-bold">
+                @if($showConfiguration ?? false)
+                    1:1 Meeting Setup
+                @else
+                    {{ $isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings' }}
+                @endif
+            </h1>
             <p class="text-base-content/60 mt-1">
-                @if($isOwner)
+                @if($showConfiguration ?? false)
+                    Configure your availability and booking preferences for 1:1 meetings.
+                @elseif($isOwner)
                     View and manage all 1:1 meetings across your team.
                 @else
                     Manage your upcoming and past 1:1 meetings.
                 @endif
             </p>
         </div>
-        @if(!$isOwner && $profile)
-        <a href="{{ route('one-on-one-setup.index') }}" class="btn btn-ghost btn-sm">
-            <span class="icon-[tabler--settings] size-5"></span>
-            Settings
-        </a>
-        @else
-        <a href="{{ route('marketplace.show', 'online-1on1-meeting') }}" class="btn btn-ghost btn-sm">
-            <span class="icon-[tabler--users-plus] size-5"></span>
-            Manage Access
-        </a>
-        @endif
+        <div class="flex flex-wrap items-center gap-2">
+            {{-- Manage Access Button (Owner/Admin only) --}}
+            @if($isOwner)
+            <a href="{{ route('marketplace.show', 'online-1on1-meeting') }}" class="btn btn-ghost btn-sm">
+                <span class="icon-[tabler--users-cog] size-5"></span>
+                <span class="hidden sm:inline">Manage Access</span>
+            </a>
+            @endif
+
+            {{-- Send Invite Button (Owner only) --}}
+            @if($isOwner)
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('invite-modal').classList.remove('hidden')">
+                <span class="icon-[tabler--send] size-5"></span>
+                <span class="hidden sm:inline">Send Invite</span>
+            </button>
+            @endif
+
+            {{-- Meeting Configuration Button (Members with profile, only when NOT showing inline config) --}}
+            @if(!$isOwner && $profile && !($showConfiguration ?? false))
+            <a href="{{ route('one-on-one-setup.index') }}" class="btn btn-ghost btn-sm">
+                <span class="icon-[tabler--settings] size-5"></span>
+                <span class="hidden sm:inline">Meeting Configuration</span>
+            </a>
+            @endif
+
+            {{-- View Public Page (if setup complete) --}}
+            @if($profile && $profile->is_setup_complete)
+            <a href="{{ $profile->getPublicUrl() }}" target="_blank" class="btn btn-primary btn-soft btn-sm">
+                <span class="icon-[tabler--external-link] size-5"></span>
+                <span class="hidden sm:inline">View Public Page</span>
+            </a>
+            @endif
+        </div>
     </div>
 
     {{-- Flash Messages --}}
@@ -52,10 +82,20 @@
     </div>
     @endif
 
+    {{-- Configuration Form (shown when setup is not complete) --}}
+    @if($showConfiguration ?? false)
+        @include('host.one-on-one.partials.configuration-form')
+    @else
+
     {{-- Filters Row --}}
     <div class="flex flex-wrap items-center justify-between gap-4">
         {{-- Status Tabs --}}
         <div class="tabs tabs-bordered">
+            <a href="{{ route('one-on-one.index', array_merge(['status' => 'pending'], $isOwner && $selectedInstructorId ? ['instructor_id' => $selectedInstructorId] : [])) }}"
+                class="tab {{ $currentStatus === 'pending' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--clock-hour-4] size-4 me-1"></span>
+                Pending
+            </a>
             <a href="{{ route('one-on-one.index', array_merge(['status' => 'upcoming'], $isOwner && $selectedInstructorId ? ['instructor_id' => $selectedInstructorId] : [])) }}"
                 class="tab {{ $currentStatus === 'upcoming' ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--calendar-event] size-4 me-1"></span>
@@ -93,7 +133,11 @@
     @if($bookings->isEmpty())
     <div class="card bg-base-100">
         <div class="card-body text-center py-12">
-            @if($currentStatus === 'upcoming')
+            @if($currentStatus === 'pending')
+            <span class="icon-[tabler--clock-hour-4] size-16 text-base-content/20 mx-auto"></span>
+            <h3 class="text-lg font-semibold mt-4">No Pending Requests</h3>
+            <p class="text-base-content/60 mt-1">{{ $isOwner ? 'There are' : 'You don\'t have' }} no pending booking requests.</p>
+            @elseif($currentStatus === 'upcoming')
             <span class="icon-[tabler--calendar-event] size-16 text-base-content/20 mx-auto"></span>
             <h3 class="text-lg font-semibold mt-4">No Upcoming Bookings</h3>
             @if($isOwner)
@@ -200,10 +244,12 @@
                             <td>
                                 @php
                                     $statusBadge = match($booking->status) {
+                                        'pending' => 'badge-warning',
                                         'confirmed' => 'badge-success',
+                                        'declined' => 'badge-error',
                                         'completed' => 'badge-info',
-                                        'cancelled' => 'badge-error',
-                                        'no_show' => 'badge-warning',
+                                        'cancelled' => 'badge-neutral',
+                                        'no_show' => 'badge-error',
                                         default => 'badge-ghost',
                                     };
                                 @endphp
@@ -213,6 +259,18 @@
                             </td>
                             <td>
                                 <div class="flex items-center justify-end gap-1">
+                                    {{-- Accept/Decline for Pending --}}
+                                    @if($booking->status === 'pending')
+                                        <button type="button" class="btn btn-success btn-xs" title="Accept" onclick="openAcceptModal({{ $booking->id }})">
+                                            <span class="icon-[tabler--check] size-4"></span>
+                                            Accept
+                                        </button>
+                                        <button type="button" class="btn btn-error btn-soft btn-xs" title="Decline" onclick="openDeclineModal({{ $booking->id }})">
+                                            <span class="icon-[tabler--x] size-4"></span>
+                                            Decline
+                                        </button>
+                                    @endif
+
                                     {{-- View Button --}}
                                     <a href="{{ route('one-on-one.show', $booking) }}" class="btn btn-ghost btn-xs btn-square" title="View Details">
                                         <span class="icon-[tabler--eye] size-4"></span>
@@ -300,6 +358,117 @@
     </div>
     @endif
     @endif
+
+    @endif {{-- End of @else (listing view) --}}
+</div>
+
+{{-- Send Invite Modal (Owner only) --}}
+@if($isOwner)
+<div id="invite-modal" class="overlay modal overlay-open:opacity-100 hidden" role="dialog" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Send 1:1 Meeting Invite</h3>
+                <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" onclick="document.getElementById('invite-modal').classList.add('hidden')">
+                    <span class="icon-[tabler--x] size-4"></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-base-content/70 mb-4">Select a team member to grant 1:1 booking access. They will receive an email with setup instructions.</p>
+
+                @php
+                    $allInstructors = \App\Models\Instructor::where('host_id', $host->id)->with('bookingProfile')->get();
+                    $availableInstructors = $allInstructors->filter(fn($i) => !$i->bookingProfile || !$i->bookingProfile->is_enabled);
+                @endphp
+
+                @if($availableInstructors->isEmpty())
+                <div class="alert alert-soft alert-info">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <span>All team members already have 1:1 booking access.</span>
+                </div>
+                @else
+                <form id="invite-form" method="POST" action="{{ route('marketplace.one-on-one.grant-access') }}">
+                    @csrf
+                    <div class="space-y-4">
+                        <div>
+                            <label class="label-text" for="invite_instructor_id">Select Team Member</label>
+                            <select name="instructor_id" id="invite_instructor_id" class="select w-full" required>
+                                <option value="">Choose a team member...</option>
+                                @foreach($availableInstructors as $inst)
+                                    <option value="{{ $inst->id }}">{{ $inst->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </form>
+                @endif
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="document.getElementById('invite-modal').classList.add('hidden')">Cancel</button>
+                @if($availableInstructors->isNotEmpty())
+                <button type="submit" form="invite-form" class="btn btn-primary">
+                    <span class="icon-[tabler--send] size-5"></span>
+                    Send Invite
+                </button>
+                @endif
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Accept Confirmation Modal --}}
+<div id="accept-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeAcceptModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-xl shadow-xl max-w-md w-full relative">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center">
+                        <span class="icon-[tabler--check] size-6 text-success"></span>
+                    </div>
+                    <h3 class="text-lg font-semibold">Accept Booking</h3>
+                </div>
+                <p class="text-base-content/70">Are you sure you want to accept this booking request? The guest will receive a confirmation email.</p>
+            </div>
+            <div class="flex justify-end gap-2 p-4 border-t border-base-200">
+                <button type="button" class="btn btn-ghost" onclick="closeAcceptModal()">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirm-accept-btn" onclick="confirmAccept()">
+                    <span class="loading loading-spinner loading-sm hidden"></span>
+                    Accept Booking
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Decline Modal --}}
+<div id="decline-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeDeclineModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-xl shadow-xl max-w-md w-full relative">
+            <div class="p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
+                        <span class="icon-[tabler--x] size-6 text-error"></span>
+                    </div>
+                    <h3 class="text-lg font-semibold">Decline Booking</h3>
+                </div>
+                <p class="text-base-content/70 mb-4">Are you sure you want to decline this booking request? The guest will be notified via email.</p>
+                <div>
+                    <label class="label-text mb-1 block" for="decline_reason">Reason (optional)</label>
+                    <textarea id="decline_reason" class="textarea textarea-bordered w-full" rows="3" placeholder="Provide a reason for declining..."></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 p-4 border-t border-base-200">
+                <button type="button" class="btn btn-ghost" onclick="closeDeclineModal()">Cancel</button>
+                <button type="button" class="btn btn-error" id="confirm-decline-btn" onclick="confirmDecline()">
+                    <span class="loading loading-spinner loading-sm hidden"></span>
+                    Decline Booking
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 {{-- Cancel Modal --}}
@@ -333,6 +502,7 @@
 @push('scripts')
 <script>
 let bookingToCancel = null;
+let bookingToDecline = null;
 
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(function() {
@@ -453,6 +623,113 @@ async function markNoShow(bookingId) {
         }
     } catch (error) {
         console.error('Error:', error);
+    }
+}
+
+let bookingToAccept = null;
+
+function openAcceptModal(bookingId) {
+    bookingToAccept = bookingId;
+    document.getElementById('accept-modal').classList.remove('hidden');
+}
+
+function closeAcceptModal() {
+    bookingToAccept = null;
+    document.getElementById('accept-modal').classList.add('hidden');
+}
+
+async function confirmAccept() {
+    if (!bookingToAccept) return;
+
+    const btn = document.getElementById('confirm-accept-btn');
+    const spinner = btn.querySelector('.loading');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    try {
+        const response = await fetch(`/one-on-one/${bookingToAccept}/accept`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf().success('Booking accepted!');
+            }
+            window.location.reload();
+        } else {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf().error(result.message || 'Failed to accept booking');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        if (typeof Notyf !== 'undefined') {
+            new Notyf().error('An error occurred');
+        }
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+    }
+}
+
+function openDeclineModal(bookingId) {
+    bookingToDecline = bookingId;
+    document.getElementById('decline_reason').value = '';
+    document.getElementById('decline-modal').classList.remove('hidden');
+}
+
+function closeDeclineModal() {
+    bookingToDecline = null;
+    document.getElementById('decline-modal').classList.add('hidden');
+}
+
+async function confirmDecline() {
+    if (!bookingToDecline) return;
+
+    const btn = document.getElementById('confirm-decline-btn');
+    const spinner = btn.querySelector('.loading');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    const reason = document.getElementById('decline_reason').value;
+
+    try {
+        const response = await fetch(`/one-on-one/${bookingToDecline}/decline`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ reason }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf().success('Booking declined');
+            }
+            window.location.reload();
+        } else {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf().error(result.message || 'Failed to decline booking');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        if (typeof Notyf !== 'undefined') {
+            new Notyf().error('An error occurred');
+        }
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
     }
 }
 </script>

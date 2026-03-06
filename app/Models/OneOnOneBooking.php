@@ -12,7 +12,9 @@ class OneOnOneBooking extends Model
     use HasFactory;
 
     // Status constants
+    const STATUS_PENDING = 'pending';
     const STATUS_CONFIRMED = 'confirmed';
+    const STATUS_DECLINED = 'declined';
     const STATUS_CANCELLED = 'cancelled';
     const STATUS_COMPLETED = 'completed';
     const STATUS_NO_SHOW = 'no_show';
@@ -45,6 +47,9 @@ class OneOnOneBooking extends Model
         'manage_token',
         'booked_at',
         'reminder_sent_at',
+        'confirmed_at',
+        'declined_at',
+        'decline_reason',
     ];
 
     protected function casts(): array
@@ -55,6 +60,8 @@ class OneOnOneBooking extends Model
             'cancelled_at' => 'datetime',
             'booked_at' => 'datetime',
             'reminder_sent_at' => 'datetime',
+            'confirmed_at' => 'datetime',
+            'declined_at' => 'datetime',
         ];
     }
 
@@ -105,9 +112,19 @@ class OneOnOneBooking extends Model
     /**
      * Scopes
      */
+    public function scopePending($query)
+    {
+        return $query->where('status', self::STATUS_PENDING);
+    }
+
     public function scopeConfirmed($query)
     {
         return $query->where('status', self::STATUS_CONFIRMED);
+    }
+
+    public function scopeDeclined($query)
+    {
+        return $query->where('status', self::STATUS_DECLINED);
     }
 
     public function scopeCancelled($query)
@@ -196,7 +213,9 @@ class OneOnOneBooking extends Model
     public function getStatusBadgeClassAttribute(): string
     {
         return match ($this->status) {
+            self::STATUS_PENDING => 'badge-warning',
             self::STATUS_CONFIRMED => 'badge-success',
+            self::STATUS_DECLINED => 'badge-error',
             self::STATUS_COMPLETED => 'badge-info',
             self::STATUS_CANCELLED => 'badge-neutral',
             self::STATUS_NO_SHOW => 'badge-error',
@@ -213,11 +232,27 @@ class OneOnOneBooking extends Model
     }
 
     /**
+     * Check if booking is pending
+     */
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
      * Check if booking is confirmed
      */
     public function isConfirmed(): bool
     {
         return $this->status === self::STATUS_CONFIRMED;
+    }
+
+    /**
+     * Check if booking is declined
+     */
+    public function isDeclined(): bool
+    {
+        return $this->status === self::STATUS_DECLINED;
     }
 
     /**
@@ -293,6 +328,29 @@ class OneOnOneBooking extends Model
     }
 
     /**
+     * Accept the booking (change from pending to confirmed)
+     */
+    public function accept(): bool
+    {
+        return $this->update([
+            'status' => self::STATUS_CONFIRMED,
+            'confirmed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Decline the booking
+     */
+    public function decline(?string $reason = null): bool
+    {
+        return $this->update([
+            'status' => self::STATUS_DECLINED,
+            'declined_at' => now(),
+            'decline_reason' => $reason,
+        ]);
+    }
+
+    /**
      * Cancel the booking
      */
     public function cancel(string $cancelledBy, ?string $reason = null): bool
@@ -355,7 +413,9 @@ class OneOnOneBooking extends Model
     public static function getStatuses(): array
     {
         return [
+            self::STATUS_PENDING => 'Pending',
             self::STATUS_CONFIRMED => 'Confirmed',
+            self::STATUS_DECLINED => 'Declined',
             self::STATUS_CANCELLED => 'Cancelled',
             self::STATUS_COMPLETED => 'Completed',
             self::STATUS_NO_SHOW => 'No Show',

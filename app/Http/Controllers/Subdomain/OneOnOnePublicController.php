@@ -214,7 +214,7 @@ class OneOnOnePublicController extends Controller
             ], 400);
         }
 
-        // Create the booking
+        // Create the booking as pending (requires acceptance)
         $booking = OneOnOneBooking::create([
             'host_id' => $host->id,
             'booking_profile_id' => $profile->id,
@@ -228,28 +228,28 @@ class OneOnOnePublicController extends Controller
             'start_time' => $startTime,
             'end_time' => $endTime,
             'timezone' => $validated['timezone'] ?? config('app.timezone'),
-            'status' => OneOnOneBooking::STATUS_CONFIRMED,
+            'status' => OneOnOneBooking::STATUS_PENDING,
             'confirmation_token' => Str::random(32),
             'manage_token' => Str::random(32),
             'booked_at' => now(),
         ]);
 
-        // Send confirmation emails
+        // Send notification emails
         try {
-            // Email to guest
+            // Email to guest - pending confirmation
             Mail::to($booking->guest_email)->send(
-                new OneOnOneBookingConfirmationMail($booking)
+                new \App\Mail\OneOnOneBookingPendingMail($booking)
             );
 
-            // Email to host/instructor
+            // Email to host/instructor - booking request to accept/decline
             $instructorUser = $instructor->user;
             if ($instructorUser) {
                 Mail::to($instructorUser->email)->send(
-                    new OneOnOneNewBookingMail($booking)
+                    new \App\Mail\OneOnOneBookingRequestMail($booking)
                 );
             }
         } catch (\Exception $e) {
-            \Log::error('Failed to send 1:1 booking confirmation emails', [
+            \Log::error('Failed to send 1:1 booking notification emails', [
                 'booking_id' => $booking->id,
                 'error' => $e->getMessage(),
             ]);
@@ -257,7 +257,7 @@ class OneOnOnePublicController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Your meeting has been booked!',
+            'message' => 'Your booking request has been submitted! You will receive an email once it is confirmed.',
             'confirmation_url' => route('subdomain.meeting.confirmation', [
                 'subdomain' => $host->subdomain,
                 'token' => $booking->confirmation_token,

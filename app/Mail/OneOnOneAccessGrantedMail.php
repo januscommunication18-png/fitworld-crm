@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Models\BookingProfile;
 use App\Models\Instructor;
+use App\Models\TeamInvitation;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -16,7 +17,9 @@ class OneOnOneAccessGrantedMail extends Mailable
 
     public function __construct(
         public Instructor $instructor,
-        public BookingProfile $profile
+        public BookingProfile $profile,
+        public bool $hasUserAccount = true,
+        public ?TeamInvitation $invitation = null
     ) {}
 
     public function envelope(): Envelope
@@ -32,13 +35,27 @@ class OneOnOneAccessGrantedMail extends Mailable
     {
         $host = $this->instructor->host;
 
+        // Determine the appropriate URL based on user account status
+        if ($this->hasUserAccount) {
+            $actionUrl = route('one-on-one.index');
+            $actionText = 'Set Up My Booking Profile';
+        } else {
+            // No user account - use invitation signup URL
+            $actionUrl = $this->invitation
+                ? route('invitation.show', ['token' => $this->invitation->token])
+                : route('login');
+            $actionText = 'Create Account & Set Up Profile';
+        }
+
         return new Content(
             markdown: 'emails.one-on-one.access-granted',
             with: [
                 'instructor' => $this->instructor,
                 'profile' => $this->profile,
                 'studioName' => $host?->studio_name ?? 'Your Studio',
-                'setupUrl' => route('one-on-one-setup.index'),
+                'actionUrl' => $actionUrl,
+                'actionText' => $actionText,
+                'hasUserAccount' => $this->hasUserAccount,
                 'supportEmail' => $host?->studio_email ?? $host?->support_email,
             ],
         );
