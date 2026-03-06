@@ -49,27 +49,91 @@ class FeatureSeeder extends Seeder
             [
                 'name' => 'Online 1:1 Meeting',
                 'slug' => 'online-1on1-meeting',
-                'description' => 'Lightweight scheduling for 1:1 sessions with your clients. Includes video call integration and automatic reminders.',
-                'icon' => 'video',
-                'type' => Feature::TYPE_PREMIUM,
+                'description' => 'Allow team members to offer personalized 1:1 booking pages. Clients can book meetings directly from instructor profiles.',
+                'icon' => 'calendar-user',
+                'type' => Feature::TYPE_FREE,
                 'category' => Feature::CATEGORY_TOOLS,
                 'is_active' => true,
                 'sort_order' => 2,
                 'config_schema' => [
-                    'meeting_duration' => [
-                        'type' => 'select',
-                        'label' => 'Default Duration',
+                    'default_durations' => [
+                        'type' => 'multiselect',
+                        'label' => 'Available Meeting Durations',
                         'options' => [15, 30, 45, 60],
                     ],
-                    'buffer_time' => [
+                    'require_phone' => [
+                        'type' => 'boolean',
+                        'label' => 'Require Guest Phone Number',
+                        'default' => false,
+                    ],
+                    'send_reminders' => [
+                        'type' => 'boolean',
+                        'label' => 'Send Meeting Reminders',
+                        'default' => true,
+                    ],
+                    'reminder_hours' => [
                         'type' => 'select',
-                        'label' => 'Buffer Between Meetings',
-                        'options' => [0, 5, 10, 15],
+                        'label' => 'Reminder Hours Before Meeting',
+                        'options' => [1, 2, 4, 12, 24],
+                    ],
+                    // Buffer & Limits
+                    'buffer_before' => [
+                        'type' => 'select',
+                        'label' => 'Buffer Before Meetings (minutes)',
+                        'options' => [0, 5, 10, 15, 30],
+                    ],
+                    'buffer_after' => [
+                        'type' => 'select',
+                        'label' => 'Buffer After Meetings (minutes)',
+                        'options' => [0, 5, 10, 15, 30],
+                    ],
+                    'min_notice_hours' => [
+                        'type' => 'select',
+                        'label' => 'Minimum Notice Required (hours)',
+                        'options' => [1, 2, 4, 12, 24, 48, 72],
+                    ],
+                    'max_advance_days' => [
+                        'type' => 'select',
+                        'label' => 'Maximum Advance Booking (days)',
+                        'options' => [7, 14, 30, 60, 90],
+                    ],
+                    // Reschedule & Cancellation
+                    'allow_reschedule' => [
+                        'type' => 'boolean',
+                        'label' => 'Allow Clients to Reschedule',
+                        'default' => true,
+                    ],
+                    'reschedule_cutoff_hours' => [
+                        'type' => 'select',
+                        'label' => 'Reschedule Cutoff (hours before)',
+                        'options' => [1, 2, 4, 12, 24, 48],
+                    ],
+                    'allow_cancel' => [
+                        'type' => 'boolean',
+                        'label' => 'Allow Clients to Cancel',
+                        'default' => true,
+                    ],
+                    'cancel_cutoff_hours' => [
+                        'type' => 'select',
+                        'label' => 'Cancellation Cutoff (hours before)',
+                        'options' => [1, 2, 4, 12, 24, 48],
                     ],
                 ],
                 'default_config' => [
-                    'meeting_duration' => 30,
-                    'buffer_time' => 10,
+                    'default_durations' => [30, 60],
+                    'require_phone' => false,
+                    'send_reminders' => true,
+                    'reminder_hours' => 24,
+                    // Buffer & Limits
+                    'buffer_before' => 10,
+                    'buffer_after' => 10,
+                    'min_notice_hours' => 24,
+                    'max_advance_days' => 60,
+                    // Reschedule & Cancellation
+                    'allow_reschedule' => true,
+                    'reschedule_cutoff_hours' => 24,
+                    'allow_cancel' => true,
+                    'cancel_cutoff_hours' => 24,
                 ],
             ],
 

@@ -409,6 +409,16 @@ class Host extends Model
         return $this->hasMany(Client::class);
     }
 
+    public function bookingProfiles(): HasMany
+    {
+        return $this->hasMany(BookingProfile::class);
+    }
+
+    public function oneOnOneBookings(): HasMany
+    {
+        return $this->hasMany(OneOnOneBooking::class);
+    }
+
     public function customerMemberships(): HasMany
     {
         return $this->hasMany(CustomerMembership::class);

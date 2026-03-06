@@ -8,6 +8,7 @@ use App\Http\Controllers\Subdomain\MemberAuthController;
 use App\Http\Controllers\Subdomain\MemberPortalController;
 use App\Http\Controllers\Subdomain\ServiceRequestController;
 use App\Http\Controllers\Subdomain\WaitlistClaimController;
+use App\Http\Controllers\Subdomain\OneOnOnePublicController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -69,6 +70,29 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::get('/claim/{token}', [WaitlistClaimController::class, 'show'])->name('subdomain.waitlist-claim');
         Route::post('/claim/{token}', [WaitlistClaimController::class, 'claim'])->name('subdomain.waitlist-claim.post');
         Route::get('/claim/{token}/success', [WaitlistClaimController::class, 'success'])->name('subdomain.waitlist-claim.success');
+
+        // ─────────────────────────────────────────────────────────────
+        // 1:1 Meeting Booking (Public)
+        // ─────────────────────────────────────────────────────────────
+
+        // Show booking page for an instructor
+        Route::get('/instructor/{instructor}/book-meeting', [OneOnOnePublicController::class, 'showBookingPage'])->name('subdomain.instructor.book-meeting');
+
+        // Get available time slots for an instructor
+        Route::get('/instructor/{instructor}/availability', [OneOnOnePublicController::class, 'getAvailability'])->name('subdomain.instructor.availability');
+
+        // Book a 1:1 meeting with an instructor
+        Route::post('/instructor/{instructor}/book', [OneOnOnePublicController::class, 'storeBooking'])->name('subdomain.instructor.book');
+
+        // Meeting confirmation page
+        Route::get('/meeting/confirmation/{token}', [OneOnOnePublicController::class, 'confirmation'])->name('subdomain.meeting.confirmation');
+
+        // Guest management pages
+        Route::get('/meeting/manage/{token}', [OneOnOnePublicController::class, 'manage'])->name('subdomain.meeting.manage');
+        Route::get('/meeting/manage/{token}/availability', [OneOnOnePublicController::class, 'rescheduleAvailability'])->name('subdomain.meeting.reschedule.availability');
+        Route::post('/meeting/reschedule/{token}', [OneOnOnePublicController::class, 'reschedule'])->name('subdomain.meeting.reschedule');
+        Route::post('/meeting/cancel/{token}', [OneOnOnePublicController::class, 'cancelByGuest'])->name('subdomain.meeting.cancel');
+        Route::get('/meeting/cancelled/{token}', [OneOnOnePublicController::class, 'cancelled'])->name('subdomain.meeting.cancelled');
 
         // Team invitation setup (branded experience)
         Route::get('/setup/invite/{token}', [SubdomainSetupController::class, 'showInvite'])->name('subdomain.invite.show');

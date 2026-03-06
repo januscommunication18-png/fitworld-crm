@@ -5,13 +5,18 @@ namespace App\Http\Controllers\Host;
 use App\Http\Controllers\Controller;
 use App\Models\Feature;
 use App\Models\HostFeature;
+use App\Models\Instructor;
+use App\Models\BookingProfile;
 use App\Services\FeatureService;
+use App\Services\BookingProfileInviteService;
 use Illuminate\Http\Request;
 
 class MarketplaceController extends Controller
 {
-    public function __construct(private FeatureService $featureService)
-    {
+    public function __construct(
+        private FeatureService $featureService,
+        private BookingProfileInviteService $bookingProfileInviteService
+    ) {
     }
 
     /**
@@ -47,7 +52,14 @@ class MarketplaceController extends Controller
         $canEnable = $feature->isFree() || $this->featureService->hostCanAccessPremium($host, $feature);
         $requiresUpgrade = $feature->isPremium() && !$this->featureService->hostCanAccessPremium($host, $feature);
 
-        return view('host.marketplace.show', compact(
+        // Additional data for specific features
+        $additionalData = [];
+
+        if ($feature->slug === 'online-1on1-meeting') {
+            $additionalData['instructors'] = $this->bookingProfileInviteService->getInstructorsWithStatus($host);
+        }
+
+        return view('host.marketplace.show', array_merge(compact(
             'feature',
             'host',
             'hostFeature',
@@ -55,7 +67,7 @@ class MarketplaceController extends Controller
             'config',
             'canEnable',
             'requiresUpgrade'
-        ));
+        ), $additionalData));
     }
 
     /**
@@ -127,6 +139,122 @@ class MarketplaceController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to save configuration.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Grant 1:1 booking access to an instructor.
+     */
+    public function grantOneOnOneAccess(Request $request)
+    {
+        $validated = $request->validate([
+            'instructor_id' => 'required|exists:instructors,id',
+        ]);
+
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Verify instructor belongs to this host
+        $instructor = Instructor::where('host_id', $host->id)
+            ->where('id', $validated['instructor_id'])
+            ->first();
+
+        if (!$instructor) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Instructor not found.',
+            ], 404);
+        }
+
+        // Check if 1:1 meeting feature is enabled
+        if (!$host->hasFeature('online-1on1-meeting')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enable the Online 1:1 Meeting feature first.',
+            ], 400);
+        }
+
+        try {
+            $profile = $this->bookingProfileInviteService->grantAccess($instructor);
+
+            return response()->json([
+                'success' => true,
+                'message' => "1:1 booking access granted to {$instructor->name}. An invitation email has been sent.",
+                'profile' => [
+                    'id' => $profile->id,
+                    'is_enabled' => $profile->is_enabled,
+                    'is_setup_complete' => $profile->is_setup_complete,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to grant access. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Revoke 1:1 booking access from an instructor.
+     */
+    public function revokeOneOnOneAccess(Request $request, BookingProfile $bookingProfile)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Verify profile belongs to this host
+        if ($bookingProfile->host_id !== $host->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Booking profile not found.',
+            ], 404);
+        }
+
+        try {
+            $instructorName = $bookingProfile->instructor?->name ?? 'Unknown';
+            $this->bookingProfileInviteService->revokeAccess($bookingProfile);
+
+            return response()->json([
+                'success' => true,
+                'message' => "1:1 booking access revoked for {$instructorName}.",
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to revoke access. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Resend invitation email to an instructor.
+     */
+    public function resendOneOnOneInvitation(Request $request, BookingProfile $bookingProfile)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Verify profile belongs to this host
+        if ($bookingProfile->host_id !== $host->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Booking profile not found.',
+            ], 404);
+        }
+
+        try {
+            $this->bookingProfileInviteService->resendInvitation($bookingProfile);
+            $instructorName = $bookingProfile->instructor?->name ?? 'Unknown';
+
+            return response()->json([
+                'success' => true,
+                'message' => "Invitation email resent to {$instructorName}.",
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

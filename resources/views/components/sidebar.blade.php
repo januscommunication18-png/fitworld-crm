@@ -61,14 +61,23 @@
             </li>
 
             {{-- Schedule - Requires schedule.view or schedule.view_own --}}
-            @if($canViewSchedule)
-            <li class="nav-item {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') ? 'active' : '' }}" data-nav="schedule">
+            @php
+                // Check 1:1 access for schedule menu
+                $isStudioOwner = $user->isOwner($host);
+                $userInstructor = \App\Models\Instructor::where('host_id', $host->id)->where('user_id', $user->id)->with('bookingProfile')->first();
+                $hasOneOnOneAccess = $userInstructor && $userInstructor->bookingProfile && $userInstructor->bookingProfile->is_enabled;
+                $showOneOnOneMenu = $isStudioOwner || $hasOneOnOneAccess;
+                $scheduleActive = request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') || request()->is('one-on-one*') || request()->is('one-on-one-setup*');
+            @endphp
+            @if($canViewSchedule || $showOneOnOneMenu)
+            <li class="nav-item {{ $scheduleActive ? 'active' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.schedule'] ?? 'Schedule' }}</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
-                <ul class="sidebar-submenu {{ request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                <ul class="sidebar-submenu {{ $scheduleActive ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
+                    @if($canViewSchedule)
                     <li><a href="{{ url('/schedule/calendar') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule/calendar') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-month] size-4 mr-2"></span>{{ $trans['nav.schedule.calendar'] ?? 'Calendar View' }}
                     </a></li>
@@ -84,6 +93,21 @@
                     </a></li>
                     <li><a href="{{ url('/space-rentals') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--building] size-4 mr-2"></span>{{ $trans['nav.schedule.space_rentals'] ?? 'Space Rentals' }}
+                    </a></li>
+                    @endif
+                    @endif
+                    {{-- 1:1 Meetings --}}
+                    @if($showOneOnOneMenu)
+                    <li class="border-t border-base-content/10 mt-2 pt-2">
+                        <span class="block px-3 py-1 text-xs font-semibold text-base-content/40 uppercase">1:1 Meetings</span>
+                    </li>
+                    @if($hasOneOnOneAccess)
+                    <li><a href="{{ route('one-on-one-setup.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('one-on-one-setup.*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--settings] size-4 mr-2"></span>{{ $trans['nav.one_on_one.setup'] ?? 'My Booking Setup' }}
+                    </a></li>
+                    @endif
+                    <li><a href="{{ route('one-on-one.index') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('one-on-one.index') || request()->routeIs('one-on-one.show') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-check] size-4 mr-2"></span>{{ $isStudioOwner ? ($trans['nav.one_on_one.all_bookings'] ?? 'All 1:1 Bookings') : ($trans['nav.one_on_one.my_bookings'] ?? 'My 1:1 Bookings') }}
                     </a></li>
                     @endif
                 </ul>

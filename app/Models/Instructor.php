@@ -84,6 +84,11 @@ class Instructor extends Model
         return $this->hasOne(TeamInvitation::class);
     }
 
+    public function bookingProfile(): HasOne
+    {
+        return $this->hasOne(BookingProfile::class);
+    }
+
     public function servicePlans(): BelongsToMany
     {
         return $this->belongsToMany(ServicePlan::class, 'service_plan_instructors')

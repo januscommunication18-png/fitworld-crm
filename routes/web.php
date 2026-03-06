@@ -6,6 +6,8 @@ use App\Http\Controllers\Host\DashboardController;
 use App\Http\Controllers\Host\InstructorController;
 use App\Http\Controllers\Host\InvitationController;
 use App\Http\Controllers\Host\MarketplaceController;
+use App\Http\Controllers\Host\OneOnOneSetupController;
+use App\Http\Controllers\Host\OneOnOneBookingController;
 use App\Http\Controllers\Host\LocationController;
 use App\Http\Controllers\Host\RoomController;
 use App\Http\Controllers\Host\BookingPageController;
@@ -527,6 +529,27 @@ Route::middleware('auth')->group(function () {
         Route::get('/{feature:slug}', [MarketplaceController::class, 'show'])->name('show');
         Route::post('/{feature}/toggle', [MarketplaceController::class, 'toggle'])->name('toggle');
         Route::post('/{feature}/config', [MarketplaceController::class, 'updateConfig'])->name('config');
+
+        // 1:1 Meeting specific routes
+        Route::post('/online-1on1-meeting/grant-access', [MarketplaceController::class, 'grantOneOnOneAccess'])->name('one-on-one.grant-access');
+        Route::post('/online-1on1-meeting/revoke-access/{bookingProfile}', [MarketplaceController::class, 'revokeOneOnOneAccess'])->name('one-on-one.revoke-access');
+        Route::post('/online-1on1-meeting/resend-invitation/{bookingProfile}', [MarketplaceController::class, 'resendOneOnOneInvitation'])->name('one-on-one.resend-invitation');
+    });
+
+    // 1:1 Booking Setup (Team Member)
+    Route::prefix('one-on-one-setup')->name('one-on-one-setup.')->group(function () {
+        Route::get('/', [OneOnOneSetupController::class, 'index'])->name('index');
+        Route::post('/', [OneOnOneSetupController::class, 'store'])->name('store');
+        Route::put('/', [OneOnOneSetupController::class, 'update'])->name('update');
+    });
+
+    // 1:1 Bookings Management (Team Member)
+    Route::prefix('one-on-one')->name('one-on-one.')->group(function () {
+        Route::get('/', [OneOnOneBookingController::class, 'index'])->name('index');
+        Route::get('/{booking}', [OneOnOneBookingController::class, 'show'])->name('show');
+        Route::post('/{booking}/cancel', [OneOnOneBookingController::class, 'cancel'])->name('cancel');
+        Route::post('/{booking}/complete', [OneOnOneBookingController::class, 'complete'])->name('complete');
+        Route::post('/{booking}/no-show', [OneOnOneBookingController::class, 'noShow'])->name('no-show');
     });
 
     // Reports / Insights

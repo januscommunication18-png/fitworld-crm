@@ -1,0 +1,460 @@
+@extends('layouts.dashboard')
+
+@section('title', $isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings')
+
+@section('breadcrumbs')
+    <ol>
+        <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li aria-current="page">{{ $isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings' }}</li>
+    </ol>
+@endsection
+
+@section('content')
+<div class="space-y-6">
+    {{-- Header --}}
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold">{{ $isOwner ? 'All 1:1 Bookings' : 'My 1:1 Bookings' }}</h1>
+            <p class="text-base-content/60 mt-1">
+                @if($isOwner)
+                    View and manage all 1:1 meetings across your team.
+                @else
+                    Manage your upcoming and past 1:1 meetings.
+                @endif
+            </p>
+        </div>
+        @if(!$isOwner && $profile)
+        <a href="{{ route('one-on-one-setup.index') }}" class="btn btn-ghost btn-sm">
+            <span class="icon-[tabler--settings] size-5"></span>
+            Settings
+        </a>
+        @else
+        <a href="{{ route('marketplace.show', 'online-1on1-meeting') }}" class="btn btn-ghost btn-sm">
+            <span class="icon-[tabler--users-plus] size-5"></span>
+            Manage Access
+        </a>
+        @endif
+    </div>
+
+    {{-- Flash Messages --}}
+    @if(session('success'))
+    <div class="alert alert-soft alert-success">
+        <span class="icon-[tabler--check] size-5"></span>
+        <span>{{ session('success') }}</span>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div class="alert alert-soft alert-error">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <span>{{ session('error') }}</span>
+    </div>
+    @endif
+
+    {{-- Filters Row --}}
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        {{-- Status Tabs --}}
+        <div class="tabs tabs-bordered">
+            <a href="{{ route('one-on-one.index', array_merge(['status' => 'upcoming'], $isOwner && $selectedInstructorId ? ['instructor_id' => $selectedInstructorId] : [])) }}"
+                class="tab {{ $currentStatus === 'upcoming' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--calendar-event] size-4 me-1"></span>
+                Upcoming
+            </a>
+            <a href="{{ route('one-on-one.index', array_merge(['status' => 'past'], $isOwner && $selectedInstructorId ? ['instructor_id' => $selectedInstructorId] : [])) }}"
+                class="tab {{ $currentStatus === 'past' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--history] size-4 me-1"></span>
+                Past
+            </a>
+            <a href="{{ route('one-on-one.index', array_merge(['status' => 'cancelled'], $isOwner && $selectedInstructorId ? ['instructor_id' => $selectedInstructorId] : [])) }}"
+                class="tab {{ $currentStatus === 'cancelled' ? 'tab-active' : '' }}">
+                <span class="icon-[tabler--calendar-off] size-4 me-1"></span>
+                Cancelled
+            </a>
+        </div>
+
+        {{-- Instructor Filter (Owner only) --}}
+        @if($isOwner && $instructorsWithProfiles->isNotEmpty())
+        <div class="flex items-center gap-2">
+            <label class="text-sm text-base-content/60" for="instructor_filter">Filter by:</label>
+            <select id="instructor_filter" class="select select-sm select-bordered w-48" onchange="filterByInstructor(this.value)">
+                <option value="">All Team Members</option>
+                @foreach($instructorsWithProfiles as $inst)
+                    <option value="{{ $inst->id }}" {{ $selectedInstructorId == $inst->id ? 'selected' : '' }}>
+                        {{ $inst->name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        @endif
+    </div>
+
+    {{-- Bookings List --}}
+    @if($bookings->isEmpty())
+    <div class="card bg-base-100">
+        <div class="card-body text-center py-12">
+            @if($currentStatus === 'upcoming')
+            <span class="icon-[tabler--calendar-event] size-16 text-base-content/20 mx-auto"></span>
+            <h3 class="text-lg font-semibold mt-4">No Upcoming Bookings</h3>
+            @if($isOwner)
+            <p class="text-base-content/60 mt-1">There are no upcoming 1:1 meetings scheduled.</p>
+            @else
+            <p class="text-base-content/60 mt-1">You don't have any upcoming 1:1 meetings scheduled.</p>
+            @if($profile && $profile->is_setup_complete)
+            <p class="text-base-content/60 mt-2">Share your booking link to get started:</p>
+            <div class="bg-base-200 rounded-lg p-3 mt-3 max-w-md mx-auto">
+                <p class="text-sm font-mono break-all">{{ $profile->getPublicUrl() }}</p>
+            </div>
+            <button type="button" onclick="copyToClipboard('{{ $profile->getPublicUrl() }}')" class="btn btn-primary btn-sm mt-3">
+                <span class="icon-[tabler--copy] size-4"></span>
+                Copy Link
+            </button>
+            @endif
+            @endif
+            @elseif($currentStatus === 'past')
+            <span class="icon-[tabler--history] size-16 text-base-content/20 mx-auto"></span>
+            <h3 class="text-lg font-semibold mt-4">No Past Bookings</h3>
+            <p class="text-base-content/60 mt-1">{{ $isOwner ? 'There are' : 'You don\'t have' }} no past 1:1 meetings yet.</p>
+            @else
+            <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto"></span>
+            <h3 class="text-lg font-semibold mt-4">No Cancelled Bookings</h3>
+            <p class="text-base-content/60 mt-1">{{ $isOwner ? 'There are' : 'You don\'t have' }} no cancelled 1:1 meetings.</p>
+            @endif
+        </div>
+    </div>
+    @else
+    <div class="card bg-base-100">
+        <div class="card-body p-0">
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Guest</th>
+                            @if($isOwner)
+                            <th>Team Member</th>
+                            @endif
+                            <th>Date & Time</th>
+                            <th>Duration</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($bookings as $booking)
+                        <tr>
+                            <td>
+                                <div class="flex items-center gap-3">
+                                    <div class="avatar avatar-placeholder">
+                                        <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold text-sm">
+                                            {{ strtoupper(substr($booking->guest_first_name, 0, 1) . substr($booking->guest_last_name, 0, 1)) }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium">{{ $booking->guest_first_name }} {{ $booking->guest_last_name }}</div>
+                                        <div class="text-sm text-base-content/60">{{ $booking->guest_email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            @if($isOwner)
+                            <td>
+                                <div class="flex items-center gap-2">
+                                    @if($booking->bookingProfile?->instructor?->photo_url)
+                                        <img src="{{ $booking->bookingProfile->instructor->photo_url }}" alt="{{ $booking->bookingProfile->instructor->name }}" class="w-8 h-8 rounded-full object-cover">
+                                    @else
+                                        <div class="avatar avatar-placeholder">
+                                            <div class="bg-secondary text-secondary-content w-8 h-8 rounded-full text-xs font-bold">
+                                                {{ strtoupper(substr($booking->bookingProfile?->instructor?->name ?? 'U', 0, 1)) }}
+                                            </div>
+                                        </div>
+                                    @endif
+                                    <span class="text-sm">{{ $booking->bookingProfile?->instructor?->name ?? 'Unknown' }}</span>
+                                </div>
+                            </td>
+                            @endif
+                            <td>
+                                <div class="font-medium">{{ $booking->start_time->format('M j, Y') }}</div>
+                                <div class="text-sm text-base-content/60">{{ $booking->start_time->format('g:i A') }} - {{ $booking->end_time->format('g:i A') }}</div>
+                            </td>
+                            <td>{{ $booking->duration_minutes }} min</td>
+                            <td>
+                                @php
+                                    $typeIcon = match($booking->meeting_type) {
+                                        'in_person' => 'icon-[tabler--map-pin]',
+                                        'phone' => 'icon-[tabler--phone]',
+                                        'video' => 'icon-[tabler--video]',
+                                        default => 'icon-[tabler--calendar]',
+                                    };
+                                    $typeLabel = match($booking->meeting_type) {
+                                        'in_person' => 'In-Person',
+                                        'phone' => 'Phone',
+                                        'video' => 'Video',
+                                        default => ucfirst($booking->meeting_type),
+                                    };
+                                @endphp
+                                <span class="flex items-center gap-1 text-sm">
+                                    <span class="{{ $typeIcon }} size-4"></span>
+                                    {{ $typeLabel }}
+                                </span>
+                            </td>
+                            <td>
+                                @php
+                                    $statusBadge = match($booking->status) {
+                                        'confirmed' => 'badge-success',
+                                        'completed' => 'badge-info',
+                                        'cancelled' => 'badge-error',
+                                        'no_show' => 'badge-warning',
+                                        default => 'badge-ghost',
+                                    };
+                                @endphp
+                                <span class="badge {{ $statusBadge }} badge-soft badge-sm">
+                                    {{ ucfirst(str_replace('_', ' ', $booking->status)) }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="flex items-center justify-end gap-1">
+                                    {{-- View Button --}}
+                                    <a href="{{ route('one-on-one.show', $booking) }}" class="btn btn-ghost btn-xs btn-square" title="View Details">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+
+                                    @if($booking->status === 'confirmed')
+                                        @if($booking->start_time->isPast())
+                                        {{-- Complete Button --}}
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square text-success" title="Mark Completed" onclick="markComplete({{ $booking->id }})">
+                                            <span class="icon-[tabler--check] size-4"></span>
+                                        </button>
+                                        {{-- No-Show Button --}}
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square text-warning" title="Mark No-Show" onclick="markNoShow({{ $booking->id }})">
+                                            <span class="icon-[tabler--user-off] size-4"></span>
+                                        </button>
+                                        @else
+                                        {{-- Cancel Button --}}
+                                        <button type="button" class="btn btn-ghost btn-xs btn-square text-error" title="Cancel Booking" onclick="openCancelModal({{ $booking->id }})">
+                                            <span class="icon-[tabler--x] size-4"></span>
+                                        </button>
+                                        @endif
+                                    @endif
+
+                                    {{-- More Actions Dropdown --}}
+                                    <div class="dropdown relative inline-flex [--trigger:hover] [--placement:bottom-end]">
+                                        <button type="button" class="dropdown-toggle btn btn-ghost btn-xs btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="Actions">
+                                            <span class="icon-[tabler--dots] size-4"></span>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-44" role="menu">
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('one-on-one.show', $booking) }}">
+                                                    <span class="icon-[tabler--eye] size-4 me-2"></span>View Details
+                                                </a>
+                                            </li>
+                                            @if($booking->guest_email)
+                                            <li>
+                                                <a class="dropdown-item" href="mailto:{{ $booking->guest_email }}">
+                                                    <span class="icon-[tabler--mail] size-4 me-2"></span>Email Guest
+                                                </a>
+                                            </li>
+                                            @endif
+                                            @if($booking->guest_phone)
+                                            <li>
+                                                <a class="dropdown-item" href="tel:{{ $booking->guest_phone }}">
+                                                    <span class="icon-[tabler--phone] size-4 me-2"></span>Call Guest
+                                                </a>
+                                            </li>
+                                            @endif
+                                            @if($booking->status === 'confirmed')
+                                                @if($booking->start_time->isPast())
+                                                <li class="border-t border-base-200 mt-1 pt-1">
+                                                    <button type="button" class="dropdown-item" onclick="markComplete({{ $booking->id }})">
+                                                        <span class="icon-[tabler--check] size-4 me-2 text-success"></span>Mark Completed
+                                                    </button>
+                                                </li>
+                                                <li>
+                                                    <button type="button" class="dropdown-item" onclick="markNoShow({{ $booking->id }})">
+                                                        <span class="icon-[tabler--user-off] size-4 me-2 text-warning"></span>Mark No-Show
+                                                    </button>
+                                                </li>
+                                                @else
+                                                <li class="border-t border-base-200 mt-1 pt-1">
+                                                    <button type="button" class="dropdown-item text-error" onclick="openCancelModal({{ $booking->id }})">
+                                                        <span class="icon-[tabler--x] size-4 me-2"></span>Cancel Booking
+                                                    </button>
+                                                </li>
+                                                @endif
+                                            @endif
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- Pagination --}}
+    @if($bookings->hasPages())
+    <div class="flex justify-center">
+        {{ $bookings->links() }}
+    </div>
+    @endif
+    @endif
+</div>
+
+{{-- Cancel Modal --}}
+<div id="cancel-modal" class="overlay modal overlay-open:opacity-100 hidden" role="dialog" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Cancel Booking</h3>
+                <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" onclick="closeCancelModal()">
+                    <span class="icon-[tabler--x] size-4"></span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="text-base-content/70">Are you sure you want to cancel this booking? The guest will be notified via email.</p>
+                <div class="mt-4">
+                    <label class="label-text" for="cancel_reason">Reason (optional)</label>
+                    <textarea id="cancel_reason" class="textarea w-full" rows="3" placeholder="Provide a reason for cancellation..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="closeCancelModal()">Keep Booking</button>
+                <button type="button" class="btn btn-error" id="confirm-cancel-btn" onclick="confirmCancel()">
+                    <span class="loading loading-spinner loading-sm hidden"></span>
+                    Cancel Booking
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script>
+let bookingToCancel = null;
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        if (typeof Notyf !== 'undefined') {
+            new Notyf().success('Link copied to clipboard!');
+        }
+    });
+}
+
+function filterByInstructor(instructorId) {
+    const url = new URL(window.location.href);
+    if (instructorId) {
+        url.searchParams.set('instructor_id', instructorId);
+    } else {
+        url.searchParams.delete('instructor_id');
+    }
+    window.location.href = url.toString();
+}
+
+function openCancelModal(bookingId) {
+    bookingToCancel = bookingId;
+    document.getElementById('cancel_reason').value = '';
+    document.getElementById('cancel-modal').classList.remove('hidden');
+}
+
+function closeCancelModal() {
+    bookingToCancel = null;
+    document.getElementById('cancel-modal').classList.add('hidden');
+}
+
+async function confirmCancel() {
+    if (!bookingToCancel) return;
+
+    const btn = document.getElementById('confirm-cancel-btn');
+    const spinner = btn.querySelector('.loading');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    const reason = document.getElementById('cancel_reason').value;
+
+    try {
+        const response = await fetch(`/one-on-one/${bookingToCancel}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ reason }),
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            window.location.reload();
+        } else {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf().error(result.message || 'Failed to cancel booking');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        if (typeof Notyf !== 'undefined') {
+            new Notyf().error('An error occurred');
+        }
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+    }
+}
+
+async function markComplete(bookingId) {
+    if (!confirm('Mark this booking as completed?')) return;
+
+    try {
+        const response = await fetch(`/one-on-one/${bookingId}/complete`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            window.location.reload();
+        } else {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf().error(result.message || 'Failed to update booking');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function markNoShow(bookingId) {
+    if (!confirm('Mark this booking as no-show?')) return;
+
+    try {
+        const response = await fetch(`/one-on-one/${bookingId}/no-show`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            window.location.reload();
+        } else {
+            if (typeof Notyf !== 'undefined') {
+                new Notyf().error(result.message || 'Failed to update booking');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+</script>
+@endpush
+@endsection

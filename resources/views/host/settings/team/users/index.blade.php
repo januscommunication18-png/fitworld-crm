@@ -145,9 +145,19 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
-                                    <span class="icon-[tabler--eye] size-4"></span>
-                                </a>
+                                <div class="flex items-center gap-1">
+                                    @if(!$hasLogin && $user->email && $userRole !== 'owner')
+                                    <form action="{{ route('settings.team.users.send-invite', $user) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-primary" title="Send Signup Invite">
+                                            <span class="icon-[tabler--mail-forward] size-4"></span>
+                                        </button>
+                                    </form>
+                                    @endif
+                                    <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -284,9 +294,19 @@
                                 —
                             </td>
                             <td>
-                                <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
-                                    <span class="icon-[tabler--eye] size-4"></span>
-                                </a>
+                                <div class="flex items-center gap-1">
+                                    @if($instructor->email)
+                                    <form action="{{ route('instructors.invite', $instructor) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-primary" title="Send Signup Invite">
+                                            <span class="icon-[tabler--mail-forward] size-4"></span>
+                                        </button>
+                                    </form>
+                                    @endif
+                                    <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         @endforeach

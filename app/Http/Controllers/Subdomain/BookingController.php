@@ -178,6 +178,13 @@ class BookingController extends Controller
         // Load certifications for public display
         $instructor->load('studioCertifications');
 
+        // Load booking profile if exists and is accepting bookings
+        $bookingProfile = \App\Models\BookingProfile::where('host_id', $host->id)
+            ->where('instructor_id', $instructor->id)
+            ->where('is_enabled', true)
+            ->where('is_setup_complete', true)
+            ->first();
+
         // Get instructor's upcoming classes
         $upcomingSessions = ClassSession::where('host_id', $host->id)
             ->where('primary_instructor_id', $instructor->id)
@@ -192,6 +199,7 @@ class BookingController extends Controller
             'host' => $host,
             'instructor' => $instructor,
             'upcomingSessions' => $upcomingSessions,
+            'bookingProfile' => $bookingProfile,
         ]);
     }
 
