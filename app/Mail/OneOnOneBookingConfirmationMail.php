@@ -117,7 +117,7 @@ class OneOnOneBookingConfirmationMail extends Mailable
         // ICS download URL
         $subdomain = $host->subdomain;
         $domain = config('app.booking_domain', 'fitcrm.biz');
-        $icsUrl = "https://{$subdomain}.{$domain}/meeting/calendar/{$booking->confirmation_token}.ics";
+        $icsUrl = "https://{$subdomain}.{$domain}/meeting/calendar/{$booking->confirmation_token}";
 
         return [
             'google' => $googleUrl,

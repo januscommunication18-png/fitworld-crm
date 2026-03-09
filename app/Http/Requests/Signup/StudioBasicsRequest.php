@@ -20,7 +20,9 @@ class StudioBasicsRequest extends FormRequest
             'studio_name' => ['required', 'string', 'max:255'],
             'studio_types' => ['array'],
             'studio_types.*' => ['string'],
+            'country' => ['required', 'string', 'max:2', 'in:US,CA,GB,DE,AU,IN'],
             'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string', 'max:255'],
             'timezone' => ['required', 'string', 'timezone'],
             'subdomain' => [
                 'required',

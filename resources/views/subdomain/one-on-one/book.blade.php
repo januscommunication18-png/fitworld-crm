@@ -103,16 +103,16 @@
     .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
         color: oklch(var(--bc) / 0.25) !important;
     }
-    /* Suggested dates from invite */
-    .flatpickr-day.suggested-date:not(.flatpickr-disabled) {
+    /* Available dates from invite - highlighted */
+    .flatpickr-day.invite-date:not(.flatpickr-disabled) {
         background: oklch(var(--p) / 0.15) !important;
         border: 2px solid oklch(var(--p) / 0.4) !important;
         font-weight: 600;
     }
-    .flatpickr-day.suggested-date:not(.flatpickr-disabled):hover {
+    .flatpickr-day.invite-date:not(.flatpickr-disabled):hover {
         background: oklch(var(--p) / 0.25) !important;
     }
-    .flatpickr-day.suggested-date.selected {
+    .flatpickr-day.invite-date.selected {
         background: oklch(var(--p)) !important;
         border-color: oklch(var(--p)) !important;
     }
@@ -133,52 +133,26 @@
     $initials = collect(explode(' ', $instructor->name))->map(fn($n) => strtoupper(substr($n, 0, 1)))->take(2)->join('');
     $workingDaysJson = json_encode($profile->working_days ?? [1,2,3,4,5]);
     $meetingTypeLabelsJson = json_encode($meetingTypeLabels);
-    // Use preselected duration if available, otherwise use first allowed duration
     $firstDuration = $preselectedDuration ?? $allowedDurations[0] ?? 30;
     $firstMeetingType = $meetingTypes[0] ?? 'video';
 
-    // Check if we have multi-slot invite
-    $hasMultipleSlots = !empty($preselectedSlots);
+    // Check if we have slots from invite
+    $hasInviteSlots = !empty($preselectedSlots);
+    $inviteSlotsJson = $hasInviteSlots ? json_encode($preselectedSlots) : '{}';
 
-    // Format preselected datetime for display (legacy single slot)
-    $preselectedDateFormatted = '';
-    $preselectedTimeFormatted = '';
-    if (($isSpecificTimeInvite ?? false) && !$hasMultipleSlots && ($preselectedDate ?? null) && ($preselectedTime ?? null)) {
-        $preselectedDateFormatted = \Carbon\Carbon::parse($preselectedDate)->format('l, F j, Y');
-        $preselectedTimeFormatted = \Carbon\Carbon::parse($preselectedTime)->format('g:i A');
-    }
-
-    // Format multi-slot dates for display
-    $formattedMultiSlots = [];
-    if ($hasMultipleSlots) {
-        foreach ($preselectedSlots as $date => $times) {
-            $dateObj = \Carbon\Carbon::parse($date);
-            $formattedTimes = [];
-            foreach ($times as $time) {
-                $timeObj = \Carbon\Carbon::parse($time);
-                $formattedTimes[] = [
-                    'time' => $time,
-                    'display' => $timeObj->format('g:i A'),
-                ];
-            }
-            $formattedMultiSlots[] = [
-                'date' => $date,
-                'date_display' => $dateObj->format('l, M j'),
-                'date_full' => $dateObj->format('l, F j, Y'),
-                'times' => $formattedTimes,
-            ];
-        }
-    }
+    // Split preselected name into first and last name
+    $nameParts = ($preselectedName ?? null) ? explode(' ', $preselectedName, 2) : ['', ''];
+    $preFirstName = $nameParts[0] ?? '';
+    $preLastName = $nameParts[1] ?? '';
 @endphp
 
 <div class="min-h-screen bg-gradient-to-br from-base-200/50 to-base-100 flex items-center justify-center px-4 py-8">
 
-    {{-- Step 1: Date & Time Selection --}}
-    <div id="step-calendar" class="w-[40%]">
+    <div id="step-calendar" class="w-full max-w-4xl">
         <div class="bg-base-100 rounded-2xl shadow-xl overflow-hidden border border-base-200/50">
 
             {{-- Back Button --}}
-            <div class="px-6 pt-8">
+            <div class="px-6 pt-6">
                 <a href="{{ route('subdomain.instructor', ['subdomain' => $host->subdomain, 'instructor' => $instructor->id]) }}"
                    class="inline-flex items-center gap-1.5 text-sm text-base-content/50 hover:text-primary transition-colors group">
                     <span class="icon-[tabler--arrow-left] size-4 group-hover:-translate-x-0.5 transition-transform"></span>
@@ -218,7 +192,7 @@
                             <span class="icon-[tabler--clock] size-4 text-base-content/40"></span>
                             <span id="display-duration">{{ $firstDuration }} min</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2" id="display-type-row">
                             @if($firstMeetingType === 'video')
                                 <span class="icon-[tabler--video] size-4 text-base-content/40"></span>
                             @elseif($firstMeetingType === 'phone')
@@ -275,16 +249,16 @@
                     </p>
                 </div>
 
-                {{-- Columns 2 & 3: Calendar & Slots (hidden when specific time invite) --}}
-                <div id="calendar-slots-section" class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-base-200 {{ ($isSpecificTimeInvite ?? false) ? 'hidden' : '' }}">
-                    {{-- Calendar --}}
-                    <div class="p-6">
-                        <h3 class="text-sm font-semibold text-base-content/50 uppercase tracking-wider mb-4">Select Date</h3>
-                        <div id="calendar-inline"></div>
-                    </div>
+                {{-- Column 2: Calendar --}}
+                <div id="calendar-section" class="p-6 border-b lg:border-b-0 lg:border-r border-base-200">
+                    <h3 class="text-sm font-semibold text-base-content/50 uppercase tracking-wider mb-4">Select Date</h3>
+                    <div id="calendar-inline"></div>
+                </div>
 
-                    {{-- Time Slots --}}
-                    <div class="p-6">
+                {{-- Column 3: Time Slots OR Form --}}
+                <div class="p-6">
+                    {{-- Time Slots Container --}}
+                    <div id="time-slots-section">
                         <div id="time-slots-container" class="min-h-[320px]">
                             <div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8">
                                 <span class="icon-[tabler--calendar-event] size-12 mb-3"></span>
@@ -293,106 +267,58 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {{-- Multi-slot Selection (shown for multi-slot invites) --}}
-                @if($hasMultipleSlots ?? false)
-                <div id="multi-slot-section" class="lg:col-span-2 p-6">
-                    <div class="mb-4">
-                        <h3 class="text-base font-semibold text-base-content mb-1">Suggested Times</h3>
-                        <p class="text-sm text-base-content/50">Select a time that works for you</p>
-                    </div>
+                    {{-- Form Section (hidden initially) --}}
+                    <div id="form-section" class="hidden">
+                        {{-- Selected Time Summary --}}
+                        <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--calendar-check] size-5 text-primary"></span>
+                                <div>
+                                    <p class="font-medium text-base-content text-sm" id="summary-datetime"></p>
+                                    <p class="text-xs text-base-content/50" id="summary-details"></p>
+                                </div>
+                            </div>
+                            <button type="button" id="change-time" class="text-xs text-primary hover:underline font-medium">Change</button>
+                        </div>
 
-                    <div class="space-y-4">
-                        @foreach($formattedMultiSlots as $slotGroup)
-                        <div class="border border-base-200 rounded-xl p-4">
-                            <p class="font-medium text-sm text-base-content mb-3 flex items-center gap-2">
-                                <span class="icon-[tabler--calendar] size-4 text-primary"></span>
-                                {{ $slotGroup['date_display'] }}
-                            </p>
-                            <div class="flex flex-wrap gap-2">
-                                @foreach($slotGroup['times'] as $timeSlot)
-                                <button type="button"
-                                        class="suggested-slot-btn time-slot-btn py-2.5 px-4 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center transition-all"
-                                        data-date="{{ $slotGroup['date'] }}"
-                                        data-date-display="{{ $slotGroup['date_full'] }}"
-                                        data-time="{{ $timeSlot['time'] }}"
-                                        data-time-display="{{ $timeSlot['display'] }}">
-                                    {{ $timeSlot['display'] }}
-                                </button>
-                                @endforeach
+                        {{-- Form --}}
+                        <h3 class="text-sm font-semibold text-base-content/50 uppercase tracking-wider mb-4">Your Details</h3>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs text-base-content/60 mb-1 block" for="first_name">First Name <span class="text-error">*</span></label>
+                                    <input type="text" id="first_name" class="input input-bordered input-sm w-full" placeholder="John" value="{{ $preFirstName }}" required>
+                                </div>
+                                <div>
+                                    <label class="text-xs text-base-content/60 mb-1 block" for="last_name">Last Name <span class="text-error">*</span></label>
+                                    <input type="text" id="last_name" class="input input-bordered input-sm w-full" placeholder="Doe" value="{{ $preLastName }}" required>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-base-content/60 mb-1 block" for="email">Email <span class="text-error">*</span></label>
+                                <input type="email" id="email" class="input input-bordered input-sm w-full" placeholder="john@example.com" value="{{ $preselectedEmail ?? '' }}" required>
+                            </div>
+                            <div>
+                                <label class="text-xs text-base-content/60 mb-1 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
+                                <input type="tel" id="phone" class="input input-bordered input-sm w-full" placeholder="+1 (555) 000-0000">
+                            </div>
+                            <div>
+                                <label class="text-xs text-base-content/60 mb-1 block" for="notes">Notes <span class="text-base-content/30">(optional)</span></label>
+                                <textarea id="notes" class="textarea textarea-bordered textarea-sm w-full" rows="2" placeholder="Any additional information..."></textarea>
                             </div>
                         </div>
-                        @endforeach
-                    </div>
 
-                    <div class="mt-5 pt-4 border-t border-base-200 flex items-center justify-between">
-                        <p class="text-xs text-base-content/40">
-                            <span class="icon-[tabler--info-circle] size-3.5 inline-block mr-1"></span>
-                            None of these work?
-                        </p>
-                        <button type="button" id="view-all-times" class="text-sm text-primary font-medium hover:underline flex items-center gap-1">
-                            View all available times
-                            <span class="icon-[tabler--arrow-right] size-4"></span>
+                        <div id="booking-error" class="alert alert-error alert-soft hidden mt-4 text-sm">
+                            <span class="icon-[tabler--alert-circle] size-4"></span>
+                            <span id="error-message"></span>
+                        </div>
+
+                        <button type="button" id="submit-booking" class="btn btn-primary w-full mt-4">
+                            <span class="loading loading-spinner loading-sm hidden"></span>
+                            <span class="btn-text">Schedule Meeting</span>
                         </button>
                     </div>
-                </div>
-                @endif
-
-                {{-- Form Section (replaces calendar & slots, shown by default for specific time invite) --}}
-                <div id="form-section" class="{{ ($isSpecificTimeInvite ?? false) ? '' : 'hidden' }} lg:col-span-2 p-6">
-                    {{-- Selected Time Summary --}}
-                    <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="icon-[tabler--calendar-check] size-5 text-primary"></span>
-                            <div>
-                                <p class="font-medium text-base-content text-sm" id="summary-datetime"></p>
-                                <p class="text-xs text-base-content/50" id="summary-details"></p>
-                            </div>
-                        </div>
-                        <button type="button" id="change-time" class="text-xs text-primary hover:underline font-medium">Change</button>
-                    </div>
-
-                    {{-- Form --}}
-                    <h3 class="text-base font-semibold text-base-content mb-4">Your Details</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @php
-                            // Split preselected name into first and last name
-                            $nameParts = $preselectedName ? explode(' ', $preselectedName, 2) : ['', ''];
-                            $preFirstName = $nameParts[0] ?? '';
-                            $preLastName = $nameParts[1] ?? '';
-                        @endphp
-                        <div>
-                            <label class="text-sm text-base-content/60 mb-1.5 block" for="first_name">First Name <span class="text-error">*</span></label>
-                            <input type="text" id="first_name" class="input input-bordered w-full" placeholder="John" value="{{ $preFirstName }}" required>
-                        </div>
-                        <div>
-                            <label class="text-sm text-base-content/60 mb-1.5 block" for="last_name">Last Name <span class="text-error">*</span></label>
-                            <input type="text" id="last_name" class="input input-bordered w-full" placeholder="Doe" value="{{ $preLastName }}" required>
-                        </div>
-                        <div>
-                            <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
-                            <input type="email" id="email" class="input input-bordered w-full" placeholder="john@example.com" value="{{ $preselectedEmail ?? '' }}" required>
-                        </div>
-                        <div>
-                            <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
-                            <input type="tel" id="phone" class="input input-bordered w-full" placeholder="+1 (555) 000-0000">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="text-sm text-base-content/60 mb-1.5 block" for="notes">Notes <span class="text-base-content/30">(optional)</span></label>
-                            <textarea id="notes" class="textarea textarea-bordered w-full" rows="2" placeholder="Any additional information..."></textarea>
-                        </div>
-                    </div>
-
-                    <div id="booking-error" class="alert alert-error hidden mt-4">
-                        <span class="icon-[tabler--alert-circle] size-5"></span>
-                        <span id="error-message"></span>
-                    </div>
-
-                    <button type="button" id="submit-booking" class="btn btn-primary w-full h-12 text-base font-semibold mt-4">
-                        <span class="loading loading-spinner loading-sm hidden"></span>
-                        <span class="btn-text">Schedule Meeting</span>
-                    </button>
                 </div>
 
             </div>
@@ -415,21 +341,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const workingDays = {!! $workingDaysJson !!};
     const meetingTypeLabels = {!! $meetingTypeLabelsJson !!};
 
-    // Preselected values from invite link
-    const preselectedDate = '{{ $preselectedDate ?? '' }}';
-    const preselectedTime = '{{ $preselectedTime ?? '' }}';
-    const isSpecificTimeInvite = {{ ($isSpecificTimeInvite ?? false) ? 'true' : 'false' }};
-    const hasMultipleSlots = {{ ($hasMultipleSlots ?? false) ? 'true' : 'false' }};
-    const suggestedDates = {!! json_encode($hasMultipleSlots ? array_keys($preselectedSlots) : []) !!};
+    // Invite slots data
+    const hasInviteSlots = {{ $hasInviteSlots ? 'true' : 'false' }};
+    const inviteSlots = {!! $inviteSlotsJson !!};
+    const inviteDates = hasInviteSlots ? Object.keys(inviteSlots) : [];
 
     let selectedDuration = {{ $firstDuration }};
     let selectedMeetingType = '{{ $firstMeetingType }}';
-    let selectedDate = preselectedDate || null;
-    let selectedTime = isSpecificTimeInvite ? preselectedTime : null;
+    let selectedDate = null;
+    let selectedTime = null;
     let selectedTimeDisplay = '';
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     document.getElementById('user-timezone').textContent = timezone;
+
+    // Helper to get local date string (avoids timezone issues with toISOString)
+    function getLocalDateStr(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return year + '-' + month + '-' + day;
+    }
 
     // Initialize Flatpickr
     const calendar = flatpickr('#calendar-inline', {
@@ -437,13 +369,12 @@ document.addEventListener('DOMContentLoaded', function() {
         dateFormat: 'Y-m-d',
         minDate: minDateStr,
         maxDate: maxDateStr,
-        defaultDate: preselectedDate || null,
         disable: [
             function(date) {
-                // If we have suggested dates from invite, only allow those dates
-                if (suggestedDates.length > 0) {
-                    const dateStr = date.toISOString().split('T')[0];
-                    return !suggestedDates.includes(dateStr);
+                // If we have invite slots, only allow those specific dates
+                if (hasInviteSlots) {
+                    const dateStr = getLocalDateStr(date);
+                    return !inviteDates.includes(dateStr);
                 }
                 // Otherwise, just disable non-working days
                 return !workingDays.includes(date.getDay());
@@ -452,70 +383,173 @@ document.addEventListener('DOMContentLoaded', function() {
         onChange: function(selectedDates, dateStr) {
             selectedDate = dateStr;
             selectedTime = null;
-            fetchTimeSlots();
+
+            if (hasInviteSlots) {
+                // Show slots from the invite
+                showInviteSlots(dateStr);
+            } else {
+                // Fetch slots from API
+                fetchTimeSlots();
+            }
         },
         onDayCreate: function(dObj, dStr, fp, dayElem) {
-            // Mark suggested dates from invite
-            if (suggestedDates.length > 0) {
-                const dateStr = dayElem.dateObj.toISOString().split('T')[0];
-                if (suggestedDates.includes(dateStr)) {
-                    dayElem.classList.add('suggested-date');
-                    dayElem.title = 'Suggested time available';
+            // Mark invite dates with special styling
+            if (hasInviteSlots) {
+                const dateStr = getLocalDateStr(dayElem.dateObj);
+                if (inviteDates.includes(dateStr)) {
+                    dayElem.classList.add('invite-date');
                 }
             }
         }
     });
 
-    // If this is a specific time invite (single slot, not multi-slot), set up the summary immediately
-    if (isSpecificTimeInvite && !hasMultipleSlots && preselectedDate && preselectedTime) {
-        selectedDate = preselectedDate;
-        selectedTime = preselectedTime;
-        // Convert 24h time to display format
-        const [hours, minutes] = preselectedTime.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const hour12 = hour % 12 || 12;
-        selectedTimeDisplay = hour12 + ':' + minutes + ' ' + ampm;
-
-        // Set up the summary
-        const dateObj = new Date(preselectedDate + 'T12:00:00');
-        const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-        document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
-        document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
-    } else if (preselectedDate && !hasMultipleSlots) {
-        // If just date is preselected (not specific time), fetch time slots
-        fetchTimeSlots();
+    // Categorize slot by time period
+    function categorizeSlot(timeStr) {
+        const hour = parseInt(timeStr.split(':')[0]);
+        if (hour < 12) return 'morning';
+        if (hour < 18) return 'afternoon'; // 12 PM to 6 PM
+        return 'evening'; // 6 PM to 11:59 PM
     }
 
-    // Multi-slot invite: Handle suggested slot button clicks
-    document.querySelectorAll('.suggested-slot-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            selectedDate = this.dataset.date;
-            selectedTime = this.dataset.time;
-            selectedTimeDisplay = this.dataset.timeDisplay;
+    // Current active tab
+    let activeTab = 'morning';
 
-            // Show form with selected slot summary
-            const dateDisplay = this.dataset.dateDisplay;
-            document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
-            document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
+    // Render slots with tabs
+    function renderSlotsWithTabs(container, allSlots, dateDisplay) {
+        const morning = allSlots.filter(s => categorizeSlot(s.time) === 'morning');
+        const afternoon = allSlots.filter(s => categorizeSlot(s.time) === 'afternoon');
+        const evening = allSlots.filter(s => categorizeSlot(s.time) === 'evening');
 
-            // Hide multi-slot section, show form
-            const multiSlotSection = document.getElementById('multi-slot-section');
-            if (multiSlotSection) {
-                multiSlotSection.classList.add('hidden');
+        // Determine default active tab (first non-empty)
+        if (morning.length > 0) activeTab = 'morning';
+        else if (afternoon.length > 0) activeTab = 'afternoon';
+        else if (evening.length > 0) activeTab = 'evening';
+
+        let html = '<p class="font-semibold text-base-content mb-1">' + dateDisplay + '</p>';
+        html += '<p class="text-sm text-base-content/50 mb-4">' + allSlots.length + ' available</p>';
+
+        // Tabs
+        html += '<div class="flex gap-1 mb-4 border-b border-base-200 pb-2">';
+        html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'morning' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (morning.length === 0 ? ' opacity-40 cursor-not-allowed' : '') + '" data-tab="morning" ' + (morning.length === 0 ? 'disabled' : '') + '>Morning' + (morning.length > 0 ? ' (' + morning.length + ')' : '') + '</button>';
+        html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'afternoon' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (afternoon.length === 0 ? ' opacity-40 cursor-not-allowed' : '') + '" data-tab="afternoon" ' + (afternoon.length === 0 ? 'disabled' : '') + '>Afternoon' + (afternoon.length > 0 ? ' (' + afternoon.length + ')' : '') + '</button>';
+        html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'evening' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (evening.length === 0 ? ' opacity-40 cursor-not-allowed' : '') + '" data-tab="evening" ' + (evening.length === 0 ? 'disabled' : '') + '>Evening' + (evening.length > 0 ? ' (' + evening.length + ')' : '') + '</button>';
+        html += '</div>';
+
+        // Slots grid
+        html += '<div id="slots-grid" class="grid grid-cols-3 gap-2 max-h-[220px] overflow-y-auto pr-1"></div>';
+
+        container.innerHTML = html;
+
+        // Render active tab slots
+        renderTabSlots(morning, afternoon, evening);
+
+        // Tab click handlers
+        document.querySelectorAll('.slot-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                if (this.disabled) return;
+                document.querySelectorAll('.slot-tab').forEach(function(t) {
+                    t.classList.remove('bg-primary', 'text-primary-content');
+                    t.classList.add('text-base-content/60');
+                });
+                this.classList.add('bg-primary', 'text-primary-content');
+                this.classList.remove('text-base-content/60');
+                activeTab = this.dataset.tab;
+                renderTabSlots(morning, afternoon, evening);
+            });
+        });
+    }
+
+    function renderTabSlots(morning, afternoon, evening) {
+        const grid = document.getElementById('slots-grid');
+        let slots = [];
+        if (activeTab === 'morning') slots = morning;
+        else if (activeTab === 'afternoon') slots = afternoon;
+        else slots = evening;
+
+        if (slots.length === 0) {
+            grid.innerHTML = '<div class="col-span-3 text-center py-6 text-base-content/40 text-sm">No times in this period</div>';
+            return;
+        }
+
+        let html = '';
+        slots.forEach(function(slot) {
+            html += '<button type="button" class="time-slot-btn py-2 px-2 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center" data-time="' + slot.time + '" data-display="' + slot.display + '">' + slot.display + '</button>';
+        });
+        grid.innerHTML = html;
+
+        // Add click handlers
+        document.querySelectorAll('.time-slot-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                selectedTime = this.dataset.time;
+                selectedTimeDisplay = this.dataset.display;
+                showForm();
+            });
+        });
+    }
+
+    // Show slots from invite data (no API call)
+    function showInviteSlots(dateStr) {
+        const container = document.getElementById('time-slots-container');
+        const slots = inviteSlots[dateStr];
+
+        if (!slots || slots.length === 0) {
+            container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8"><span class="icon-[tabler--calendar-x] size-12 mb-3"></span><p class="font-semibold text-base-content/50">No times available</p></div>';
+            return;
+        }
+
+        const dateObj = new Date(dateStr + 'T12:00:00');
+        const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        // Format slots with display time
+        const formattedSlots = slots.map(function(time) {
+            const [h, m] = time.split(':');
+            const hour = parseInt(h);
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const hour12 = hour % 12 || 12;
+            return {
+                time: time,
+                display: hour12 + ':' + m + ' ' + ampm
+            };
+        });
+
+        renderSlotsWithTabs(container, formattedSlots, dateDisplay);
+    }
+
+    // Fetch slots from API (for non-invite bookings)
+    function fetchTimeSlots() {
+        const container = document.getElementById('time-slots-container');
+        container.innerHTML = '<div class="h-full flex items-center justify-center py-12"><span class="loading loading-spinner loading-lg text-primary"></span></div>';
+
+        fetch(availabilityUrl + '?date=' + selectedDate + '&duration=' + selectedDuration, {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (!data.success || !data.slots || data.slots.length === 0) {
+                container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8"><span class="icon-[tabler--calendar-x] size-12 mb-3"></span><p class="font-semibold text-base-content/50">No times available</p><p class="text-sm mt-1">Try another date</p></div>';
+                return;
             }
-            document.getElementById('form-section').classList.remove('hidden');
-        });
-    });
 
-    // Multi-slot invite: "View all times" button
-    const viewAllTimesBtn = document.getElementById('view-all-times');
-    if (viewAllTimesBtn) {
-        viewAllTimesBtn.addEventListener('click', function() {
-            // Hide multi-slot section, show calendar
-            document.getElementById('multi-slot-section').classList.add('hidden');
-            document.getElementById('calendar-slots-section').classList.remove('hidden');
+            const dateObj = new Date(selectedDate + 'T12:00:00');
+            const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+            renderSlotsWithTabs(container, data.slots, dateDisplay);
+        })
+        .catch(function(err) {
+            console.error(err);
+            container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-error/60 py-8"><span class="icon-[tabler--alert-triangle] size-12 mb-3"></span><p class="font-semibold">Error loading times</p><p class="text-sm mt-1">Please try again</p></div>';
         });
+    }
+
+    function showForm() {
+        const dateObj = new Date(selectedDate + 'T12:00:00');
+        const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+        document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
+        document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
+
+        document.getElementById('time-slots-section').classList.add('hidden');
+        document.getElementById('form-section').classList.remove('hidden');
     }
 
     // Duration buttons
@@ -529,7 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.remove('border-base-300', 'text-base-content/70');
             selectedDuration = parseInt(this.dataset.duration);
             document.getElementById('display-duration').textContent = selectedDuration + ' min';
-            if (selectedDate) fetchTimeSlots();
+            if (selectedDate && !hasInviteSlots) fetchTimeSlots();
         });
     });
 
@@ -547,141 +581,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    let allSlots = [];
-    let activeTab = 'all';
-
-    function categorizeSlot(timeStr) {
-        const hour = parseInt(timeStr.split(':')[0]);
-        if (hour < 12) return 'morning';
-        if (hour < 17) return 'afternoon';
-        return 'evening';
-    }
-
-    function renderSlots() {
-        const container = document.getElementById('slots-grid');
-        if (!container) return;
-
-        let filteredSlots = allSlots;
-        if (activeTab !== 'all') {
-            filteredSlots = allSlots.filter(function(slot) {
-                return categorizeSlot(slot.time) === activeTab;
-            });
-        }
-
-        if (filteredSlots.length === 0) {
-            container.innerHTML = '<div class="col-span-3 text-center py-6 text-base-content/40 text-sm">No times in this period</div>';
-            return;
-        }
-
-        let html = '';
-        filteredSlots.forEach(function(slot) {
-            // Check if this slot matches the preselected time
-            const isPreselected = preselectedTime && slot.time === preselectedTime;
-            const btnClass = isPreselected
-                ? 'time-slot-btn py-2.5 px-2 text-sm font-medium bg-primary text-primary-content border-2 border-primary rounded-lg text-center ring-2 ring-primary/30'
-                : 'time-slot-btn py-2.5 px-2 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center';
-            html += '<button type="button" class="' + btnClass + '" data-time="' + slot.time + '" data-display="' + slot.display + '">' + slot.display + (isPreselected ? ' <span class="icon-[tabler--check] size-3 ml-1"></span>' : '') + '</button>';
-        });
-        container.innerHTML = html;
-
-        document.querySelectorAll('.time-slot-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                selectedTime = this.dataset.time;
-                selectedTimeDisplay = this.dataset.display;
-                showForm();
-            });
-        });
-    }
-
-    function fetchTimeSlots() {
-        const container = document.getElementById('time-slots-container');
-        container.innerHTML = '<div class="h-full flex items-center justify-center py-12"><span class="loading loading-spinner loading-lg text-primary"></span></div>';
-
-        fetch(availabilityUrl + '?date=' + selectedDate + '&duration=' + selectedDuration, {
-            headers: { 'Accept': 'application/json' }
-        })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            if (!data.success || !data.slots || data.slots.length === 0) {
-                container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-base-content/30 py-8"><span class="icon-[tabler--calendar-x] size-12 mb-3"></span><p class="font-semibold text-base-content/50">No times available</p><p class="text-sm mt-1">Try another date</p></div>';
-                return;
-            }
-
-            allSlots = data.slots;
-
-            // If we have a preselected time, switch to the correct tab
-            if (preselectedTime) {
-                activeTab = categorizeSlot(preselectedTime);
-            } else {
-                activeTab = 'morning';
-            }
-
-            const dateObj = new Date(selectedDate + 'T12:00:00');
-            const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-
-            // Count slots by period
-            const morningCount = allSlots.filter(s => categorizeSlot(s.time) === 'morning').length;
-            const afternoonCount = allSlots.filter(s => categorizeSlot(s.time) === 'afternoon').length;
-            const eveningCount = allSlots.filter(s => categorizeSlot(s.time) === 'evening').length;
-
-            let html = '<p class="font-semibold text-base-content mb-1">' + dateDisplay + '</p>';
-            html += '<p class="text-sm text-base-content/50 mb-4">' + data.slots.length + ' available</p>';
-
-            // Tabs - highlight the active tab
-            html += '<div class="flex gap-1 mb-4 border-b border-base-200 pb-2">';
-            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'morning' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (morningCount === 0 ? ' opacity-40' : '') + '" data-tab="morning">Morning' + (morningCount > 0 ? ' (' + morningCount + ')' : '') + '</button>';
-            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'afternoon' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (afternoonCount === 0 ? ' opacity-40' : '') + '" data-tab="afternoon">Afternoon' + (afternoonCount > 0 ? ' (' + afternoonCount + ')' : '') + '</button>';
-            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'evening' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (eveningCount === 0 ? ' opacity-40' : '') + '" data-tab="evening">Evening' + (eveningCount > 0 ? ' (' + eveningCount + ')' : '') + '</button>';
-            html += '</div>';
-
-            html += '<div id="slots-grid" class="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-1"></div>';
-
-            container.innerHTML = html;
-
-            // Tab click handlers
-            document.querySelectorAll('.slot-tab').forEach(function(tab) {
-                tab.addEventListener('click', function() {
-                    document.querySelectorAll('.slot-tab').forEach(function(t) {
-                        t.classList.remove('bg-primary', 'text-primary-content');
-                        t.classList.add('text-base-content/60');
-                    });
-                    this.classList.add('bg-primary', 'text-primary-content');
-                    this.classList.remove('text-base-content/60');
-                    activeTab = this.dataset.tab;
-                    renderSlots();
-                });
-            });
-
-            renderSlots();
-        })
-        .catch(function(err) {
-            console.error(err);
-            container.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-error/60 py-8"><span class="icon-[tabler--alert-triangle] size-12 mb-3"></span><p class="font-semibold">Error loading times</p><p class="text-sm mt-1">Please try again</p></div>';
-        });
-    }
-
-    function showForm() {
-        const dateObj = new Date(selectedDate + 'T12:00:00');
-        const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-
-        document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
-        document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
-
-        document.getElementById('calendar-slots-section').classList.add('hidden');
-        document.getElementById('form-section').classList.remove('hidden');
-    }
-
+    // Change time button
     document.getElementById('change-time').addEventListener('click', function() {
         document.getElementById('form-section').classList.add('hidden');
-        // For multi-slot invites, show the multi-slot section first
-        const multiSlotSection = document.getElementById('multi-slot-section');
-        if (multiSlotSection && hasMultipleSlots) {
-            multiSlotSection.classList.remove('hidden');
-        } else {
-            document.getElementById('calendar-slots-section').classList.remove('hidden');
+        document.getElementById('time-slots-section').classList.remove('hidden');
+
+        // Re-show the slots for the current date
+        if (selectedDate) {
+            if (hasInviteSlots) {
+                showInviteSlots(selectedDate);
+            } else {
+                fetchTimeSlots();
+            }
         }
     });
 
+    // Submit booking
     document.getElementById('submit-booking').addEventListener('click', function() {
         const btn = this;
         const spinner = btn.querySelector('.loading');

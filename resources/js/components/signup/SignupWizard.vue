@@ -15,8 +15,8 @@
         </div>
 
         <template v-else>
-            <!-- Progress bar (steps 2-8) -->
-            <ProgressBar v-if="currentStep >= 2 && currentStep <= 8" :current-step="currentStep" :total-steps="8" />
+            <!-- Progress bar (steps 2-6) -->
+            <ProgressBar v-if="currentStep >= 2 && currentStep <= 6" :current-step="currentStep" :total-steps="6" />
 
             <!-- Step components -->
             <transition name="fade" mode="out-in">
@@ -51,10 +51,8 @@ import Step2Account from './Step2Account.vue'
 import Step3EmailVerification from './Step3EmailVerification.vue'
 import Step4StudioBasics from './Step4StudioBasics.vue'
 import Step5LocationSpace from './Step5LocationSpace.vue'
-import Step6InstructorSetup from './Step6InstructorSetup.vue'
-import Step7ClassSetup from './Step7ClassSetup.vue'
-import Step8Payments from './Step8Payments.vue'
-import Step9GoLive from './Step9GoLive.vue'
+import Step6Payments from './Step8Payments.vue'
+import Step7GoLive from './Step9GoLive.vue'
 
 const props = defineProps({
     csrfToken: { type: String, default: '' },
@@ -80,7 +78,9 @@ const formData = ref({
     // Step 4: Studio
     studio_name: '',
     studio_types: [],
+    country: '',
     city: '',
+    state: '',
     timezone: '',
     subdomain: '',
     // Step 5: Location
@@ -91,18 +91,7 @@ const formData = ref({
     default_capacity: 20,
     room_capacities: [],
     amenities: [],
-    // Step 6: Instructors
-    add_self_as_instructor: true,
-    instructors: [],
-    // Step 7: Class
-    skip_class_setup: false,
-    class_name: '',
-    class_type: '',
-    class_duration: 60,
-    class_capacity: 20,
-    class_instructor_id: null,
-    class_price: null,
-    // Step 8: Payments
+    // Step 6: Payments
     skip_payments: false,
     stripe_connected: false,
 })
@@ -113,10 +102,8 @@ const steps = {
     3: Step3EmailVerification,
     4: Step4StudioBasics,
     5: Step5LocationSpace,
-    6: Step6InstructorSetup,
-    7: Step7ClassSetup,
-    8: Step8Payments,
-    9: Step9GoLive,
+    6: Step6Payments,
+    7: Step7GoLive,
 }
 
 const stepComponent = computed(() => steps[currentStep.value])
@@ -177,7 +164,7 @@ onMounted(async () => {
  * Save the current step's data to the API, then advance.
  */
 async function nextStep() {
-    if (currentStep.value >= 9) return
+    if (currentStep.value >= 7) return
 
     // Step 1 has no API call — just advance
     if (currentStep.value === 1) {
@@ -231,7 +218,9 @@ async function saveCurrentStep() {
             await api.post('/signup/studio', {
                 studio_name: fd.studio_name,
                 studio_types: fd.studio_types,
+                country: fd.country,
                 city: fd.city,
+                state: fd.state,
                 timezone: fd.timezone,
                 subdomain: fd.subdomain,
             })
@@ -245,22 +234,6 @@ async function saveCurrentStep() {
             })
             break
         case 6:
-            await api.post('/signup/instructors', {
-                add_self_as_instructor: fd.add_self_as_instructor,
-                instructors: fd.instructors,
-            })
-            break
-        case 7:
-            await api.post('/signup/classes', {
-                skip_class_setup: fd.skip_class_setup,
-                class_name: fd.class_name,
-                class_type: fd.class_type,
-                class_duration: fd.class_duration,
-                class_capacity: fd.class_capacity,
-                class_price: fd.class_price,
-            })
-            break
-        case 8:
             await api.post('/signup/payments', {
                 skip_payments: fd.skip_payments,
                 stripe_connected: fd.stripe_connected,

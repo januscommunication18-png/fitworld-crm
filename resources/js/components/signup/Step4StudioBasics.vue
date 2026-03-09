@@ -22,24 +22,45 @@
                     />
                 </div>
 
+                <!-- Country + State Row -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-text" for="country">Country</label>
+                        <SearchSelect
+                            v-model="localData.country"
+                            :options="countryOptions"
+                            placeholder="Search country..."
+                            @change="onCountryChange"
+                        />
+                        <p v-if="errors.country" class="text-error text-xs mt-1">{{ errors.country[0] }}</p>
+                    </div>
+                    <div>
+                        <label class="label-text" for="state">State / Province</label>
+                        <SearchSelect
+                            v-model="localData.state"
+                            :options="stateOptions"
+                            placeholder="Search state..."
+                            :disabled="!localData.country"
+                        />
+                        <p v-if="errors.state" class="text-error text-xs mt-1">{{ errors.state[0] }}</p>
+                    </div>
+                </div>
+
+                <!-- City + Timezone Row -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="city">City</label>
                         <input id="city" type="text" class="input w-full" :class="{ 'input-error': errors.city }"
-                            v-model="localData.city" placeholder="e.g. Austin, TX" />
+                            v-model="localData.city" placeholder="e.g. Austin" />
                         <p v-if="errors.city" class="text-error text-xs mt-1">{{ errors.city[0] }}</p>
                     </div>
                     <div>
                         <label class="label-text" for="timezone">Timezone</label>
-                        <select id="timezone" class="select w-full" v-model="localData.timezone">
-                            <option value="America/New_York">Eastern (ET)</option>
-                            <option value="America/Chicago">Central (CT)</option>
-                            <option value="America/Denver">Mountain (MT)</option>
-                            <option value="America/Los_Angeles">Pacific (PT)</option>
-                            <option value="America/Phoenix">Arizona (AZ)</option>
-                            <option value="Pacific/Honolulu">Hawaii (HT)</option>
-                            <option value="America/Anchorage">Alaska (AKT)</option>
-                        </select>
+                        <SearchSelect
+                            v-model="localData.timezone"
+                            :options="timezoneOptions"
+                            placeholder="Search timezone..."
+                        />
                     </div>
                 </div>
 
@@ -88,6 +109,7 @@ import { reactive, computed, ref, watch } from 'vue'
 import api from '../../utils/api.js'
 import { debounce } from '../../utils/debounce.js'
 import MultiSelect from './MultiSelect.vue'
+import SearchSelect from './SearchSelect.vue'
 
 const props = defineProps({
     formData: { type: Object, required: true },
@@ -100,6 +122,94 @@ const emit = defineEmits(['next', 'prev', 'update'])
 
 const studioTypeOptions = ['Yoga', 'Pilates', 'Barre', 'Spinning', 'CrossFit', 'Dance', 'Martial Arts', 'Personal Training', 'Other']
 
+const countries = {
+    'US': { name: 'United States', flag: '🇺🇸', timezone: 'America/New_York' },
+    'CA': { name: 'Canada', flag: '🇨🇦', timezone: 'America/Toronto' },
+    'GB': { name: 'United Kingdom', flag: '🇬🇧', timezone: 'Europe/London' },
+    'DE': { name: 'Germany', flag: '🇩🇪', timezone: 'Europe/Berlin' },
+    'AU': { name: 'Australia', flag: '🇦🇺', timezone: 'Australia/Sydney' },
+    'IN': { name: 'India', flag: '🇮🇳', timezone: 'Asia/Kolkata' },
+}
+
+const statesByCountry = {
+    'US': [
+        'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+        'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
+        'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
+        'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico',
+        'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania',
+        'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+        'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming', 'District of Columbia'
+    ],
+    'CA': [
+        'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
+        'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan',
+        'Northwest Territories', 'Nunavut', 'Yukon'
+    ],
+    'GB': [
+        'England', 'Scotland', 'Wales', 'Northern Ireland'
+    ],
+    'DE': [
+        'Baden-Württemberg', 'Bavaria', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hesse',
+        'Lower Saxony', 'Mecklenburg-Vorpommern', 'North Rhine-Westphalia', 'Rhineland-Palatinate',
+        'Saarland', 'Saxony', 'Saxony-Anhalt', 'Schleswig-Holstein', 'Thuringia'
+    ],
+    'AU': [
+        'New South Wales', 'Victoria', 'Queensland', 'Western Australia', 'South Australia',
+        'Tasmania', 'Australian Capital Territory', 'Northern Territory'
+    ],
+    'IN': [
+        'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
+        'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
+        'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+        'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+        'Uttarakhand', 'West Bengal', 'Delhi'
+    ],
+}
+
+const timezones = [
+    { value: 'America/New_York', label: 'Eastern Time (ET)' },
+    { value: 'America/Chicago', label: 'Central Time (CT)' },
+    { value: 'America/Denver', label: 'Mountain Time (MT)' },
+    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+    { value: 'America/Phoenix', label: 'Arizona (AZ)' },
+    { value: 'Pacific/Honolulu', label: 'Hawaii (HT)' },
+    { value: 'America/Anchorage', label: 'Alaska (AKT)' },
+    { value: 'America/Toronto', label: 'Toronto (ET)' },
+    { value: 'America/Vancouver', label: 'Vancouver (PT)' },
+    { value: 'Europe/London', label: 'London (GMT/BST)' },
+    { value: 'Europe/Berlin', label: 'Berlin (CET)' },
+    { value: 'Europe/Paris', label: 'Paris (CET)' },
+    { value: 'Australia/Sydney', label: 'Sydney (AEST)' },
+    { value: 'Australia/Melbourne', label: 'Melbourne (AEST)' },
+    { value: 'Australia/Perth', label: 'Perth (AWST)' },
+    { value: 'Asia/Kolkata', label: 'India (IST)' },
+]
+
+const countryOptions = computed(() => {
+    return Object.entries(countries).map(([code, info]) => ({
+        value: code,
+        label: `${info.flag} ${info.name}`
+    }))
+})
+
+const stateOptions = computed(() => {
+    if (!localData.country || !statesByCountry[localData.country]) {
+        return []
+    }
+    return statesByCountry[localData.country].map(state => ({
+        value: state,
+        label: state
+    }))
+})
+
+const timezoneOptions = computed(() => {
+    return timezones.map(tz => ({
+        value: tz.value,
+        label: tz.label
+    }))
+})
+
 const subdomainAvailable = ref(null)
 const checkingSubdomain = ref(false)
 const subdomainManuallyEdited = ref(false)
@@ -107,12 +217,24 @@ const subdomainManuallyEdited = ref(false)
 const localData = reactive({
     studio_name: props.formData.studio_name,
     studio_types: [...props.formData.studio_types],
+    country: props.formData.country || '',
     city: props.formData.city,
+    state: props.formData.state || '',
     timezone: props.formData.timezone || 'America/New_York',
     subdomain: props.formData.subdomain,
 })
 
-const isValid = computed(() => localData.studio_name && localData.subdomain && subdomainAvailable.value !== false)
+const isValid = computed(() => localData.studio_name && localData.country && localData.subdomain && subdomainAvailable.value !== false)
+
+function onCountryChange() {
+    // Reset state when country changes
+    localData.state = ''
+    // Auto-set timezone based on country
+    const countryInfo = countries[localData.country]
+    if (countryInfo && countryInfo.timezone) {
+        localData.timezone = countryInfo.timezone
+    }
+}
 
 function generateSubdomainFromName(name) {
     return name

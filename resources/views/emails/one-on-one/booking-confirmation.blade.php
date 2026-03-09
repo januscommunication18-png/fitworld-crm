@@ -31,12 +31,7 @@ Your meeting with **{{ $hostName }}** has been confirmed.
 Add to Google Calendar
 </x-mail::button>
 
-<x-mail::table>
-| Calendar | |
-|:---------|:--|
-| [Add to Outlook]({{ $outlookCalendarUrl }}) | [Add to Yahoo]({{ $yahooCalendarUrl }}) |
-| [Download .ics file]({{ $icsUrl }}) | |
-</x-mail::table>
+Or [download the calendar file (.ics)]({{ $icsUrl }}) to add to any calendar app.
 
 ---
 

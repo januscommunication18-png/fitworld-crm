@@ -88,7 +88,7 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::get('/meeting/confirmation/{token}', [OneOnOnePublicController::class, 'confirmation'])->name('subdomain.meeting.confirmation');
 
         // Calendar download
-        Route::get('/meeting/calendar/{token}.ics', [OneOnOnePublicController::class, 'downloadCalendar'])->name('subdomain.meeting.calendar');
+        Route::get('/meeting/calendar/{token}', [OneOnOnePublicController::class, 'downloadCalendar'])->name('subdomain.meeting.calendar');
 
         // Guest management pages
         Route::get('/meeting/manage/{token}', [OneOnOnePublicController::class, 'manage'])->name('subdomain.meeting.manage');

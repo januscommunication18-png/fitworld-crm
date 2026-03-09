@@ -33,6 +33,7 @@ class Host extends Model
         'subdomain',
         'studio_types',
         'city',
+        'state',
         'country',
         'operating_countries',
         'default_language_app',

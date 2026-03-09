@@ -721,6 +721,12 @@ async function resendInvite(inviteId) {
 
         const result = await response.json();
 
+        if (response.ok && result.success) {
+            showNotification('success', result.message || 'Invite resent successfully!');
+        } else {
+            showNotification('error', result.message || 'Failed to resend invite');
+        }
+    } catch (error) {
         console.error('Error:', error);
         showNotification('error', 'An error occurred');
     }

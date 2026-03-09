@@ -50,7 +50,9 @@ class SignupController extends Controller
                 // Step 4: Studio
                 'studio_name' => $host->studio_name,
                 'studio_types' => $host->studio_types ?? [],
+                'country' => $host->country ?? '',
                 'city' => $host->city ?? '',
+                'state' => $host->state ?? '',
                 'timezone' => $host->timezone ?? 'America/New_York',
                 'subdomain' => $host->subdomain ?? '',
                 // Step 5: Location
@@ -183,9 +185,12 @@ class SignupController extends Controller
         $host->update([
             'studio_name' => $data['studio_name'],
             'studio_types' => $data['studio_types'] ?? [],
+            'country' => $data['country'] ?? null,
             'city' => $data['city'] ?? null,
+            'state' => $data['state'] ?? null,
             'timezone' => $data['timezone'],
             'subdomain' => $data['subdomain'],
+            'operating_countries' => $data['country'] ? [$data['country']] : [],
             'onboarding_step' => max($host->onboarding_step ?? 4, 5),
         ]);
 

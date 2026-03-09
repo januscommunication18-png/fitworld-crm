@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Send Booking Invite')
+@section('title', 'Send 1-1 Meeting Invite')
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('vendor/flatpickr/flatpickr.min.css') }}">
@@ -30,7 +30,7 @@
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li><a href="{{ route('one-on-one.index') }}">1:1 Meetings</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Send Invite</li>
+        <li aria-current="page">Send 1-1 Meeting Invite</li>
     </ol>
 @endsection
 
@@ -42,7 +42,7 @@
             <span class="icon-[tabler--arrow-left] size-4"></span>
             Back to 1:1 Meetings
         </a>
-        <h1 class="text-2xl font-bold">Send Booking Invite</h1>
+        <h1 class="text-2xl font-bold">Send 1-1 Meeting Invite</h1>
         <p class="text-base-content/60 mt-1">Invite a client to book a 1:1 meeting{{ $isOwner ? '' : ' with you' }}.</p>
     </div>
 
