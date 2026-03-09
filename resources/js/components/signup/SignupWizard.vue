@@ -15,8 +15,8 @@
         </div>
 
         <template v-else>
-            <!-- Progress bar (steps 2-6) -->
-            <ProgressBar v-if="currentStep >= 2 && currentStep <= 6" :current-step="currentStep" :total-steps="6" />
+            <!-- Progress bar (steps 2-5) -->
+            <ProgressBar v-if="currentStep >= 2 && currentStep <= 5" :current-step="currentStep" :total-steps="5" />
 
             <!-- Step components -->
             <transition name="fade" mode="out-in">
@@ -51,8 +51,7 @@ import Step2Account from './Step2Account.vue'
 import Step3EmailVerification from './Step3EmailVerification.vue'
 import Step4StudioBasics from './Step4StudioBasics.vue'
 import Step5LocationSpace from './Step5LocationSpace.vue'
-import Step6Payments from './Step8Payments.vue'
-import Step7GoLive from './Step9GoLive.vue'
+import Step6GoLive from './Step9GoLive.vue'
 
 const props = defineProps({
     csrfToken: { type: String, default: '' },
@@ -91,9 +90,6 @@ const formData = ref({
     default_capacity: 20,
     room_capacities: [],
     amenities: [],
-    // Step 6: Payments
-    skip_payments: false,
-    stripe_connected: false,
 })
 
 const steps = {
@@ -102,8 +98,7 @@ const steps = {
     3: Step3EmailVerification,
     4: Step4StudioBasics,
     5: Step5LocationSpace,
-    6: Step6Payments,
-    7: Step7GoLive,
+    6: Step6GoLive,
 }
 
 const stepComponent = computed(() => steps[currentStep.value])
@@ -164,7 +159,7 @@ onMounted(async () => {
  * Save the current step's data to the API, then advance.
  */
 async function nextStep() {
-    if (currentStep.value >= 7) return
+    if (currentStep.value >= 6) return
 
     // Step 1 has no API call — just advance
     if (currentStep.value === 1) {
@@ -231,12 +226,6 @@ async function saveCurrentStep() {
                 rooms: fd.rooms,
                 default_capacity: fd.default_capacity,
                 amenities: fd.amenities,
-            })
-            break
-        case 6:
-            await api.post('/signup/payments', {
-                skip_payments: fd.skip_payments,
-                stripe_connected: fd.stripe_connected,
             })
             break
     }

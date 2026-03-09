@@ -8,6 +8,7 @@ use App\Models\Tag;
 use App\Models\ClientFieldDefinition;
 use App\Models\ClientFieldSection;
 use App\Models\ClientNote;
+use App\Rules\ValidName;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -191,8 +192,8 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             // Basic Information
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'secondary_phone' => ['nullable', 'string', 'max:50'],
@@ -604,8 +605,8 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             // Basic Information
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'secondary_phone' => ['nullable', 'string', 'max:50'],

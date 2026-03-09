@@ -8,6 +8,7 @@ use App\Models\AutomationSetting;
 use App\Models\TaxRate;
 use App\Models\User;
 use App\Models\UserSession;
+use App\Rules\ValidName;
 use App\Services\TaxService;
 use Illuminate\Http\Request;
 
@@ -83,13 +84,10 @@ class SettingsController extends Controller
         $user = auth()->user();
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255|regex:/^[^\d]*$/',
-            'last_name' => 'required|string|max:255|regex:/^[^\d]*$/',
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:50',
-        ], [
-            'first_name.regex' => 'First name cannot contain numbers.',
-            'last_name.regex' => 'Last name cannot contain numbers.',
         ]);
 
         $user->update($validated);

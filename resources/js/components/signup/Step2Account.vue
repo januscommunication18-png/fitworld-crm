@@ -9,13 +9,13 @@
                     <div>
                         <label class="label-text" for="first_name">First Name</label>
                         <input id="first_name" type="text" class="input w-full" :class="{ 'input-error': errors.first_name }"
-                            v-model="localData.first_name" @input="localData.first_name = stripNumbers(localData.first_name)" placeholder="Jane" required />
+                            v-model="localData.first_name" @input="localData.first_name = sanitizeName(localData.first_name)" maxlength="50" placeholder="Jane" required />
                         <p v-if="errors.first_name" class="text-error text-xs mt-1">{{ errors.first_name[0] }}</p>
                     </div>
                     <div>
                         <label class="label-text" for="last_name">Last Name</label>
                         <input id="last_name" type="text" class="input w-full" :class="{ 'input-error': errors.last_name }"
-                            v-model="localData.last_name" @input="localData.last_name = stripNumbers(localData.last_name)" placeholder="Smith" required />
+                            v-model="localData.last_name" @input="localData.last_name = sanitizeName(localData.last_name)" maxlength="50" placeholder="Smith" required />
                         <p v-if="errors.last_name" class="text-error text-xs mt-1">{{ errors.last_name[0] }}</p>
                     </div>
                 </div>
@@ -85,12 +85,16 @@ const localData = reactive({
     is_studio_owner: props.formData.is_studio_owner,
 })
 
-function stripNumbers(value) {
-    return value.replace(/[0-9]/g, '')
+function sanitizeName(value) {
+    // Only allow letters (including accented), spaces, hyphens, and apostrophes
+    // Remove numbers and special characters
+    return value.replace(/[^a-zA-ZÀ-ÿ\s\-']/g, '')
 }
 
 const isValid = computed(() => {
-    return localData.first_name && localData.last_name && localData.email && localData.password.length >= 8
+    const firstName = localData.first_name?.trim()
+    const lastName = localData.last_name?.trim()
+    return firstName && lastName && localData.email && localData.password.length >= 8
 })
 
 function handleSubmit() {

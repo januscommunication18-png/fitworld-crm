@@ -198,6 +198,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/todays-classes', [DashboardController::class, 'todaysClasses'])->name('dashboard.todays-classes');
     Route::get('/dashboard/upcoming-bookings', [DashboardController::class, 'upcomingBookings'])->name('dashboard.upcoming-bookings');
     Route::get('/dashboard/alerts', [DashboardController::class, 'alerts'])->name('dashboard.alerts');
+    Route::post('/dashboard/skip-setup', [DashboardController::class, 'skipSetup'])->name('dashboard.skip-setup');
 
     // Dashboard API (for charts)
     Route::prefix('api/dashboard')->group(function () {

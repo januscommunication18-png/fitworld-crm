@@ -14,6 +14,7 @@ use App\Models\CustomerMembership;
 use App\Models\Instructor;
 use App\Models\Offer;
 use App\Models\QuestionnaireAttachment;
+use App\Rules\ValidName;
 use App\Services\BookingService;
 use App\Services\OfferService;
 use App\Services\PaymentService;
@@ -583,8 +584,8 @@ class WalkInController extends Controller
     public function quickAddClient(Request $request)
     {
         $validated = $request->validate([
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
         ]);

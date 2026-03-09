@@ -11,6 +11,7 @@ use App\Models\BookingProfile;
 use App\Models\Host;
 use App\Models\Instructor;
 use App\Models\OneOnOneBooking;
+use App\Rules\ValidName;
 use App\Services\OneOnOneAvailabilityService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -228,8 +229,8 @@ class OneOnOnePublicController extends Controller
             'time' => 'required|date_format:H:i',
             'duration' => 'required|integer|in:15,30,45,60',
             'meeting_type' => 'required|in:in_person,phone,video',
-            'first_name' => 'required|string|max:100',
-            'last_name' => 'required|string|max:100',
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',

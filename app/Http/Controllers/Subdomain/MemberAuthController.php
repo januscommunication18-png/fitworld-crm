@@ -8,6 +8,7 @@ use App\Mail\MemberPasswordReset;
 use App\Models\Client;
 use App\Models\EmailLog;
 use App\Models\Host;
+use App\Rules\ValidName;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -110,8 +111,8 @@ class MemberAuthController extends Controller
         }
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:50',
         ]);

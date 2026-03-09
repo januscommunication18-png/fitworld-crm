@@ -12,6 +12,7 @@ use App\Models\CustomerMembership;
 use App\Models\MembershipPlan;
 use App\Models\ServicePlan;
 use App\Models\ServiceSlot;
+use App\Rules\ValidName;
 use App\Services\BookingFlowService;
 use App\Services\OfferService;
 use App\Services\TransactionService;
@@ -491,8 +492,8 @@ class BookingFlowController extends Controller
         $host = $this->getHost($request);
 
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:50',
         ]);

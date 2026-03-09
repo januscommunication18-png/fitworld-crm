@@ -30,6 +30,23 @@ class DashboardController extends Controller
 
         $host = $user->currentHost();
 
+        // Check if setup checklist is complete
+        $checklist = $this->getSetupChecklist($user, $host);
+        $completedCount = collect($checklist)->where('completed', true)->count();
+        $totalCount = count($checklist);
+        $progress = $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0;
+
+        // Show setup checklist if not all tasks are complete and user hasn't skipped
+        if ($progress < 100 && !$host->setup_completed_at) {
+            return view('host.dashboard.setup-checklist', [
+                'host' => $host,
+                'checklist' => $checklist,
+                'completedCount' => $completedCount,
+                'totalCount' => $totalCount,
+                'progress' => $progress,
+            ]);
+        }
+
         // Get dashboard metrics
         $metrics = $this->reportingService->getDashboardMetrics($host);
         $quickStats = $this->reportingService->getQuickStats($host);
@@ -41,6 +58,66 @@ class DashboardController extends Controller
             'revenueChart' => $revenueChart,
             'currency' => $host->default_currency ?? 'USD',
         ]);
+    }
+
+    /**
+     * Get setup checklist status for the host
+     */
+    protected function getSetupChecklist($user, $host): array
+    {
+        return [
+            'verify_account' => [
+                'completed' => $user->hasVerifiedEmail(),
+                'label' => 'Verify Your Email',
+                'route' => 'verification.notice',
+            ],
+            'studio_profile' => [
+                'completed' => $this->isStudioProfileComplete($host),
+                'label' => 'Complete Studio Profile',
+                'route' => 'settings.studio.profile',
+            ],
+            'location' => [
+                'completed' => $host->locations()->exists(),
+                'label' => 'Setup Location',
+                'route' => 'settings.locations.index',
+            ],
+            'instructor' => [
+                'completed' => $host->instructors()->exists(),
+                'label' => 'Setup Instructor / Staff',
+                'route' => 'settings.team.instructors',
+            ],
+            'payment' => [
+                'completed' => !empty($host->stripe_account_id),
+                'label' => 'Setup Payment System',
+                'route' => 'settings.payments.settings',
+            ],
+        ];
+    }
+
+    /**
+     * Check if studio profile is complete
+     */
+    protected function isStudioProfileComplete($host): bool
+    {
+        // Check required fields for a complete profile
+        return !empty($host->studio_name)
+            && !empty($host->timezone)
+            && !empty($host->country);
+    }
+
+    /**
+     * Skip setup and go directly to dashboard
+     */
+    public function skipSetup()
+    {
+        $user = Auth::user();
+        $host = $user->currentHost();
+
+        $host->update([
+            'setup_completed_at' => now(),
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'You can complete your setup anytime from Settings.');
     }
 
     /**

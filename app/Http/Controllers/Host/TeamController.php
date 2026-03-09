@@ -8,6 +8,7 @@ use App\Models\Instructor;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use App\Models\UserNote;
+use App\Rules\ValidName;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -466,11 +467,11 @@ class TeamController extends Controller
 
         // For quick invites, first_name and last_name are optional (derived from email)
         if ($isQuickInvite) {
-            $rules['first_name'] = 'nullable|string|max:255';
-            $rules['last_name'] = 'nullable|string|max:255';
+            $rules['first_name'] = ['nullable', 'string', 'max:50', new ValidName];
+            $rules['last_name'] = ['nullable', 'string', 'max:50', new ValidName];
         } else {
-            $rules['first_name'] = 'required|string|max:255';
-            $rules['last_name'] = 'required|string|max:255';
+            $rules['first_name'] = ['required', 'string', 'max:50', new ValidName];
+            $rules['last_name'] = ['required', 'string', 'max:50', new ValidName];
         }
 
         if ($sendInvite) {
@@ -1004,7 +1005,7 @@ class TeamController extends Controller
         $host = auth()->user()->currentHost();
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'bio' => 'nullable|string|max:2000',
@@ -1107,7 +1108,7 @@ class TeamController extends Controller
         $wasInactive = !$instructor->is_active;
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'bio' => 'nullable|string|max:2000',
