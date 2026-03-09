@@ -278,10 +278,24 @@
                                         name="{{ $key }}"
                                         value="{{ $config[$key] ?? $schema['default'] ?? '' }}"
                                         class="input input-bordered w-full">
-                                @else
+                                @elseif(isset($schema['type']) && $schema['type'] === 'array')
+                                    @php
+                                        $arrayValue = $config[$key] ?? $schema['default'] ?? [];
+                                        $arrayString = is_array($arrayValue) ? implode(', ', $arrayValue) : $arrayValue;
+                                    @endphp
                                     <input type="text" id="config-{{ $key }}"
                                         name="{{ $key }}"
-                                        value="{{ $config[$key] ?? $schema['default'] ?? '' }}"
+                                        value="{{ $arrayString }}"
+                                        class="input input-bordered w-full"
+                                        placeholder="e.g., 15, 30, 45, 60">
+                                @else
+                                    @php
+                                        $value = $config[$key] ?? $schema['default'] ?? '';
+                                        $displayValue = is_array($value) ? implode(', ', $value) : $value;
+                                    @endphp
+                                    <input type="text" id="config-{{ $key }}"
+                                        name="{{ $key }}"
+                                        value="{{ $displayValue }}"
                                         class="input input-bordered w-full">
                                 @endif
                                 @if(isset($schema['description']) && (!isset($schema['type']) || $schema['type'] !== 'boolean'))
@@ -484,10 +498,24 @@
                                 name="{{ $key }}"
                                 value="{{ $config[$key] ?? $schema['default'] ?? '' }}"
                                 class="input input-bordered w-full max-w-sm">
-                        @else
+                        @elseif(isset($schema['type']) && $schema['type'] === 'array')
+                            @php
+                                $arrayValue = $config[$key] ?? $schema['default'] ?? [];
+                                $arrayString = is_array($arrayValue) ? implode(', ', $arrayValue) : $arrayValue;
+                            @endphp
                             <input type="text" id="config-{{ $key }}"
                                 name="{{ $key }}"
-                                value="{{ $config[$key] ?? $schema['default'] ?? '' }}"
+                                value="{{ $arrayString }}"
+                                class="input input-bordered w-full max-w-sm"
+                                placeholder="e.g., 15, 30, 45, 60">
+                        @else
+                            @php
+                                $value = $config[$key] ?? $schema['default'] ?? '';
+                                $displayValue = is_array($value) ? implode(', ', $value) : $value;
+                            @endphp
+                            <input type="text" id="config-{{ $key }}"
+                                name="{{ $key }}"
+                                value="{{ $displayValue }}"
                                 class="input input-bordered w-full max-w-sm">
                         @endif
                         @if(isset($schema['description']))

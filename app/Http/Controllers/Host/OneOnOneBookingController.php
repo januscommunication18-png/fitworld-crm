@@ -28,9 +28,17 @@ class OneOnOneBookingController extends Controller
             // Owner sees all bookings for the host
             $query = OneOnOneBooking::where('host_id', $host->id)
                 ->with(['bookingProfile.instructor']);
-            $instructor = null;
-            $profile = null;
             $showConfiguration = false;
+
+            // Check if owner has their own instructor record and booking profile
+            $instructor = Instructor::where('host_id', $host->id)
+                ->where('user_id', $user->id)
+                ->first();
+            $profile = $instructor
+                ? BookingProfile::where('host_id', $host->id)
+                    ->where('instructor_id', $instructor->id)
+                    ->first()
+                : null;
 
             // Allow filtering by instructor
             if ($request->has('instructor_id') && $request->instructor_id) {
@@ -76,9 +84,26 @@ class OneOnOneBookingController extends Controller
         $status = $request->get('status', 'pending');
         $bookings = collect();
         $invites = collect();
+        $myInvites = collect();
 
-        // Handle invites tab (owner only)
-        if ($status === 'invites' && $isOwner) {
+        // Handle "My Invites" tab - available for all members with booking access
+        if ($status === 'my-invites') {
+            // For owners/admins: show all invites
+            // For regular instructors: show only their own sent invites
+            $inviteQuery = OneOnOneInvite::where('host_id', $host->id)
+                ->with(['instructor', 'sentBy']);
+
+            if (!$isOwner && $instructor) {
+                // Regular instructor sees only their own sent invites (as sender or as the instructor)
+                $inviteQuery->where(function ($q) use ($user, $instructor) {
+                    $q->where('sent_by_user_id', $user->id)
+                        ->orWhere('instructor_id', $instructor->id);
+                });
+            }
+
+            $myInvites = $inviteQuery->orderBy('sent_at', 'desc')->paginate(20);
+        } elseif ($status === 'invites' && $isOwner) {
+            // Legacy invites tab for owners (all invites)
             $invites = OneOnOneInvite::where('host_id', $host->id)
                 ->with(['instructor', 'sentBy'])
                 ->orderBy('sent_at', 'desc')
@@ -123,6 +148,7 @@ class OneOnOneBookingController extends Controller
             'showConfiguration' => $showConfiguration,
             'host' => $host,
             'invites' => $invites,
+            'myInvites' => $myInvites,
         ];
 
         // If showing configuration, add setup data
@@ -503,17 +529,19 @@ class OneOnOneBookingController extends Controller
         $host = $user->currentHost() ?? $user->host;
         $isOwner = $user->isOwner($host);
 
-        // Only owners/admins can send invites
-        if (!$isOwner) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to send invites.',
-            ], 403);
-        }
+        // Get the user's instructor record (if they have one)
+        $userInstructor = Instructor::where('host_id', $host->id)
+            ->where('user_id', $user->id)
+            ->first();
 
+        // Allow owners to send invites, or instructors to send for themselves
         $validated = $request->validate([
             'instructor_id' => 'required|exists:instructors,id',
             'email' => 'required|email',
+            'client_name' => 'nullable|string|max:255',
+            'duration' => 'nullable|integer|in:15,30,45,60',
+            'scheduled_date' => 'nullable|date|after_or_equal:today',
+            'scheduled_time' => 'nullable|date_format:H:i',
         ]);
 
         // Get the instructor and verify they belong to this host
@@ -528,6 +556,15 @@ class OneOnOneBookingController extends Controller
             ], 404);
         }
 
+        // Check permissions: owner can send for any instructor, instructor can only send for themselves
+        $canSend = $isOwner || ($userInstructor && $userInstructor->id === $instructor->id);
+        if (!$canSend) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to send invites.',
+            ], 403);
+        }
+
         // Check if instructor has a booking profile
         $profile = $instructor->bookingProfile;
         if (!$profile || !$profile->is_enabled || !$profile->is_setup_complete) {
@@ -537,10 +574,29 @@ class OneOnOneBookingController extends Controller
             ], 400);
         }
 
+        // Validate duration is in allowed durations
+        $duration = $validated['duration'] ?? $profile->default_duration ?? 30;
+        if (!in_array($duration, $profile->allowed_durations ?? [30, 60])) {
+            $duration = $profile->default_duration ?? $profile->allowed_durations[0] ?? 30;
+        }
+
+        // Build scheduled datetime if provided
+        $scheduledAt = null;
+        if (!empty($validated['scheduled_date']) && !empty($validated['scheduled_time'])) {
+            $scheduledAt = \Carbon\Carbon::parse($validated['scheduled_date'] . ' ' . $validated['scheduled_time']);
+        }
+
         // Send the invite email
         try {
             Mail::to($validated['email'])->send(
-                new \App\Mail\OneOnOneBookingInviteMail($instructor, $host)
+                new \App\Mail\OneOnOneBookingInviteMail(
+                    $instructor,
+                    $host,
+                    $validated['client_name'] ?? null,
+                    $validated['email'],
+                    $duration,
+                    $scheduledAt
+                )
             );
 
             // Store the invite
@@ -549,6 +605,9 @@ class OneOnOneBookingController extends Controller
                 'instructor_id' => $instructor->id,
                 'sent_by_user_id' => $user->id,
                 'email' => $validated['email'],
+                'client_name' => $validated['client_name'] ?? null,
+                'duration' => $duration,
+                'scheduled_at' => $scheduledAt,
                 'sent_at' => now(),
             ]);
 
@@ -579,14 +638,6 @@ class OneOnOneBookingController extends Controller
         $host = $user->currentHost() ?? $user->host;
         $isOwner = $user->isOwner($host);
 
-        // Only owners/admins can resend invites
-        if (!$isOwner) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to resend invites.',
-            ], 403);
-        }
-
         // Verify invite belongs to this host
         if ($invite->host_id !== $host->id) {
             return response()->json([
@@ -595,9 +646,33 @@ class OneOnOneBookingController extends Controller
             ], 404);
         }
 
+        // Get user's instructor record
+        $userInstructor = Instructor::where('host_id', $host->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        // Permission check: owners can resend any, instructors can only resend their own
+        $canResend = $isOwner ||
+            ($invite->sent_by_user_id === $user->id) ||
+            ($userInstructor && $invite->instructor_id === $userInstructor->id);
+
+        if (!$canResend) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to resend this invite.',
+            ], 403);
+        }
+
         try {
             Mail::to($invite->email)->send(
-                new \App\Mail\OneOnOneBookingInviteMail($invite->instructor, $host)
+                new \App\Mail\OneOnOneBookingInviteMail(
+                    $invite->instructor,
+                    $host,
+                    $invite->client_name,
+                    $invite->email,
+                    $invite->duration,
+                    $invite->scheduled_at
+                )
             );
 
             // Update sent_at

@@ -60,6 +60,30 @@ class OneOnOnePublicController extends Controller
         $minDate = now()->addHours($profile->min_notice_hours ?? 24)->startOfDay();
         $maxDate = now()->addDays($profile->max_advance_days ?? 60);
 
+        // Get pre-selected values from query params (from invite link)
+        $preselectedDuration = $request->query('duration');
+        $preselectedDate = $request->query('date');
+        $preselectedTime = $request->query('time');
+        $preselectedName = $request->query('name');
+        $preselectedEmail = $request->query('email');
+
+        // Validate preselected duration is in allowed durations
+        if ($preselectedDuration && !in_array((int) $preselectedDuration, $profile->allowed_durations ?? [30])) {
+            $preselectedDuration = null;
+        }
+
+        // Validate preselected date is within booking window
+        if ($preselectedDate) {
+            $parsedDate = Carbon::parse($preselectedDate);
+            if ($parsedDate->lt($minDate) || $parsedDate->gt($maxDate)) {
+                $preselectedDate = null;
+                $preselectedTime = null;
+            }
+        }
+
+        // Check if this is a specific time invite (has both date and time)
+        $isSpecificTimeInvite = $preselectedDate && $preselectedTime;
+
         return view('subdomain.one-on-one.book', [
             'host' => $host,
             'instructor' => $instructor,
@@ -70,6 +94,12 @@ class OneOnOnePublicController extends Controller
             'durationOptions' => BookingProfile::getDurationOptions(),
             'minDate' => $minDate->format('Y-m-d'),
             'maxDate' => $maxDate->format('Y-m-d'),
+            'preselectedDuration' => $preselectedDuration ? (int) $preselectedDuration : null,
+            'preselectedDate' => $preselectedDate,
+            'preselectedTime' => $preselectedTime,
+            'preselectedName' => $preselectedName,
+            'preselectedEmail' => $preselectedEmail,
+            'isSpecificTimeInvite' => $isSpecificTimeInvite,
         ]);
     }
 

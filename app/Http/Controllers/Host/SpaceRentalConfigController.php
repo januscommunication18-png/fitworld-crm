@@ -108,7 +108,7 @@ class SpaceRentalConfigController extends Controller
 
         $config = $host->spaceRentalConfigs()->create($data);
 
-        return redirect()->route('space-rentals.config.index')
+        return redirect()->route('catalog.index', ['tab' => 'rental-spaces', 'view' => 'list'])
             ->with('success', 'Rentable space created successfully.');
     }
 

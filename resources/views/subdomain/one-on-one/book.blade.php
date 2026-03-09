@@ -113,8 +113,17 @@
     $initials = collect(explode(' ', $instructor->name))->map(fn($n) => strtoupper(substr($n, 0, 1)))->take(2)->join('');
     $workingDaysJson = json_encode($profile->working_days ?? [1,2,3,4,5]);
     $meetingTypeLabelsJson = json_encode($meetingTypeLabels);
-    $firstDuration = $allowedDurations[0] ?? 30;
+    // Use preselected duration if available, otherwise use first allowed duration
+    $firstDuration = $preselectedDuration ?? $allowedDurations[0] ?? 30;
     $firstMeetingType = $meetingTypes[0] ?? 'video';
+
+    // Format preselected datetime for display
+    $preselectedDateFormatted = '';
+    $preselectedTimeFormatted = '';
+    if ($isSpecificTimeInvite ?? false) {
+        $preselectedDateFormatted = \Carbon\Carbon::parse($preselectedDate)->format('l, F j, Y');
+        $preselectedTimeFormatted = \Carbon\Carbon::parse($preselectedTime)->format('g:i A');
+    }
 @endphp
 
 <div class="min-h-screen bg-gradient-to-br from-base-200/50 to-base-100 flex items-center justify-center px-4 py-8">
@@ -181,9 +190,9 @@
                     <div class="mb-4">
                         <label class="text-xs font-semibold text-base-content/40 uppercase tracking-wider mb-2 block">Duration</label>
                         <div class="flex flex-wrap gap-2">
-                            @foreach($allowedDurations as $index => $duration)
+                            @foreach($allowedDurations as $duration)
                                 <button type="button"
-                                        class="px-3 py-1.5 text-sm rounded-lg border-2 transition-all duration-btn font-medium {{ $index === 0 ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
+                                        class="px-3 py-1.5 text-sm rounded-lg border-2 transition-all duration-btn font-medium {{ $duration == $firstDuration ? 'bg-primary text-primary-content border-primary' : 'border-base-300 hover:border-primary text-base-content/70' }}"
                                         data-duration="{{ $duration }}">
                                     {{ $duration }}m
                                 </button>
@@ -221,8 +230,8 @@
                     </p>
                 </div>
 
-                {{-- Columns 2 & 3: Calendar & Slots (shown initially) --}}
-                <div id="calendar-slots-section" class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-base-200">
+                {{-- Columns 2 & 3: Calendar & Slots (hidden when specific time invite) --}}
+                <div id="calendar-slots-section" class="lg:col-span-2 grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-base-200 {{ ($isSpecificTimeInvite ?? false) ? 'hidden' : '' }}">
                     {{-- Calendar --}}
                     <div class="p-6">
                         <h3 class="text-sm font-semibold text-base-content/50 uppercase tracking-wider mb-4">Select Date</h3>
@@ -241,8 +250,8 @@
                     </div>
                 </div>
 
-                {{-- Form Section (replaces calendar & slots) --}}
-                <div id="form-section" class="hidden lg:col-span-2 p-6">
+                {{-- Form Section (replaces calendar & slots, shown by default for specific time invite) --}}
+                <div id="form-section" class="{{ ($isSpecificTimeInvite ?? false) ? '' : 'hidden' }} lg:col-span-2 p-6">
                     {{-- Selected Time Summary --}}
                     <div class="bg-primary/5 border border-primary/20 rounded-xl p-4 mb-5 flex items-center justify-between">
                         <div class="flex items-center gap-3">
@@ -258,18 +267,23 @@
                     {{-- Form --}}
                     <h3 class="text-base font-semibold text-base-content mb-4">Your Details</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @php
+                            // Split preselected name into first and last name
+                            $nameParts = $preselectedName ? explode(' ', $preselectedName, 2) : ['', ''];
+                            $preFirstName = $nameParts[0] ?? '';
+                            $preLastName = $nameParts[1] ?? '';
+                        @endphp
                         <div>
                             <label class="text-sm text-base-content/60 mb-1.5 block" for="first_name">First Name <span class="text-error">*</span></label>
-                            <input type="text" id="first_name" class="input input-bordered w-full" placeholder="John" required>
+                            <input type="text" id="first_name" class="input input-bordered w-full" placeholder="John" value="{{ $preFirstName }}" required>
                         </div>
                         <div>
                             <label class="text-sm text-base-content/60 mb-1.5 block" for="last_name">Last Name <span class="text-error">*</span></label>
-                            <input type="text" id="last_name" class="input input-bordered w-full" placeholder="Doe" required>
+                            <input type="text" id="last_name" class="input input-bordered w-full" placeholder="Doe" value="{{ $preLastName }}" required>
                         </div>
                         <div>
                             <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
-                            <input type="email" id="email" class="input input-bordered w-full" placeholder="john@example.com" required>
-                        </div>
+                            <input type="email" id="email" class="input input-bordered w-full" placeholder="john@example.com" value="{{ $preselectedEmail ?? '' }}" required>
                         <div>
                             <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
                             <input type="tel" id="phone" class="input input-bordered w-full" placeholder="+1 (555) 000-0000">
@@ -311,10 +325,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const workingDays = {!! $workingDaysJson !!};
     const meetingTypeLabels = {!! $meetingTypeLabelsJson !!};
 
+    // Preselected values from invite link
+    const preselectedDate = '{{ $preselectedDate ?? '' }}';
+    const preselectedTime = '{{ $preselectedTime ?? '' }}';
+    const isSpecificTimeInvite = {{ ($isSpecificTimeInvite ?? false) ? 'true' : 'false' }};
+
     let selectedDuration = {{ $firstDuration }};
     let selectedMeetingType = '{{ $firstMeetingType }}';
-    let selectedDate = null;
-    let selectedTime = null;
+    let selectedDate = preselectedDate || null;
+    let selectedTime = isSpecificTimeInvite ? preselectedTime : null;
     let selectedTimeDisplay = '';
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -326,6 +345,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dateFormat: 'Y-m-d',
         minDate: minDateStr,
         maxDate: maxDateStr,
+        defaultDate: preselectedDate || null,
         disable: [
             function(date) {
                 return !workingDays.includes(date.getDay());
@@ -337,6 +357,26 @@ document.addEventListener('DOMContentLoaded', function() {
             fetchTimeSlots();
         }
     });
+
+    // If this is a specific time invite, set up the summary immediately
+    if (isSpecificTimeInvite) {
+        selectedTime = preselectedTime;
+        // Convert 24h time to display format
+        const [hours, minutes] = preselectedTime.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        selectedTimeDisplay = hour12 + ':' + minutes + ' ' + ampm;
+
+        // Set up the summary
+        const dateObj = new Date(preselectedDate + 'T12:00:00');
+        const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
+        document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
+    } else if (preselectedDate) {
+        // If just date is preselected (not specific time), fetch time slots
+        fetchTimeSlots();
+    }
 
     // Duration buttons
     document.querySelectorAll('.duration-btn').forEach(function(btn) {
@@ -395,7 +435,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         let html = '';
         filteredSlots.forEach(function(slot) {
-            html += '<button type="button" class="time-slot-btn py-2.5 px-2 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center" data-time="' + slot.time + '" data-display="' + slot.display + '">' + slot.display + '</button>';
+            // Check if this slot matches the preselected time
+            const isPreselected = preselectedTime && slot.time === preselectedTime;
+            const btnClass = isPreselected
+                ? 'time-slot-btn py-2.5 px-2 text-sm font-medium bg-primary text-primary-content border-2 border-primary rounded-lg text-center ring-2 ring-primary/30'
+                : 'time-slot-btn py-2.5 px-2 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center';
+            html += '<button type="button" class="' + btnClass + '" data-time="' + slot.time + '" data-display="' + slot.display + '">' + slot.display + (isPreselected ? ' <span class="icon-[tabler--check] size-3 ml-1"></span>' : '') + '</button>';
         });
         container.innerHTML = html;
 
@@ -423,7 +468,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             allSlots = data.slots;
-            activeTab = 'morning';
+
+            // If we have a preselected time, switch to the correct tab
+            if (preselectedTime) {
+                activeTab = categorizeSlot(preselectedTime);
+            } else {
+                activeTab = 'morning';
+            }
 
             const dateObj = new Date(selectedDate + 'T12:00:00');
             const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -436,11 +487,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let html = '<p class="font-semibold text-base-content mb-1">' + dateDisplay + '</p>';
             html += '<p class="text-sm text-base-content/50 mb-4">' + data.slots.length + ' available</p>';
 
-            // Tabs
+            // Tabs - highlight the active tab
             html += '<div class="flex gap-1 mb-4 border-b border-base-200 pb-2">';
-            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-primary text-primary-content' + (morningCount === 0 ? ' opacity-40' : '') + '" data-tab="morning">Morning' + (morningCount > 0 ? ' (' + morningCount + ')' : '') + '</button>';
-            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg text-base-content/60 hover:bg-base-200' + (afternoonCount === 0 ? ' opacity-40' : '') + '" data-tab="afternoon">Afternoon' + (afternoonCount > 0 ? ' (' + afternoonCount + ')' : '') + '</button>';
-            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg text-base-content/60 hover:bg-base-200' + (eveningCount === 0 ? ' opacity-40' : '') + '" data-tab="evening">Evening' + (eveningCount > 0 ? ' (' + eveningCount + ')' : '') + '</button>';
+            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'morning' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (morningCount === 0 ? ' opacity-40' : '') + '" data-tab="morning">Morning' + (morningCount > 0 ? ' (' + morningCount + ')' : '') + '</button>';
+            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'afternoon' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (afternoonCount === 0 ? ' opacity-40' : '') + '" data-tab="afternoon">Afternoon' + (afternoonCount > 0 ? ' (' + afternoonCount + ')' : '') + '</button>';
+            html += '<button type="button" class="slot-tab px-3 py-1.5 text-xs font-medium rounded-lg ' + (activeTab === 'evening' ? 'bg-primary text-primary-content' : 'text-base-content/60 hover:bg-base-200') + (eveningCount === 0 ? ' opacity-40' : '') + '" data-tab="evening">Evening' + (eveningCount > 0 ? ' (' + eveningCount + ')' : '') + '</button>';
             html += '</div>';
 
             html += '<div id="slots-grid" class="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto pr-1"></div>';

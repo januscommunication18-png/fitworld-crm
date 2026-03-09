@@ -15,7 +15,11 @@ class OneOnOneBookingInviteMail extends Mailable
 
     public function __construct(
         public Instructor $instructor,
-        public Host $host
+        public Host $host,
+        public ?string $clientName = null,
+        public ?string $clientEmail = null,
+        public ?int $duration = null,
+        public ?\Carbon\Carbon $scheduledAt = null
     ) {}
 
     public function envelope(): Envelope
@@ -32,6 +36,31 @@ class OneOnOneBookingInviteMail extends Mailable
         $displayName = $profile?->display_name ?? $this->instructor->name;
         $title = $profile?->title ?? $this->instructor->title;
 
+        // Build booking URL with optional parameters
+        $bookingParams = [
+            'subdomain' => $this->host->subdomain,
+            'instructor' => $this->instructor->id,
+        ];
+        $bookingUrl = route('subdomain.instructor.book-meeting', $bookingParams);
+
+        $queryParams = [];
+        if ($this->duration) {
+            $queryParams['duration'] = $this->duration;
+        }
+        if ($this->scheduledAt) {
+            $queryParams['date'] = $this->scheduledAt->format('Y-m-d');
+            $queryParams['time'] = $this->scheduledAt->format('H:i');
+        }
+        if ($this->clientName) {
+            $queryParams['name'] = $this->clientName;
+        }
+        if ($this->clientEmail) {
+            $queryParams['email'] = $this->clientEmail;
+        }
+        if (!empty($queryParams)) {
+            $bookingUrl .= '?' . http_build_query($queryParams);
+        }
+
         return new Content(
             markdown: 'emails.one-on-one.booking-invite',
             with: [
@@ -40,10 +69,10 @@ class OneOnOneBookingInviteMail extends Mailable
                 'instructorTitle' => $title,
                 'instructorBio' => $profile?->bio ?? $this->instructor->bio,
                 'studioName' => $this->host->studio_name,
-                'bookingUrl' => route('subdomain.instructor.book-meeting', [
-                    'subdomain' => $this->host->subdomain,
-                    'instructor' => $this->instructor->id,
-                ]),
+                'clientName' => $this->clientName,
+                'duration' => $this->duration,
+                'scheduledAt' => $this->scheduledAt,
+                'bookingUrl' => $bookingUrl,
             ],
         );
     }

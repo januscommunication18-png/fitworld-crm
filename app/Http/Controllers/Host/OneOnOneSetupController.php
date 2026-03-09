@@ -6,10 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\BookingProfile;
 use App\Models\Feature;
 use App\Models\Instructor;
+use App\Services\BookingProfileInviteService;
 use Illuminate\Http\Request;
 
 class OneOnOneSetupController extends Controller
 {
+    public function __construct(
+        private BookingProfileInviteService $bookingProfileInviteService
+    ) {
+    }
+
     /**
      * Display the 1:1 booking setup page.
      */
@@ -18,10 +24,18 @@ class OneOnOneSetupController extends Controller
         $user = auth()->user();
         $host = $user->currentHost() ?? $user->host;
 
+        // Check if user is the host owner
+        $isOwner = $host->owner_id === $user->id;
+
         // Find the instructor associated with this user
         $instructor = Instructor::where('host_id', $host->id)
             ->where('user_id', $user->id)
             ->first();
+
+        // For owners, auto-create instructor and booking profile if they don't exist
+        if ($isOwner && !$instructor) {
+            $instructor = $this->bookingProfileInviteService->createOwnerInstructor($host);
+        }
 
         if (!$instructor) {
             return redirect()->route('dashboard')
@@ -32,6 +46,11 @@ class OneOnOneSetupController extends Controller
         $profile = BookingProfile::where('host_id', $host->id)
             ->where('instructor_id', $instructor->id)
             ->first();
+
+        // For owners, auto-create booking profile if they don't have one (skip email)
+        if ($isOwner && (!$profile || !$profile->is_enabled)) {
+            $profile = $this->bookingProfileInviteService->grantAccess($instructor, null, false);
+        }
 
         if (!$profile || !$profile->is_enabled) {
             return redirect()->route('dashboard')

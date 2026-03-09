@@ -15,8 +15,12 @@ class BookingProfileInviteService
 {
     /**
      * Grant 1:1 booking access to an instructor
+     *
+     * @param Instructor $instructor
+     * @param array|null $defaultConfig
+     * @param bool $sendEmail Whether to send access granted email (skip for owner self-setup)
      */
-    public function grantAccess(Instructor $instructor, ?array $defaultConfig = null): BookingProfile
+    public function grantAccess(Instructor $instructor, ?array $defaultConfig = null, bool $sendEmail = true): BookingProfile
     {
         // Check if profile already exists
         $existingProfile = BookingProfile::where('host_id', $instructor->host_id)
@@ -31,8 +35,10 @@ class BookingProfileInviteService
                     'invited_at' => now(),
                 ]);
 
-                // Send re-invitation email
-                $this->sendAccessGrantedEmail($instructor, $existingProfile);
+                // Send re-invitation email (unless skipped)
+                if ($sendEmail) {
+                    $this->sendAccessGrantedEmail($instructor, $existingProfile);
+                }
             }
 
             return $existingProfile;
@@ -69,8 +75,10 @@ class BookingProfileInviteService
             'invited_at' => now(),
         ]);
 
-        // Send access granted email
-        $this->sendAccessGrantedEmail($instructor, $profile);
+        // Send access granted email (unless skipped)
+        if ($sendEmail) {
+            $this->sendAccessGrantedEmail($instructor, $profile);
+        }
 
         return $profile;
     }
@@ -228,20 +236,69 @@ class BookingProfileInviteService
 
     /**
      * Get all instructors with booking profile status for a host
+     * Note: Owner is excluded from this list - they access setup directly via /one-on-one
      */
     public function getInstructorsWithStatus(Host $host): array
     {
         $instructors = $host->instructors()->with('bookingProfile')->get();
+        $result = [];
 
-        return $instructors->map(function ($instructor) {
+        // Get owner user id to identify and exclude owner from the list
+        $ownerUserId = $host->owner_id;
+
+        foreach ($instructors as $instructor) {
+            // Skip the owner - they access their setup page directly
+            if ($instructor->user_id === $ownerUserId) {
+                continue;
+            }
+
             $profile = $instructor->bookingProfile;
 
-            return [
+            $result[] = [
                 'instructor' => $instructor,
                 'has_access' => $profile && $profile->is_enabled,
                 'is_setup_complete' => $profile && $profile->is_setup_complete,
                 'profile' => $profile,
+                'is_owner' => false,
             ];
-        })->toArray();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Create an instructor record for the owner
+     */
+    public function createOwnerInstructor(Host $host): Instructor
+    {
+        $owner = $host->owner;
+
+        if (!$owner) {
+            throw new Exception('Host does not have an owner.');
+        }
+
+        // Check if owner already has an instructor record
+        $existingInstructor = Instructor::where('host_id', $host->id)
+            ->where('user_id', $owner->id)
+            ->first();
+
+        if ($existingInstructor) {
+            return $existingInstructor;
+        }
+
+        // Create instructor record for owner
+        return Instructor::create([
+            'host_id' => $host->id,
+            'user_id' => $owner->id,
+            'name' => $owner->name,
+            'email' => $owner->email,
+            'phone' => $owner->phone,
+            'bio' => null,
+            'specialties' => [],
+            'is_active' => true,
+            'working_days' => [1, 2, 3, 4, 5],
+            'availability_default_from' => '09:00:00',
+            'availability_default_to' => '17:00:00',
+        ]);
     }
 }

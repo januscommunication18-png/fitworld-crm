@@ -155,18 +155,6 @@ class MarketplaceController extends Controller
         $user = auth()->user();
         $host = $user->currentHost() ?? $user->host;
 
-        // Verify instructor belongs to this host
-        $instructor = Instructor::where('host_id', $host->id)
-            ->where('id', $validated['instructor_id'])
-            ->first();
-
-        if (!$instructor) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Instructor not found.',
-            ], 404);
-        }
-
         // Check if 1:1 meeting feature is enabled
         if (!$host->hasFeature('online-1on1-meeting')) {
             return response()->json([
@@ -176,11 +164,23 @@ class MarketplaceController extends Controller
         }
 
         try {
+            // Verify instructor belongs to this host
+            $instructor = Instructor::where('host_id', $host->id)
+                ->where('id', $validated['instructor_id'])
+                ->first();
+
+            if (!$instructor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Instructor not found.',
+                ], 404);
+            }
+
             $profile = $this->bookingProfileInviteService->grantAccess($instructor);
 
             return response()->json([
                 'success' => true,
-                'message' => "1:1 booking access granted to {$instructor->name}. An invitation email has been sent.",
+                'message' => "1:1 booking access granted to {$instructor->name}.",
                 'profile' => [
                     'id' => $profile->id,
                     'is_enabled' => $profile->is_enabled,

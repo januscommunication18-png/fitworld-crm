@@ -12,6 +12,9 @@ class OneOnOneInvite extends Model
         'instructor_id',
         'sent_by_user_id',
         'email',
+        'client_name',
+        'duration',
+        'scheduled_at',
         'sent_at',
         'opened_at',
         'booked_at',
@@ -19,6 +22,7 @@ class OneOnOneInvite extends Model
     ];
 
     protected $casts = [
+        'scheduled_at' => 'datetime',
         'sent_at' => 'datetime',
         'opened_at' => 'datetime',
         'booked_at' => 'datetime',
