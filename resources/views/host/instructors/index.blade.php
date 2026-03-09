@@ -159,7 +159,7 @@
                 <span class="icon-[tabler--user-star] size-16 text-base-content/20 mx-auto mb-4"></span>
                 <h3 class="text-lg font-semibold mb-2">{{ $trans['instructors.no_instructors'] ?? 'No Instructors Found' }}</h3>
                 <p class="text-base-content/60 mb-4">{{ $trans['instructors.get_started'] ?? 'Get started by adding your first instructor.' }}</p>
-                <a href="{{ route('instructors.create') }}" class="btn btn-primary">
+                <a href="{{ route('settings.team.users.invite') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
                     {{ $trans['instructors.add_instructor'] ?? 'Add Instructor' }}
                 </a>

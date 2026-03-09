@@ -109,7 +109,7 @@
     </div>
 
     {{-- Instructor Link Alert --}}
-    @if($userRole === 'instructor' && $instructor)
+    @if($instructor)
         <div class="alert alert-soft alert-info">
             <span class="icon-[tabler--info-circle] size-5"></span>
             <div class="flex-1">
@@ -119,6 +119,21 @@
                 <span class="icon-[tabler--user-star] size-4"></span>
                 View Instructor Profile
             </a>
+        </div>
+    @elseif($userRole === 'owner' && $user->id === auth()->id())
+        {{-- Add as Instructor option for owner viewing their own profile --}}
+        <div class="alert alert-soft alert-primary">
+            <span class="icon-[tabler--user-star] size-5"></span>
+            <div class="flex-1">
+                <p>Want to teach classes? Create an instructor profile to be assigned to classes and appear on your public booking page.</p>
+            </div>
+            <form action="{{ route('settings.team.users.add-as-instructor', $user) }}" method="POST" class="inline">
+                @csrf
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <span class="icon-[tabler--plus] size-4"></span>
+                    Add Me as Instructor
+                </button>
+            </form>
         </div>
     @endif
 

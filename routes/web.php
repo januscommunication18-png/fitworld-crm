@@ -663,6 +663,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/team/users/{user}/profile', [TeamController::class, 'updateUserProfile'])->name('settings.team.users.profile.update');
     Route::delete('/settings/team/user-notes/{note}', [TeamController::class, 'deleteUserNote'])->name('settings.team.user-notes.delete');
     Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
+    Route::post('/settings/team/users/{user}/add-as-instructor', [TeamController::class, 'addAsInstructor'])->name('settings.team.users.add-as-instructor');
 
     // User Certifications
     Route::post('/settings/team/users/{user}/certifications', [TeamController::class, 'storeUserCertification'])->name('settings.team.users.certifications.store');

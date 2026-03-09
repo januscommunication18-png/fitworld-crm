@@ -87,7 +87,7 @@ class DashboardController extends Controller
                 'route' => 'settings.team.instructors',
             ],
             'payment' => [
-                'completed' => !empty($host->stripe_account_id),
+                'completed' => $this->isPaymentSetupComplete($host),
                 'label' => 'Setup Payment System',
                 'route' => 'settings.payments.settings',
             ],
@@ -103,6 +103,26 @@ class DashboardController extends Controller
         return !empty($host->studio_name)
             && !empty($host->timezone)
             && !empty($host->country);
+    }
+
+    /**
+     * Check if payment setup is complete
+     */
+    protected function isPaymentSetupComplete($host): bool
+    {
+        // Complete if Stripe is connected OR payment settings have been configured
+        if (!empty($host->stripe_account_id)) {
+            return true;
+        }
+
+        // Check if payment settings have been configured
+        $settings = $host->payment_settings;
+        if (!empty($settings)) {
+            // Consider complete if they've made any payment method choice
+            return isset($settings['accept_cards']) || isset($settings['accept_cash']);
+        }
+
+        return false;
     }
 
     /**

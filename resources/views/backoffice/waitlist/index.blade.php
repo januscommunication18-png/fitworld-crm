@@ -158,58 +158,59 @@
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Embed Code Modal
-        const embedModal = document.getElementById('embed-code-modal');
-        const btnEmbed = document.getElementById('btn-embed-code');
+// Define functions in global scope immediately
+function openEmbedModal() {
+    var embedModal = document.getElementById('embed-code-modal');
+    if (embedModal) {
+        embedModal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+}
 
-        // Embed Modal Functions
-        function openEmbedModal() {
-            embedModal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
+function closeEmbedModal() {
+    var embedModal = document.getElementById('embed-code-modal');
+    if (embedModal) {
+        embedModal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+function copyToClipboard(elementId) {
+    var element = document.getElementById(elementId);
+    if (!element) return;
+
+    element.select();
+    element.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(element.value).then(function() {
+        // Show success feedback - find the copy button
+        var container = element.closest('.relative') || element.parentElement;
+        var btn = container.querySelector('button[onclick*="copyToClipboard"]');
+        if (btn) {
+            var originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="icon-[tabler--check] size-5 text-success"></span>';
+            setTimeout(function() {
+                btn.innerHTML = originalHtml;
+            }, 2000);
         }
-
-        function closeEmbedModal() {
-            embedModal.classList.add('hidden');
-            document.body.classList.remove('overflow-hidden');
-        }
-
-        // Copy to clipboard function
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            element.select();
-            element.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(element.value).then(function() {
-                // Show success feedback
-                const btn = element.nextElementSibling;
-                const originalHtml = btn.innerHTML;
-                btn.innerHTML = '<span class="icon-[tabler--check] size-5 text-success"></span>';
-                setTimeout(function() {
-                    btn.innerHTML = originalHtml;
-                }, 2000);
-            });
-        }
-
-        // Expose to global scope for onclick handlers in modals
-        window.openEmbedModal = openEmbedModal;
-        window.closeEmbedModal = closeEmbedModal;
-        window.copyToClipboard = copyToClipboard;
-
-        if (btnEmbed) {
-            btnEmbed.addEventListener('click', function(e) {
-                e.preventDefault();
-                openEmbedModal();
-            });
-        }
-
-        // Close on Escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                if (embedModal && !embedModal.classList.contains('hidden')) {
-                    closeEmbedModal();
-                }
-            }
-        });
     });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var btnEmbed = document.getElementById('btn-embed-code');
+
+    if (btnEmbed) {
+        btnEmbed.addEventListener('click', function(e) {
+            e.preventDefault();
+            openEmbedModal();
+        });
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeEmbedModal();
+        }
+    });
+});
 </script>
 @endpush

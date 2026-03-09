@@ -42,9 +42,13 @@ class TeamController extends Controller
 
         $users = $usersQuery->paginate(10)->withQueryString();
 
-        // Get instructors without login (no user_id)
+        // Get all user emails to filter duplicates
+        $existingUserEmails = $host->teamMembers()->pluck('email')->map(fn($e) => strtolower($e))->toArray();
+
+        // Get instructors without login (no user_id) and not already in users list
         $instructorsWithoutLoginQuery = $host->instructors()
             ->whereNull('user_id')
+            ->whereNotIn(\DB::raw('LOWER(email)'), $existingUserEmails)
             ->orderBy('name');
 
         if ($search) {
@@ -56,9 +60,10 @@ class TeamController extends Controller
 
         $instructorsWithoutLogin = $instructorsWithoutLoginQuery->get();
 
-        // Get pending invitations (shown inline with users)
+        // Get pending invitations - exclude emails that already have user accounts
         $invitationsQuery = TeamInvitation::where('host_id', $host->id)
             ->whereIn('status', [TeamInvitation::STATUS_PENDING, TeamInvitation::STATUS_EXPIRED])
+            ->whereNotIn(\DB::raw('LOWER(email)'), $existingUserEmails)
             ->with('invitedBy')
             ->orderBy('created_at', 'desc');
 
@@ -152,13 +157,10 @@ class TeamController extends Controller
         // Get user's permissions from pivot or user model
         $userPermissions = $user->getPermissionsForHost($host) ?? $user->permissions;
 
-        // Get linked instructor if this is an instructor role
-        $instructor = null;
-        if ($userRole === User::ROLE_INSTRUCTOR) {
-            $instructor = $user->instructor ?? Instructor::where('host_id', $host->id)
-                ->where('user_id', $user->id)
-                ->first();
-        }
+        // Get linked instructor if this is an instructor role or check if one exists
+        $instructor = Instructor::where('host_id', $host->id)
+            ->where('user_id', $user->id)
+            ->first();
 
         // Get tab from query string
         $tab = $request->get('tab', 'overview');
@@ -1530,5 +1532,50 @@ class TeamController extends Controller
             'status_badge_class' => $certification->status_badge_class,
             'days_until_expiry' => $certification->days_until_expiry,
         ];
+    }
+
+    /**
+     * Add user as an instructor (for studio owners)
+     */
+    public function addAsInstructor(User $user)
+    {
+        $host = auth()->user()->currentHost();
+
+        // Check if user belongs to this host
+        $userWithPivot = $host->teamMembers()
+            ->where('users.id', $user->id)
+            ->first();
+
+        if (!$userWithPivot) {
+            return back()->with('error', 'User not found in this team.');
+        }
+
+        // Check if instructor already exists
+        $existingInstructor = Instructor::where('host_id', $host->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existingInstructor) {
+            return redirect()->route('instructors.show', $existingInstructor)
+                ->with('info', 'Instructor profile already exists.');
+        }
+
+        // Create instructor profile
+        $instructor = Instructor::create([
+            'host_id' => $host->id,
+            'user_id' => $user->id,
+            'name' => $user->full_name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'bio' => $user->bio,
+            'social_links' => $user->social_links,
+            'status' => Instructor::STATUS_ACTIVE,
+            'is_active' => true,
+            'is_visible' => true,
+            'employment_type' => 'owner',
+        ]);
+
+        return redirect()->route('instructors.show', $instructor)
+            ->with('success', 'Instructor profile created successfully!');
     }
 }
