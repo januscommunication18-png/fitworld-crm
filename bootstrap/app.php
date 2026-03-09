@@ -40,10 +40,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
 
-        // Exclude public waitlist from CSRF (for embedded forms on external sites)
+        // Exclude public forms from CSRF (for embedded forms on external sites)
         $middleware->validateCsrfTokens(except: [
             'join-waitlist',
             'join-waitlist/*',
+            'subscribe',
+            'subscribe/*',
         ]);
 
         // Security code check (same as NewDone - append, not prepend)

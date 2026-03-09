@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\QuestionnaireResponseController;
 use App\Http\Controllers\SecurityCodeController;
 use App\Http\Controllers\Public\ProspectWaitlistController;
+use App\Http\Controllers\Public\NewsletterSubscribeController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +71,13 @@ Route::prefix('join-waitlist')->name('public.waitlist.')->group(function () {
     Route::get('/', [ProspectWaitlistController::class, 'show'])->name('form');
     Route::post('/', [ProspectWaitlistController::class, 'store'])->name('store');
     Route::get('/success', [ProspectWaitlistController::class, 'success'])->name('success');
+});
+
+// Public Newsletter Subscription Form
+Route::prefix('subscribe')->name('public.newsletter.')->group(function () {
+    Route::get('/', [NewsletterSubscribeController::class, 'form'])->name('form');
+    Route::post('/', [NewsletterSubscribeController::class, 'store'])->name('store');
+    Route::get('/success', [NewsletterSubscribeController::class, 'success'])->name('success');
 });
 
 // Public Questionnaire Response Routes (no auth required)

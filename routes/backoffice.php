@@ -15,6 +15,7 @@ use App\Http\Controllers\Backoffice\PlaceholderController;
 use App\Http\Controllers\Backoffice\SettingsController;
 use App\Http\Controllers\Backoffice\TranslationController;
 use App\Http\Controllers\Backoffice\WaitlistController;
+use App\Http\Controllers\Backoffice\NewsletterController;
 use App\Models\Host;
 use Illuminate\Support\Facades\Route;
 
@@ -127,6 +128,15 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                     Route::get('/create', [WaitlistController::class, 'create'])->name('create');
                     Route::post('/', [WaitlistController::class, 'store'])->name('store');
                     Route::delete('/{waitlist}', [WaitlistController::class, 'destroy'])->name('destroy');
+                });
+
+                // Newsletter Subscribers
+                Route::prefix('newsletter')->name('newsletter.')->group(function () {
+                    Route::get('/', [NewsletterController::class, 'index'])->name('index');
+                    Route::get('/create', [NewsletterController::class, 'create'])->name('create');
+                    Route::post('/', [NewsletterController::class, 'store'])->name('store');
+                    Route::patch('/{subscriber}/toggle-status', [NewsletterController::class, 'toggleStatus'])->name('toggle-status');
+                    Route::delete('/{subscriber}', [NewsletterController::class, 'destroy'])->name('destroy');
                 });
 
                 // Coming Soon Placeholders
