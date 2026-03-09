@@ -546,8 +546,10 @@ Route::middleware('auth')->group(function () {
     // 1:1 Bookings Management (Team Member)
     Route::prefix('one-on-one')->name('one-on-one.')->group(function () {
         Route::get('/', [OneOnOneBookingController::class, 'index'])->name('index');
-        Route::post('/send-invite', [OneOnOneBookingController::class, 'sendInvite'])->name('send-invite');
+        Route::get('/invite', [OneOnOneBookingController::class, 'createInvite'])->name('invite.create');
+        Route::post('/invite', [OneOnOneBookingController::class, 'sendInvite'])->name('send-invite');
         Route::post('/resend-invite/{invite}', [OneOnOneBookingController::class, 'resendInvite'])->name('resend-invite');
+        Route::get('/availability/{instructor}', [OneOnOneBookingController::class, 'getAvailability'])->name('availability');
         Route::get('/{booking}', [OneOnOneBookingController::class, 'show'])->name('show');
         Route::post('/{booking}/accept', [OneOnOneBookingController::class, 'accept'])->name('accept');
         Route::post('/{booking}/decline', [OneOnOneBookingController::class, 'decline'])->name('decline');

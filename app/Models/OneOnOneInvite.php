@@ -15,6 +15,7 @@ class OneOnOneInvite extends Model
         'client_name',
         'duration',
         'scheduled_at',
+        'scheduled_slots',
         'sent_at',
         'opened_at',
         'booked_at',
@@ -23,6 +24,7 @@ class OneOnOneInvite extends Model
 
     protected $casts = [
         'scheduled_at' => 'datetime',
+        'scheduled_slots' => 'array',
         'sent_at' => 'datetime',
         'opened_at' => 'datetime',
         'booked_at' => 'datetime',
@@ -66,5 +68,29 @@ class OneOnOneInvite extends Model
             'opened' => 'badge-info',
             default => 'badge-neutral',
         };
+    }
+
+    /**
+     * Check if the invite has specific time slots suggested.
+     */
+    public function hasScheduledSlots(): bool
+    {
+        return !empty($this->scheduled_slots) || $this->scheduled_at !== null;
+    }
+
+    /**
+     * Get the total number of time slots across all dates.
+     */
+    public function getTotalSlotsCountAttribute(): int
+    {
+        if (empty($this->scheduled_slots)) {
+            return $this->scheduled_at ? 1 : 0;
+        }
+
+        $count = 0;
+        foreach ($this->scheduled_slots as $times) {
+            $count += is_array($times) ? count($times) : 1;
+        }
+        return $count;
     }
 }

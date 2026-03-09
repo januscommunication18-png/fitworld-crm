@@ -5,12 +5,19 @@ Hi{{ $clientName ? ' ' . $clientName : '' }},
 
 You've been invited to schedule a 1:1 meeting with **{{ $instructorName }}**@if($instructorTitle) ({{ $instructorTitle }})@endif at **{{ $studioName }}**.
 
-@if($scheduledAt)
+@if(!empty($formattedSlots))
 <x-mail::panel>
-**Suggested Time:**
-{{ $scheduledAt->format('l, F j, Y') }} at {{ $scheduledAt->format('g:i A') }}
+**Suggested Time{{ count($formattedSlots) > 1 || count($formattedSlots[0]['times'] ?? []) > 1 ? 's' : '' }}:**
+
+@foreach($formattedSlots as $slot)
+**{{ $slot['date'] }}**
+@foreach($slot['times'] as $time)
+- {{ $time }}
+@endforeach
+
+@endforeach
 @if($duration)
-({{ $duration }} minutes)
+({{ $duration }} minute sessions)
 @endif
 </x-mail::panel>
 @elseif($duration)
@@ -24,8 +31,8 @@ You've been invited to schedule a 1:1 meeting with **{{ $instructorName }}**@if(
 
 ---
 
-@if($scheduledAt)
-Click the button below to confirm this time or choose a different slot.
+@if(!empty($formattedSlots))
+Click the button below to confirm one of these times or choose a different slot.
 @else
 Click the button below to view available times and book your session.
 @endif

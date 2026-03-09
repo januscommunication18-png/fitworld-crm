@@ -41,20 +41,12 @@
             </a>
             @endif
 
-            {{-- Send Invite Button (Owner/Admin only) --}}
-            @if($isOwner)
-            <button type="button" class="btn btn-ghost btn-sm" onclick="openInviteModal()">
+            {{-- Send Invite Button (Owner/Admin or Instructor with completed setup) --}}
+            @if($isOwner || ($profile && $profile->is_setup_complete))
+            <a href="{{ route('one-on-one.invite.create') }}" class="btn {{ $isOwner ? 'btn-ghost' : 'btn-primary' }} btn-sm">
                 <span class="icon-[tabler--send] size-5"></span>
                 <span class="hidden sm:inline">Send Invite</span>
-            </button>
-            @endif
-
-            {{-- Send Invite Button (Instructor with completed setup) --}}
-            @if(!$isOwner && $profile && $profile->is_setup_complete)
-            <button type="button" class="btn btn-primary btn-sm" onclick="openInstructorInviteModal()">
-                <span class="icon-[tabler--send] size-5"></span>
-                <span class="hidden sm:inline">Send Invite</span>
-            </button>
+            </a>
             @endif
 
             {{-- Configure My 1:1 Page (Owner) --}}
@@ -162,10 +154,10 @@
                 <h3 class="text-lg font-semibold mt-4">No Invites Sent</h3>
                 <p class="text-base-content/60 mt-1">{{ $isOwner ? 'No booking invites have been sent yet.' : 'You haven\'t sent any booking invites yet.' }}</p>
                 @if($profile && $profile->is_setup_complete)
-                <button type="button" onclick="{{ $isOwner ? 'openInviteModal()' : 'openInstructorInviteModal()' }}" class="btn btn-primary btn-sm mt-4">
+                <a href="{{ route('one-on-one.invite.create') }}" class="btn btn-primary btn-sm mt-4">
                     <span class="icon-[tabler--send] size-4"></span>
                     Send Your First Invite
-                </button>
+                </a>
                 @endif
             </div>
         </div>
@@ -229,7 +221,35 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($invite->scheduled_at)
+                                    @if(!empty($invite->scheduled_slots))
+                                        @php
+                                            $slotCount = $invite->total_slots_count;
+                                            $dates = array_keys($invite->scheduled_slots);
+                                            sort($dates);
+                                        @endphp
+                                        <div class="dropdown [--trigger:hover]">
+                                            <button type="button" class="dropdown-toggle text-left">
+                                                <div class="text-sm font-medium">{{ $slotCount }} slot{{ $slotCount > 1 ? 's' : '' }}</div>
+                                                <div class="text-xs text-base-content/50">{{ count($dates) }} date{{ count($dates) > 1 ? 's' : '' }}</div>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-48 p-3" role="menu">
+                                                @foreach($dates as $date)
+                                                    @php
+                                                        $dateObj = \Carbon\Carbon::parse($date);
+                                                        $times = $invite->scheduled_slots[$date];
+                                                    @endphp
+                                                    <div class="mb-2 last:mb-0">
+                                                        <p class="text-xs font-semibold text-base-content/70 mb-1">{{ $dateObj->format('M j, Y') }}</p>
+                                                        <div class="flex flex-wrap gap-1">
+                                                            @foreach($times as $time)
+                                                                <span class="badge badge-ghost badge-xs">{{ \Carbon\Carbon::parse($time)->format('g:i A') }}</span>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @elseif($invite->scheduled_at)
                                         <div class="text-sm">{{ $invite->scheduled_at->format('M j, Y') }}</div>
                                         <div class="text-xs text-base-content/50">{{ $invite->scheduled_at->format('g:i A') }}</div>
                                     @else
@@ -277,10 +297,10 @@
                 <span class="icon-[tabler--send] size-16 text-base-content/20 mx-auto"></span>
                 <h3 class="text-lg font-semibold mt-4">No Invites Sent</h3>
                 <p class="text-base-content/60 mt-1">You haven't sent any booking invites yet.</p>
-                <button type="button" onclick="openInviteModal()" class="btn btn-primary btn-sm mt-4">
+                <a href="{{ route('one-on-one.invite.create') }}" class="btn btn-primary btn-sm mt-4">
                     <span class="icon-[tabler--send] size-4"></span>
                     Send Your First Invite
-                </button>
+                </a>
             </div>
         </div>
         @else
@@ -590,210 +610,6 @@
     @endif {{-- End of @else (listing view) --}}
 </div>
 
-{{-- Send Invite Modal (Owner/Admin only) --}}
-@if($isOwner)
-<div id="invite-modal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black/50" onclick="closeInviteModal()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-base-100 rounded-xl shadow-xl max-w-2xl w-full relative">
-            <div class="p-8">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span class="icon-[tabler--send] size-8 text-primary"></span>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-semibold">Send Booking Invite</h3>
-                        <p class="text-base text-base-content/60">Invite a client to book a 1:1 meeting</p>
-                    </div>
-                </div>
-
-                @php
-                    $instructorsWithBooking = \App\Models\Instructor::where('host_id', $host->id)
-                        ->whereHas('bookingProfile', fn($q) => $q->where('is_enabled', true)->where('is_setup_complete', true))
-                        ->get();
-                @endphp
-
-                @if($instructorsWithBooking->isEmpty())
-                <div class="alert alert-soft alert-warning">
-                    <span class="icon-[tabler--alert-circle] size-5"></span>
-                    <span>No team members have completed their 1:1 booking setup yet.</span>
-                </div>
-                @else
-                <form id="invite-form" class="space-y-6">
-                    <div>
-                        <label class="label-text mb-2 block text-base" for="invite_instructor_id">Select Staff / Instructor</label>
-                        <select id="invite_instructor_id" class="hidden" required
-                            data-select='{
-                                "hasSearch": true,
-                                "searchPlaceholder": "Search staff...",
-                                "placeholder": "Choose a team member...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle w-full",
-                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
-                            <option value="">Choose a team member...</option>
-                            @foreach($instructorsWithBooking as $inst)
-                                <option value="{{ $inst->id }}">
-                                    {{ $inst->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="label-text mb-2 block text-base" for="invite_email">Email Address</label>
-                        <input type="email" id="invite_email" class="input input-bordered w-full input-lg" placeholder="client@example.com" required>
-                    </div>
-                </form>
-                @endif
-            </div>
-            <div class="flex justify-end gap-3 p-6 border-t border-base-200">
-                <button type="button" class="btn btn-ghost btn-lg" onclick="closeInviteModal()">Cancel</button>
-                @if($instructorsWithBooking->isNotEmpty())
-                <button type="button" class="btn btn-primary btn-lg" id="send-invite-btn" onclick="sendInvite()">
-                    <span class="loading loading-spinner loading-sm hidden"></span>
-                    <span class="icon-[tabler--send] size-5"></span>
-                    Send Invite
-                </button>
-                @endif
-            </div>
-        </div>
-    </div>
-</div>
-@endif
-
-{{-- Send Invite Modal (Instructor) --}}
-@if(!$isOwner && $profile && $profile->is_setup_complete)
-<div id="instructor-invite-modal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black/50" onclick="closeInstructorInviteModal()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-base-100 rounded-xl shadow-xl max-w-2xl w-full relative my-8">
-            <div class="p-8">
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span class="icon-[tabler--send] size-8 text-primary"></span>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-semibold">Send Booking Invite</h3>
-                        <p class="text-base text-base-content/60">Invite a client to book a 1:1 meeting with you</p>
-                    </div>
-                </div>
-
-                <form id="instructor-invite-form" class="space-y-6">
-                    {{-- Staff Member (Read-only) --}}
-                    <div>
-                        <label class="label-text mb-2 block text-base">Staff Member</label>
-                        <div class="input input-bordered w-full flex items-center gap-3 bg-base-200/50 cursor-not-allowed">
-                            @if($instructor && $instructor->photo_url)
-                                <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}" class="w-8 h-8 rounded-full object-cover">
-                            @else
-                                <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                    <span class="text-xs font-bold text-primary">{{ strtoupper(substr($instructor->name ?? 'U', 0, 1)) }}</span>
-                                </div>
-                            @endif
-                            <span class="font-medium">{{ $instructor->name ?? 'Unknown' }}</span>
-                            <span class="badge badge-primary badge-sm ml-auto">You</span>
-                        </div>
-                        <input type="hidden" id="instructor_invite_instructor_id" value="{{ $instructor->id ?? '' }}">
-                    </div>
-
-                    {{-- Meeting Duration --}}
-                    <div>
-                        <label class="label-text mb-2 block text-base" for="instructor_invite_duration">Meeting Duration</label>
-                        <select id="instructor_invite_duration" class="select select-bordered w-full" required>
-                            @php
-                                $allowedDurations = $profile->allowed_durations ?? [30, 60];
-                                $durationLabels = [15 => '15 minutes', 30 => '30 minutes', 45 => '45 minutes', 60 => '1 hour'];
-                            @endphp
-                            @foreach($allowedDurations as $duration)
-                                <option value="{{ $duration }}" {{ $duration == ($profile->default_duration ?? 30) ? 'selected' : '' }}>
-                                    {{ $durationLabels[$duration] ?? $duration . ' minutes' }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    {{-- Availability Override --}}
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <label class="label-text text-base">Meeting Date & Time</label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <span class="text-sm text-base-content/60">Specific time</span>
-                                <input type="checkbox" id="instructor_invite_override" class="toggle toggle-primary toggle-sm" onchange="toggleAvailabilityOverride(this.checked)">
-                            </label>
-                        </div>
-
-                        {{-- Default: Let client choose --}}
-                        <div id="instructor_invite_default_availability" class="bg-base-200/50 rounded-lg p-4">
-                            <div class="flex items-center gap-3">
-                                <span class="icon-[tabler--calendar-event] size-5 text-primary"></span>
-                                <div>
-                                    <span class="text-sm font-medium">Client will choose from your availability</span>
-                                    <p class="text-xs text-base-content/60 mt-0.5">
-                                        @php
-                                            $workingDays = $profile->working_days ?? [1, 2, 3, 4, 5];
-                                            $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                            $workingDayNames = array_map(fn($d) => $dayNames[$d], $workingDays);
-                                        @endphp
-                                        {{ implode(', ', $workingDayNames) }} &bull;
-                                        {{ $profile->default_start_time ? \Carbon\Carbon::parse($profile->default_start_time)->format('g:i A') : '9:00 AM' }}
-                                        -
-                                        {{ $profile->default_end_time ? \Carbon\Carbon::parse($profile->default_end_time)->format('g:i A') : '5:00 PM' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Override: Specific date & time --}}
-                        <div id="instructor_invite_override_fields" class="hidden space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="label-text mb-1 block" for="instructor_invite_date">Date</label>
-                                    <input type="date" id="instructor_invite_date" class="input input-bordered w-full" min="{{ date('Y-m-d') }}">
-                                </div>
-                                <div>
-                                    <label class="label-text mb-1 block" for="instructor_invite_time">Time</label>
-                                    <input type="time" id="instructor_invite_time" class="input input-bordered w-full"
-                                        value="{{ $profile->default_start_time ? substr($profile->default_start_time, 0, 5) : '09:00' }}">
-                                </div>
-                            </div>
-                            <p class="text-xs text-base-content/50">
-                                <span class="icon-[tabler--info-circle] size-3.5 inline-block mr-1"></span>
-                                Client will only see this specific time slot
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="divider">Client Details</div>
-
-                    {{-- Client Name --}}
-                    <div>
-                        <label class="label-text mb-2 block text-base" for="instructor_invite_name">Client Name</label>
-                        <input type="text" id="instructor_invite_name" class="input input-bordered w-full" placeholder="John Doe" required>
-                    </div>
-
-                    {{-- Client Email --}}
-                    <div>
-                        <label class="label-text mb-2 block text-base" for="instructor_invite_email">Client Email Address</label>
-                        <input type="email" id="instructor_invite_email" class="input input-bordered w-full" placeholder="client@example.com" required>
-                    </div>
-                </form>
-            </div>
-            <div class="flex justify-end gap-3 p-6 border-t border-base-200">
-                <button type="button" class="btn btn-ghost btn-lg" onclick="closeInstructorInviteModal()">Cancel</button>
-                <button type="button" class="btn btn-primary btn-lg" id="instructor-send-invite-btn" onclick="sendInstructorInvite()">
-                    <span class="loading loading-spinner loading-sm hidden"></span>
-                    <span class="icon-[tabler--send] size-5"></span>
-                    Send Invite
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-@endif
-
 {{-- Accept Confirmation Modal --}}
 <div id="accept-modal" class="fixed inset-0 z-50 hidden">
     <div class="fixed inset-0 bg-black/50" onclick="closeAcceptModal()"></div>
@@ -881,39 +697,6 @@
 let bookingToCancel = null;
 let bookingToDecline = null;
 
-function openInviteModal() {
-    const selectEl = document.getElementById('invite_instructor_id');
-    const emailEl = document.getElementById('invite_email');
-
-    // Reset email field
-    if (emailEl) emailEl.value = '';
-
-    // Reset select - handle advance-select
-    if (selectEl) {
-        selectEl.value = '';
-        // If using HSSelect, reset it
-        if (window.HSSelect) {
-            const hsSelectInstance = HSSelect.getInstance(selectEl);
-            if (hsSelectInstance) {
-                hsSelectInstance.setValue('');
-            }
-        }
-    }
-
-    document.getElementById('invite-modal').classList.remove('hidden');
-
-    // Reinitialize advance-select after modal opens
-    setTimeout(() => {
-        if (window.HSSelect) {
-            HSSelect.autoInit();
-        }
-    }, 100);
-}
-
-function closeInviteModal() {
-    document.getElementById('invite-modal').classList.add('hidden');
-}
-
 function showNotification(type, message) {
     if (window.notyf) {
         window.notyf[type](message);
@@ -921,164 +704,6 @@ function showNotification(type, message) {
         new Notyf()[type](message);
     } else {
         alert(message);
-    }
-}
-
-async function sendInvite() {
-    const instructorSelect = document.getElementById('invite_instructor_id');
-    const emailInput = document.getElementById('invite_email');
-    const instructorId = instructorSelect.value;
-    const email = emailInput.value;
-
-    if (!instructorId || !email) {
-        showNotification('error', 'Please select a staff member and enter an email address');
-        return;
-    }
-
-    const btn = document.getElementById('send-invite-btn');
-    const spinner = btn.querySelector('.loading');
-    btn.disabled = true;
-    spinner.classList.remove('hidden');
-
-    try {
-        const response = await fetch('{{ route("one-on-one.send-invite") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify({
-                instructor_id: instructorId,
-                email: email,
-            }),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            showNotification('success', 'Invite sent successfully!');
-            closeInviteModal();
-        } else {
-            showNotification('error', result.message || 'Failed to send invite');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('error', 'An error occurred while sending invite');
-    } finally {
-        btn.disabled = false;
-        spinner.classList.add('hidden');
-    }
-}
-
-// Instructor Invite Modal Functions
-function openInstructorInviteModal() {
-    // Reset form
-    const nameEl = document.getElementById('instructor_invite_name');
-    const emailEl = document.getElementById('instructor_invite_email');
-    const durationEl = document.getElementById('instructor_invite_duration');
-    const overrideEl = document.getElementById('instructor_invite_override');
-    const dateEl = document.getElementById('instructor_invite_date');
-    const timeEl = document.getElementById('instructor_invite_time');
-
-    if (nameEl) nameEl.value = '';
-    if (emailEl) emailEl.value = '';
-    if (overrideEl) {
-        overrideEl.checked = false;
-        toggleAvailabilityOverride(false);
-    }
-    if (dateEl) dateEl.value = '';
-    // Reset duration to default
-    if (durationEl) {
-        const defaultOption = durationEl.querySelector('option[selected]');
-        if (defaultOption) {
-            durationEl.value = defaultOption.value;
-        }
-    }
-
-    document.getElementById('instructor-invite-modal').classList.remove('hidden');
-}
-
-function closeInstructorInviteModal() {
-    document.getElementById('instructor-invite-modal').classList.add('hidden');
-}
-
-function toggleAvailabilityOverride(enabled) {
-    const defaultEl = document.getElementById('instructor_invite_default_availability');
-    const overrideEl = document.getElementById('instructor_invite_override_fields');
-
-    if (enabled) {
-        defaultEl.classList.add('hidden');
-        overrideEl.classList.remove('hidden');
-    } else {
-        defaultEl.classList.remove('hidden');
-        overrideEl.classList.add('hidden');
-    }
-}
-
-async function sendInstructorInvite() {
-    const instructorId = document.getElementById('instructor_invite_instructor_id').value;
-    const duration = document.getElementById('instructor_invite_duration').value;
-    const name = document.getElementById('instructor_invite_name').value.trim();
-    const email = document.getElementById('instructor_invite_email').value.trim();
-    const overrideEnabled = document.getElementById('instructor_invite_override').checked;
-    const date = document.getElementById('instructor_invite_date').value;
-    const time = document.getElementById('instructor_invite_time').value;
-
-    if (!name || !email) {
-        showNotification('error', 'Please enter client name and email address');
-        return;
-    }
-
-    if (overrideEnabled && (!date || !time)) {
-        showNotification('error', 'Please select a date and time');
-        return;
-    }
-
-    const btn = document.getElementById('instructor-send-invite-btn');
-    const spinner = btn.querySelector('.loading');
-    btn.disabled = true;
-    spinner.classList.remove('hidden');
-
-    try {
-        const payload = {
-            instructor_id: instructorId,
-            email: email,
-            client_name: name,
-            duration: duration,
-        };
-
-        if (overrideEnabled && date && time) {
-            payload.scheduled_date = date;
-            payload.scheduled_time = time;
-        }
-
-        const response = await fetch('{{ route("one-on-one.send-invite") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            showNotification('success', 'Invite sent successfully!');
-            closeInstructorInviteModal();
-            // Reload to show in invites list if owner view
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showNotification('error', result.message || 'Failed to send invite');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showNotification('error', 'An error occurred while sending invite');
-    } finally {
-        btn.disabled = false;
-        spinner.classList.add('hidden');
     }
 }
 
@@ -1096,12 +721,6 @@ async function resendInvite(inviteId) {
 
         const result = await response.json();
 
-        if (response.ok && result.success) {
-            showNotification('success', 'Invite resent successfully!');
-        } else {
-            showNotification('error', result.message || 'Failed to resend invite');
-        }
-    } catch (error) {
         console.error('Error:', error);
         showNotification('error', 'An error occurred');
     }

@@ -9,6 +9,8 @@ use App\Models\Feature;
 use App\Models\Instructor;
 use App\Models\OneOnOneBooking;
 use App\Models\OneOnOneInvite;
+use App\Services\OneOnOneAvailabilityService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -521,6 +523,52 @@ class OneOnOneBookingController extends Controller
     }
 
     /**
+     * Show the send invite page.
+     */
+    public function createInvite(Request $request)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+        $isOwner = $user->isOwner($host);
+
+        // Get user's instructor record if exists
+        $userInstructor = Instructor::where('host_id', $host->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        // Get the user's booking profile
+        $profile = $userInstructor
+            ? BookingProfile::where('host_id', $host->id)
+                ->where('instructor_id', $userInstructor->id)
+                ->first()
+            : null;
+
+        // Get all instructors with booking enabled (for owner dropdown)
+        $instructorsWithBooking = collect();
+        if ($isOwner) {
+            $instructorsWithBooking = Instructor::where('host_id', $host->id)
+                ->whereHas('bookingProfile', fn($q) => $q->where('is_enabled', true)->where('is_setup_complete', true))
+                ->get();
+        }
+
+        // Check if user can send invites
+        $canSendInvites = $isOwner || ($profile && $profile->is_enabled && $profile->is_setup_complete);
+
+        if (!$canSendInvites) {
+            return redirect()->route('one-on-one.index')
+                ->with('error', 'You need to complete your 1:1 booking setup before sending invites.');
+        }
+
+        return view('host.one-on-one.invite', [
+            'host' => $host,
+            'isOwner' => $isOwner,
+            'profile' => $profile,
+            'instructor' => $userInstructor,
+            'instructorsWithBooking' => $instructorsWithBooking,
+        ]);
+    }
+
+    /**
      * Send a booking invite to a client.
      */
     public function sendInvite(Request $request)
@@ -542,6 +590,7 @@ class OneOnOneBookingController extends Controller
             'duration' => 'nullable|integer|in:15,30,45,60',
             'scheduled_date' => 'nullable|date|after_or_equal:today',
             'scheduled_time' => 'nullable|date_format:H:i',
+            'scheduled_slots' => 'nullable|string', // JSON string with multiple dates/times
         ]);
 
         // Get the instructor and verify they belong to this host
@@ -580,7 +629,24 @@ class OneOnOneBookingController extends Controller
             $duration = $profile->default_duration ?? $profile->allowed_durations[0] ?? 30;
         }
 
-        // Build scheduled datetime if provided
+        // Parse scheduled slots JSON if provided
+        $scheduledSlots = null;
+        if (!empty($validated['scheduled_slots'])) {
+            $scheduledSlots = json_decode($validated['scheduled_slots'], true);
+            // Validate the structure
+            if (is_array($scheduledSlots)) {
+                foreach ($scheduledSlots as $date => $times) {
+                    if (!is_array($times)) {
+                        $scheduledSlots = null;
+                        break;
+                    }
+                }
+            } else {
+                $scheduledSlots = null;
+            }
+        }
+
+        // Build scheduled datetime for legacy single slot (fallback)
         $scheduledAt = null;
         if (!empty($validated['scheduled_date']) && !empty($validated['scheduled_time'])) {
             $scheduledAt = \Carbon\Carbon::parse($validated['scheduled_date'] . ' ' . $validated['scheduled_time']);
@@ -595,7 +661,8 @@ class OneOnOneBookingController extends Controller
                     $validated['client_name'] ?? null,
                     $validated['email'],
                     $duration,
-                    $scheduledAt
+                    $scheduledAt,
+                    $scheduledSlots
                 )
             );
 
@@ -608,6 +675,7 @@ class OneOnOneBookingController extends Controller
                 'client_name' => $validated['client_name'] ?? null,
                 'duration' => $duration,
                 'scheduled_at' => $scheduledAt,
+                'scheduled_slots' => $scheduledSlots,
                 'sent_at' => now(),
             ]);
 
@@ -671,7 +739,8 @@ class OneOnOneBookingController extends Controller
                     $invite->client_name,
                     $invite->email,
                     $invite->duration,
-                    $invite->scheduled_at
+                    $invite->scheduled_at,
+                    $invite->scheduled_slots
                 )
             );
 
@@ -693,5 +762,81 @@ class OneOnOneBookingController extends Controller
                 'message' => 'Failed to resend invite.',
             ], 500);
         }
+    }
+
+    /**
+     * Get available time slots for an instructor (used by invite page).
+     */
+    public function getAvailability(Request $request, Instructor $instructor)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Verify instructor belongs to this host
+        if ($instructor->host_id !== $host->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Instructor not found.',
+            ], 404);
+        }
+
+        $profile = $instructor->bookingProfile;
+
+        if (!$profile || !$profile->canAcceptBookings()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This instructor is not accepting bookings.',
+            ], 400);
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date|after_or_equal:today',
+            'duration' => 'required|integer|in:15,30,45,60',
+        ]);
+
+        $date = Carbon::parse($validated['date']);
+        $duration = (int) $validated['duration'];
+
+        // Check if duration is allowed
+        if (!in_array($duration, $profile->allowed_durations ?? [30])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This duration is not available.',
+            ], 400);
+        }
+
+        // Check if date is within booking window
+        $minNoticeDate = now()->addHours($profile->min_notice_hours ?? 24);
+        $maxAdvanceDate = now()->addDays($profile->max_advance_days ?? 60);
+
+        if ($date->lt($minNoticeDate->startOfDay())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This date requires more advance notice.',
+                'slots' => [],
+            ]);
+        }
+
+        if ($date->gt($maxAdvanceDate)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This date is too far in advance.',
+                'slots' => [],
+            ]);
+        }
+
+        // Get available slots
+        $availabilityService = app(OneOnOneAvailabilityService::class);
+        $slots = $availabilityService->getAvailableSlots($profile, $date, $duration);
+
+        return response()->json([
+            'success' => true,
+            'date' => $date->format('Y-m-d'),
+            'duration' => $duration,
+            'slots' => $slots->map(fn($slot) => [
+                'time' => $slot['start'],
+                'display' => $slot['formatted'],
+            ])->values(),
+        ]);
     }
 }

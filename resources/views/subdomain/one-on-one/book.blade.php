@@ -91,10 +91,30 @@
         font-weight: 700;
     }
     .flatpickr-day.flatpickr-disabled {
-        color: oklch(var(--bc) / 0.2) !important;
+        color: oklch(var(--bc) / 0.15) !important;
+        background: oklch(var(--bc) / 0.03) !important;
+        text-decoration: line-through;
+        cursor: not-allowed !important;
+    }
+    .flatpickr-day.flatpickr-disabled:hover {
+        background: oklch(var(--bc) / 0.03) !important;
+        color: oklch(var(--bc) / 0.15) !important;
     }
     .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay {
         color: oklch(var(--bc) / 0.25) !important;
+    }
+    /* Suggested dates from invite */
+    .flatpickr-day.suggested-date:not(.flatpickr-disabled) {
+        background: oklch(var(--p) / 0.15) !important;
+        border: 2px solid oklch(var(--p) / 0.4) !important;
+        font-weight: 600;
+    }
+    .flatpickr-day.suggested-date:not(.flatpickr-disabled):hover {
+        background: oklch(var(--p) / 0.25) !important;
+    }
+    .flatpickr-day.suggested-date.selected {
+        background: oklch(var(--p)) !important;
+        border-color: oklch(var(--p)) !important;
     }
 
     /* Time slot button styles */
@@ -117,12 +137,37 @@
     $firstDuration = $preselectedDuration ?? $allowedDurations[0] ?? 30;
     $firstMeetingType = $meetingTypes[0] ?? 'video';
 
-    // Format preselected datetime for display
+    // Check if we have multi-slot invite
+    $hasMultipleSlots = !empty($preselectedSlots);
+
+    // Format preselected datetime for display (legacy single slot)
     $preselectedDateFormatted = '';
     $preselectedTimeFormatted = '';
-    if ($isSpecificTimeInvite ?? false) {
+    if (($isSpecificTimeInvite ?? false) && !$hasMultipleSlots && ($preselectedDate ?? null) && ($preselectedTime ?? null)) {
         $preselectedDateFormatted = \Carbon\Carbon::parse($preselectedDate)->format('l, F j, Y');
         $preselectedTimeFormatted = \Carbon\Carbon::parse($preselectedTime)->format('g:i A');
+    }
+
+    // Format multi-slot dates for display
+    $formattedMultiSlots = [];
+    if ($hasMultipleSlots) {
+        foreach ($preselectedSlots as $date => $times) {
+            $dateObj = \Carbon\Carbon::parse($date);
+            $formattedTimes = [];
+            foreach ($times as $time) {
+                $timeObj = \Carbon\Carbon::parse($time);
+                $formattedTimes[] = [
+                    'time' => $time,
+                    'display' => $timeObj->format('g:i A'),
+                ];
+            }
+            $formattedMultiSlots[] = [
+                'date' => $date,
+                'date_display' => $dateObj->format('l, M j'),
+                'date_full' => $dateObj->format('l, F j, Y'),
+                'times' => $formattedTimes,
+            ];
+        }
     }
 @endphp
 
@@ -250,6 +295,50 @@
                     </div>
                 </div>
 
+                {{-- Multi-slot Selection (shown for multi-slot invites) --}}
+                @if($hasMultipleSlots ?? false)
+                <div id="multi-slot-section" class="lg:col-span-2 p-6">
+                    <div class="mb-4">
+                        <h3 class="text-base font-semibold text-base-content mb-1">Suggested Times</h3>
+                        <p class="text-sm text-base-content/50">Select a time that works for you</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        @foreach($formattedMultiSlots as $slotGroup)
+                        <div class="border border-base-200 rounded-xl p-4">
+                            <p class="font-medium text-sm text-base-content mb-3 flex items-center gap-2">
+                                <span class="icon-[tabler--calendar] size-4 text-primary"></span>
+                                {{ $slotGroup['date_display'] }}
+                            </p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($slotGroup['times'] as $timeSlot)
+                                <button type="button"
+                                        class="suggested-slot-btn time-slot-btn py-2.5 px-4 text-sm font-medium bg-primary/5 text-primary border border-primary/20 rounded-lg hover:bg-primary hover:text-primary-content hover:border-primary text-center transition-all"
+                                        data-date="{{ $slotGroup['date'] }}"
+                                        data-date-display="{{ $slotGroup['date_full'] }}"
+                                        data-time="{{ $timeSlot['time'] }}"
+                                        data-time-display="{{ $timeSlot['display'] }}">
+                                    {{ $timeSlot['display'] }}
+                                </button>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-5 pt-4 border-t border-base-200 flex items-center justify-between">
+                        <p class="text-xs text-base-content/40">
+                            <span class="icon-[tabler--info-circle] size-3.5 inline-block mr-1"></span>
+                            None of these work?
+                        </p>
+                        <button type="button" id="view-all-times" class="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                            View all available times
+                            <span class="icon-[tabler--arrow-right] size-4"></span>
+                        </button>
+                    </div>
+                </div>
+                @endif
+
                 {{-- Form Section (replaces calendar & slots, shown by default for specific time invite) --}}
                 <div id="form-section" class="{{ ($isSpecificTimeInvite ?? false) ? '' : 'hidden' }} lg:col-span-2 p-6">
                     {{-- Selected Time Summary --}}
@@ -284,6 +373,7 @@
                         <div>
                             <label class="text-sm text-base-content/60 mb-1.5 block" for="email">Email <span class="text-error">*</span></label>
                             <input type="email" id="email" class="input input-bordered w-full" placeholder="john@example.com" value="{{ $preselectedEmail ?? '' }}" required>
+                        </div>
                         <div>
                             <label class="text-sm text-base-content/60 mb-1.5 block" for="phone">Phone <span class="text-base-content/30">(optional)</span></label>
                             <input type="tel" id="phone" class="input input-bordered w-full" placeholder="+1 (555) 000-0000">
@@ -329,6 +419,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const preselectedDate = '{{ $preselectedDate ?? '' }}';
     const preselectedTime = '{{ $preselectedTime ?? '' }}';
     const isSpecificTimeInvite = {{ ($isSpecificTimeInvite ?? false) ? 'true' : 'false' }};
+    const hasMultipleSlots = {{ ($hasMultipleSlots ?? false) ? 'true' : 'false' }};
+    const suggestedDates = {!! json_encode($hasMultipleSlots ? array_keys($preselectedSlots) : []) !!};
 
     let selectedDuration = {{ $firstDuration }};
     let selectedMeetingType = '{{ $firstMeetingType }}';
@@ -348,6 +440,12 @@ document.addEventListener('DOMContentLoaded', function() {
         defaultDate: preselectedDate || null,
         disable: [
             function(date) {
+                // If we have suggested dates from invite, only allow those dates
+                if (suggestedDates.length > 0) {
+                    const dateStr = date.toISOString().split('T')[0];
+                    return !suggestedDates.includes(dateStr);
+                }
+                // Otherwise, just disable non-working days
                 return !workingDays.includes(date.getDay());
             }
         ],
@@ -355,11 +453,22 @@ document.addEventListener('DOMContentLoaded', function() {
             selectedDate = dateStr;
             selectedTime = null;
             fetchTimeSlots();
+        },
+        onDayCreate: function(dObj, dStr, fp, dayElem) {
+            // Mark suggested dates from invite
+            if (suggestedDates.length > 0) {
+                const dateStr = dayElem.dateObj.toISOString().split('T')[0];
+                if (suggestedDates.includes(dateStr)) {
+                    dayElem.classList.add('suggested-date');
+                    dayElem.title = 'Suggested time available';
+                }
+            }
         }
     });
 
-    // If this is a specific time invite, set up the summary immediately
-    if (isSpecificTimeInvite) {
+    // If this is a specific time invite (single slot, not multi-slot), set up the summary immediately
+    if (isSpecificTimeInvite && !hasMultipleSlots && preselectedDate && preselectedTime) {
+        selectedDate = preselectedDate;
         selectedTime = preselectedTime;
         // Convert 24h time to display format
         const [hours, minutes] = preselectedTime.split(':');
@@ -373,9 +482,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const dateDisplay = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
         document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
         document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
-    } else if (preselectedDate) {
+    } else if (preselectedDate && !hasMultipleSlots) {
         // If just date is preselected (not specific time), fetch time slots
         fetchTimeSlots();
+    }
+
+    // Multi-slot invite: Handle suggested slot button clicks
+    document.querySelectorAll('.suggested-slot-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            selectedDate = this.dataset.date;
+            selectedTime = this.dataset.time;
+            selectedTimeDisplay = this.dataset.timeDisplay;
+
+            // Show form with selected slot summary
+            const dateDisplay = this.dataset.dateDisplay;
+            document.getElementById('summary-datetime').textContent = dateDisplay + ' at ' + selectedTimeDisplay;
+            document.getElementById('summary-details').textContent = selectedDuration + ' min · ' + (meetingTypeLabels[selectedMeetingType] || selectedMeetingType);
+
+            // Hide multi-slot section, show form
+            const multiSlotSection = document.getElementById('multi-slot-section');
+            if (multiSlotSection) {
+                multiSlotSection.classList.add('hidden');
+            }
+            document.getElementById('form-section').classList.remove('hidden');
+        });
+    });
+
+    // Multi-slot invite: "View all times" button
+    const viewAllTimesBtn = document.getElementById('view-all-times');
+    if (viewAllTimesBtn) {
+        viewAllTimesBtn.addEventListener('click', function() {
+            // Hide multi-slot section, show calendar
+            document.getElementById('multi-slot-section').classList.add('hidden');
+            document.getElementById('calendar-slots-section').classList.remove('hidden');
+        });
     }
 
     // Duration buttons
@@ -533,7 +673,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('change-time').addEventListener('click', function() {
         document.getElementById('form-section').classList.add('hidden');
-        document.getElementById('calendar-slots-section').classList.remove('hidden');
+        // For multi-slot invites, show the multi-slot section first
+        const multiSlotSection = document.getElementById('multi-slot-section');
+        if (multiSlotSection && hasMultipleSlots) {
+            multiSlotSection.classList.remove('hidden');
+        } else {
+            document.getElementById('calendar-slots-section').classList.remove('hidden');
+        }
     });
 
     document.getElementById('submit-booking').addEventListener('click', function() {

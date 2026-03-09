@@ -66,13 +66,39 @@ class OneOnOnePublicController extends Controller
         $preselectedTime = $request->query('time');
         $preselectedName = $request->query('name');
         $preselectedEmail = $request->query('email');
+        $preselectedSlotsJson = $request->query('slots');
+
+        // Parse multi-slot JSON if provided
+        $preselectedSlots = null;
+        if ($preselectedSlotsJson) {
+            $decoded = json_decode($preselectedSlotsJson, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                // Validate and filter slots within booking window
+                $preselectedSlots = [];
+                foreach ($decoded as $date => $times) {
+                    if (!is_array($times)) continue;
+
+                    try {
+                        $parsedDate = Carbon::parse($date);
+                        if ($parsedDate->gte($minDate) && $parsedDate->lte($maxDate)) {
+                            $preselectedSlots[$date] = $times;
+                        }
+                    } catch (\Exception $e) {
+                        continue;
+                    }
+                }
+                if (empty($preselectedSlots)) {
+                    $preselectedSlots = null;
+                }
+            }
+        }
 
         // Validate preselected duration is in allowed durations
         if ($preselectedDuration && !in_array((int) $preselectedDuration, $profile->allowed_durations ?? [30])) {
             $preselectedDuration = null;
         }
 
-        // Validate preselected date is within booking window
+        // Validate preselected date is within booking window (for legacy single slot)
         if ($preselectedDate) {
             $parsedDate = Carbon::parse($preselectedDate);
             if ($parsedDate->lt($minDate) || $parsedDate->gt($maxDate)) {
@@ -81,8 +107,9 @@ class OneOnOnePublicController extends Controller
             }
         }
 
-        // Check if this is a specific time invite (has both date and time)
-        $isSpecificTimeInvite = $preselectedDate && $preselectedTime;
+        // Check if this is a specific time invite
+        // Can be either multi-slot OR legacy single date/time
+        $isSpecificTimeInvite = ($preselectedDate && $preselectedTime) || !empty($preselectedSlots);
 
         return view('subdomain.one-on-one.book', [
             'host' => $host,
@@ -99,6 +126,7 @@ class OneOnOnePublicController extends Controller
             'preselectedTime' => $preselectedTime,
             'preselectedName' => $preselectedName,
             'preselectedEmail' => $preselectedEmail,
+            'preselectedSlots' => $preselectedSlots,
             'isSpecificTimeInvite' => $isSpecificTimeInvite,
         ]);
     }
