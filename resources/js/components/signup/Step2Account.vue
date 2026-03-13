@@ -94,7 +94,12 @@ function sanitizeName(value) {
 const isValid = computed(() => {
     const firstName = localData.first_name?.trim()
     const lastName = localData.last_name?.trim()
-    return firstName && lastName && localData.email && localData.password.length >= 8
+    const password = localData.password
+    const passwordValid = password.length >= 8 &&
+        /[A-Z]/.test(password) &&
+        /[a-z]/.test(password) &&
+        /\d/.test(password)
+    return firstName && lastName && localData.email && passwordValid
 })
 
 function handleSubmit() {

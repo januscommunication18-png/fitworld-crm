@@ -77,6 +77,7 @@ const formData = ref({
     // Step 4: Studio
     studio_name: '',
     studio_types: [],
+    custom_studio_type: '',
     country: '',
     city: '',
     state: '',
@@ -213,6 +214,7 @@ async function saveCurrentStep() {
             await api.post('/signup/studio', {
                 studio_name: fd.studio_name,
                 studio_types: fd.studio_types,
+                custom_studio_type: fd.custom_studio_type,
                 country: fd.country,
                 city: fd.city,
                 state: fd.state,

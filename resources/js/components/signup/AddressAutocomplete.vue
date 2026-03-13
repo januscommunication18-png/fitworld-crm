@@ -6,6 +6,7 @@
             class="input w-full"
             :class="inputClass"
             :placeholder="placeholder"
+            :maxlength="maxlength"
             v-model="query"
             @input="handleInput"
             @focus="showSuggestions = suggestions.length > 0"
@@ -48,6 +49,7 @@ const props = defineProps({
     inputId: { type: String, default: 'address' },
     inputClass: { type: [String, Object, Array], default: '' },
     placeholder: { type: String, default: 'Start typing an address...' },
+    maxlength: { type: Number, default: null },
 })
 
 const emit = defineEmits(['update:modelValue', 'select'])

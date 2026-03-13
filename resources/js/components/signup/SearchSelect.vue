@@ -6,15 +6,20 @@
             @click.stop="toggleDropdown"
         >
             <input
+                v-if="isOpen"
                 type="text"
                 class="flex-1 bg-transparent outline-none border-none focus:ring-0 p-0"
-                :placeholder="selectedLabel || placeholder"
+                :placeholder="placeholder"
                 v-model="searchQuery"
                 @focus.stop="openDropdown"
                 @input="onSearchInput"
                 @click.stop
                 :disabled="disabled"
+                ref="searchInputRef"
             />
+            <span v-else class="flex-1 truncate" :class="selectedLabel ? 'text-base-content' : 'text-base-content/50'">
+                {{ selectedLabel || placeholder }}
+            </span>
             <span class="icon-[tabler--chevron-down] size-4 text-base-content/50 transition-transform" :class="{ 'rotate-180': isOpen }"></span>
         </div>
 
@@ -41,7 +46,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 
 const props = defineProps({
     modelValue: { type: [String, Number], default: '' },
@@ -55,6 +60,7 @@ const emit = defineEmits(['update:modelValue', 'change'])
 const isOpen = ref(false)
 const searchQuery = ref('')
 const containerRef = ref(null)
+const searchInputRef = ref(null)
 
 const selectedLabel = computed(() => {
     const selected = props.options.find(opt => opt.value === props.modelValue)
@@ -113,9 +119,14 @@ onUnmounted(() => {
     document.removeEventListener('mousedown', handleClickOutside)
 })
 
-// Clear search when dropdown closes
+// Handle dropdown open/close
 watch(isOpen, (newValue) => {
-    if (!newValue) {
+    if (newValue) {
+        // Focus search input when dropdown opens
+        nextTick(() => {
+            searchInputRef.value?.focus()
+        })
+    } else {
         searchQuery.value = ''
     }
 })

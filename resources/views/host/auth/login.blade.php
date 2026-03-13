@@ -61,7 +61,7 @@
                             {{ old('remember') ? 'checked' : '' }} />
                         <span class="label-text text-sm">Remember me</span>
                     </label>
-                    {{-- <a href="#" class="link link-primary text-sm no-underline">Forgot password?</a> --}}
+                    <a href="{{ route('password.request') }}" class="link link-primary text-sm no-underline">Forgot password?</a>
                 </div>
 
                 {{-- Submit --}}

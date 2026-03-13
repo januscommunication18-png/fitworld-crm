@@ -6,13 +6,14 @@
 
             <form @submit.prevent="handleSubmit" class="space-y-4">
                 <div>
-                    <label class="label-text" for="address">Studio Address</label>
+                    <label class="label-text" for="address">Studio Address <span class="text-error">*</span></label>
                     <AddressAutocomplete
                         v-model="localData.address"
                         :smarty-key="smartyKey"
                         input-id="address"
                         :input-class="{ 'input-error': errors.address }"
                         placeholder="Start typing your address..."
+                        :maxlength="255"
                         @select="handleAddressSelect"
                     />
                     <p v-if="errors.address" class="text-error text-xs mt-1">{{ errors.address[0] }}</p>
@@ -36,8 +37,15 @@
                 </div>
 
                 <div>
-                    <label class="label-text">Amenities</label>
-                    <p class="text-xs text-base-content/50 mb-2">Select all that your studio offers</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <label class="label-text">Amenities</label>
+                            <p class="text-xs text-base-content/50">Select all that your studio offers</p>
+                        </div>
+                        <button type="button" class="btn btn-xs btn-soft btn-primary" @click="toggleAllAmenities">
+                            {{ allAmenitiesSelected ? 'Deselect All' : 'Select All' }}
+                        </button>
+                    </div>
                     <div class="flex flex-wrap gap-2">
                         <label v-for="amenity in amenityOptions" :key="amenity"
                             class="custom-option flex flex-row items-center gap-2 px-3 py-2">
@@ -63,7 +71,7 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 import AddressAutocomplete from './AddressAutocomplete.vue'
 
 const props = defineProps({
@@ -87,6 +95,18 @@ const localData = reactive({
     default_capacity: props.formData.default_capacity,
     amenities: [...props.formData.amenities],
 })
+
+const allAmenitiesSelected = computed(() => {
+    return amenityOptions.length === localData.amenities.length
+})
+
+function toggleAllAmenities() {
+    if (allAmenitiesSelected.value) {
+        localData.amenities = []
+    } else {
+        localData.amenities = [...amenityOptions]
+    }
+}
 
 function handleAddressSelect(addressData) {
     localData.city = addressData.city

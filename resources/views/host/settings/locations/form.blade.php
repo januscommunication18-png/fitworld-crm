@@ -532,6 +532,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('postal_code').required = hasInPerson;
         document.getElementById('country').required = hasInPerson;
         document.getElementById('public_location_notes').required = hasPublic;
+        document.getElementById('public_city').required = hasPublic && !hasInPerson;
+        document.getElementById('public_state').required = hasPublic && !hasInPerson;
         document.getElementById('virtual_platform').required = hasVirtual;
         document.getElementById('virtual_meeting_link').required = hasVirtual;
 
@@ -560,46 +562,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Mirror fields from public section to main address fields
+    // Mirror field elements - get once at initialization
+    const publicCity = document.getElementById('public_city');
+    const publicState = document.getElementById('public_state');
+    const mainCity = document.getElementById('city');
+    const mainState = document.getElementById('state');
+
+    // Set up mirror field listeners ONCE at initialization
+    if (publicCity && mainCity) {
+        publicCity.addEventListener('input', function() {
+            mainCity.value = this.value;
+        });
+    }
+    if (publicState && mainState) {
+        publicState.addEventListener('input', function() {
+            mainState.value = this.value;
+        });
+    }
+
+    // Mirror fields from public section to main address fields (initial sync only)
     function syncMirrorFields() {
         const selectedTypes = getSelectedTypes();
         const hasInPerson = selectedTypes.includes('in_person');
 
         if (!hasInPerson) {
-            // Sync public city/state to main fields
-            const publicCity = document.getElementById('public_city');
-            const publicState = document.getElementById('public_state');
-            const mainCity = document.getElementById('city');
-            const mainState = document.getElementById('state');
-
-            if (publicCity && mainCity) {
-                publicCity.addEventListener('input', function() {
-                    mainCity.value = this.value;
-                });
-                // Initial sync
-                if (publicCity.value && !mainCity.value) {
-                    mainCity.value = publicCity.value;
-                }
+            // Initial sync of values only - listeners already set up above
+            if (publicCity && mainCity && publicCity.value && !mainCity.value) {
+                mainCity.value = publicCity.value;
             }
-
-            if (publicState && mainState) {
-                publicState.addEventListener('input', function() {
-                    mainState.value = this.value;
-                });
-                // Initial sync
-                if (publicState.value && !mainState.value) {
-                    mainState.value = publicState.value;
-                }
+            if (publicState && mainState && publicState.value && !mainState.value) {
+                mainState.value = publicState.value;
             }
         }
     }
 
     // Listen for changes on the select
     locationTypesSelect.addEventListener('change', updateFormFields);
-
-    // Also listen for HSSelect changes (FlyonUI advance-select)
-    const observer = new MutationObserver(updateFormFields);
-    observer.observe(locationTypesSelect, { attributes: true, childList: true, subtree: true });
 
     // Initial state
     updateFormFields();

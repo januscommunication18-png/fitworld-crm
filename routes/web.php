@@ -92,6 +92,14 @@ Route::prefix('q')->name('questionnaire.')->group(function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
+
+    // Forgot Password
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
+
+    // Reset Password
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPassword'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
 });
 
 // Signup - accessible by guests AND users who haven't completed onboarding

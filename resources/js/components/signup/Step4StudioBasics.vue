@@ -6,7 +6,7 @@
 
             <form @submit.prevent="handleSubmit" class="space-y-4">
                 <div>
-                    <label class="label-text" for="studio_name">Studio Name</label>
+                    <label class="label-text" for="studio_name">Studio Name <span class="text-error">*</span></label>
                     <input id="studio_name" type="text" class="input w-full" :class="{ 'input-error': errors.studio_name }"
                         v-model="localData.studio_name" placeholder="e.g. Sunrise Yoga Studio" required />
                     <p v-if="errors.studio_name" class="text-error text-xs mt-1">{{ errors.studio_name[0] }}</p>
@@ -20,12 +20,21 @@
                         :options="studioTypeOptions"
                         placeholder="Select studio types..."
                     />
+                    <div v-if="localData.studio_types.includes('Other')" class="mt-2">
+                        <input
+                            type="text"
+                            class="input w-full"
+                            v-model="localData.custom_studio_type"
+                            placeholder="Enter your studio type..."
+                            maxlength="50"
+                        />
+                    </div>
                 </div>
 
                 <!-- Country + State Row -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="label-text" for="country">Country</label>
+                        <label class="label-text" for="country">Country <span class="text-error">*</span></label>
                         <SearchSelect
                             v-model="localData.country"
                             :options="countryOptions"
@@ -65,7 +74,7 @@
                 </div>
 
                 <div>
-                    <label class="label-text" for="subdomain">Your Studio URL</label>
+                    <label class="label-text" for="subdomain">Your Studio URL <span class="text-error">*</span></label>
                     <div class="join w-full">
                         <input id="subdomain" type="text" class="input join-item flex-1"
                             :class="{ 'input-error': errors.subdomain, 'input-success': subdomainAvailable === true }"
@@ -189,7 +198,7 @@ const timezones = [
 const countryOptions = computed(() => {
     return Object.entries(countries).map(([code, info]) => ({
         value: code,
-        label: `${info.flag} ${info.name}`
+        label: info.name
     }))
 })
 
@@ -217,6 +226,7 @@ const subdomainManuallyEdited = ref(false)
 const localData = reactive({
     studio_name: props.formData.studio_name,
     studio_types: [...props.formData.studio_types],
+    custom_studio_type: props.formData.custom_studio_type || '',
     country: props.formData.country || '',
     city: props.formData.city,
     state: props.formData.state || '',
