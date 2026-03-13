@@ -15,6 +15,7 @@ class Location extends Model
     public const TYPE_IN_PERSON = 'in_person';
     public const TYPE_PUBLIC = 'public';
     public const TYPE_VIRTUAL = 'virtual';
+    public const TYPE_MOBILE = 'mobile';
 
     // Virtual Platforms
     public const PLATFORM_ZOOM = 'zoom';
@@ -106,6 +107,11 @@ class Location extends Model
         return $query->where('location_type', self::TYPE_VIRTUAL);
     }
 
+    public function scopeMobile($query)
+    {
+        return $query->where('location_type', self::TYPE_MOBILE);
+    }
+
     public function scopePhysical($query)
     {
         return $query->whereIn('location_type', [self::TYPE_IN_PERSON, self::TYPE_PUBLIC]);
@@ -131,6 +137,11 @@ class Location extends Model
     public function isVirtual(): bool
     {
         return $this->location_type === self::TYPE_VIRTUAL;
+    }
+
+    public function isMobile(): bool
+    {
+        return $this->location_type === self::TYPE_MOBILE;
     }
 
     public function isPhysical(): bool
@@ -207,6 +218,7 @@ class Location extends Model
             self::TYPE_IN_PERSON => 'badge-primary',
             self::TYPE_PUBLIC => 'badge-success',
             self::TYPE_VIRTUAL => 'badge-info',
+            self::TYPE_MOBILE => 'badge-warning',
             default => 'badge-neutral',
         };
     }
@@ -220,6 +232,7 @@ class Location extends Model
             self::TYPE_IN_PERSON => 'icon-[tabler--building]',
             self::TYPE_PUBLIC => 'icon-[tabler--trees]',
             self::TYPE_VIRTUAL => 'icon-[tabler--video]',
+            self::TYPE_MOBILE => 'icon-[tabler--car]',
             default => 'icon-[tabler--map-pin]',
         };
     }
@@ -235,6 +248,7 @@ class Location extends Model
             self::TYPE_IN_PERSON => 'In-Person Studio',
             self::TYPE_PUBLIC => 'Public Location',
             self::TYPE_VIRTUAL => 'Virtual',
+            self::TYPE_MOBILE => 'Mobile/Travel Studio',
         ];
     }
 
@@ -250,9 +264,6 @@ class Location extends Model
             self::PLATFORM_OTHER => 'Other',
         ];
     }
-
-    // Mobile Location Type
-    public const TYPE_MOBILE = 'mobile';
 
     /**
      * Get all available location types/categories for multiselect
