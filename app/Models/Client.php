@@ -172,6 +172,18 @@ class Client extends Model implements AuthenticatableContract
             ->withTimestamps();
     }
 
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'event_attendees')
+            ->withPivot(['status', 'registered_at', 'checked_in_at', 'notes'])
+            ->withTimestamps();
+    }
+
+    public function eventAttendances(): HasMany
+    {
+        return $this->hasMany(EventAttendee::class);
+    }
+
     public function fieldValues(): HasMany
     {
         return $this->hasMany(ClientFieldValue::class);
@@ -193,6 +205,14 @@ class Client extends Model implements AuthenticatableContract
     public function progressReports(): HasMany
     {
         return $this->hasMany(ClientProgressReport::class)->latest('report_date');
+    }
+
+    /**
+     * Get client body measurements
+     */
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(ClientMeasurement::class)->latest('measured_at');
     }
 
     /**

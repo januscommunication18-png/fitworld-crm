@@ -1216,108 +1216,320 @@
         </div>
 
         {{-- Progress Tab --}}
-        @if(isset($progressReports))
         <div class="tab-content hidden" data-content="progress" id="progress">
-            <div class="card bg-base-100">
-                <div class="card-body">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="card-title text-lg">
-                            <span class="icon-[tabler--chart-line] size-5"></span>
-                            Progress Reports
-                        </h2>
+            <div class="space-y-6">
+                {{-- Quick Stats Summary --}}
+                @if(isset($latestMeasurement) && $latestMeasurement)
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    @if($latestMeasurement->weight)
+                    <div class="stat bg-base-100 rounded-lg p-4 border border-base-200">
+                        <div class="stat-figure text-primary">
+                            <span class="icon-[tabler--scale] size-6"></span>
+                        </div>
+                        <div class="stat-title text-xs">Weight</div>
+                        <div class="stat-value text-2xl">{{ number_format($latestMeasurement->weight, 1) }}</div>
+                        <div class="stat-desc">{{ $latestMeasurement->weight_unit }}</div>
                     </div>
-
-                    @if($progressReports->count() > 0)
-                        <div class="space-y-4">
-                            @foreach($progressReports as $report)
-                                <button type="button"
-                                        onclick="openProgressDrawer('progress-report-{{ $report->id }}')"
-                                        class="w-full text-left border border-base-200 rounded-lg p-4 hover:bg-base-50 hover:border-primary/30 transition-colors cursor-pointer">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex items-start gap-4">
-                                            <div class="p-3 rounded-xl bg-primary/10">
-                                                <span class="icon-[tabler--{{ $report->template->icon ?? 'chart-line' }}] size-6 text-primary"></span>
-                                            </div>
-                                            <div>
-                                                <h4 class="font-semibold">{{ $report->template->name }}</h4>
-                                                <p class="text-sm text-base-content/60">
-                                                    {{ $report->report_date->format('M j, Y') }}
-                                                    @if($report->classSession)
-                                                        &bull; {{ $report->classSession->classPlan?->name ?? 'Class Session' }}
-                                                    @endif
-                                                </p>
-                                                @if($report->recordedBy)
-                                                    <p class="text-xs text-base-content/50 mt-1">
-                                                        Recorded by {{ $report->recordedBy->name }}
-                                                    </p>
-                                                @endif
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center gap-3">
-                                            @if($report->overall_score !== null)
-                                                <div class="text-right">
-                                                    <div class="text-2xl font-bold {{ $report->overall_score >= 70 ? 'text-success' : ($report->overall_score >= 40 ? 'text-warning' : 'text-error') }}">
-                                                        {{ number_format($report->overall_score, 0) }}%
-                                                    </div>
-                                                    <div class="text-xs text-base-content/50">Score</div>
-                                                </div>
-                                            @endif
-                                            <span class="icon-[tabler--eye] size-5 text-base-content/30"></span>
-                                        </div>
-                                    </div>
-
-                                    @if($report->trainer_notes)
-                                        <div class="mt-3 pt-3 border-t border-base-200">
-                                            <p class="text-sm text-base-content/70">
-                                                <strong>Notes:</strong> {{ Str::limit($report->trainer_notes, 150) }}
-                                            </p>
-                                        </div>
-                                    @endif
-                                </button>
-                            @endforeach
+                    @endif
+                    @if($latestMeasurement->body_fat)
+                    <div class="stat bg-base-100 rounded-lg p-4 border border-base-200">
+                        <div class="stat-figure text-info">
+                            <span class="icon-[tabler--percentage] size-6"></span>
                         </div>
-
-                        @if($progressReports->hasPages())
-                            <div class="mt-4 pt-4 border-t border-base-200">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-base-content/60">
-                                        Showing {{ $progressReports->firstItem() }}-{{ $progressReports->lastItem() }} of {{ $progressReports->total() }} reports
-                                    </span>
-                                    <div class="join">
-                                        @if($progressReports->onFirstPage())
-                                            <button class="join-item btn btn-sm btn-disabled">
-                                                <span class="icon-[tabler--chevron-left] size-4"></span>
-                                            </button>
-                                        @else
-                                            <a href="{{ $progressReports->previousPageUrl() }}" class="join-item btn btn-sm">
-                                                <span class="icon-[tabler--chevron-left] size-4"></span>
-                                            </a>
-                                        @endif
-                                        <button class="join-item btn btn-sm btn-active">{{ $progressReports->currentPage() }}</button>
-                                        @if($progressReports->hasMorePages())
-                                            <a href="{{ $progressReports->nextPageUrl() }}" class="join-item btn btn-sm">
-                                                <span class="icon-[tabler--chevron-right] size-4"></span>
-                                            </a>
-                                        @else
-                                            <button class="join-item btn btn-sm btn-disabled">
-                                                <span class="icon-[tabler--chevron-right] size-4"></span>
-                                            </button>
-                                        @endif
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-                    @else
-                        <div class="text-center py-12">
-                            <span class="icon-[tabler--chart-line-off] size-12 text-base-content/20 mx-auto"></span>
-                            <p class="text-base-content/50 mt-4">No progress reports yet</p>
-                            <p class="text-sm text-base-content/40">Progress reports will appear here when recorded from class sessions.</p>
+                        <div class="stat-title text-xs">Body Fat</div>
+                        <div class="stat-value text-2xl">{{ number_format($latestMeasurement->body_fat, 1) }}%</div>
+                        <div class="stat-desc">Latest</div>
+                    </div>
+                    @endif
+                    @if($latestMeasurement->waist)
+                    <div class="stat bg-base-100 rounded-lg p-4 border border-base-200">
+                        <div class="stat-figure text-warning">
+                            <span class="icon-[tabler--ruler-measure] size-6"></span>
                         </div>
+                        <div class="stat-title text-xs">Waist</div>
+                        <div class="stat-value text-2xl">{{ number_format($latestMeasurement->waist, 1) }}</div>
+                        <div class="stat-desc">{{ $latestMeasurement->measurement_unit }}</div>
+                    </div>
+                    @endif
+                    @if($latestMeasurement->chest)
+                    <div class="stat bg-base-100 rounded-lg p-4 border border-base-200">
+                        <div class="stat-figure text-success">
+                            <span class="icon-[tabler--ruler-measure] size-6"></span>
+                        </div>
+                        <div class="stat-title text-xs">Chest</div>
+                        <div class="stat-value text-2xl">{{ number_format($latestMeasurement->chest, 1) }}</div>
+                        <div class="stat-desc">{{ $latestMeasurement->measurement_unit }}</div>
+                    </div>
                     @endif
                 </div>
+                @endif
+
+                {{-- Body Measurements Card --}}
+                <div class="card bg-base-100">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="card-title text-lg">
+                                <span class="icon-[tabler--ruler-measure] size-5"></span>
+                                Body Measurements
+                            </h2>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('add-measurement-modal').classList.remove('hidden')">
+                                <span class="icon-[tabler--plus] size-4"></span>
+                                Add Measurement
+                            </button>
+                        </div>
+
+                        @if(isset($measurements) && $measurements->count() > 0)
+                            {{-- Measurements Chart --}}
+                            @if(isset($measurementChartData) && $measurementChartData->count() > 1)
+                            <div class="mb-6">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="text-sm font-medium">Progress Chart</span>
+                                    <select id="measurement-chart-field" class="select select-sm select-bordered" onchange="updateMeasurementChart()">
+                                        <option value="weight">Weight</option>
+                                        <option value="body_fat">Body Fat %</option>
+                                        <option value="waist">Waist</option>
+                                        <option value="chest">Chest</option>
+                                    </select>
+                                </div>
+                                <div class="h-48 bg-base-200/30 rounded-lg">
+                                    <div id="measurementChart"></div>
+                                </div>
+                            </div>
+                            @endif
+
+                            {{-- Measurements Table --}}
+                            <div class="overflow-x-auto">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Weight</th>
+                                            <th>Body Fat</th>
+                                            <th>Waist</th>
+                                            <th>Chest</th>
+                                            <th>Hips</th>
+                                            <th>Notes</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($measurements as $measurement)
+                                        <tr class="hover">
+                                            <td class="font-medium">{{ $measurement->measured_at->format('M j, Y') }}</td>
+                                            <td>
+                                                @if($measurement->weight)
+                                                    {{ number_format($measurement->weight, 1) }} {{ $measurement->weight_unit }}
+                                                    @php
+                                                        $weightChange = $measurement->getChangeFromPrevious('weight');
+                                                    @endphp
+                                                    @if($weightChange)
+                                                        <span class="text-xs {{ $weightChange['direction'] === 'down' ? 'text-success' : ($weightChange['direction'] === 'up' ? 'text-error' : 'text-base-content/50') }}">
+                                                            {{ $weightChange['direction'] === 'down' ? '-' : '+' }}{{ abs($weightChange['change']) }}
+                                                        </span>
+                                                    @endif
+                                                @else
+                                                    <span class="text-base-content/30">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($measurement->body_fat)
+                                                    {{ number_format($measurement->body_fat, 1) }}%
+                                                @else
+                                                    <span class="text-base-content/30">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($measurement->waist)
+                                                    {{ number_format($measurement->waist, 1) }} {{ $measurement->measurement_unit }}
+                                                @else
+                                                    <span class="text-base-content/30">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($measurement->chest)
+                                                    {{ number_format($measurement->chest, 1) }} {{ $measurement->measurement_unit }}
+                                                @else
+                                                    <span class="text-base-content/30">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($measurement->hips)
+                                                    {{ number_format($measurement->hips, 1) }} {{ $measurement->measurement_unit }}
+                                                @else
+                                                    <span class="text-base-content/30">-</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($measurement->notes)
+                                                    <span class="tooltip" data-tip="{{ $measurement->notes }}">
+                                                        <span class="icon-[tabler--notes] size-4 text-base-content/50"></span>
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <details class="dropdown dropdown-end">
+                                                    <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
+                                                        <span class="icon-[tabler--dots-vertical] size-4"></span>
+                                                    </summary>
+                                                    <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300 z-50">
+                                                        <li>
+                                                            <button type="button" onclick="viewMeasurementDetails({{ $measurement->id }})">
+                                                                <span class="icon-[tabler--eye] size-4"></span> View Details
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <form action="{{ route('clients.measurements.destroy', [$client->id, $measurement->id]) }}" method="POST" class="m-0" onsubmit="return confirm('Delete this measurement?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    </ul>
+                                                </details>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @if($measurements->hasPages())
+                                <div class="mt-4 pt-4 border-t border-base-200">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-base-content/60">
+                                            Showing {{ $measurements->firstItem() }}-{{ $measurements->lastItem() }} of {{ $measurements->total() }}
+                                        </span>
+                                        <div class="join">
+                                            @if($measurements->onFirstPage())
+                                                <button class="join-item btn btn-sm btn-disabled"><span class="icon-[tabler--chevron-left] size-4"></span></button>
+                                            @else
+                                                <a href="{{ $measurements->previousPageUrl() }}" class="join-item btn btn-sm"><span class="icon-[tabler--chevron-left] size-4"></span></a>
+                                            @endif
+                                            <button class="join-item btn btn-sm btn-active">{{ $measurements->currentPage() }}</button>
+                                            @if($measurements->hasMorePages())
+                                                <a href="{{ $measurements->nextPageUrl() }}" class="join-item btn btn-sm"><span class="icon-[tabler--chevron-right] size-4"></span></a>
+                                            @else
+                                                <button class="join-item btn btn-sm btn-disabled"><span class="icon-[tabler--chevron-right] size-4"></span></button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        @else
+                            <div class="text-center py-12">
+                                <span class="icon-[tabler--ruler-off] size-12 text-base-content/20 mx-auto"></span>
+                                <p class="text-base-content/50 mt-4">No measurements recorded yet</p>
+                                <p class="text-sm text-base-content/40">Click "Add Measurement" to start tracking progress.</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- Progress Reports Card --}}
+                @if(isset($progressReports))
+                <div class="card bg-base-100">
+                    <div class="card-body">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="card-title text-lg">
+                                <span class="icon-[tabler--chart-line] size-5"></span>
+                                Progress Reports
+                            </h2>
+                        </div>
+
+                        @if($progressReports->count() > 0)
+                            <div class="space-y-4">
+                                @foreach($progressReports as $report)
+                                    <button type="button"
+                                            onclick="openProgressDrawer('progress-report-{{ $report->id }}')"
+                                            class="w-full text-left border border-base-200 rounded-lg p-4 hover:bg-base-50 hover:border-primary/30 transition-colors cursor-pointer">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex items-start gap-4">
+                                                <div class="p-3 rounded-xl bg-primary/10">
+                                                    <span class="icon-[tabler--{{ $report->template->icon ?? 'chart-line' }}] size-6 text-primary"></span>
+                                                </div>
+                                                <div>
+                                                    <h4 class="font-semibold">{{ $report->template->name }}</h4>
+                                                    <p class="text-sm text-base-content/60">
+                                                        {{ $report->report_date->format('M j, Y') }}
+                                                        @if($report->classSession)
+                                                            &bull; {{ $report->classSession->classPlan?->name ?? 'Class Session' }}
+                                                        @endif
+                                                    </p>
+                                                    @if($report->recordedBy)
+                                                        <p class="text-xs text-base-content/50 mt-1">
+                                                            Recorded by {{ $report->recordedBy->name }}
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                @if($report->overall_score !== null)
+                                                    <div class="text-right">
+                                                        <div class="text-2xl font-bold {{ $report->overall_score >= 70 ? 'text-success' : ($report->overall_score >= 40 ? 'text-warning' : 'text-error') }}">
+                                                            {{ number_format($report->overall_score, 0) }}%
+                                                        </div>
+                                                        <div class="text-xs text-base-content/50">Score</div>
+                                                    </div>
+                                                @endif
+                                                <span class="icon-[tabler--eye] size-5 text-base-content/30"></span>
+                                            </div>
+                                        </div>
+
+                                        @if($report->trainer_notes)
+                                            <div class="mt-3 pt-3 border-t border-base-200">
+                                                <p class="text-sm text-base-content/70">
+                                                    <strong>Notes:</strong> {{ Str::limit($report->trainer_notes, 150) }}
+                                                </p>
+                                            </div>
+                                        @endif
+                                    </button>
+                                @endforeach
+                            </div>
+
+                            @if($progressReports->hasPages())
+                                <div class="mt-4 pt-4 border-t border-base-200">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-base-content/60">
+                                            Showing {{ $progressReports->firstItem() }}-{{ $progressReports->lastItem() }} of {{ $progressReports->total() }} reports
+                                        </span>
+                                        <div class="join">
+                                            @if($progressReports->onFirstPage())
+                                                <button class="join-item btn btn-sm btn-disabled">
+                                                    <span class="icon-[tabler--chevron-left] size-4"></span>
+                                                </button>
+                                            @else
+                                                <a href="{{ $progressReports->previousPageUrl() }}" class="join-item btn btn-sm">
+                                                    <span class="icon-[tabler--chevron-left] size-4"></span>
+                                                </a>
+                                            @endif
+                                            <button class="join-item btn btn-sm btn-active">{{ $progressReports->currentPage() }}</button>
+                                            @if($progressReports->hasMorePages())
+                                                <a href="{{ $progressReports->nextPageUrl() }}" class="join-item btn btn-sm">
+                                                    <span class="icon-[tabler--chevron-right] size-4"></span>
+                                                </a>
+                                            @else
+                                                <button class="join-item btn btn-sm btn-disabled">
+                                                    <span class="icon-[tabler--chevron-right] size-4"></span>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+                        @else
+                            <div class="text-center py-12">
+                                <span class="icon-[tabler--chart-line-off] size-12 text-base-content/20 mx-auto"></span>
+                                <p class="text-base-content/50 mt-4">No progress reports yet</p>
+                                <p class="text-sm text-base-content/40">Progress reports will appear here when recorded from class sessions.</p>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
-        @endif
 
         {{-- Activity Tab --}}
         <div class="tab-content hidden" data-content="activity">
@@ -1505,6 +1717,165 @@
     </div>
 </div>
 @endif
+
+{{-- Add Measurement Modal --}}
+<div id="add-measurement-modal" class="fixed inset-0 z-[9999] hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="document.getElementById('add-measurement-modal').classList.add('hidden')"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-base-100 rounded-xl shadow-2xl w-full max-w-2xl pointer-events-auto max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-4 border-b border-base-200">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    <span class="icon-[tabler--ruler-measure] size-5 text-primary"></span>
+                    Record Body Measurements
+                </h3>
+                <button type="button" class="btn btn-ghost btn-sm btn-circle" onclick="document.getElementById('add-measurement-modal').classList.add('hidden')">
+                    <span class="icon-[tabler--x] size-5"></span>
+                </button>
+            </div>
+            <form action="{{ route('clients.measurements.store', $client->id) }}" method="POST">
+                @csrf
+                <div class="p-4 space-y-6">
+                    {{-- Date --}}
+                    <div>
+                        <label class="label-text" for="measured_at">Measurement Date</label>
+                        <input type="date" id="measured_at" name="measured_at" value="{{ date('Y-m-d') }}" class="input w-full" required>
+                    </div>
+
+                    {{-- Weight & Body Fat --}}
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="label-text" for="weight">Weight</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="weight" name="weight" step="0.1" min="0" max="500" class="input flex-1" placeholder="e.g. 70.5">
+                                <select name="weight_unit" class="select w-20">
+                                    <option value="kg">kg</option>
+                                    <option value="lbs">lbs</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="label-text" for="body_fat">Body Fat %</label>
+                            <div class="flex gap-2 items-center">
+                                <input type="number" id="body_fat" name="body_fat" step="0.1" min="0" max="100" class="input flex-1" placeholder="e.g. 18.5">
+                                <span class="text-base-content/60">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Measurement Unit Selector --}}
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-medium">Body measurements in:</span>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="measurement_unit" value="cm" class="radio radio-sm radio-primary" checked>
+                            <span class="text-sm">Centimeters (cm)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="measurement_unit" value="in" class="radio radio-sm radio-primary">
+                            <span class="text-sm">Inches (in)</span>
+                        </label>
+                    </div>
+
+                    {{-- Upper Body --}}
+                    <div>
+                        <h4 class="font-medium text-sm text-base-content/70 mb-3 flex items-center gap-2">
+                            <span class="icon-[tabler--stretching] size-4"></span>
+                            Upper Body
+                        </h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div>
+                                <label class="label-text text-xs" for="chest">Chest</label>
+                                <input type="number" id="chest" name="chest" step="0.1" min="0" max="300" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                            <div>
+                                <label class="label-text text-xs" for="shoulders">Shoulders</label>
+                                <input type="number" id="shoulders" name="shoulders" step="0.1" min="0" max="300" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                            <div>
+                                <label class="label-text text-xs" for="neck">Neck</label>
+                                <input type="number" id="neck" name="neck" step="0.1" min="0" max="100" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Core --}}
+                    <div>
+                        <h4 class="font-medium text-sm text-base-content/70 mb-3 flex items-center gap-2">
+                            <span class="icon-[tabler--activity] size-4"></span>
+                            Core
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text text-xs" for="waist">Waist</label>
+                                <input type="number" id="waist" name="waist" step="0.1" min="0" max="300" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                            <div>
+                                <label class="label-text text-xs" for="hips">Hips</label>
+                                <input type="number" id="hips" name="hips" step="0.1" min="0" max="300" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Arms --}}
+                    <div>
+                        <h4 class="font-medium text-sm text-base-content/70 mb-3 flex items-center gap-2">
+                            <span class="icon-[tabler--barbell] size-4"></span>
+                            Arms
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text text-xs" for="biceps_left">Left Bicep</label>
+                                <input type="number" id="biceps_left" name="biceps_left" step="0.1" min="0" max="100" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                            <div>
+                                <label class="label-text text-xs" for="biceps_right">Right Bicep</label>
+                                <input type="number" id="biceps_right" name="biceps_right" step="0.1" min="0" max="100" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Legs --}}
+                    <div>
+                        <h4 class="font-medium text-sm text-base-content/70 mb-3 flex items-center gap-2">
+                            <span class="icon-[tabler--walk] size-4"></span>
+                            Legs
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="label-text text-xs" for="thigh_left">Left Thigh</label>
+                                <input type="number" id="thigh_left" name="thigh_left" step="0.1" min="0" max="150" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                            <div>
+                                <label class="label-text text-xs" for="thigh_right">Right Thigh</label>
+                                <input type="number" id="thigh_right" name="thigh_right" step="0.1" min="0" max="150" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                            <div>
+                                <label class="label-text text-xs" for="calf_left">Left Calf</label>
+                                <input type="number" id="calf_left" name="calf_left" step="0.1" min="0" max="100" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                            <div>
+                                <label class="label-text text-xs" for="calf_right">Right Calf</label>
+                                <input type="number" id="calf_right" name="calf_right" step="0.1" min="0" max="100" class="input input-sm w-full" placeholder="0.0">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Notes --}}
+                    <div>
+                        <label class="label-text" for="measurement_notes">Notes (optional)</label>
+                        <textarea id="measurement_notes" name="notes" rows="2" class="textarea w-full" placeholder="Any notes about this measurement session..."></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 p-4 border-t border-base-200">
+                    <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-measurement-modal').classList.add('hidden')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span class="icon-[tabler--check] size-4"></span>
+                        Save Measurement
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {{-- Score Calculation Modal --}}
 <div id="score-calculation-modal" class="fixed inset-0 z-[9999] hidden">
@@ -2163,6 +2534,136 @@ document.addEventListener('keydown', function(e) {
         closeProgressDrawer();
     }
 });
+
+// Measurement Chart
+let measurementChart = null;
+const measurementChartData = @json($measurementChartData ?? []);
+
+function initMeasurementChart() {
+    const chartEl = document.getElementById('measurementChart');
+    if (!chartEl || measurementChartData.length < 2 || typeof ApexCharts === 'undefined') return;
+
+    const field = document.getElementById('measurement-chart-field')?.value || 'weight';
+
+    const labels = measurementChartData.map(m => m.date);
+    const data = measurementChartData.map(m => parseFloat(m[field]) || null).filter(v => v !== null);
+
+    if (measurementChart) {
+        measurementChart.destroy();
+    }
+
+    const fieldLabels = {
+        'weight': 'Weight',
+        'body_fat': 'Body Fat %',
+        'waist': 'Waist',
+        'chest': 'Chest'
+    };
+
+    const options = {
+        series: [{
+            name: fieldLabels[field] || field,
+            data: data
+        }],
+        chart: {
+            type: 'area',
+            height: 180,
+            toolbar: { show: false },
+            fontFamily: 'inherit',
+        },
+        colors: ['#6366f1'],
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.4,
+                opacityTo: 0.1,
+            }
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 2
+        },
+        dataLabels: { enabled: false },
+        xaxis: {
+            categories: labels,
+            labels: {
+                style: { fontSize: '11px' }
+            }
+        },
+        yaxis: {
+            labels: {
+                style: { fontSize: '11px' }
+            }
+        },
+        grid: {
+            borderColor: '#e5e7eb',
+            strokeDashArray: 3,
+        },
+        markers: {
+            size: 4,
+            hover: { size: 6 }
+        },
+        tooltip: {
+            y: {
+                formatter: (val) => field === 'body_fat' ? `${val}%` : val
+            }
+        }
+    };
+
+    measurementChart = new ApexCharts(chartEl, options);
+    measurementChart.render();
+}
+
+function updateMeasurementChart() {
+    initMeasurementChart();
+}
+
+// Initialize chart on page load if tab is progress
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tab') === 'progress') {
+        setTimeout(initMeasurementChart, 100);
+    }
+
+    // Initialize chart when progress tab is clicked
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            if (this.dataset.tab === 'progress') {
+                setTimeout(initMeasurementChart, 100);
+            }
+        });
+    });
+});
+
+// View measurement details
+function viewMeasurementDetails(measurementId) {
+    fetch(`/clients/{{ $client->id }}/measurements/${measurementId}`)
+        .then(response => response.json())
+        .then(data => {
+            const m = data.measurement;
+            let details = `Measurement Date: ${new Date(m.measured_at).toLocaleDateString()}\n\n`;
+            if (m.weight) details += `Weight: ${m.weight} ${m.weight_unit}\n`;
+            if (m.body_fat) details += `Body Fat: ${m.body_fat}%\n`;
+            if (m.chest) details += `Chest: ${m.chest} ${m.measurement_unit}\n`;
+            if (m.waist) details += `Waist: ${m.waist} ${m.measurement_unit}\n`;
+            if (m.hips) details += `Hips: ${m.hips} ${m.measurement_unit}\n`;
+            if (m.shoulders) details += `Shoulders: ${m.shoulders} ${m.measurement_unit}\n`;
+            if (m.neck) details += `Neck: ${m.neck} ${m.measurement_unit}\n`;
+            if (m.biceps_left) details += `Left Bicep: ${m.biceps_left} ${m.measurement_unit}\n`;
+            if (m.biceps_right) details += `Right Bicep: ${m.biceps_right} ${m.measurement_unit}\n`;
+            if (m.thigh_left) details += `Left Thigh: ${m.thigh_left} ${m.measurement_unit}\n`;
+            if (m.thigh_right) details += `Right Thigh: ${m.thigh_right} ${m.measurement_unit}\n`;
+            if (m.calf_left) details += `Left Calf: ${m.calf_left} ${m.measurement_unit}\n`;
+            if (m.calf_right) details += `Right Calf: ${m.calf_right} ${m.measurement_unit}\n`;
+            if (m.notes) details += `\nNotes: ${m.notes}`;
+
+            alert(details);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+}
 </script>
+<script src="{{ asset('vendor/apexcharts/apexcharts.min.js') }}"></script>
 @endpush
 @endsection

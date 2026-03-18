@@ -3,6 +3,8 @@
 use App\Http\Controllers\Host\AuthController;
 use App\Http\Controllers\Host\BookingController;
 use App\Http\Controllers\Host\DashboardController;
+use App\Http\Controllers\Host\EmailVerificationController;
+use App\Http\Controllers\Host\EventController;
 use App\Http\Controllers\Host\InstructorController;
 use App\Http\Controllers\Host\InvitationController;
 use App\Http\Controllers\Host\MarketplaceController;
@@ -164,9 +166,7 @@ Route::middleware('auth')->group(function () {
     })->name('set-language');
 
     // Email Verification
-    Route::get('/email/verify', function () {
-        return view('auth.verify-email');
-    })->name('verification.notice');
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
 
     Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
         $user = \App\Models\User::findOrFail($id);
@@ -200,10 +200,7 @@ Route::middleware('auth')->group(function () {
         return redirect('/dashboard')->with('verified', true);
     })->middleware('signed')->name('verification.verify');
 
-    Route::post('/email/verification-notification', function (Request $request) {
-        $request->user()->sendEmailVerificationNotification();
-        return back()->with('message', 'Verification link sent!');
-    })->middleware('throttle:6,1')->name('verification.send');
+    Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->name('verification.send');
 
     // Studio Selection (for multi-studio users)
     Route::get('/select-studio', [AuthController::class, 'selectStudio'])->name('select-studio');
@@ -276,6 +273,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/clients/{client}/progress/{clientProgressReport}', [\App\Http\Controllers\Host\ClientProgressController::class, 'show'])->name('clients.progress.show')->where(['client' => '[0-9]+', 'clientProgressReport' => '[0-9]+']);
     Route::get('/clients/{client}/progress/{clientProgressReport}/json', [\App\Http\Controllers\Host\ClientProgressController::class, 'getReportJson'])->name('clients.progress.json')->where(['client' => '[0-9]+', 'clientProgressReport' => '[0-9]+']);
 
+    // Client Measurements
+    Route::post('/clients/{client}/measurements', [\App\Http\Controllers\Host\ClientMeasurementController::class, 'store'])->name('clients.measurements.store')->where('client', '[0-9]+');
+    Route::get('/clients/{client}/measurements/{measurement}', [\App\Http\Controllers\Host\ClientMeasurementController::class, 'show'])->name('clients.measurements.show')->where(['client' => '[0-9]+', 'measurement' => '[0-9]+']);
+    Route::put('/clients/{client}/measurements/{measurement}', [\App\Http\Controllers\Host\ClientMeasurementController::class, 'update'])->name('clients.measurements.update')->where(['client' => '[0-9]+', 'measurement' => '[0-9]+']);
+    Route::delete('/clients/{client}/measurements/{measurement}', [\App\Http\Controllers\Host\ClientMeasurementController::class, 'destroy'])->name('clients.measurements.destroy')->where(['client' => '[0-9]+', 'measurement' => '[0-9]+']);
+    Route::get('/clients/{client}/measurements-chart', [\App\Http\Controllers\Host\ClientMeasurementController::class, 'chartData'])->name('clients.measurements.chart')->where('client', '[0-9]+');
+
     // Help Desk
     Route::get('/helpdesk', [\App\Http\Controllers\Host\HelpdeskController::class, 'index'])->name('helpdesk.index');
     Route::get('/helpdesk/create', [\App\Http\Controllers\Host\HelpdeskController::class, 'create'])->name('helpdesk.create');
@@ -288,6 +292,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/helpdesk/{ticket}/reply', [\App\Http\Controllers\Host\HelpdeskController::class, 'reply'])->name('helpdesk.reply');
     Route::post('/helpdesk/{ticket}/convert', [\App\Http\Controllers\Host\HelpdeskController::class, 'convertToClient'])->name('helpdesk.convert');
     Route::delete('/helpdesk/{ticket}', [\App\Http\Controllers\Host\HelpdeskController::class, 'destroy'])->name('helpdesk.destroy');
+
+    // Events
+    Route::prefix('events')->name('events.')->group(function () {
+        Route::get('/', [EventController::class, 'index'])->name('index');
+        Route::get('/create', [EventController::class, 'create'])->name('create');
+        Route::post('/', [EventController::class, 'store'])->name('store');
+        Route::get('/{event}', [EventController::class, 'show'])->name('show');
+        Route::get('/{event}/edit', [EventController::class, 'edit'])->name('edit');
+        Route::put('/{event}', [EventController::class, 'update'])->name('update');
+        Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
+        Route::post('/{event}/publish', [EventController::class, 'publish'])->name('publish');
+        Route::post('/{event}/cancel', [EventController::class, 'cancel'])->name('cancel');
+        Route::post('/{event}/clients', [EventController::class, 'addClients'])->name('addClients');
+        Route::delete('/{event}/clients/{client}', [EventController::class, 'removeClient'])->name('removeClient');
+        Route::post('/{event}/attendees/{attendee}/check-in', [EventController::class, 'checkIn'])->name('checkIn');
+        Route::post('/{event}/attendees/{attendee}/no-show', [EventController::class, 'markNoShow'])->name('markNoShow');
+        Route::post('/{event}/clients/{client}/check-in', [EventController::class, 'checkInClient'])->name('checkInClient');
+    });
 
     // Instructors (main module - all CRUD operations here)
     Route::get('/instructors', [InstructorController::class, 'index'])->name('instructors.index');
@@ -491,6 +513,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in/memberships', [WalkInController::class, 'selectMembership'])->name('walk-in.select-membership');
     Route::get('/walk-in/membership-plans', [WalkInController::class, 'getMembershipPlans'])->name('walk-in.membership-plans');
     Route::post('/walk-in/membership/book', [WalkInController::class, 'bookMembership'])->name('walk-in.membership.book');
+
+    // Walk-In Event Registration
+    Route::get('/walk-in/event/{event}', [WalkInController::class, 'event'])->name('walk-in.event');
+    Route::post('/walk-in/event/{event}/register', [WalkInController::class, 'registerEvent'])->name('walk-in.event.register');
 
     // Class Requests
     Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');

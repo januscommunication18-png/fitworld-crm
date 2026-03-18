@@ -430,10 +430,10 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     {{-- Language Settings Card --}}
     @php
         $supportedLanguages = [
-            'en' => ['name' => 'English', 'flag' => '🇺🇸'],
-            'fr' => ['name' => 'French', 'flag' => '🇫🇷'],
-            'de' => ['name' => 'German', 'flag' => '🇩🇪'],
-            'es' => ['name' => 'Spanish', 'flag' => '🇪🇸'],
+            'en' => ['name' => 'English'],
+            'fr' => ['name' => 'French'],
+            'de' => ['name' => 'German'],
+            'es' => ['name' => 'Spanish'],
         ];
     @endphp
     <div class="card bg-base-100">
@@ -461,9 +461,8 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         @endphp
                         @foreach($studioLanguages as $langCode)
                             @if(isset($supportedLanguages[$langCode]))
-                            <span class="badge badge-soft badge-primary gap-1">
-                                <span>{{ $supportedLanguages[$langCode]['flag'] }}</span>
-                                <span>{{ $supportedLanguages[$langCode]['name'] }}</span>
+                            <span class="badge badge-soft badge-primary">
+                                {{ $supportedLanguages[$langCode]['name'] }}
                             </span>
                             @endif
                         @endforeach
@@ -476,7 +475,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <div class="flex items-center gap-2" id="display-language-app">
                         @php $langApp = $host->default_language_app ?? 'en'; @endphp
                         @if(isset($supportedLanguages[$langApp]))
-                            <span class="text-lg">{{ $supportedLanguages[$langApp]['flag'] }}</span>
                             <span class="font-medium">{{ $supportedLanguages[$langApp]['name'] }}</span>
                         @else
                             <span class="text-base-content/50">Not set</span>
@@ -490,7 +488,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <div class="flex items-center gap-2" id="display-language-booking">
                         @php $langBooking = $host->default_language_booking ?? 'en'; @endphp
                         @if(isset($supportedLanguages[$langBooking]))
-                            <span class="text-lg">{{ $supportedLanguages[$langBooking]['flag'] }}</span>
                             <span class="font-medium">{{ $supportedLanguages[$langBooking]['name'] }}</span>
                         @else
                             <span class="text-base-content/50">Not set</span>
@@ -696,7 +693,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="basic-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-basic-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-basic-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -733,7 +730,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="logo-spinner"></span>
                 Upload Logo
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-logo-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('upload-logo-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -770,7 +767,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="cover-spinner"></span>
                 Upload Cover
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-cover-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('upload-cover-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -816,7 +813,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="contact-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-contact-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-contact-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -863,7 +860,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="social-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-social-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-social-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -893,7 +890,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="amenities-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-amenities-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-amenities-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -924,7 +921,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="countries-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-countries-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-countries-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -977,7 +974,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="currency-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-currency-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-currency-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -1007,7 +1004,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     @foreach($supportedLanguages as $code => $info)
                     <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer border border-base-200 rounded-lg hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                         <input type="checkbox" name="studio_languages[]" value="{{ $code }}" class="checkbox checkbox-primary studio-language-checkbox" {{ in_array($code, $studioLanguages) ? 'checked' : '' }} />
-                        <span class="text-xl">{{ $info['flag'] }}</span>
                         <span class="label-text font-medium">{{ $info['name'] }}</span>
                     </label>
                     @endforeach
@@ -1024,7 +1020,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     @foreach($supportedLanguages as $code => $info)
                     <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer border border-base-200 rounded-lg hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                         <input type="radio" name="default_language_app" value="{{ $code }}" class="radio radio-primary" {{ ($host->default_language_app ?? 'en') === $code ? 'checked' : '' }} />
-                        <span class="text-xl">{{ $info['flag'] }}</span>
                         <span class="label-text font-medium">{{ $info['name'] }}</span>
                     </label>
                     @endforeach
@@ -1039,7 +1034,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     @foreach($supportedLanguages as $code => $info)
                     <label class="custom-option flex flex-row items-center gap-3 px-4 py-3 cursor-pointer border border-base-200 rounded-lg hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                         <input type="radio" name="default_language_booking" value="{{ $code }}" class="radio radio-primary" {{ ($host->default_language_booking ?? 'en') === $code ? 'checked' : '' }} />
-                        <span class="text-xl">{{ $info['flag'] }}</span>
                         <span class="label-text font-medium">{{ $info['name'] }}</span>
                     </label>
                     @endforeach
@@ -1058,7 +1052,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="language-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-language-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-language-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -1125,7 +1119,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="cancellation-spinner"></span>
                 Save Changes
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('edit-cancellation-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-cancellation-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -1209,7 +1203,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="certification-spinner"></span>
                 Save
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('add-certification-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('add-certification-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -1260,7 +1254,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <span class="loading loading-spinner loading-xs hidden" id="gallery-spinner"></span>
                 Upload Image
             </button>
-            <button type="button" class="btn btn-soft btn-secondary" onclick="closeDrawer('upload-gallery-drawer')">Cancel</button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('upload-gallery-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -1334,11 +1328,158 @@ function showToast(message, type) {
     }, 3000);
 }
 
-// Drawer functions
+// Drawer functions - store original data for reset on cancel
+var originalDrawerData = {};
+
+function captureDrawerData(id) {
+    switch(id) {
+        case 'edit-basic-drawer':
+            originalDrawerData[id] = {
+                studioName: document.getElementById('studio_name')?.value || '',
+                shortDescription: document.getElementById('short_description')?.value || '',
+                timezone: document.getElementById('timezone')?.value || '',
+                studioTypes: [...selectedTypes]
+            };
+            break;
+        case 'edit-contact-drawer':
+            originalDrawerData[id] = {
+                studioEmail: document.getElementById('studio_email')?.value || '',
+                phone: document.getElementById('phone')?.value || '',
+                contactName: document.getElementById('contact_name')?.value || '',
+                supportEmail: document.getElementById('support_email')?.value || ''
+            };
+            break;
+        case 'edit-social-drawer':
+            originalDrawerData[id] = {
+                instagram: document.getElementById('social_instagram')?.value || '',
+                facebook: document.getElementById('social_facebook')?.value || '',
+                website: document.getElementById('social_website')?.value || '',
+                tiktok: document.getElementById('social_tiktok')?.value || ''
+            };
+            break;
+        case 'edit-amenities-drawer':
+            originalDrawerData[id] = {
+                amenities: Array.from(document.querySelectorAll('.amenity-checkbox:checked')).map(function(cb) { return cb.value; })
+            };
+            break;
+        case 'edit-countries-drawer':
+            originalDrawerData[id] = {
+                countries: Array.from(document.querySelectorAll('.country-checkbox:checked')).map(function(cb) { return cb.value; })
+            };
+            break;
+        case 'edit-currency-drawer':
+            originalDrawerData[id] = {
+                defaultCurrency: document.getElementById('default-currency-select')?.value || 'USD',
+                currencies: Array.from(document.querySelectorAll('.currency-checkbox:checked')).map(function(cb) { return cb.value; })
+            };
+            break;
+        case 'edit-language-drawer':
+            originalDrawerData[id] = {
+                studioLanguages: Array.from(document.querySelectorAll('.studio-language-checkbox:checked')).map(function(cb) { return cb.value; }),
+                defaultLanguageApp: document.querySelector('input[name="default_language_app"]:checked')?.value || 'en',
+                defaultLanguageBooking: document.querySelector('input[name="default_language_booking"]:checked')?.value || 'en'
+            };
+            break;
+        case 'edit-cancellation-drawer':
+            originalDrawerData[id] = {
+                allowCancellations: document.getElementById('allow_cancellations')?.checked || false,
+                cancellationWindow: document.querySelector('input[name="cancellation_window_hours"]:checked')?.value || '12'
+            };
+            break;
+        case 'upload-logo-drawer':
+        case 'upload-cover-drawer':
+        case 'upload-gallery-drawer':
+            // For upload drawers, just mark that we need to reset
+            originalDrawerData[id] = { needsReset: true };
+            break;
+    }
+}
+
+function resetDrawerData(id) {
+    var data = originalDrawerData[id];
+    if (!data) return;
+
+    switch(id) {
+        case 'edit-basic-drawer':
+            if (document.getElementById('studio_name')) document.getElementById('studio_name').value = data.studioName;
+            if (document.getElementById('short_description')) document.getElementById('short_description').value = data.shortDescription;
+            if (document.getElementById('timezone')) document.getElementById('timezone').value = data.timezone;
+            // Reset studio types
+            selectedTypes = [...data.studioTypes];
+            updateTypesBadges();
+            break;
+        case 'edit-contact-drawer':
+            if (document.getElementById('studio_email')) document.getElementById('studio_email').value = data.studioEmail;
+            if (document.getElementById('phone')) document.getElementById('phone').value = data.phone;
+            if (document.getElementById('contact_name')) document.getElementById('contact_name').value = data.contactName;
+            if (document.getElementById('support_email')) document.getElementById('support_email').value = data.supportEmail;
+            break;
+        case 'edit-social-drawer':
+            if (document.getElementById('social_instagram')) document.getElementById('social_instagram').value = data.instagram;
+            if (document.getElementById('social_facebook')) document.getElementById('social_facebook').value = data.facebook;
+            if (document.getElementById('social_website')) document.getElementById('social_website').value = data.website;
+            if (document.getElementById('social_tiktok')) document.getElementById('social_tiktok').value = data.tiktok;
+            break;
+        case 'edit-amenities-drawer':
+            document.querySelectorAll('.amenity-checkbox').forEach(function(cb) {
+                cb.checked = data.amenities.includes(cb.value);
+            });
+            break;
+        case 'edit-countries-drawer':
+            document.querySelectorAll('.country-checkbox').forEach(function(cb) {
+                cb.checked = data.countries.includes(cb.value);
+            });
+            break;
+        case 'edit-currency-drawer':
+            if (document.getElementById('default-currency-select')) document.getElementById('default-currency-select').value = data.defaultCurrency;
+            document.querySelectorAll('.currency-checkbox').forEach(function(cb) {
+                cb.checked = data.currencies.includes(cb.value);
+            });
+            break;
+        case 'edit-language-drawer':
+            document.querySelectorAll('.studio-language-checkbox').forEach(function(cb) {
+                cb.checked = data.studioLanguages.includes(cb.value);
+            });
+            var appRadio = document.querySelector('input[name="default_language_app"][value="' + data.defaultLanguageApp + '"]');
+            if (appRadio) appRadio.checked = true;
+            var bookingRadio = document.querySelector('input[name="default_language_booking"][value="' + data.defaultLanguageBooking + '"]');
+            if (bookingRadio) bookingRadio.checked = true;
+            break;
+        case 'edit-cancellation-drawer':
+            if (document.getElementById('allow_cancellations')) document.getElementById('allow_cancellations').checked = data.allowCancellations;
+            var windowRadio = document.querySelector('input[name="cancellation_window_hours"][value="' + data.cancellationWindow + '"]');
+            if (windowRadio) windowRadio.checked = true;
+            break;
+        case 'upload-logo-drawer':
+            // Reset logo upload preview
+            document.getElementById('logo-input').value = '';
+            document.getElementById('logo-upload-placeholder')?.classList.remove('hidden');
+            document.getElementById('logo-upload-preview')?.classList.add('hidden');
+            document.getElementById('upload-logo-btn').disabled = true;
+            break;
+        case 'upload-cover-drawer':
+            // Reset cover upload preview
+            document.getElementById('cover-input').value = '';
+            document.getElementById('cover-upload-placeholder')?.classList.remove('hidden');
+            document.getElementById('cover-upload-preview')?.classList.add('hidden');
+            document.getElementById('upload-cover-btn').disabled = true;
+            break;
+        case 'upload-gallery-drawer':
+            // Reset gallery upload
+            document.getElementById('gallery-input').value = '';
+            document.getElementById('gallery-upload-placeholder')?.classList.remove('hidden');
+            document.getElementById('gallery-upload-preview')?.classList.add('hidden');
+            document.getElementById('upload-gallery-btn').disabled = true;
+            break;
+    }
+}
+
 function openDrawer(id) {
     var drawer = document.getElementById(id);
     var backdrop = document.getElementById('drawer-backdrop');
     if (drawer && backdrop) {
+        // Capture original data before opening
+        captureDrawerData(id);
         backdrop.classList.remove('opacity-0', 'pointer-events-none');
         backdrop.classList.add('opacity-100', 'pointer-events-auto');
         drawer.classList.remove('translate-x-full');
@@ -1351,6 +1492,8 @@ function closeDrawer(id) {
     var drawer = document.getElementById(id);
     var backdrop = document.getElementById('drawer-backdrop');
     if (drawer && backdrop) {
+        // Reset drawer data to original values
+        resetDrawerData(id);
         drawer.classList.remove('translate-x-0');
         drawer.classList.add('translate-x-full');
         backdrop.classList.remove('opacity-100', 'pointer-events-auto');
@@ -1496,6 +1639,7 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
             document.getElementById('display-timezone').textContent = document.getElementById('timezone').value || 'Not set';
             var typesHtml = selectedTypes.length > 0 ? selectedTypes.map(function(t) { return '<span class="badge badge-primary badge-soft badge-sm">' + t + '</span>'; }).join('') : '<span class="text-base-content/50">Not set</span>';
             document.getElementById('display-types').innerHTML = typesHtml;
+            captureDrawerData('edit-basic-drawer'); // Update original data so close doesn't reset
             closeDrawer('edit-basic-drawer');
             setTimeout(function() { showToast('Basic information updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
@@ -1697,10 +1841,10 @@ document.getElementById('edit-currency-form').addEventListener('submit', functio
 
 // Language Settings
 var supportedLanguages = {
-    'en': { name: 'English', flag: '🇺🇸' },
-    'fr': { name: 'French', flag: '🇫🇷' },
-    'de': { name: 'German', flag: '🇩🇪' },
-    'es': { name: 'Spanish', flag: '🇪🇸' }
+    'en': { name: 'English' },
+    'fr': { name: 'French' },
+    'de': { name: 'German' },
+    'es': { name: 'Spanish' }
 };
 
 document.getElementById('edit-language-form').addEventListener('submit', function(e) {
@@ -1740,10 +1884,7 @@ document.getElementById('edit-language-form').addEventListener('submit', functio
             studioLanguages.forEach(function(code) {
                 var info = supportedLanguages[code];
                 if (info) {
-                    studioLangHtml += '<span class="badge badge-soft badge-primary gap-1">' +
-                        '<span>' + info.flag + '</span>' +
-                        '<span>' + info.name + '</span>' +
-                        '</span>';
+                    studioLangHtml += '<span class="badge badge-soft badge-primary">' + info.name + '</span>';
                 }
             });
             document.getElementById('display-studio-languages').innerHTML = studioLangHtml;
@@ -1751,14 +1892,19 @@ document.getElementById('edit-language-form').addEventListener('submit', functio
             // Update default studio language display
             var langAppInfo = supportedLanguages[langApp];
             document.getElementById('display-language-app').innerHTML =
-                '<span class="text-lg">' + langAppInfo.flag + '</span>' +
                 '<span class="font-medium">' + langAppInfo.name + '</span>';
 
             // Update booking page language display
             var langBookingInfo = supportedLanguages[langBooking];
             document.getElementById('display-language-booking').innerHTML =
-                '<span class="text-lg">' + langBookingInfo.flag + '</span>' +
                 '<span class="font-medium">' + langBookingInfo.name + '</span>';
+
+            // Update original settings so close doesn't reset to old values
+            originalLanguageSettings = {
+                studioLanguages: studioLanguages,
+                defaultLanguageApp: langApp,
+                defaultLanguageBooking: langBooking
+            };
 
             closeDrawer('edit-language-drawer');
             setTimeout(function() { showToast('Language settings updated!'); }, 350);

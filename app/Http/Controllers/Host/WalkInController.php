@@ -11,6 +11,7 @@ use App\Models\ClassPlan;
 use App\Models\ServicePlan;
 use App\Models\MembershipPlan;
 use App\Models\CustomerMembership;
+use App\Models\Event;
 use App\Models\Instructor;
 use App\Models\Offer;
 use App\Models\QuestionnaireAttachment;
@@ -1440,6 +1441,129 @@ class WalkInController extends Controller
             return back()
                 ->withInput()
                 ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Show event registration form
+     */
+    public function event(Event $event)
+    {
+        $host = auth()->user()->host;
+
+        // Verify event belongs to this host
+        if ($event->host_id !== $host->id) {
+            abort(404);
+        }
+
+        // Check if event can accept attendees
+        if (!$event->canAddAttendees()) {
+            return redirect()
+                ->route('events.show', $event)
+                ->with('error', 'This event cannot accept new registrations.');
+        }
+
+        // Get recent clients
+        $recentClients = Client::where('host_id', $host->id)
+            ->orderBy('updated_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Calculate spots remaining
+        $registeredCount = $event->registeredAttendees()->count();
+        $spotsRemaining = $event->capacity ? max(0, $event->capacity - $registeredCount) : null;
+
+        $trans = session('trans', []);
+
+        return view('host.walk-in.event', compact(
+            'event',
+            'recentClients',
+            'spotsRemaining',
+            'trans'
+        ));
+    }
+
+    /**
+     * Register a client for an event
+     */
+    public function registerEvent(Request $request, Event $event)
+    {
+        $host = auth()->user()->host;
+
+        // Verify event belongs to this host
+        if ($event->host_id !== $host->id) {
+            abort(404);
+        }
+
+        // Validate request
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'status' => 'required|in:registered,confirmed,waitlisted',
+            'check_in_now' => 'boolean',
+            'send_confirmation' => 'boolean',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        // Get client and verify it belongs to this host
+        $client = Client::where('host_id', $host->id)->findOrFail($validated['client_id']);
+
+        // Check if client is already registered
+        if ($event->isClientRegistered($client->id)) {
+            return back()
+                ->withInput()
+                ->with('error', 'This client is already registered for this event.');
+        }
+
+        // Check capacity for non-waitlisted registrations
+        if ($validated['status'] !== 'waitlisted' && $event->capacity) {
+            $registeredCount = $event->registeredAttendees()->count();
+            if ($registeredCount >= $event->capacity) {
+                // Auto-switch to waitlist if at capacity
+                $validated['status'] = 'waitlisted';
+            }
+        }
+
+        try {
+            // Add client to event
+            $pivotData = [
+                'status' => $validated['status'],
+                'registered_at' => now(),
+                'notes' => $validated['notes'] ?? null,
+            ];
+
+            // Handle waitlist position
+            if ($validated['status'] === 'waitlisted') {
+                $maxPosition = $event->clients()
+                    ->wherePivot('status', 'waitlisted')
+                    ->max('event_attendees.waitlist_position') ?? 0;
+                $pivotData['waitlist_position'] = $maxPosition + 1;
+            }
+
+            // Check in if requested
+            if (!empty($validated['check_in_now']) && $validated['status'] !== 'waitlisted') {
+                $pivotData['checked_in_at'] = now();
+                $pivotData['status'] = 'attended';
+            }
+
+            $event->clients()->attach($client->id, $pivotData);
+
+            // TODO: Send confirmation email if requested
+            // if (!empty($validated['send_confirmation'])) {
+            //     Mail::to($client->email)->send(new EventRegistrationConfirmation($event, $client));
+            // }
+
+            $statusMessage = $validated['status'] === 'waitlisted'
+                ? 'added to waitlist'
+                : 'registered';
+
+            return redirect()
+                ->route('events.show', $event)
+                ->with('success', "{$client->full_name} has been {$statusMessage} for {$event->title}!");
+
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to register attendee: ' . $e->getMessage());
         }
     }
 }

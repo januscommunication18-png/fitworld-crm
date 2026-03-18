@@ -108,6 +108,15 @@
                             <span class="text-xs text-base-content/60 ml-7">{{ $trans['space_rentals.schedule_description'] ?? 'Book a space for professional use' }}</span>
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('events.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                            <span class="flex items-center gap-2">
+                                <span class="icon-[tabler--calendar-event] size-5 text-error"></span>
+                                <span class="font-medium">{{ $trans['nav.events'] ?? 'Event' }}</span>
+                            </span>
+                            <span class="text-xs text-base-content/60 ml-7">{{ $trans['events.schedule_description'] ?? 'Workshop, seminar, or special event' }}</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -126,6 +135,7 @@
                         <option value="service">{{ $trans['page.services'] ?? 'Services' }} {{ $trans['common.only'] ?? 'Only' }}</option>
                         <option value="membership">{{ $trans['page.memberships'] ?? 'Membership' }} {{ $trans['common.only'] ?? 'Only' }}</option>
                         <option value="space_rental">{{ $trans['nav.space_rentals'] ?? 'Space Rentals' }} {{ $trans['common.only'] ?? 'Only' }}</option>
+                        <option value="event">{{ $trans['nav.events'] ?? 'Events' }} {{ $trans['common.only'] ?? 'Only' }}</option>
                     </select>
                 </div>
 
@@ -192,6 +202,10 @@
                         <span class="text-sm font-medium text-base-content">{{ $trans['nav.space_rentals'] ?? 'Space Rental' }}</span>
                     </div>
                     <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #ef4444;"></span>
+                        <span class="text-sm font-medium text-base-content">{{ $trans['nav.events'] ?? 'Event' }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full shadow-sm" style="background-color: #f59e0b;"></span>
                         <span class="text-sm font-medium text-base-content">{{ $trans['common.draft'] ?? 'Draft' }}</span>
                     </div>
@@ -224,6 +238,11 @@
 {{-- Space Rental Drawers --}}
 @foreach($spaceRentals ?? [] as $rental)
     @include('host.schedule.partials.space-rental-drawer', ['spaceRental' => $rental])
+@endforeach
+
+{{-- Event Drawers --}}
+@foreach($events ?? [] as $event)
+    @include('host.schedule.partials.event-drawer', ['event' => $event])
 @endforeach
 
 @push('styles')
@@ -409,6 +428,20 @@
         color: #ffffff !important;
     }
 
+    /* Events - Red */
+    #studio-calendar .fc-event-event,
+    #studio-calendar .fc .fc-event.fc-event-event,
+    #studio-calendar .fc-event.fc-event-event {
+        background-color: #ef4444 !important;
+        border-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    #studio-calendar .fc-event-event *,
+    #studio-calendar .fc .fc-event.fc-event-event *,
+    #studio-calendar .fc-event.fc-event-event * {
+        color: #ffffff !important;
+    }
+
     /* Month/DayGrid view - ensure colored backgrounds with proper text */
     #studio-calendar .fc .fc-daygrid-event {
         border-radius: 4px;
@@ -499,6 +532,17 @@
         color: #ffffff !important;
     }
 
+    #studio-calendar .fc .fc-daygrid-event.fc-event-event,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-event {
+        background-color: #ef4444 !important;
+    }
+    #studio-calendar .fc .fc-daygrid-event.fc-event-event .fc-event-title,
+    #studio-calendar .fc .fc-daygrid-event.fc-event-event .fc-event-time,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-event .fc-event-title,
+    #studio-calendar .fc .fc-daygrid-dot-event.fc-event-event .fc-event-time {
+        color: #ffffff !important;
+    }
+
     /* Block events in month view */
     #studio-calendar .fc .fc-daygrid-block-event .fc-event-title,
     #studio-calendar .fc .fc-daygrid-block-event .fc-event-time {
@@ -572,6 +616,16 @@
     #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-time,
     #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-title,
     #studio-calendar .fc .fc-timegrid-event.fc-event-rental .fc-event-title-container {
+        color: #ffffff !important;
+    }
+
+    #studio-calendar .fc .fc-timegrid-event.fc-event-event,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-event *,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-event .fc-event-main,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-event .fc-event-main-frame,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-event .fc-event-time,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-event .fc-event-title,
+    #studio-calendar .fc .fc-timegrid-event.fc-event-event .fc-event-title-container {
         color: #ffffff !important;
     }
 
@@ -834,6 +888,9 @@
     #studio-calendar .fc .fc-list-event.fc-event-rental .fc-list-event-dot {
         border-color: #a855f7 !important;
     }
+    #studio-calendar .fc .fc-list-event.fc-event-event .fc-list-event-dot {
+        border-color: #ef4444 !important;
+    }
 
     #studio-calendar .fc .fc-list-event td {
         border-color: oklch(var(--bc) / 0.1);
@@ -989,6 +1046,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 typeIcon = 'massage';
             } else if (props.type === 'space_rental') {
                 typeIcon = 'building';
+            } else if (props.type === 'event') {
+                typeIcon = 'calendar-event';
             }
 
             // Create custom HTML structure
@@ -1041,6 +1100,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             colorClass = 'fc-event-secondary';
                         } else if (event.extendedProps.type === 'space_rental') {
                             colorClass = 'fc-event-rental';
+                        } else if (event.extendedProps.type === 'event') {
+                            colorClass = 'fc-event-event';
                         }
                         if (event.extendedProps.status === 'draft' || event.extendedProps.status === 'pending') {
                             colorClass = 'fc-event-warning';
@@ -1069,7 +1130,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const type = parts[0];
 
             let drawerId;
-            if (type === 'space' && parts[1] === 'rental') {
+            if (type === 'event') {
+                // Studio event - open drawer
+                drawerId = `event-${parts[1]}`;
+            } else if (type === 'space' && parts[1] === 'rental') {
                 // Space rental - open drawer
                 drawerId = `space-rental-${parts[2]}`;
             } else if (type === 'class') {
@@ -1128,6 +1192,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 type = 'Space Rental';
                 typeIcon = 'building';
                 typeColor = 'secondary';
+            } else if (props.type === 'event') {
+                type = 'Event';
+                typeIcon = 'calendar-event';
+                typeColor = 'error';
             }
 
             let statusBadge = '';
@@ -1197,6 +1265,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     ${waiverHtml}
                     ${depositHtml}
+                `;
+            } else if (props.type === 'event') {
+                let eventTypeLabel = props.eventType === 'online' ? 'Online' : (props.eventType === 'hybrid' ? 'Hybrid' : 'In-Person');
+                let capacityText = props.capacity ? `${props.attendees || 0}/${props.capacity}` : `${props.attendees || 0}`;
+
+                bookingInfo = `
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--users] size-3 text-base-content/60"></span>
+                        <span>Attendees: <span class="font-medium">${capacityText}</span></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--device-laptop] size-3 text-base-content/60"></span>
+                        <span>Type: <span class="font-medium">${eventTypeLabel}</span></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--eye] size-3 text-base-content/60"></span>
+                        <span>Visibility: <span class="font-medium capitalize">${props.visibility || 'Private'}</span></span>
+                    </div>
                 `;
             }
 

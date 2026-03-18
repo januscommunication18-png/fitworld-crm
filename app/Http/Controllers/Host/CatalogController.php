@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Host;
 use App\Http\Controllers\Controller;
 use App\Models\ClassPass;
 use App\Models\ClassPlan;
+use App\Models\Event;
 use App\Models\MembershipPlan;
 use App\Models\RentalItem;
 use App\Models\ServicePlan;
@@ -24,6 +25,7 @@ class CatalogController extends Controller
         $membershipPlans = collect();
         $spaceRentalConfigs = collect();
         $rentalItems = collect();
+        $events = collect();
 
         if ($tab === 'classes') {
             $classPlans = $host->classPlans()
@@ -60,6 +62,11 @@ class CatalogController extends Controller
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
+        } elseif ($tab === 'events') {
+            $events = Event::forHost($host->id)
+                ->withCount('registeredAttendees')
+                ->orderBy('start_datetime', 'desc')
+                ->get();
         }
 
         // Multi-currency support for class passes
@@ -74,6 +81,7 @@ class CatalogController extends Controller
             'membershipPlans',
             'spaceRentalConfigs',
             'rentalItems',
+            'events',
             'hostCurrencies',
             'defaultCurrency'
         ));

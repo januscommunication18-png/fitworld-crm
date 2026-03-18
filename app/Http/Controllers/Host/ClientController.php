@@ -552,6 +552,32 @@ class ClientController extends Controller
         // Calculate Client Score (Engagement, Usage, Revenue)
         $clientScore = $this->calculateClientScore($client, $bookings, $bookingStats);
 
+        // Load body measurements with pagination
+        $measurements = $client->measurements()
+            ->with('recordedBy')
+            ->orderBy('measured_at', 'desc')
+            ->paginate(10, ['*'], 'measurements_page')
+            ->appends(['tab' => 'progress']);
+
+        // Get measurement chart data (last 12 measurements)
+        $measurementChartData = $client->measurements()
+            ->orderBy('measured_at', 'asc')
+            ->take(12)
+            ->get()
+            ->map(fn($m) => [
+                'date' => $m->measured_at->format('M j'),
+                'weight' => $m->weight,
+                'body_fat' => $m->body_fat,
+                'waist' => $m->waist,
+                'chest' => $m->chest,
+            ]);
+
+        // Get latest measurement for summary
+        $latestMeasurement = $client->measurements()->first();
+
+        // Get measurement fields for form
+        $measurementFields = \App\Models\ClientMeasurement::getMeasurementFields();
+
         return view('host.clients.show', [
             'client' => $client,
             'customFields' => $customFields,
@@ -567,6 +593,10 @@ class ClientController extends Controller
             'todaysClasses' => $todaysClasses,
             'hasProgressTemplates' => $hasProgressTemplates,
             'clientScore' => $clientScore,
+            'measurements' => $measurements,
+            'measurementChartData' => $measurementChartData,
+            'latestMeasurement' => $latestMeasurement,
+            'measurementFields' => $measurementFields,
         ]);
     }
 

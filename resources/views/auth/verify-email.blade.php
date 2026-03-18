@@ -25,14 +25,36 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="alert alert-error mb-4">
+                    <span class="icon-[tabler--alert-circle] size-5"></span>
+                    <span>{{ $errors->first() }}</span>
+                </div>
+            @endif
+
             <div class="space-y-3">
-                <form method="POST" action="{{ route('verification.send') }}">
+                <form method="POST" action="{{ route('verification.send') }}" id="resend-form">
                     @csrf
-                    <button type="submit" class="btn btn-primary w-full">
+                    <button type="submit"
+                            id="resend-btn"
+                            class="btn btn-primary w-full"
+                            @if(isset($cooldownRemaining) && $cooldownRemaining > 0) disabled @endif>
                         <span class="icon-[tabler--mail] size-4"></span>
-                        Resend Verification Email
+                        <span id="btn-text">
+                            @if(isset($cooldownRemaining) && $cooldownRemaining > 0)
+                                Wait <span id="countdown">{{ $cooldownRemaining }}</span>s
+                            @else
+                                Resend Verification Email
+                            @endif
+                        </span>
                     </button>
                 </form>
+
+                @if(isset($remainingAttempts) && isset($maxAttempts))
+                    <p class="text-xs text-base-content/50">
+                        {{ $remainingAttempts }} of {{ $maxAttempts }} resend attempts remaining this hour
+                    </p>
+                @endif
 
                 <a href="{{ route('dashboard') }}" class="btn btn-ghost w-full">
                     <span class="icon-[tabler--arrow-left] size-4"></span>
@@ -48,5 +70,27 @@
             </div>
         </div>
     </div>
+
+    @if(isset($cooldownRemaining) && $cooldownRemaining > 0)
+    <script>
+        (function() {
+            let seconds = {{ $cooldownRemaining }};
+            const btn = document.getElementById('resend-btn');
+            const btnText = document.getElementById('btn-text');
+            const countdown = document.getElementById('countdown');
+
+            const timer = setInterval(function() {
+                seconds--;
+                if (countdown) countdown.textContent = seconds;
+
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    btnText.innerHTML = 'Resend Verification Email';
+                }
+            }, 1000);
+        })();
+    </script>
+    @endif
 </body>
 </html>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Subdomain;
 
 use App\Http\Controllers\Controller;
 use App\Models\ClassSession;
+use App\Models\Event;
 use App\Models\Host;
 use App\Models\Instructor;
 use App\Models\MembershipPlan;
@@ -42,6 +43,16 @@ class BookingController extends Controller
             ->orderBy('start_time')
             ->with(['classPlan', 'primaryInstructor', 'room.location'])
             ->take(10)
+            ->get();
+
+        // Get upcoming published events
+        $upcomingEvents = Event::forHost($host->id)
+            ->published()
+            ->upcoming()
+            ->where('visibility', 'public')
+            ->withCount('registeredAttendees')
+            ->orderBy('start_datetime')
+            ->take(6)
             ->get();
 
         // Get active instructors
@@ -85,6 +96,7 @@ class BookingController extends Controller
         return view('subdomain.home', [
             'host' => $host,
             'upcomingSessions' => $upcomingSessions,
+            'upcomingEvents' => $upcomingEvents,
             'instructors' => $instructors,
             'servicePlans' => $servicePlans,
             'membershipPlans' => $membershipPlans,
@@ -143,6 +155,101 @@ class BookingController extends Controller
             'host' => $host,
             'session' => $classSession,
         ]);
+    }
+
+    /**
+     * Display event details
+     */
+    public function eventDetails(Request $request, string $subdomain, Event $event)
+    {
+        $host = $this->getHost($request);
+
+        // Ensure the event belongs to this studio and is public
+        if ($event->host_id !== $host->id || $event->visibility !== 'public') {
+            abort(404);
+        }
+
+        // Only show published events
+        if ($event->status !== Event::STATUS_PUBLISHED) {
+            abort(404);
+        }
+
+        $event->loadCount('registeredAttendees');
+
+        return view('subdomain.event-details', [
+            'host' => $host,
+            'event' => $event,
+        ]);
+    }
+
+    /**
+     * Register for an event (public registration)
+     */
+    public function registerForEvent(Request $request, string $subdomain, Event $event)
+    {
+        $host = $this->getHost($request);
+
+        // Ensure the event belongs to this studio and is public
+        if ($event->host_id !== $host->id || $event->visibility !== 'public') {
+            abort(404);
+        }
+
+        // Only allow registration for published, upcoming events
+        if ($event->status !== Event::STATUS_PUBLISHED || $event->start_datetime < now()) {
+            return back()->with('error', 'This event is no longer accepting registrations.');
+        }
+
+        // Check capacity
+        $currentCount = $event->registeredAttendees()->count();
+        if ($event->capacity && $currentCount >= $event->capacity) {
+            return back()->with('error', 'Sorry, this event is full.');
+        }
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:50',
+        ]);
+
+        // Find or create client
+        $client = \App\Models\Client::where('host_id', $host->id)
+            ->where('email', $validated['email'])
+            ->first();
+
+        if (!$client) {
+            $client = \App\Models\Client::create([
+                'host_id' => $host->id,
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? null,
+                'status' => 'active',
+                'source' => 'event_registration',
+            ]);
+        }
+
+        // Check if already registered
+        $existingAttendee = \App\Models\EventAttendee::where('event_id', $event->id)
+            ->where('client_id', $client->id)
+            ->first();
+
+        if ($existingAttendee) {
+            return back()->with('error', 'You are already registered for this event.');
+        }
+
+        // Register the attendee
+        \App\Models\EventAttendee::create([
+            'event_id' => $event->id,
+            'client_id' => $client->id,
+            'status' => 'registered',
+            'registered_at' => now(),
+        ]);
+
+        return redirect()->route('subdomain.event', [
+            'subdomain' => $host->subdomain,
+            'event' => $event->id
+        ])->with('success', 'You have been registered for this event! We\'ll send you a confirmation email.');
     }
 
     /**

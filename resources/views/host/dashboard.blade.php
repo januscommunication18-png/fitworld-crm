@@ -254,6 +254,88 @@
         </div>
     </div>
 
+    {{-- Upcoming Events --}}
+    @if(isset($upcomingEvents) && $upcomingEvents->count() > 0)
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold">{{ $trans['dashboard.upcoming_events'] ?? 'Upcoming Events' }}</h2>
+                <a href="{{ route('catalog.index', ['tab' => 'events']) }}" class="btn btn-soft btn-xs">
+                    <span class="icon-[tabler--calendar-event] size-3 mr-1"></span>
+                    {{ $trans['btn.view_all'] ?? 'View All' }}
+                </a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>{{ $trans['field.date'] ?? 'Date' }}</th>
+                            <th>{{ $trans['field.event'] ?? 'Event' }}</th>
+                            <th>{{ $trans['field.type'] ?? 'Type' }}</th>
+                            <th>{{ $trans['events.attendees'] ?? 'Attendees' }}</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($upcomingEvents as $event)
+                            <tr>
+                                <td>
+                                    <div class="font-medium">{{ $event->start_datetime->format('M j') }}</div>
+                                    <div class="text-xs text-base-content/60">{{ $event->start_datetime->format('g:i A') }}</div>
+                                </td>
+                                <td>
+                                    <div class="font-medium">{{ $event->title }}</div>
+                                    @if($event->venue_name)
+                                        <div class="text-xs text-base-content/60">{{ $event->venue_name }}</div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge badge-soft badge-sm capitalize">
+                                        @if($event->event_type === 'in_person')
+                                            <span class="icon-[tabler--map-pin] size-3 mr-1"></span> In-Person
+                                        @elseif($event->event_type === 'online')
+                                            <span class="icon-[tabler--device-laptop] size-3 mr-1"></span> Online
+                                        @else
+                                            <span class="icon-[tabler--arrows-exchange] size-3 mr-1"></span> Hybrid
+                                        @endif
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="flex items-center gap-2">
+                                        <span>{{ $event->registered_attendees_count }}@if($event->capacity)/{{ $event->capacity }}@endif</span>
+                                        @if($event->capacity)
+                                            @php $utilization = ($event->registered_attendees_count / $event->capacity) * 100; @endphp
+                                            @if($utilization >= 90)
+                                                <div class="w-12 bg-error/20 rounded-full h-1.5">
+                                                    <div class="bg-error h-1.5 rounded-full" style="width: {{ min($utilization, 100) }}%"></div>
+                                                </div>
+                                            @elseif($utilization >= 70)
+                                                <div class="w-12 bg-warning/20 rounded-full h-1.5">
+                                                    <div class="bg-warning h-1.5 rounded-full" style="width: {{ $utilization }}%"></div>
+                                                </div>
+                                            @else
+                                                <div class="w-12 bg-success/20 rounded-full h-1.5">
+                                                    <div class="bg-success h-1.5 rounded-full" style="width: {{ $utilization }}%"></div>
+                                                </div>
+                                            @endif
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    <a href="{{ route('events.show', $event) }}" class="btn btn-ghost btn-xs">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- Bottom Row: Attendance Summary + Insights --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {{-- Attendance Summary --}}

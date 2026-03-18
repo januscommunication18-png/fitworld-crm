@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Host;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\Event;
 use App\Models\ServiceSlot;
 use App\Models\SpaceRental;
 use Carbon\Carbon;
@@ -53,6 +54,13 @@ class ScheduleController extends Controller
             ->orderBy('start_time')
             ->get();
 
+        $events = Event::forHost($host->id)
+            ->with(['registeredAttendees'])
+            ->whereBetween('start_datetime', [$startDate, $endDate])
+            ->whereNotIn('status', [Event::STATUS_CANCELLED])
+            ->orderBy('start_datetime')
+            ->get();
+
         return view('host.schedule.calendar', [
             'locations' => $host->locations()->orderBy('name')->get(),
             'instructors' => $host->instructors()->active()->orderBy('name')->get(),
@@ -61,6 +69,7 @@ class ScheduleController extends Controller
             'classSessions' => $classSessions,
             'serviceSlots' => $serviceSlots,
             'spaceRentals' => $spaceRentals,
+            'events' => $events,
             'timezone' => $host->timezone ?? config('app.timezone', 'America/New_York'),
         ]);
     }
@@ -362,6 +371,46 @@ class ScheduleController extends Controller
                         'total' => $rental->formatted_total,
                         'waiverPending' => $rental->isWaiverPending(),
                         'depositPending' => $rental->isDepositPending(),
+                    ],
+                ];
+            }
+        }
+
+        // Get studio events
+        if ($type === 'all' || $type === 'event') {
+            $eventsQuery = Event::forHost($host->id)
+                ->withCount('registeredAttendees')
+                ->whereBetween('start_datetime', [$start, $end])
+                ->whereNotIn('status', [Event::STATUS_CANCELLED]);
+
+            if ($request->filled('location_id')) {
+                // Events don't have location_id directly, but we could filter by venue if needed
+            }
+
+            foreach ($eventsQuery->get() as $event) {
+                // Determine color based on status
+                $bgColor = match ($event->status) {
+                    Event::STATUS_DRAFT => '#f59e0b', // Yellow for draft
+                    Event::STATUS_PUBLISHED => '#ef4444', // Red for published events
+                    Event::STATUS_COMPLETED => '#6b7280', // Gray for completed
+                    default => '#ef4444',
+                };
+
+                $events[] = [
+                    'id' => 'event_' . $event->id,
+                    'title' => '📅 ' . $event->title,
+                    'start' => $event->start_datetime->format('Y-m-d\TH:i:s'),
+                    'end' => $event->end_datetime->format('Y-m-d\TH:i:s'),
+                    'backgroundColor' => $bgColor,
+                    'borderColor' => $bgColor,
+                    'extendedProps' => [
+                        'type' => 'event',
+                        'location' => $event->venue_name ?? ($event->event_type === 'online' ? 'Online' : 'TBD'),
+                        'status' => $event->status,
+                        'eventType' => $event->event_type,
+                        'visibility' => $event->visibility,
+                        'attendees' => $event->registered_attendees_count,
+                        'capacity' => $event->capacity,
                     ],
                 ];
             }

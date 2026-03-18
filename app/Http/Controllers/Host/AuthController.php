@@ -135,9 +135,26 @@ class AuthController extends Controller
      */
     public function showResetPassword(Request $request, string $token)
     {
+        $email = $request->email;
+
+        // Validate token exists and is valid before showing form
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return redirect()->route('password.request')
+                ->withErrors(['email' => 'We could not find an account with that email address.']);
+        }
+
+        // Check if token is valid using the password broker
+        $broker = Password::broker();
+        if (!$broker->tokenExists($user, $token)) {
+            return redirect()->route('password.request')
+                ->withErrors(['email' => 'This password reset link is invalid or has expired. Please request a new one.']);
+        }
+
         return view('host.auth.reset-password', [
             'token' => $token,
-            'email' => $request->email,
+            'email' => $email,
         ]);
     }
 

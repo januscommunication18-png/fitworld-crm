@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Host;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\ClassSession;
+use App\Models\Event;
 use App\Services\Reporting\ReportingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -52,10 +53,20 @@ class DashboardController extends Controller
         $quickStats = $this->reportingService->getQuickStats($host);
         $revenueChart = $this->reportingService->getRevenueChartData($host, 'month');
 
+        // Get upcoming events
+        $upcomingEvents = Event::forHost($host->id)
+            ->published()
+            ->upcoming()
+            ->withCount('registeredAttendees')
+            ->orderBy('start_datetime')
+            ->limit(5)
+            ->get();
+
         return view('host.dashboard', [
             'metrics' => $metrics,
             'quickStats' => $quickStats,
             'revenueChart' => $revenueChart,
+            'upcomingEvents' => $upcomingEvents,
             'currency' => $host->default_currency ?? 'USD',
         ]);
     }

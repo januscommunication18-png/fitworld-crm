@@ -163,6 +163,109 @@
         @endif
     </section>
 
+    {{-- 1.5 EVENTS SECTION --}}
+    @if(isset($upcomingEvents) && $upcomingEvents->isNotEmpty())
+    <section class="mb-12">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold">{{ $trans['dashboard.upcoming_events'] ?? 'Upcoming Events' }}</h2>
+                <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.workshops_seminars'] ?? 'Special workshops, seminars & more' }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($upcomingEvents as $event)
+            <div class="card bg-base-100 shadow border border-base-200 overflow-hidden hover:shadow-lg transition-shadow">
+                {{-- Event Image or Gradient Header --}}
+                @if($event->image_url)
+                <figure class="relative h-32 overflow-hidden">
+                    <img src="{{ $event->image_url }}" alt="{{ $event->title }}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div class="absolute bottom-2 left-3 right-3">
+                        <span class="badge badge-sm {{ $event->event_type === 'online' ? 'badge-info' : ($event->event_type === 'hybrid' ? 'badge-warning' : 'badge-success') }}">
+                            @if($event->event_type === 'in_person')
+                                <span class="icon-[tabler--map-pin] size-3 mr-1"></span> In-Person
+                            @elseif($event->event_type === 'online')
+                                <span class="icon-[tabler--device-laptop] size-3 mr-1"></span> Online
+                            @else
+                                <span class="icon-[tabler--arrows-exchange] size-3 mr-1"></span> Hybrid
+                            @endif
+                        </span>
+                    </div>
+                </figure>
+                @else
+                <div class="relative h-24 bg-gradient-to-r from-primary/20 to-secondary/20 flex items-center justify-center">
+                    <span class="icon-[tabler--calendar-event] size-10 text-primary/40"></span>
+                    <div class="absolute bottom-2 left-3 right-3">
+                        <span class="badge badge-sm {{ $event->event_type === 'online' ? 'badge-info' : ($event->event_type === 'hybrid' ? 'badge-warning' : 'badge-success') }}">
+                            @if($event->event_type === 'in_person')
+                                <span class="icon-[tabler--map-pin] size-3 mr-1"></span> In-Person
+                            @elseif($event->event_type === 'online')
+                                <span class="icon-[tabler--device-laptop] size-3 mr-1"></span> Online
+                            @else
+                                <span class="icon-[tabler--arrows-exchange] size-3 mr-1"></span> Hybrid
+                            @endif
+                        </span>
+                    </div>
+                </div>
+                @endif
+
+                <div class="card-body p-4">
+                    {{-- Title --}}
+                    <h3 class="card-title text-base line-clamp-1">{{ $event->title }}</h3>
+
+                    {{-- Date & Time --}}
+                    <div class="text-sm text-base-content/60 space-y-1">
+                        <p class="flex items-center gap-2">
+                            <span class="icon-[tabler--calendar] size-4 text-primary"></span>
+                            {{ $event->start_datetime->format('l, M j, Y') }}
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <span class="icon-[tabler--clock] size-4"></span>
+                            {{ $event->start_datetime->format('g:i A') }} - {{ $event->end_datetime->format('g:i A') }}
+                        </p>
+                        @if($event->venue_name && $event->event_type !== 'online')
+                        <p class="flex items-center gap-2">
+                            <span class="icon-[tabler--map-pin] size-4"></span>
+                            {{ $event->venue_name }}
+                        </p>
+                        @endif
+                    </div>
+
+                    {{-- Description Excerpt --}}
+                    @if($event->description)
+                    <p class="text-sm text-base-content/70 line-clamp-2 mt-2">{{ Str::limit(strip_tags($event->description), 100) }}</p>
+                    @endif
+
+                    {{-- Footer with spots and register --}}
+                    <div class="card-actions justify-between items-center mt-auto pt-3">
+                        @php
+                            $spotsLeft = $event->capacity ? max(0, $event->capacity - $event->registered_attendees_count) : null;
+                        @endphp
+                        @if($spotsLeft === 0)
+                            <span class="badge badge-error">{{ $trans['subdomain.schedule.full'] ?? 'Full' }}</span>
+                        @elseif($spotsLeft !== null && $spotsLeft <= 5)
+                            <span class="badge badge-warning">{{ $spotsLeft }} {{ $trans['subdomain.home.left'] ?? 'left' }}</span>
+                        @elseif($spotsLeft !== null)
+                            <span class="text-xs text-base-content/40">{{ $spotsLeft }} {{ $trans['subdomain.home.spots'] ?? 'spots' }}</span>
+                        @else
+                            <span class="text-xs text-base-content/40">{{ $trans['subdomain.home.open'] ?? 'Open' }}</span>
+                        @endif
+
+                        @if($spotsLeft !== 0)
+                        <a href="{{ route('subdomain.event', ['subdomain' => $host->subdomain, 'event' => $event->id]) }}" class="btn btn-primary btn-sm">
+                            <span class="icon-[tabler--calendar-plus] size-4"></span>
+                            {{ $trans['btn.register'] ?? 'Register' }}
+                        </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+    @endif
+
     {{-- 2. MEMBERSHIPS & SERVICES SECTION --}}
     @if($servicePlans->isNotEmpty() || isset($membershipPlans) && $membershipPlans->isNotEmpty())
     <section class="mb-12">

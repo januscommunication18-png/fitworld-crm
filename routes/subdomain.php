@@ -48,6 +48,10 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         // Class details
         Route::get('/class/{classSession}', [BookingController::class, 'classDetails'])->name('subdomain.class');
 
+        // Event details
+        Route::get('/event/{event}', [BookingController::class, 'eventDetails'])->name('subdomain.event');
+        Route::post('/event/{event}/register', [BookingController::class, 'registerForEvent'])->name('subdomain.event.register');
+
         // Instructor profiles
         Route::get('/instructors', [BookingController::class, 'instructors'])->name('subdomain.instructors');
         Route::get('/instructor/{instructor}', [BookingController::class, 'instructorProfile'])->name('subdomain.instructor');
