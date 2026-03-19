@@ -60,6 +60,12 @@
                             {{ $trans['nav.space_rentals'] ?? 'Space Rental' }}
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ route('events.create') }}">
+                            <span class="icon-[tabler--calendar-event] size-5 text-error"></span>
+                            {{ $trans['nav.Event'] ?? 'Event' }}
+                        </a>
+                    </li>
                 </ul>
             </div>
 
