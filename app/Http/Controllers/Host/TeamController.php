@@ -45,10 +45,17 @@ class TeamController extends Controller
         // Get all user emails to filter duplicates
         $existingUserEmails = $host->teamMembers()->pluck('email')->map(fn($e) => strtolower($e))->toArray();
 
-        // Get instructors without login (no user_id) and not already in users list
+        // Get pending/expired invitation emails to avoid duplicates
+        $invitationEmails = TeamInvitation::where('host_id', $host->id)
+            ->whereIn('status', [TeamInvitation::STATUS_PENDING, TeamInvitation::STATUS_EXPIRED])
+            ->pluck('email')
+            ->map(fn($e) => strtolower($e))
+            ->toArray();
+
+        // Get instructors without login (no user_id) and not already in users list or invitations
         $instructorsWithoutLoginQuery = $host->instructors()
             ->whereNull('user_id')
-            ->whereNotIn(\DB::raw('LOWER(email)'), $existingUserEmails)
+            ->whereNotIn(\DB::raw('LOWER(email)'), array_merge($existingUserEmails, $invitationEmails))
             ->orderBy('name');
 
         if ($search) {

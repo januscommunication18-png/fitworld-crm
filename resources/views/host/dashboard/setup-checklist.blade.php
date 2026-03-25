@@ -34,7 +34,191 @@
 
     {{-- Two Column Layout --}}
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {{-- Left: Video & Info (2 cols) --}}
+        {{-- Left: Checklist (3 cols) --}}
+        <div class="lg:col-span-3">
+            <div class="card bg-base-100">
+                <div class="card-body p-4">
+                    <h2 class="font-semibold mb-4 flex items-center gap-2">
+                        <span class="icon-[tabler--list-check] size-5 text-primary"></span>
+                        Setup Checklist
+                    </h2>
+
+                    <div class="space-y-2">
+                        {{-- 1. Verify Account --}}
+                        @php $item = $checklist['verify_account']; @endphp
+                        <div class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-warning/20 bg-warning/5' }}">
+                            @if($item['completed'])
+                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--check] size-4 text-success"></span>
+                                </div>
+                            @else
+                                <div class="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--mail] size-4 text-warning"></span>
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-sm">Verify Your Email</div>
+                                <div class="text-xs text-base-content/50 truncate">
+                                    @if($item['completed'])
+                                        Email verified
+                                    @else
+                                        Check your inbox for verification link
+                                    @endif
+                                </div>
+                            </div>
+                            @if($item['completed'])
+                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                            @else
+                                <form action="{{ route('verification.send') }}" method="POST" class="flex-shrink-0">
+                                    @csrf
+                                    <button type="submit" class="btn btn-warning btn-sm">
+                                        <span class="icon-[tabler--send] size-4"></span>
+                                        Resend Email
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+
+                        {{-- 2. Complete Studio Profile --}}
+                        @php $item = $checklist['studio_profile']; @endphp
+                        <a href="{{ route('settings.studio.profile') }}"
+                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
+                            @if($item['completed'])
+                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--check] size-4 text-success"></span>
+                                </div>
+                            @else
+                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--building-store] size-4 text-base-content/50"></span>
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-sm">Complete Studio Profile</div>
+                                <div class="text-xs text-base-content/50 truncate">Name, logo & contact info</div>
+                            </div>
+                            @if($item['completed'])
+                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                            @else
+                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
+                            @endif
+                        </a>
+
+                        {{-- 3. Setup Payment System --}}
+                        @php $item = $checklist['payment']; @endphp
+                        <a href="{{ route('settings.payments.settings') }}"
+                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
+                            @if($item['completed'])
+                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--check] size-4 text-success"></span>
+                                </div>
+                            @else
+                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--credit-card] size-4 text-base-content/50"></span>
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-sm">Setup Payment System</div>
+                                <div class="text-xs text-base-content/50 truncate">Connect Stripe to accept payments</div>
+                            </div>
+                            @if($item['completed'])
+                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                            @else
+                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
+                            @endif
+                        </a>
+
+                        {{-- 4. Setup Location --}}
+                        @php $item = $checklist['location']; @endphp
+                        <a href="{{ route('settings.locations.index') }}"
+                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
+                            @if($item['completed'])
+                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--check] size-4 text-success"></span>
+                                </div>
+                            @else
+                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--map-pin] size-4 text-base-content/50"></span>
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-sm">Setup Location</div>
+                                <div class="text-xs text-base-content/50 truncate">Address & room configuration</div>
+                            </div>
+                            @if($item['completed'])
+                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                            @else
+                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
+                            @endif
+                        </a>
+
+                        {{-- 5. Setup Instructor/Staff --}}
+                        @php $item = $checklist['instructor']; @endphp
+                        <a href="{{ route('settings.team.instructors') }}"
+                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
+                            @if($item['completed'])
+                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--check] size-4 text-success"></span>
+                                </div>
+                            @else
+                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--users] size-4 text-base-content/50"></span>
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-sm">Setup Instructor / Staff</div>
+                                <div class="text-xs text-base-content/50 truncate">Add team members with availability & time slots</div>
+                            </div>
+                            @if($item['completed'])
+                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                            @else
+                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
+                            @endif
+                        </a>
+
+                        {{-- 6. Classes and Services --}}
+                        @php $item = $checklist['catalog']; @endphp
+                        <a href="{{ route('catalog.index') }}"
+                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
+                            @if($item['completed'])
+                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--check] size-4 text-success"></span>
+                                </div>
+                            @else
+                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
+                                    <span class="icon-[tabler--layout-grid] size-4 text-base-content/50"></span>
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-sm">Classes and Services</div>
+                                <div class="text-xs text-base-content/50 truncate">Create your classes, services & memberships</div>
+                            </div>
+                            @if($item['completed'])
+                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                            @else
+                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
+                            @endif
+                        </a>
+                    </div>
+
+                    {{-- CTA when all done --}}
+                    @if($progress === 100)
+                    <div class="mt-4 p-4 bg-success/10 rounded-lg text-center">
+                        <span class="icon-[tabler--confetti] size-6 text-success mb-2"></span>
+                        <p class="font-medium text-success">All set! You're ready to go.</p>
+                        <form action="{{ route('dashboard.skip-setup') }}" method="POST" class="mt-3">
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-sm">
+                                Go to Dashboard
+                                <span class="icon-[tabler--arrow-right] size-4"></span>
+                            </button>
+                        </form>
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        {{-- Right: Video & Tips (2 cols) --}}
         <div class="lg:col-span-2 space-y-4">
             {{-- Video Card --}}
             <div class="card bg-base-100">
@@ -85,155 +269,6 @@
                 </button>
             </form>
             @endif
-        </div>
-
-        {{-- Right: Checklist (3 cols) --}}
-        <div class="lg:col-span-3">
-            <div class="card bg-base-100">
-                <div class="card-body p-4">
-                    <h2 class="font-semibold mb-4 flex items-center gap-2">
-                        <span class="icon-[tabler--list-check] size-5 text-primary"></span>
-                        Setup Checklist
-                    </h2>
-
-                    <div class="space-y-2">
-                        {{-- 1. Verify Account --}}
-                        @php $item = $checklist['verify_account']; @endphp
-                        <a href="{{ $item['completed'] ? '#' : route('verification.notice') }}"
-                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
-                            @if($item['completed'])
-                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--check] size-4 text-success"></span>
-                                </div>
-                            @else
-                                <div class="w-8 h-8 rounded-full bg-warning/20 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--mail] size-4 text-warning"></span>
-                                </div>
-                            @endif
-                            <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Verify Your Email</div>
-                                <div class="text-xs text-base-content/50 truncate">Confirm your email address</div>
-                            </div>
-                            @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
-                            @else
-                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
-                            @endif
-                        </a>
-
-                        {{-- 2. Complete Studio Profile --}}
-                        @php $item = $checklist['studio_profile']; @endphp
-                        <a href="{{ route('settings.studio.profile') }}"
-                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
-                            @if($item['completed'])
-                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--check] size-4 text-success"></span>
-                                </div>
-                            @else
-                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--building-store] size-4 text-base-content/50"></span>
-                                </div>
-                            @endif
-                            <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Complete Studio Profile</div>
-                                <div class="text-xs text-base-content/50 truncate">Name, logo & contact info</div>
-                            </div>
-                            @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
-                            @else
-                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
-                            @endif
-                        </a>
-
-                        {{-- 3. Setup Location --}}
-                        @php $item = $checklist['location']; @endphp
-                        <a href="{{ route('settings.locations.index') }}"
-                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
-                            @if($item['completed'])
-                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--check] size-4 text-success"></span>
-                                </div>
-                            @else
-                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--map-pin] size-4 text-base-content/50"></span>
-                                </div>
-                            @endif
-                            <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Setup Location</div>
-                                <div class="text-xs text-base-content/50 truncate">Address & room configuration</div>
-                            </div>
-                            @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
-                            @else
-                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
-                            @endif
-                        </a>
-
-                        {{-- 4. Setup Instructor/Staff --}}
-                        @php $item = $checklist['instructor']; @endphp
-                        <a href="{{ route('settings.team.instructors') }}"
-                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
-                            @if($item['completed'])
-                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--check] size-4 text-success"></span>
-                                </div>
-                            @else
-                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--users] size-4 text-base-content/50"></span>
-                                </div>
-                            @endif
-                            <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Setup Instructor / Staff</div>
-                                <div class="text-xs text-base-content/50 truncate">Add your team members</div>
-                            </div>
-                            @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
-                            @else
-                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
-                            @endif
-                        </a>
-
-                        {{-- 5. Setup Payment System --}}
-                        @php $item = $checklist['payment']; @endphp
-                        <a href="{{ route('settings.payments.settings') }}"
-                           class="flex items-center gap-3 p-3 rounded-lg border transition-all {{ $item['completed'] ? 'bg-success/5 border-success/20' : 'border-base-300 hover:border-primary hover:bg-primary/5' }}">
-                            @if($item['completed'])
-                                <div class="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--check] size-4 text-success"></span>
-                                </div>
-                            @else
-                                <div class="w-8 h-8 rounded-full bg-base-200 flex items-center justify-center flex-shrink-0">
-                                    <span class="icon-[tabler--credit-card] size-4 text-base-content/50"></span>
-                                </div>
-                            @endif
-                            <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Setup Payment System</div>
-                                <div class="text-xs text-base-content/50 truncate">Connect Stripe to accept payments</div>
-                            </div>
-                            @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
-                            @else
-                                <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
-                            @endif
-                        </a>
-                    </div>
-
-                    {{-- CTA when all done --}}
-                    @if($progress === 100)
-                    <div class="mt-4 p-4 bg-success/10 rounded-lg text-center">
-                        <span class="icon-[tabler--confetti] size-6 text-success mb-2"></span>
-                        <p class="font-medium text-success">All set! You're ready to go.</p>
-                        <form action="{{ route('dashboard.skip-setup') }}" method="POST" class="mt-3">
-                            @csrf
-                            <button type="submit" class="btn btn-success btn-sm">
-                                Go to Dashboard
-                                <span class="icon-[tabler--arrow-right] size-4"></span>
-                            </button>
-                        </form>
-                    </div>
-                    @endif
-                </div>
-            </div>
         </div>
     </div>
 </div>

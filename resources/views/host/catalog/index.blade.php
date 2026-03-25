@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
-@section('title', $trans['nav.catalog'] ?? 'Catalog')
+@section('title', $trans['nav.classes_services'] ?? 'Classes & Services')
 
 @section('breadcrumbs')
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> {{ $trans['nav.catalog'] ?? 'Catalog' }}</li>
+        <li aria-current="page"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> {{ $trans['nav.classes_services'] ?? 'Classes & Services' }}</li>
     </ol>
 @endsection
 

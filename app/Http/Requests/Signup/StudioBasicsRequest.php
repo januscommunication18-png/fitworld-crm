@@ -31,6 +31,7 @@ class StudioBasicsRequest extends FormRequest
                 'regex:/^[a-z0-9][a-z0-9-]*[a-z0-9]$/',
                 Rule::unique('hosts', 'subdomain')->ignore($hostId),
             ],
+            'default_currency' => ['nullable', 'string', 'size:3', 'in:USD,CAD,GBP,EUR,AUD,INR'],
         ];
     }
 

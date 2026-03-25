@@ -87,22 +87,52 @@ class DashboardController extends Controller
                 'label' => 'Complete Studio Profile',
                 'route' => 'settings.studio.profile',
             ],
+            'payment' => [
+                'completed' => $this->isPaymentSetupComplete($host),
+                'label' => 'Setup Payment System',
+                'route' => 'settings.payments.settings',
+            ],
             'location' => [
                 'completed' => $host->locations()->exists(),
                 'label' => 'Setup Location',
                 'route' => 'settings.locations.index',
             ],
             'instructor' => [
-                'completed' => $host->instructors()->exists(),
+                'completed' => $this->isInstructorSetupComplete($host),
                 'label' => 'Setup Instructor / Staff',
                 'route' => 'settings.team.instructors',
             ],
-            'payment' => [
-                'completed' => $this->isPaymentSetupComplete($host),
-                'label' => 'Setup Payment System',
-                'route' => 'settings.payments.settings',
+            'catalog' => [
+                'completed' => $this->isCatalogSetupComplete($host),
+                'label' => 'Classes and Services',
+                'route' => 'catalog.index',
             ],
         ];
+    }
+
+    /**
+     * Check if instructor setup is complete
+     * At least one instructor must have a complete profile (time slots configured)
+     */
+    protected function isInstructorSetupComplete($host): bool
+    {
+        $instructors = $host->instructors;
+
+        if ($instructors->isEmpty()) {
+            return false;
+        }
+
+        // Check if at least one instructor has a complete profile
+        return $instructors->contains(fn($instructor) => $instructor->isProfileComplete());
+    }
+
+    /**
+     * Check if catalog (classes and services) is setup
+     * At least one class plan or service plan must exist
+     */
+    protected function isCatalogSetupComplete($host): bool
+    {
+        return $host->classPlans()->exists() || $host->servicePlans()->exists();
     }
 
     /**

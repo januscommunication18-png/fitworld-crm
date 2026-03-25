@@ -233,12 +233,12 @@
             </li>
             @endif
 
-            {{-- Catalog - Requires schedule permissions --}}
+            {{-- Classes & Services - Requires schedule permissions --}}
             @if($canManageSchedule)
             <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }}" data-nav="catalog">
                 <a href="{{ url('/catalog') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
                     <span class="icon-[tabler--layout-grid] size-5 shrink-0"></span>
-                    <span class="sidebar-label">{{ $trans['nav.catalog'] ?? 'Catalog' }}</span>
+                    <span class="sidebar-label">{{ $trans['nav.classes_services'] ?? 'Classes & Services' }}</span>
                 </a>
             </li>
             @endif

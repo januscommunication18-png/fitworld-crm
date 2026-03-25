@@ -73,6 +73,18 @@
                     </div>
                 </div>
 
+                <!-- Default Currency -->
+                <div>
+                    <label class="label-text" for="default_currency">Default Currency <span class="text-error">*</span></label>
+                    <p class="text-xs text-base-content/50 mb-2">Primary currency for pricing your services</p>
+                    <SearchSelect
+                        v-model="localData.default_currency"
+                        :options="currencyOptions"
+                        placeholder="Select currency..."
+                    />
+                    <p v-if="errors.default_currency" class="text-error text-xs mt-1">{{ errors.default_currency[0] }}</p>
+                </div>
+
                 <div>
                     <label class="label-text" for="subdomain">Your Studio URL <span class="text-error">*</span></label>
                     <div class="join w-full">
@@ -99,10 +111,7 @@
                     </div>
                 </div>
 
-                <div class="flex justify-between pt-4">
-                    <button type="button" class="btn btn-ghost" @click="$emit('prev')">
-                        <span class="icon-[tabler--arrow-left] size-4"></span> Back
-                    </button>
+                <div class="flex justify-end pt-4">
                     <button type="submit" class="btn btn-primary" :disabled="!isValid || loading">
                         <span v-if="loading" class="loading loading-spinner loading-xs"></span>
                         <template v-else>Continue <span class="icon-[tabler--arrow-right] size-4"></span></template>
@@ -130,6 +139,15 @@ const props = defineProps({
 const emit = defineEmits(['next', 'prev', 'update'])
 
 const studioTypeOptions = ['Yoga', 'Pilates', 'Barre', 'Spinning', 'CrossFit', 'Dance', 'Martial Arts', 'Personal Training', 'Other']
+
+const currencies = {
+    'USD': { symbol: '$', name: 'US Dollar' },
+    'CAD': { symbol: 'C$', name: 'Canadian Dollar' },
+    'GBP': { symbol: '£', name: 'Pound Sterling' },
+    'EUR': { symbol: '€', name: 'Euro' },
+    'AUD': { symbol: 'A$', name: 'Australian Dollar' },
+    'INR': { symbol: '₹', name: 'Indian Rupee' },
+}
 
 const countries = {
     'US': { name: 'United States', flag: '🇺🇸', timezone: 'America/New_York' },
@@ -219,6 +237,13 @@ const timezoneOptions = computed(() => {
     }))
 })
 
+const currencyOptions = computed(() => {
+    return Object.entries(currencies).map(([code, info]) => ({
+        value: code,
+        label: `${info.symbol} ${code} - ${info.name}`
+    }))
+})
+
 const subdomainAvailable = ref(null)
 const checkingSubdomain = ref(false)
 const subdomainManuallyEdited = ref(false)
@@ -232,6 +257,7 @@ const localData = reactive({
     state: props.formData.state || '',
     timezone: props.formData.timezone || 'America/New_York',
     subdomain: props.formData.subdomain,
+    default_currency: props.formData.default_currency || 'USD',
 })
 
 const isValid = computed(() => localData.studio_name && localData.country && localData.subdomain && subdomainAvailable.value !== false)

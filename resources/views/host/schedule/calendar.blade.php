@@ -37,31 +37,31 @@
                 </button>
                 <ul id="booking-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
                     <li>
-                        <a href="{{ route('walk-in.select') }}">
+                        <a href="#" onclick="handleScheduleClick('class', '{{ route('walk-in.select') }}', {{ $classPlans->count() }}); return false;">
                             <span class="icon-[tabler--yoga] size-5 text-primary"></span>
                             {{ $trans['schedule.class_sessions'] ?? 'Class Session' }}
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('walk-in.select-service') }}">
+                        <a href="#" onclick="handleScheduleClick('service', '{{ route('walk-in.select-service') }}', {{ $servicePlans->count() }}); return false;">
                             <span class="icon-[tabler--massage] size-5 text-success"></span>
                             {{ $trans['schedule.service_slots'] ?? 'Service Slot' }}
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('walk-in.select-membership') }}">
+                        <a href="#" onclick="handleScheduleClick('membership', '{{ route('walk-in.select-membership') }}', {{ $membershipPlans->count() }}); return false;">
                             <span class="icon-[tabler--id-badge-2] size-5 text-warning"></span>
                             {{ $trans['page.memberships'] ?? 'Membership' }}
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('space-rentals.create') }}">
+                        <a href="#" onclick="handleScheduleClick('space_rental', '{{ route('space-rentals.create') }}', {{ $spaceRentalConfigs->count() }}); return false;">
                             <span class="icon-[tabler--building] size-5 text-secondary"></span>
                             {{ $trans['nav.space_rentals'] ?? 'Space Rental' }}
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('events.create') }}">
+                        <a href="#" onclick="handleScheduleClick('event', '{{ route('events.create') }}', {{ $upcomingEvents->count() }}); return false;">
                             <span class="icon-[tabler--calendar-event] size-5 text-error"></span>
                             {{ $trans['nav.Event'] ?? 'Event' }}
                         </a>
@@ -79,7 +79,7 @@
                 <ul id="schedule-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-72 p-2 shadow-lg border border-base-300 z-50">
                     <li class="menu-title text-xs uppercase tracking-wider text-base-content/50 px-2 pt-2">{{ $trans['common.type'] ?? 'Schedule Type' }}</li>
                     <li>
-                        <a href="{{ route('class-sessions.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                        <a href="#" onclick="handleScheduleClick('class', '{{ route('class-sessions.create') }}', {{ $classPlans->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
                             <span class="flex items-center gap-2">
                                 <span class="icon-[tabler--yoga] size-5 text-primary"></span>
                                 <span class="font-medium">{{ $trans['page.classes'] ?? 'Class' }}</span>
@@ -88,7 +88,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('service-slots.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                        <a href="#" onclick="handleScheduleClick('service', '{{ route('service-slots.create') }}', {{ $servicePlans->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
                             <span class="flex items-center gap-2">
                                 <span class="icon-[tabler--massage] size-5 text-success"></span>
                                 <span class="font-medium">{{ $trans['page.services'] ?? 'Service' }}</span>
@@ -97,7 +97,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('scheduled-membership.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                        <a href="#" onclick="handleScheduleClick('membership', '{{ route('scheduled-membership.create') }}', {{ $membershipPlans->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
                             <span class="flex items-center gap-2">
                                 <span class="icon-[tabler--calendar-user] size-5 text-warning"></span>
                                 <span class="font-medium">{{ $trans['schedule.membership_schedule'] ?? 'Membership Schedule' }}</span>
@@ -106,7 +106,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('space-rentals.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                        <a href="#" onclick="handleScheduleClick('space_rental', '{{ route('space-rentals.create') }}', {{ $spaceRentalConfigs->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
                             <span class="flex items-center gap-2">
                                 <span class="icon-[tabler--building] size-5 text-secondary"></span>
                                 <span class="font-medium">{{ $trans['nav.space_rentals'] ?? 'Space Rental' }}</span>
@@ -952,6 +952,21 @@
         border-color: rgba(255, 255, 255, 0.1);
     }
 
+    /* Expanded popover for day/list views - auto width based on text */
+    .event-popover.popover-expanded {
+        max-width: none;
+        width: auto;
+        white-space: nowrap;
+    }
+
+    .event-popover.popover-expanded .p-3 {
+        min-width: auto;
+    }
+
+    .event-popover.popover-expanded .space-y-1 > div {
+        white-space: nowrap;
+    }
+
 </style>
 @endpush
 
@@ -983,6 +998,82 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
+    // Handle schedule/booking click - check if plans exist
+    window.handleScheduleClick = function(type, url, planCount) {
+        // Close dropdown first
+        document.querySelectorAll('#booking-dropdown, #schedule-dropdown').forEach(function(d) {
+            d.classList.add('hidden');
+        });
+
+        if (planCount > 0) {
+            // Plans exist, navigate to the page
+            window.location.href = url;
+        } else {
+            // No plans, show alert modal
+            let typeLabel, typeLabelLower, createUrl;
+
+            switch(type) {
+                case 'class':
+                    typeLabel = 'Class';
+                    typeLabelLower = 'class';
+                    createUrl = '{{ route("class-plans.create") }}';
+                    break;
+                case 'service':
+                    typeLabel = 'Service';
+                    typeLabelLower = 'service';
+                    createUrl = '{{ route("service-plans.create") }}';
+                    break;
+                case 'membership':
+                    typeLabel = 'Membership';
+                    typeLabelLower = 'membership';
+                    createUrl = '{{ route("membership-plans.create") }}';
+                    break;
+                case 'space_rental':
+                    typeLabel = 'Rental Space';
+                    typeLabelLower = 'rental space';
+                    createUrl = '{{ route("space-rentals.config.create") }}';
+                    break;
+                case 'event':
+                    typeLabel = 'Event';
+                    typeLabelLower = 'event';
+                    createUrl = '{{ route("events.create") }}';
+                    break;
+                default:
+                    typeLabel = 'Plan';
+                    typeLabelLower = 'plan';
+                    createUrl = '{{ route("catalog.index") }}';
+            }
+
+            let modalTitle, modalMessage, actionText;
+
+            if (type === 'space_rental') {
+                modalTitle = 'No Rental Spaces Found';
+                modalMessage = 'To book a space rental, you need to create a rental space first in Classes & Services.';
+                actionText = 'Add Rental Space';
+            } else if (type === 'event') {
+                modalTitle = 'No Upcoming Events Found';
+                modalMessage = 'To book an event, you need to create an event first.';
+                actionText = 'Create Event';
+            } else {
+                modalTitle = `No ${typeLabel} Plans Found`;
+                modalMessage = `To schedule a ${typeLabelLower}, you need to create a ${typeLabelLower} plan first in Classes & Services.`;
+                actionText = `Add ${typeLabel} Plan`;
+            }
+
+            window.FitCRM.showAlertModal({
+                title: modalTitle,
+                message: modalMessage,
+                icon: 'alert-triangle',
+                iconBg: 'bg-warning/20',
+                iconColor: 'text-warning',
+                actionText: actionText,
+                actionUrl: createUrl,
+                actionIcon: 'plus',
+                actionClass: 'btn btn-primary'
+            });
+        }
+    };
 
     const calendarEl = document.getElementById('studio-calendar');
     if (!calendarEl) return;
@@ -1346,8 +1437,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Show popover on hover
             info.el.addEventListener('mouseenter', function(e) {
+                const currentView = calendar.view.type;
                 const rect = info.el.getBoundingClientRect();
                 popover.style.display = 'block';
+
+                // For day view and list view, use wider popover with auto width
+                if (currentView === 'timeGridDay' || currentView === 'listMonth') {
+                    popover.classList.add('popover-expanded');
+                } else {
+                    popover.classList.remove('popover-expanded');
+                }
+
+                // Position next to event
                 popover.style.left = (rect.right + 10) + 'px';
                 popover.style.top = rect.top + 'px';
 

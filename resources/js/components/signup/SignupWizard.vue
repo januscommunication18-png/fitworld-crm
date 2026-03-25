@@ -83,6 +83,7 @@ const formData = ref({
     state: '',
     timezone: '',
     subdomain: '',
+    default_currency: 'USD',
     // Step 5: Location
     address: '',
     state: '',
@@ -220,11 +221,15 @@ async function saveCurrentStep() {
                 state: fd.state,
                 timezone: fd.timezone,
                 subdomain: fd.subdomain,
+                default_currency: fd.default_currency,
             })
             break
         case 5:
             await api.post('/signup/location', {
                 address: fd.address,
+                city: fd.city,
+                state: fd.state,
+                zipcode: fd.zipcode,
                 rooms: fd.rooms,
                 default_capacity: fd.default_capacity,
                 amenities: fd.amenities,

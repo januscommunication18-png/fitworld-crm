@@ -49,6 +49,7 @@
     @include('components.search-modal')
     @include('components.alerts-drawer')
     @include('components.app-modal')
+    @include('components.global-alert-modal')
 
     {{-- Global Confirmation Modals --}}
     @include('partials.modals.confirmation-modals')

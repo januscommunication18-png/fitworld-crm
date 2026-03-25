@@ -39,6 +39,9 @@ class SignupController extends Controller
         // Get first class for step 7
         $class = $host->classes()->first();
 
+        // Get default location for step 5
+        $defaultLocation = $host->locations()->where('is_default', true)->first();
+
         return $this->success([
             'step' => $host->onboarding_step ?? 4,
             'form_data' => [
@@ -55,8 +58,12 @@ class SignupController extends Controller
                 'state' => $host->state ?? '',
                 'timezone' => $host->timezone ?? 'America/New_York',
                 'subdomain' => $host->subdomain ?? '',
-                // Step 5: Location
-                'address' => $host->address ?? '',
+                'default_currency' => $host->default_currency ?? 'USD',
+                // Step 5: Location (from Location model or fallback to host)
+                'address' => $defaultLocation?->address_line_1 ?? $host->address ?? '',
+                'city' => $defaultLocation?->city ?? $host->city ?? '',
+                'state' => $defaultLocation?->state ?? $host->state ?? '',
+                'zipcode' => $defaultLocation?->postal_code ?? '',
                 'rooms' => $host->rooms ?? 1,
                 'default_capacity' => $host->default_capacity ?? 20,
                 'amenities' => $host->amenities ?? [],
@@ -182,6 +189,8 @@ class SignupController extends Controller
         $host = $request->user()->host;
         $data = $request->validated();
 
+        $defaultCurrency = $data['default_currency'] ?? 'USD';
+
         $host->update([
             'studio_name' => $data['studio_name'],
             'studio_types' => $data['studio_types'] ?? [],
@@ -191,6 +200,8 @@ class SignupController extends Controller
             'timezone' => $data['timezone'],
             'subdomain' => $data['subdomain'],
             'operating_countries' => $data['country'] ? [$data['country']] : [],
+            'default_currency' => $defaultCurrency,
+            'currencies' => [$defaultCurrency],
             'onboarding_step' => max($host->onboarding_step ?? 4, 5),
         ]);
 
@@ -205,6 +216,7 @@ class SignupController extends Controller
         $host = $request->user()->host;
         $data = $request->validated();
 
+        // Update host record with legacy fields
         $host->update([
             'address' => $data['address'] ?? null,
             'rooms' => $data['rooms'] ?? 1,
@@ -212,6 +224,42 @@ class SignupController extends Controller
             'amenities' => $data['amenities'] ?? [],
             'onboarding_step' => max($host->onboarding_step ?? 5, 6),
         ]);
+
+        // Create or update the default location
+        $location = $host->locations()->where('is_default', true)->first();
+
+        $locationData = [
+            'name' => $host->studio_name ?? 'Main Location',
+            'location_type' => \App\Models\Location::TYPE_IN_PERSON,
+            'address_line_1' => $data['address'] ?? null,
+            'city' => $data['city'] ?? $host->city ?? null,
+            'state' => $data['state'] ?? $host->state ?? null,
+            'postal_code' => $data['zipcode'] ?? null,
+            'country' => $host->country ?? null,
+            'is_default' => true,
+        ];
+
+        if ($location) {
+            $location->update($locationData);
+        } else {
+            $location = $host->locations()->create($locationData);
+        }
+
+        // Create default rooms if specified
+        $roomCount = $data['rooms'] ?? 1;
+        $defaultCapacity = $data['default_capacity'] ?? 20;
+
+        // Only create rooms if location doesn't have any yet
+        if ($location->rooms()->count() === 0 && $roomCount > 0) {
+            for ($i = 1; $i <= $roomCount; $i++) {
+                $location->rooms()->create([
+                    'host_id' => $host->id,
+                    'name' => $roomCount === 1 ? 'Main Room' : "Room {$i}",
+                    'capacity' => $defaultCapacity,
+                    'is_active' => true,
+                ]);
+            }
+        }
 
         return $this->success($host->fresh(), 'Location saved');
     }
