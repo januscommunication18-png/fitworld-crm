@@ -61,7 +61,6 @@ class GlobalTranslationsSeeder extends Seeder
             $this->getDrawerTranslations(),
             $this->getStatsTranslations(),
             $this->getWalkInTranslations(),
-            $this->getSpaceRentalTranslations(),
         );
     }
 
