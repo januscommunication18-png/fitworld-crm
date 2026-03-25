@@ -939,6 +939,17 @@
         box-shadow: -3px 3px 5px rgba(0, 0, 0, 0.05);
     }
 
+    /* Arrow on right side when popover is to the left of event */
+    .event-popover.popover-left::before {
+        left: auto;
+        right: -7px;
+        border-left: none;
+        border-bottom: none;
+        border-right: 1px solid rgba(0, 0, 0, 0.1);
+        border-top: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 3px -3px 5px rgba(0, 0, 0, 0.05);
+    }
+
     /* Dark mode support */
     [data-theme="dark"] .event-popover,
     .dark .event-popover {
@@ -950,6 +961,14 @@
     .dark .event-popover::before {
         background: #1f2937;
         border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    [data-theme="dark"] .event-popover.popover-left::before,
+    .dark .event-popover.popover-left::before {
+        border-left: none;
+        border-bottom: none;
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
 
     /* Expanded popover for day/list views - auto width based on text */
@@ -1440,23 +1459,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentView = calendar.view.type;
                 const rect = info.el.getBoundingClientRect();
                 popover.style.display = 'block';
+                popover.classList.remove('popover-left'); // Reset arrow direction
 
                 // For day view and list view, use wider popover with auto width
+                // and position after title text ends
                 if (currentView === 'timeGridDay' || currentView === 'listMonth') {
                     popover.classList.add('popover-expanded');
+
+                    // Find the title text element to position popover after it
+                    const titleEl = info.el.querySelector('.event-title-text') ||
+                                    info.el.querySelector('.fc-event-title') ||
+                                    info.el.querySelector('.fc-list-event-title');
+
+                    if (titleEl) {
+                        const titleRect = titleEl.getBoundingClientRect();
+                        // Position popover right after the title text ends
+                        popover.style.left = (titleRect.right + 10) + 'px';
+                        popover.style.top = rect.top + 'px';
+                    } else {
+                        // Fallback to event element position
+                        popover.style.left = (rect.right + 10) + 'px';
+                        popover.style.top = rect.top + 'px';
+                    }
                 } else {
                     popover.classList.remove('popover-expanded');
+                    // Position next to event for other views
+                    popover.style.left = (rect.right + 10) + 'px';
+                    popover.style.top = rect.top + 'px';
                 }
 
-                // Position next to event
-                popover.style.left = (rect.right + 10) + 'px';
-                popover.style.top = rect.top + 'px';
-
-                // Adjust if going off screen
+                // Adjust if going off screen horizontally
                 const popRect = popover.getBoundingClientRect();
                 if (popRect.right > window.innerWidth) {
+                    // Move popover to the left side of the event
                     popover.style.left = (rect.left - popRect.width - 10) + 'px';
+                    // Flip the arrow to point right
+                    popover.classList.add('popover-left');
                 }
+                // Adjust if going off screen vertically
                 if (popRect.bottom > window.innerHeight) {
                     popover.style.top = (window.innerHeight - popRect.height - 10) + 'px';
                 }
