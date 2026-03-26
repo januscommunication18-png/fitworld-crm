@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\SignupController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\Api\WalkInBookingController;
+use App\Http\Controllers\Api\FitNearYouApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -69,5 +70,14 @@ Route::prefix('v1')->group(function () {
 
         // Recent clients
         Route::get('/recent', [WalkInBookingController::class, 'recentClients']);
+    });
+
+    // FitNearYou Sync API (authenticated via API key/secret headers)
+    Route::prefix('fitnearyou')->group(function () {
+        // Verify credentials
+        Route::post('/verify', [FitNearYouApiController::class, 'verifyCredentials']);
+
+        // Get studio data for sync
+        Route::get('/sync', [FitNearYouApiController::class, 'getStudioData']);
     });
 });

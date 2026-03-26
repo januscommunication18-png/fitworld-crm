@@ -210,6 +210,58 @@ class FeatureSeeder extends Seeder
                 'is_active' => false,
                 'sort_order' => 4,
             ],
+
+            // Integrations
+            [
+                'name' => 'FitNearYou Sync',
+                'slug' => 'fitnearyou-sync',
+                'description' => 'Sync your classes, services, deals, and events with FitNearYou marketplace. Expand your reach and get discovered by new clients in your area.',
+                'icon' => 'cloud-share',
+                'type' => Feature::TYPE_FREE,
+                'category' => Feature::CATEGORY_INTEGRATIONS,
+                'is_active' => true,
+                'sort_order' => 1,
+                'config_schema' => [
+                    'api_key' => [
+                        'type' => 'text',
+                        'label' => 'API Key',
+                        'readonly' => true,
+                    ],
+                    'api_secret' => [
+                        'type' => 'password',
+                        'label' => 'API Secret',
+                        'readonly' => true,
+                    ],
+                    'sync_classes' => [
+                        'type' => 'boolean',
+                        'label' => 'Sync Classes',
+                        'default' => true,
+                    ],
+                    'sync_services' => [
+                        'type' => 'boolean',
+                        'label' => 'Sync Services',
+                        'default' => true,
+                    ],
+                    'sync_deals' => [
+                        'type' => 'boolean',
+                        'label' => 'Sync Deals & Promotions',
+                        'default' => true,
+                    ],
+                    'sync_events' => [
+                        'type' => 'boolean',
+                        'label' => 'Sync Events',
+                        'default' => true,
+                    ],
+                ],
+                'default_config' => [
+                    'api_key' => null,
+                    'api_secret' => null,
+                    'sync_classes' => true,
+                    'sync_services' => true,
+                    'sync_deals' => true,
+                    'sync_events' => true,
+                ],
+            ],
         ];
 
         foreach ($features as $feature) {

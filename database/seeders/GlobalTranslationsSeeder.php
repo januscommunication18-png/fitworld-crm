@@ -61,6 +61,8 @@ class GlobalTranslationsSeeder extends Seeder
             $this->getDrawerTranslations(),
             $this->getStatsTranslations(),
             $this->getWalkInTranslations(),
+            $this->getSetupChecklistTranslations(),
+            $this->getSettingsProfileTranslations(),
         );
     }
 
@@ -2516,6 +2518,280 @@ class GlobalTranslationsSeeder extends Seeder
              'value_en' => 'Membership', 'value_fr' => 'Abonnement', 'value_de' => 'Mitgliedschaft', 'value_es' => 'Membresía'],
             ['translation_key' => 'field.start_date', 'category' => 'general_content', 'page_context' => null,
              'value_en' => 'Start Date', 'value_fr' => 'Date de début', 'value_de' => 'Startdatum', 'value_es' => 'Fecha de inicio'],
+        ];
+    }
+
+    /**
+     * Setup checklist page translations.
+     */
+    protected function getSetupChecklistTranslations(): array
+    {
+        return [
+            // Page title and header
+            ['translation_key' => 'setup.page_title', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Complete Your Studio Setup', 'value_fr' => 'Complétez la configuration de votre studio', 'value_de' => 'Vervollständigen Sie Ihre Studio-Einrichtung', 'value_es' => 'Complete la configuración de su estudio'],
+            ['translation_key' => 'setup.welcome', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Welcome to :studio_name!', 'value_fr' => 'Bienvenue à :studio_name!', 'value_de' => 'Willkommen bei :studio_name!', 'value_es' => '¡Bienvenido a :studio_name!'],
+            ['translation_key' => 'setup.welcome_default', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Welcome to Your Studio!', 'value_fr' => 'Bienvenue dans votre studio!', 'value_de' => 'Willkommen in Ihrem Studio!', 'value_es' => '¡Bienvenido a su estudio!'],
+            ['translation_key' => 'setup.subtitle', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Complete setup to unlock all features', 'value_fr' => 'Complétez la configuration pour débloquer toutes les fonctionnalités', 'value_de' => 'Schließen Sie die Einrichtung ab, um alle Funktionen freizuschalten', 'value_es' => 'Complete la configuración para desbloquear todas las funciones'],
+            ['translation_key' => 'setup.completed', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'completed', 'value_fr' => 'terminé', 'value_de' => 'abgeschlossen', 'value_es' => 'completado'],
+
+            // Checklist header
+            ['translation_key' => 'setup.checklist_title', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Setup Checklist', 'value_fr' => 'Liste de configuration', 'value_de' => 'Einrichtungs-Checkliste', 'value_es' => 'Lista de configuración'],
+
+            // Verify Email
+            ['translation_key' => 'setup.verify_email', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Verify Your Email', 'value_fr' => 'Vérifiez votre email', 'value_de' => 'E-Mail bestätigen', 'value_es' => 'Verifique su correo electrónico'],
+            ['translation_key' => 'setup.email_verified', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Email verified', 'value_fr' => 'Email vérifié', 'value_de' => 'E-Mail bestätigt', 'value_es' => 'Correo electrónico verificado'],
+            ['translation_key' => 'setup.check_inbox', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Check your inbox for verification link', 'value_fr' => 'Vérifiez votre boîte de réception pour le lien de vérification', 'value_de' => 'Überprüfen Sie Ihren Posteingang auf den Bestätigungslink', 'value_es' => 'Revise su bandeja de entrada para el enlace de verificación'],
+            ['translation_key' => 'setup.resend_email', 'category' => 'buttons', 'page_context' => 'setup_checklist',
+             'value_en' => 'Resend Email', 'value_fr' => 'Renvoyer l\'email', 'value_de' => 'E-Mail erneut senden', 'value_es' => 'Reenviar correo'],
+
+            // Studio Profile
+            ['translation_key' => 'setup.studio_profile', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Complete Studio Profile', 'value_fr' => 'Compléter le profil du studio', 'value_de' => 'Studio-Profil vervollständigen', 'value_es' => 'Completar perfil del estudio'],
+            ['translation_key' => 'setup.studio_profile_desc', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Name, logo & contact info', 'value_fr' => 'Nom, logo et coordonnées', 'value_de' => 'Name, Logo und Kontaktdaten', 'value_es' => 'Nombre, logo e información de contacto'],
+
+            // Payment System
+            ['translation_key' => 'setup.payment_system', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Setup Payment System', 'value_fr' => 'Configurer le système de paiement', 'value_de' => 'Zahlungssystem einrichten', 'value_es' => 'Configurar sistema de pago'],
+            ['translation_key' => 'setup.payment_desc', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Connect Stripe to accept payments', 'value_fr' => 'Connectez Stripe pour accepter les paiements', 'value_de' => 'Stripe verbinden, um Zahlungen zu akzeptieren', 'value_es' => 'Conecte Stripe para aceptar pagos'],
+
+            // Location
+            ['translation_key' => 'setup.location', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Setup Location', 'value_fr' => 'Configurer l\'emplacement', 'value_de' => 'Standort einrichten', 'value_es' => 'Configurar ubicación'],
+            ['translation_key' => 'setup.location_desc', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Address & room configuration', 'value_fr' => 'Adresse et configuration des salles', 'value_de' => 'Adresse und Raumkonfiguration', 'value_es' => 'Dirección y configuración de salas'],
+
+            // Instructor/Staff
+            ['translation_key' => 'setup.instructor', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Setup Instructor / Staff', 'value_fr' => 'Configurer les instructeurs / personnel', 'value_de' => 'Kursleiter / Personal einrichten', 'value_es' => 'Configurar instructor / personal'],
+            ['translation_key' => 'setup.instructor_desc', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Add team members with availability & time slots', 'value_fr' => 'Ajouter des membres d\'équipe avec disponibilités et créneaux', 'value_de' => 'Teammitglieder mit Verfügbarkeit und Zeitfenstern hinzufügen', 'value_es' => 'Agregar miembros del equipo con disponibilidad y horarios'],
+
+            // Classes and Services
+            ['translation_key' => 'setup.catalog', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Classes and Services', 'value_fr' => 'Cours et services', 'value_de' => 'Kurse und Dienste', 'value_es' => 'Clases y servicios'],
+            ['translation_key' => 'setup.catalog_desc', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Create your classes, services & memberships', 'value_fr' => 'Créez vos cours, services et abonnements', 'value_de' => 'Erstellen Sie Ihre Kurse, Dienste und Mitgliedschaften', 'value_es' => 'Cree sus clases, servicios y membresías'],
+
+            // Status badges
+            ['translation_key' => 'setup.done', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Done', 'value_fr' => 'Terminé', 'value_de' => 'Fertig', 'value_es' => 'Hecho'],
+
+            // Completion message
+            ['translation_key' => 'setup.all_set', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'All set! You\'re ready to go.', 'value_fr' => 'C\'est prêt! Vous êtes prêt à démarrer.', 'value_de' => 'Alles bereit! Sie können loslegen.', 'value_es' => '¡Todo listo! Está listo para comenzar.'],
+            ['translation_key' => 'setup.go_to_dashboard', 'category' => 'buttons', 'page_context' => 'setup_checklist',
+             'value_en' => 'Go to Dashboard', 'value_fr' => 'Aller au tableau de bord', 'value_de' => 'Zum Dashboard', 'value_es' => 'Ir al panel'],
+
+            // Video section
+            ['translation_key' => 'setup.watch_video', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Watch Getting Started', 'value_fr' => 'Regarder la mise en route', 'value_de' => 'Erste Schritte ansehen', 'value_es' => 'Ver inicio rápido'],
+            ['translation_key' => 'setup.video_duration', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => '2 min video', 'value_fr' => 'vidéo de 2 min', 'value_de' => '2 Min. Video', 'value_es' => 'video de 2 min'],
+
+            // Quick Tips
+            ['translation_key' => 'setup.quick_tips', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Quick Tips', 'value_fr' => 'Conseils rapides', 'value_de' => 'Schnelle Tipps', 'value_es' => 'Consejos rápidos'],
+            ['translation_key' => 'setup.tip_time', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Setup takes about 5 minutes', 'value_fr' => 'La configuration prend environ 5 minutes', 'value_de' => 'Die Einrichtung dauert etwa 5 Minuten', 'value_es' => 'La configuración toma unos 5 minutos'],
+            ['translation_key' => 'setup.tip_update', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'You can update settings anytime', 'value_fr' => 'Vous pouvez modifier les paramètres à tout moment', 'value_de' => 'Sie können Einstellungen jederzeit ändern', 'value_es' => 'Puede actualizar la configuración en cualquier momento'],
+            ['translation_key' => 'setup.tip_help', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Need help?', 'value_fr' => 'Besoin d\'aide?', 'value_de' => 'Brauchen Sie Hilfe?', 'value_es' => '¿Necesita ayuda?'],
+            ['translation_key' => 'setup.contact_support', 'category' => 'general_content', 'page_context' => 'setup_checklist',
+             'value_en' => 'Contact support', 'value_fr' => 'Contacter le support', 'value_de' => 'Support kontaktieren', 'value_es' => 'Contactar soporte'],
+
+            // Skip option
+            ['translation_key' => 'setup.skip_for_now', 'category' => 'buttons', 'page_context' => 'setup_checklist',
+             'value_en' => 'Skip for now', 'value_fr' => 'Passer pour l\'instant', 'value_de' => 'Vorerst überspringen', 'value_es' => 'Omitir por ahora'],
+        ];
+    }
+
+    /**
+     * Settings - Studio Profile translations.
+     */
+    protected function getSettingsProfileTranslations(): array
+    {
+        return [
+            // Page title and breadcrumbs
+            ['translation_key' => 'settings.studio_profile', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Studio Profile', 'value_fr' => 'Profil du studio', 'value_de' => 'Studio-Profil', 'value_es' => 'Perfil del estudio'],
+            ['translation_key' => 'settings.studio_profile_title', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Studio Profile — Settings', 'value_fr' => 'Profil du studio — Paramètres', 'value_de' => 'Studio-Profil — Einstellungen', 'value_es' => 'Perfil del estudio — Configuración'],
+
+            // Basic Information Section
+            ['translation_key' => 'settings.basic_info', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Basic Information', 'value_fr' => 'Informations de base', 'value_de' => 'Grundinformationen', 'value_es' => 'Información básica'],
+            ['translation_key' => 'settings.basic_info_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Your studio name, type, and location', 'value_fr' => 'Nom, type et emplacement de votre studio', 'value_de' => 'Name, Typ und Standort Ihres Studios', 'value_es' => 'Nombre, tipo y ubicación de su estudio'],
+            ['translation_key' => 'settings.studio_name', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Studio Name', 'value_fr' => 'Nom du studio', 'value_de' => 'Studioname', 'value_es' => 'Nombre del estudio'],
+            ['translation_key' => 'settings.short_description', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Short Description', 'value_fr' => 'Brève description', 'value_de' => 'Kurzbeschreibung', 'value_es' => 'Descripción corta'],
+            ['translation_key' => 'settings.subdomain', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Subdomain', 'value_fr' => 'Sous-domaine', 'value_de' => 'Subdomain', 'value_es' => 'Subdominio'],
+            ['translation_key' => 'settings.studio_types', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Studio Types', 'value_fr' => 'Types de studio', 'value_de' => 'Studiotypen', 'value_es' => 'Tipos de estudio'],
+            ['translation_key' => 'settings.timezone', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Timezone', 'value_fr' => 'Fuseau horaire', 'value_de' => 'Zeitzone', 'value_es' => 'Zona horaria'],
+            ['translation_key' => 'settings.location', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Location', 'value_fr' => 'Emplacement', 'value_de' => 'Standort', 'value_es' => 'Ubicación'],
+            ['translation_key' => 'settings.no_location_set', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'No location set', 'value_fr' => 'Aucun emplacement défini', 'value_de' => 'Kein Standort festgelegt', 'value_es' => 'Sin ubicación establecida'],
+            ['translation_key' => 'settings.edit_in_location', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Edit in Location Settings', 'value_fr' => 'Modifier dans Paramètres d\'emplacement', 'value_de' => 'In Standorteinstellungen bearbeiten', 'value_es' => 'Editar en Configuración de ubicación'],
+            ['translation_key' => 'settings.add_location', 'category' => 'buttons', 'page_context' => 'settings',
+             'value_en' => 'Add a location', 'value_fr' => 'Ajouter un emplacement', 'value_de' => 'Standort hinzufügen', 'value_es' => 'Agregar ubicación'],
+
+            // Branding Section
+            ['translation_key' => 'settings.branding', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Branding', 'value_fr' => 'Image de marque', 'value_de' => 'Branding', 'value_es' => 'Marca'],
+            ['translation_key' => 'settings.branding_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Logo and cover image for your booking page', 'value_fr' => 'Logo et image de couverture pour votre page de réservation', 'value_de' => 'Logo und Titelbild für Ihre Buchungsseite', 'value_es' => 'Logo e imagen de portada para su página de reservas'],
+            ['translation_key' => 'settings.studio_logo', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Studio Logo', 'value_fr' => 'Logo du studio', 'value_de' => 'Studio-Logo', 'value_es' => 'Logo del estudio'],
+            ['translation_key' => 'settings.cover_image', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Cover Image', 'value_fr' => 'Image de couverture', 'value_de' => 'Titelbild', 'value_es' => 'Imagen de portada'],
+            ['translation_key' => 'settings.upload_logo', 'category' => 'buttons', 'page_context' => 'settings',
+             'value_en' => 'Upload Logo', 'value_fr' => 'Télécharger le logo', 'value_de' => 'Logo hochladen', 'value_es' => 'Subir logo'],
+            ['translation_key' => 'settings.upload_cover', 'category' => 'buttons', 'page_context' => 'settings',
+             'value_en' => 'Upload Cover', 'value_fr' => 'Télécharger la couverture', 'value_de' => 'Titelbild hochladen', 'value_es' => 'Subir portada'],
+            ['translation_key' => 'settings.logo_size_hint', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => '400x400px, max 5MB', 'value_fr' => '400x400px, max 5Mo', 'value_de' => '400x400px, max 5MB', 'value_es' => '400x400px, máx 5MB'],
+            ['translation_key' => 'settings.cover_size_hint', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => '1200x400px, max 5MB', 'value_fr' => '1200x400px, max 5Mo', 'value_de' => '1200x400px, max 5MB', 'value_es' => '1200x400px, máx 5MB'],
+
+            // About Section
+            ['translation_key' => 'settings.about_studio', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'About Your Studio', 'value_fr' => 'À propos de votre studio', 'value_de' => 'Über Ihr Studio', 'value_es' => 'Acerca de su estudio'],
+            ['translation_key' => 'settings.about_studio_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Description shown on your public booking page', 'value_fr' => 'Description affichée sur votre page de réservation publique', 'value_de' => 'Beschreibung auf Ihrer öffentlichen Buchungsseite', 'value_es' => 'Descripción mostrada en su página de reservas pública'],
+            ['translation_key' => 'settings.no_description', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'No description set. Click Edit to add a description.', 'value_fr' => 'Aucune description. Cliquez sur Modifier pour ajouter une description.', 'value_de' => 'Keine Beschreibung festgelegt. Klicken Sie auf Bearbeiten.', 'value_es' => 'Sin descripción. Haga clic en Editar para agregar.'],
+            ['translation_key' => 'settings.appears_on_booking', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'This appears on your public booking page', 'value_fr' => 'Ceci apparaît sur votre page de réservation publique', 'value_de' => 'Dies erscheint auf Ihrer öffentlichen Buchungsseite', 'value_es' => 'Esto aparece en su página de reservas pública'],
+
+            // Gallery Section
+            ['translation_key' => 'settings.studio_gallery', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Studio Gallery', 'value_fr' => 'Galerie du studio', 'value_de' => 'Studio-Galerie', 'value_es' => 'Galería del estudio'],
+            ['translation_key' => 'settings.gallery_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Showcase your studio with photos (displays on booking page)', 'value_fr' => 'Présentez votre studio avec des photos (page de réservation)', 'value_de' => 'Präsentieren Sie Ihr Studio mit Fotos (Buchungsseite)', 'value_es' => 'Muestre su estudio con fotos (página de reservas)'],
+            ['translation_key' => 'settings.add_image', 'category' => 'buttons', 'page_context' => 'settings',
+             'value_en' => 'Add Image', 'value_fr' => 'Ajouter une image', 'value_de' => 'Bild hinzufügen', 'value_es' => 'Agregar imagen'],
+            ['translation_key' => 'settings.add_images', 'category' => 'buttons', 'page_context' => 'settings',
+             'value_en' => 'Add Images', 'value_fr' => 'Ajouter des images', 'value_de' => 'Bilder hinzufügen', 'value_es' => 'Agregar imágenes'],
+            ['translation_key' => 'settings.drag_to_reorder', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Drag to reorder', 'value_fr' => 'Glisser pour réorganiser', 'value_de' => 'Ziehen zum Neuordnen', 'value_es' => 'Arrastrar para reordenar'],
+            ['translation_key' => 'settings.edit_caption', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Edit caption', 'value_fr' => 'Modifier la légende', 'value_de' => 'Beschriftung bearbeiten', 'value_es' => 'Editar título'],
+
+            // Contact Information Section
+            ['translation_key' => 'settings.contact_info', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Contact Information', 'value_fr' => 'Informations de contact', 'value_de' => 'Kontaktinformationen', 'value_es' => 'Información de contacto'],
+            ['translation_key' => 'settings.contact_info_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Public and internal contact details', 'value_fr' => 'Coordonnées publiques et internes', 'value_de' => 'Öffentliche und interne Kontaktdaten', 'value_es' => 'Datos de contacto públicos e internos'],
+            ['translation_key' => 'settings.studio_email', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Studio Email (Public)', 'value_fr' => 'Email du studio (public)', 'value_de' => 'Studio-E-Mail (öffentlich)', 'value_es' => 'Email del estudio (público)'],
+            ['translation_key' => 'settings.studio_phone', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Studio Phone (Public)', 'value_fr' => 'Téléphone du studio (public)', 'value_de' => 'Studio-Telefon (öffentlich)', 'value_es' => 'Teléfono del estudio (público)'],
+            ['translation_key' => 'settings.contact_name', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Contact Name (Internal)', 'value_fr' => 'Nom du contact (interne)', 'value_de' => 'Kontaktname (intern)', 'value_es' => 'Nombre de contacto (interno)'],
+            ['translation_key' => 'settings.support_email', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Support Email (Automated)', 'value_fr' => 'Email de support (automatisé)', 'value_de' => 'Support-E-Mail (automatisiert)', 'value_es' => 'Email de soporte (automatizado)'],
+
+            // Social Links Section
+            ['translation_key' => 'settings.social_links', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Social Links', 'value_fr' => 'Liens sociaux', 'value_de' => 'Soziale Links', 'value_es' => 'Enlaces sociales'],
+            ['translation_key' => 'settings.social_links_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Connect your social media profiles', 'value_fr' => 'Connectez vos profils de réseaux sociaux', 'value_de' => 'Verbinden Sie Ihre Social-Media-Profile', 'value_es' => 'Conecte sus perfiles de redes sociales'],
+            ['translation_key' => 'settings.not_connected', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Not connected', 'value_fr' => 'Non connecté', 'value_de' => 'Nicht verbunden', 'value_es' => 'No conectado'],
+
+            // Amenities Section
+            ['translation_key' => 'settings.amenities', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Amenities', 'value_fr' => 'Commodités', 'value_de' => 'Annehmlichkeiten', 'value_es' => 'Comodidades'],
+            ['translation_key' => 'settings.amenities_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Facilities available at your studio', 'value_fr' => 'Installations disponibles dans votre studio', 'value_de' => 'Einrichtungen in Ihrem Studio', 'value_es' => 'Instalaciones disponibles en su estudio'],
+            ['translation_key' => 'settings.no_amenities', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'No amenities selected', 'value_fr' => 'Aucune commodité sélectionnée', 'value_de' => 'Keine Annehmlichkeiten ausgewählt', 'value_es' => 'Sin comodidades seleccionadas'],
+
+            // Countries Section
+            ['translation_key' => 'settings.countries_operation', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Countries of Operation', 'value_fr' => 'Pays d\'opération', 'value_de' => 'Betriebsländer', 'value_es' => 'Países de operación'],
+            ['translation_key' => 'settings.countries_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Where your studio operates and serves clients', 'value_fr' => 'Où votre studio opère et sert les clients', 'value_de' => 'Wo Ihr Studio tätig ist und Kunden bedient', 'value_es' => 'Donde su estudio opera y atiende clientes'],
+            ['translation_key' => 'settings.no_countries', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'No countries selected', 'value_fr' => 'Aucun pays sélectionné', 'value_de' => 'Keine Länder ausgewählt', 'value_es' => 'Sin países seleccionados'],
+
+            // Currency Section
+            ['translation_key' => 'settings.business_currencies', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Business Currencies', 'value_fr' => 'Devises commerciales', 'value_de' => 'Geschäftswährungen', 'value_es' => 'Monedas comerciales'],
+            ['translation_key' => 'settings.currencies_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Currencies accepted for pricing and transactions', 'value_fr' => 'Devises acceptées pour les prix et transactions', 'value_de' => 'Akzeptierte Währungen für Preise und Transaktionen', 'value_es' => 'Monedas aceptadas para precios y transacciones'],
+            ['translation_key' => 'settings.default_currency', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Default Currency', 'value_fr' => 'Devise par défaut', 'value_de' => 'Standardwährung', 'value_es' => 'Moneda predeterminada'],
+            ['translation_key' => 'settings.accepted_currencies', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Accepted Currencies', 'value_fr' => 'Devises acceptées', 'value_de' => 'Akzeptierte Währungen', 'value_es' => 'Monedas aceptadas'],
+            ['translation_key' => 'settings.no_currencies', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'No currencies selected', 'value_fr' => 'Aucune devise sélectionnée', 'value_de' => 'Keine Währungen ausgewählt', 'value_es' => 'Sin monedas seleccionadas'],
+            ['translation_key' => 'settings.default', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Default', 'value_fr' => 'Par défaut', 'value_de' => 'Standard', 'value_es' => 'Predeterminado'],
+
+            // Language Settings Section
+            ['translation_key' => 'settings.language_settings', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Language Settings', 'value_fr' => 'Paramètres de langue', 'value_de' => 'Spracheinstellungen', 'value_es' => 'Configuración de idioma'],
+            ['translation_key' => 'settings.language_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Configure language preferences for your studio', 'value_fr' => 'Configurez les préférences de langue de votre studio', 'value_de' => 'Konfigurieren Sie die Spracheinstellungen für Ihr Studio', 'value_es' => 'Configure las preferencias de idioma de su estudio'],
+            ['translation_key' => 'settings.studio_languages', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Studio Languages', 'value_fr' => 'Langues du studio', 'value_de' => 'Studio-Sprachen', 'value_es' => 'Idiomas del estudio'],
+            ['translation_key' => 'settings.default_studio_language', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Default Studio Language', 'value_fr' => 'Langue du studio par défaut', 'value_de' => 'Standard-Studio-Sprache', 'value_es' => 'Idioma predeterminado del estudio'],
+            ['translation_key' => 'settings.booking_page_language', 'category' => 'form_labels', 'page_context' => 'settings',
+             'value_en' => 'Booking Page Language', 'value_fr' => 'Langue de la page de réservation', 'value_de' => 'Sprache der Buchungsseite', 'value_es' => 'Idioma de la página de reservas'],
+
+            // Cancellation Policy Section
+            ['translation_key' => 'settings.cancellation_policy', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Booking Cancellation Policy', 'value_fr' => 'Politique d\'annulation des réservations', 'value_de' => 'Stornierungsrichtlinie für Buchungen', 'value_es' => 'Política de cancelación de reservas'],
+            ['translation_key' => 'settings.cancellation_desc', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'How far in advance clients must cancel bookings', 'value_fr' => 'Combien de temps à l\'avance les clients doivent annuler', 'value_de' => 'Wie weit im Voraus Kunden stornieren müssen', 'value_es' => 'Con cuánta anticipación deben cancelar los clientes'],
+            ['translation_key' => 'settings.cancellations_disabled', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Cancellations Disabled', 'value_fr' => 'Annulations désactivées', 'value_de' => 'Stornierungen deaktiviert', 'value_es' => 'Cancelaciones deshabilitadas'],
+            ['translation_key' => 'settings.cannot_cancel', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Clients cannot cancel their bookings', 'value_fr' => 'Les clients ne peuvent pas annuler leurs réservations', 'value_de' => 'Kunden können ihre Buchungen nicht stornieren', 'value_es' => 'Los clientes no pueden cancelar sus reservas'],
+            ['translation_key' => 'settings.must_cancel_advance', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Clients must cancel at least this far in advance', 'value_fr' => 'Les clients doivent annuler au moins ce délai à l\'avance', 'value_de' => 'Kunden müssen mindestens so weit im Voraus stornieren', 'value_es' => 'Los clientes deben cancelar con esta anticipación mínima'],
+
+            // Common UI elements
+            ['translation_key' => 'settings.not_set', 'category' => 'general_content', 'page_context' => 'settings',
+             'value_en' => 'Not set', 'value_fr' => 'Non défini', 'value_de' => 'Nicht festgelegt', 'value_es' => 'No establecido'],
+            ['translation_key' => 'btn.edit', 'category' => 'buttons', 'page_context' => null,
+             'value_en' => 'Edit', 'value_fr' => 'Modifier', 'value_de' => 'Bearbeiten', 'value_es' => 'Editar'],
+            ['translation_key' => 'btn.save', 'category' => 'buttons', 'page_context' => null,
+             'value_en' => 'Save', 'value_fr' => 'Enregistrer', 'value_de' => 'Speichern', 'value_es' => 'Guardar'],
+            ['translation_key' => 'btn.cancel', 'category' => 'buttons', 'page_context' => null,
+             'value_en' => 'Cancel', 'value_fr' => 'Annuler', 'value_de' => 'Abbrechen', 'value_es' => 'Cancelar'],
+            ['translation_key' => 'btn.delete', 'category' => 'buttons', 'page_context' => null,
+             'value_en' => 'Delete', 'value_fr' => 'Supprimer', 'value_de' => 'Löschen', 'value_es' => 'Eliminar'],
+            ['translation_key' => 'btn.upload', 'category' => 'buttons', 'page_context' => null,
+             'value_en' => 'Upload', 'value_fr' => 'Télécharger', 'value_de' => 'Hochladen', 'value_es' => 'Subir'],
+            ['translation_key' => 'btn.save_changes', 'category' => 'buttons', 'page_context' => null,
+             'value_en' => 'Save Changes', 'value_fr' => 'Enregistrer les modifications', 'value_de' => 'Änderungen speichern', 'value_es' => 'Guardar cambios'],
+
+            // Breadcrumb navigation
+            ['translation_key' => 'nav.dashboard', 'category' => 'general_content', 'page_context' => null,
+             'value_en' => 'Dashboard', 'value_fr' => 'Tableau de bord', 'value_de' => 'Dashboard', 'value_es' => 'Panel'],
+            ['translation_key' => 'nav.settings', 'category' => 'general_content', 'page_context' => null,
+             'value_en' => 'Settings', 'value_fr' => 'Paramètres', 'value_de' => 'Einstellungen', 'value_es' => 'Configuración'],
         ];
     }
 }

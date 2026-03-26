@@ -10,6 +10,7 @@ use App\Models\BookingProfile;
 use App\Services\FeatureService;
 use App\Services\BookingProfileInviteService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class MarketplaceController extends Controller
 {
@@ -257,5 +258,70 @@ class MarketplaceController extends Controller
                 'message' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Generate API credentials for FitNearYou sync.
+     */
+    public function generateFitNearYouCredentials(Request $request)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Get the FitNearYou feature
+        $feature = Feature::where('slug', 'fitnearyou-sync')->first();
+
+        if (!$feature || !$feature->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'FitNearYou sync feature is not available.',
+            ], 404);
+        }
+
+        // Check if feature is enabled for this host
+        $hostFeature = HostFeature::getForHost($host->id, $feature->id);
+
+        if (!$hostFeature || !$hostFeature->is_enabled) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please enable the FitNearYou Sync feature first.',
+            ], 400);
+        }
+
+        try {
+            // Generate new API credentials
+            $apiKey = 'fny_' . Str::random(32);
+            $apiSecret = Str::random(64);
+
+            // Update config with new credentials
+            $config = $hostFeature->config ?? [];
+            $config['api_key'] = $apiKey;
+            $config['api_secret'] = hash('sha256', $apiSecret); // Store hashed secret
+            $config['credentials_generated_at'] = now()->toIso8601String();
+
+            $hostFeature->update(['config' => $config]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'API credentials generated successfully. Copy your secret key now - it will not be shown again.',
+                'credentials' => [
+                    'api_key' => $apiKey,
+                    'api_secret' => $apiSecret, // Return plain text once
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate API credentials. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Regenerate API credentials for FitNearYou sync.
+     */
+    public function regenerateFitNearYouCredentials(Request $request)
+    {
+        return $this->generateFitNearYouCredentials($request);
     }
 }

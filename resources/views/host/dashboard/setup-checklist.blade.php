@@ -1,14 +1,20 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Complete Your Studio Setup')
+@section('title', $trans['setup.page_title'] ?? 'Complete Your Studio Setup')
 
 @section('content')
 <div class="max-w-6xl mx-auto">
     {{-- Compact Header with Progress --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold">Welcome to {{ $host->studio_name ?? 'Your Studio' }}!</h1>
-            <p class="text-base-content/60 text-sm">Complete setup to unlock all features</p>
+            <h1 class="text-2xl font-bold">
+                @if($host->studio_name)
+                    {{ str_replace(':studio_name', $host->studio_name, $trans['setup.welcome'] ?? 'Welcome to :studio_name!') }}
+                @else
+                    {{ $trans['setup.welcome_default'] ?? 'Welcome to Your Studio!' }}
+                @endif
+            </h1>
+            <p class="text-base-content/60 text-sm">{{ $trans['setup.subtitle'] ?? 'Complete setup to unlock all features' }}</p>
         </div>
         <div class="flex items-center gap-4">
             {{-- Progress Ring - Compact --}}
@@ -27,7 +33,7 @@
             </div>
             <div class="text-sm">
                 <div class="font-semibold">{{ $completedCount }}/{{ $totalCount }}</div>
-                <div class="text-base-content/50">completed</div>
+                <div class="text-base-content/50">{{ $trans['setup.completed'] ?? 'completed' }}</div>
             </div>
         </div>
     </div>
@@ -40,7 +46,7 @@
                 <div class="card-body p-4">
                     <h2 class="font-semibold mb-4 flex items-center gap-2">
                         <span class="icon-[tabler--list-check] size-5 text-primary"></span>
-                        Setup Checklist
+                        {{ $trans['setup.checklist_title'] ?? 'Setup Checklist' }}
                     </h2>
 
                     <div class="space-y-2">
@@ -57,23 +63,23 @@
                                 </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Verify Your Email</div>
+                                <div class="font-medium text-sm">{{ $trans['setup.verify_email'] ?? 'Verify Your Email' }}</div>
                                 <div class="text-xs text-base-content/50 truncate">
                                     @if($item['completed'])
-                                        Email verified
+                                        {{ $trans['setup.email_verified'] ?? 'Email verified' }}
                                     @else
-                                        Check your inbox for verification link
+                                        {{ $trans['setup.check_inbox'] ?? 'Check your inbox for verification link' }}
                                     @endif
                                 </div>
                             </div>
                             @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                                <span class="badge badge-success badge-soft badge-sm">{{ $trans['setup.done'] ?? 'Done' }}</span>
                             @else
                                 <form action="{{ route('verification.send') }}" method="POST" class="flex-shrink-0">
                                     @csrf
                                     <button type="submit" class="btn btn-warning btn-sm">
                                         <span class="icon-[tabler--send] size-4"></span>
-                                        Resend Email
+                                        {{ $trans['setup.resend_email'] ?? 'Resend Email' }}
                                     </button>
                                 </form>
                             @endif
@@ -93,11 +99,11 @@
                                 </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Complete Studio Profile</div>
-                                <div class="text-xs text-base-content/50 truncate">Name, logo & contact info</div>
+                                <div class="font-medium text-sm">{{ $trans['setup.studio_profile'] ?? 'Complete Studio Profile' }}</div>
+                                <div class="text-xs text-base-content/50 truncate">{{ $trans['setup.studio_profile_desc'] ?? 'Name, logo & contact info' }}</div>
                             </div>
                             @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                                <span class="badge badge-success badge-soft badge-sm">{{ $trans['setup.done'] ?? 'Done' }}</span>
                             @else
                                 <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
                             @endif
@@ -117,11 +123,11 @@
                                 </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Setup Payment System</div>
-                                <div class="text-xs text-base-content/50 truncate">Connect Stripe to accept payments</div>
+                                <div class="font-medium text-sm">{{ $trans['setup.payment_system'] ?? 'Setup Payment System' }}</div>
+                                <div class="text-xs text-base-content/50 truncate">{{ $trans['setup.payment_desc'] ?? 'Connect Stripe to accept payments' }}</div>
                             </div>
                             @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                                <span class="badge badge-success badge-soft badge-sm">{{ $trans['setup.done'] ?? 'Done' }}</span>
                             @else
                                 <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
                             @endif
@@ -141,11 +147,11 @@
                                 </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Setup Location</div>
-                                <div class="text-xs text-base-content/50 truncate">Address & room configuration</div>
+                                <div class="font-medium text-sm">{{ $trans['setup.location'] ?? 'Setup Location' }}</div>
+                                <div class="text-xs text-base-content/50 truncate">{{ $trans['setup.location_desc'] ?? 'Address & room configuration' }}</div>
                             </div>
                             @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                                <span class="badge badge-success badge-soft badge-sm">{{ $trans['setup.done'] ?? 'Done' }}</span>
                             @else
                                 <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
                             @endif
@@ -165,11 +171,11 @@
                                 </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Setup Instructor / Staff</div>
-                                <div class="text-xs text-base-content/50 truncate">Add team members with availability & time slots</div>
+                                <div class="font-medium text-sm">{{ $trans['setup.instructor'] ?? 'Setup Instructor / Staff' }}</div>
+                                <div class="text-xs text-base-content/50 truncate">{{ $trans['setup.instructor_desc'] ?? 'Add team members with availability & time slots' }}</div>
                             </div>
                             @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                                <span class="badge badge-success badge-soft badge-sm">{{ $trans['setup.done'] ?? 'Done' }}</span>
                             @else
                                 <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
                             @endif
@@ -189,11 +195,11 @@
                                 </div>
                             @endif
                             <div class="flex-1 min-w-0">
-                                <div class="font-medium text-sm">Classes and Services</div>
-                                <div class="text-xs text-base-content/50 truncate">Create your classes, services & memberships</div>
+                                <div class="font-medium text-sm">{{ $trans['setup.catalog'] ?? 'Classes and Services' }}</div>
+                                <div class="text-xs text-base-content/50 truncate">{{ $trans['setup.catalog_desc'] ?? 'Create your classes, services & memberships' }}</div>
                             </div>
                             @if($item['completed'])
-                                <span class="badge badge-success badge-soft badge-sm">Done</span>
+                                <span class="badge badge-success badge-soft badge-sm">{{ $trans['setup.done'] ?? 'Done' }}</span>
                             @else
                                 <span class="icon-[tabler--chevron-right] size-5 text-base-content/30"></span>
                             @endif
@@ -204,11 +210,11 @@
                     @if($progress === 100)
                     <div class="mt-4 p-4 bg-success/10 rounded-lg text-center">
                         <span class="icon-[tabler--confetti] size-6 text-success mb-2"></span>
-                        <p class="font-medium text-success">All set! You're ready to go.</p>
+                        <p class="font-medium text-success">{{ $trans['setup.all_set'] ?? "All set! You're ready to go." }}</p>
                         <form action="{{ route('dashboard.skip-setup') }}" method="POST" class="mt-3">
                             @csrf
                             <button type="submit" class="btn btn-success btn-sm">
-                                Go to Dashboard
+                                {{ $trans['setup.go_to_dashboard'] ?? 'Go to Dashboard' }}
                                 <span class="icon-[tabler--arrow-right] size-4"></span>
                             </button>
                         </form>
@@ -228,8 +234,8 @@
                             <div class="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-2 group-hover:bg-primary/30 transition-all">
                                 <span class="icon-[tabler--player-play-filled] size-7 text-primary"></span>
                             </div>
-                            <p class="font-medium text-sm">Watch Getting Started</p>
-                            <p class="text-xs text-base-content/50">2 min video</p>
+                            <p class="font-medium text-sm">{{ $trans['setup.watch_video'] ?? 'Watch Getting Started' }}</p>
+                            <p class="text-xs text-base-content/50">{{ $trans['setup.video_duration'] ?? '2 min video' }}</p>
                         </div>
                     </div>
                 </div>
@@ -240,20 +246,20 @@
                 <div class="card-body p-4">
                     <h3 class="font-semibold text-sm flex items-center gap-2 mb-3">
                         <span class="icon-[tabler--bulb] size-4 text-info"></span>
-                        Quick Tips
+                        {{ $trans['setup.quick_tips'] ?? 'Quick Tips' }}
                     </h3>
                     <ul class="space-y-2 text-sm text-base-content/70">
                         <li class="flex items-start gap-2">
                             <span class="icon-[tabler--check] size-4 text-success mt-0.5 flex-shrink-0"></span>
-                            <span>Setup takes about 5 minutes</span>
+                            <span>{{ $trans['setup.tip_time'] ?? 'Setup takes about 5 minutes' }}</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="icon-[tabler--check] size-4 text-success mt-0.5 flex-shrink-0"></span>
-                            <span>You can update settings anytime</span>
+                            <span>{{ $trans['setup.tip_update'] ?? 'You can update settings anytime' }}</span>
                         </li>
                         <li class="flex items-start gap-2">
                             <span class="icon-[tabler--check] size-4 text-success mt-0.5 flex-shrink-0"></span>
-                            <span>Need help? <a href="#" class="link link-primary">Contact support</a></span>
+                            <span>{{ $trans['setup.tip_help'] ?? 'Need help?' }} <a href="#" class="link link-primary">{{ $trans['setup.contact_support'] ?? 'Contact support' }}</a></span>
                         </li>
                     </ul>
                 </div>
@@ -264,7 +270,7 @@
             <form action="{{ route('dashboard.skip-setup') }}" method="POST">
                 @csrf
                 <button type="submit" class="btn btn-ghost btn-sm w-full text-base-content/50 hover:text-base-content">
-                    Skip for now
+                    {{ $trans['setup.skip_for_now'] ?? 'Skip for now' }}
                     <span class="icon-[tabler--arrow-right] size-4"></span>
                 </button>
             </form>

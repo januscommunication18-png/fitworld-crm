@@ -367,6 +367,353 @@
     </div>
 </div>
 
+@elseif($feature->slug === 'fitnearyou-sync')
+{{-- FitNearYou Sync Feature Layout --}}
+<div class="max-w-5xl mx-auto space-y-6">
+    {{-- Hero Header --}}
+    <div class="card bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white overflow-hidden">
+        <div class="card-body p-8 relative">
+            {{-- Background Pattern --}}
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
+                <div class="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full translate-y-1/2 -translate-x-1/2"></div>
+            </div>
+
+            <div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div class="flex items-start gap-5">
+                    <div class="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg">
+                        <span class="icon-[tabler--cloud-share] size-12"></span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <h1 class="text-3xl font-bold">{{ $feature->name }}</h1>
+                            <span class="badge badge-soft bg-white/20 border-0 text-white">Free</span>
+                        </div>
+                        <p class="text-white/80 mt-2 max-w-xl">{{ $feature->description }}</p>
+                        <div class="flex items-center gap-4 mt-4 flex-wrap">
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="icon-[tabler--calendar] size-4"></span>
+                                <span>Classes & Services</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="icon-[tabler--discount] size-4"></span>
+                                <span>Deals & Promotions</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <span class="icon-[tabler--calendar-event] size-4"></span>
+                                <span>Events</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Toggle --}}
+                <div class="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3">
+                    <div class="text-right">
+                        <p class="text-sm font-medium" id="status-text">{{ $isEnabled ? 'Feature Enabled' : 'Feature Disabled' }}</p>
+                        <span class="text-xs text-white/70" id="status-badge">{{ $isEnabled ? 'Ready to sync' : 'Toggle to enable' }}</span>
+                    </div>
+                    @if($requiresUpgrade)
+                        <a href="{{ route('settings.billing.plan') }}" class="btn btn-warning">
+                            <span class="icon-[tabler--crown] size-5"></span>
+                            Upgrade
+                        </a>
+                    @else
+                        <input type="checkbox"
+                            class="toggle toggle-lg bg-white/30 border-white/50 checked:bg-success checked:border-success"
+                            id="feature-toggle"
+                            data-feature-id="{{ $feature->id }}"
+                            {{ $isEnabled ? 'checked' : '' }}
+                        >
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Two Column Layout --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {{-- Left Column: API Credentials --}}
+        <div class="lg:col-span-2 space-y-6">
+            {{-- API Credentials Card --}}
+            <div class="card bg-base-100 {{ !$isEnabled ? 'opacity-50 pointer-events-none' : '' }}" id="credentials-card">
+                <div class="card-header border-b border-base-200 p-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold flex items-center gap-2">
+                                <span class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <span class="icon-[tabler--key] size-5 text-primary"></span>
+                                </span>
+                                API Credentials
+                            </h2>
+                            <p class="text-sm text-base-content/60 mt-1">
+                                Use these credentials in FitNearYou to sync your studio data.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @php
+                        $hasCredentials = !empty($config['api_key']);
+                    @endphp
+
+                    @if($hasCredentials)
+                        {{-- Existing Credentials --}}
+                        <div class="space-y-4">
+                            <div class="form-control">
+                                <label class="label" for="api-key">
+                                    <span class="label-text font-medium">API Key</span>
+                                </label>
+                                <div class="join w-full">
+                                    <input type="text" id="api-key" value="{{ $config['api_key'] }}" readonly
+                                        class="input input-bordered join-item flex-1 font-mono text-sm bg-base-200">
+                                    <button type="button" class="btn btn-square join-item copy-btn" data-target="api-key" title="Copy">
+                                        <span class="icon-[tabler--copy] size-5"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label" for="api-secret-display">
+                                    <span class="label-text font-medium">API Secret</span>
+                                </label>
+                                <div class="p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                                    <div class="flex items-start gap-2">
+                                        <span class="icon-[tabler--alert-triangle] size-5 text-warning flex-shrink-0 mt-0.5"></span>
+                                        <p class="text-sm text-base-content/70">
+                                            Your API secret was shown only once when generated. If you've lost it, you can regenerate new credentials below.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if(!empty($config['credentials_generated_at']))
+                            <div class="text-sm text-base-content/50">
+                                <span class="icon-[tabler--clock] size-4 inline-block mr-1"></span>
+                                Generated: {{ \Carbon\Carbon::parse($config['credentials_generated_at'])->format('M j, Y \a\t g:i A') }}
+                            </div>
+                            @endif
+
+                            <div class="divider"></div>
+
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-medium text-sm">Regenerate Credentials</p>
+                                    <p class="text-xs text-base-content/50">This will invalidate your current credentials.</p>
+                                </div>
+                                <button type="button" id="regenerate-credentials-btn" class="btn btn-outline btn-error btn-sm">
+                                    <span class="icon-[tabler--refresh] size-4"></span>
+                                    Regenerate
+                                </button>
+                            </div>
+                        </div>
+                    @else
+                        {{-- No Credentials Yet --}}
+                        <div class="text-center py-8">
+                            <div class="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                                <span class="icon-[tabler--key-off] size-10 text-primary/50"></span>
+                            </div>
+                            <h3 class="text-lg font-semibold">No Credentials Generated</h3>
+                            <p class="text-base-content/60 mt-1 max-w-sm mx-auto">
+                                Generate your API credentials to start syncing your studio data with FitNearYou.
+                            </p>
+                            <button type="button" id="generate-credentials-btn" class="btn btn-primary mt-4">
+                                <span class="icon-[tabler--key] size-5"></span>
+                                Generate API Credentials
+                            </button>
+                        </div>
+                    @endif
+
+                    {{-- Credentials Display Modal (shown after generation) --}}
+                    <div id="credentials-display" class="hidden mt-6">
+                        <div class="p-4 bg-success/10 border border-success/30 rounded-lg mb-4">
+                            <div class="flex items-start gap-2">
+                                <span class="icon-[tabler--circle-check] size-5 text-success flex-shrink-0 mt-0.5"></span>
+                                <div>
+                                    <p class="font-semibold text-success">Credentials Generated Successfully!</p>
+                                    <p class="text-sm text-base-content/70 mt-1">Copy your API secret now. It will only be shown once.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-medium">API Key</span>
+                                </label>
+                                <div class="join w-full">
+                                    <input type="text" id="new-api-key" readonly
+                                        class="input input-bordered join-item flex-1 font-mono text-sm bg-base-200">
+                                    <button type="button" class="btn btn-square join-item copy-btn" data-target="new-api-key" title="Copy">
+                                        <span class="icon-[tabler--copy] size-5"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-control">
+                                <label class="label">
+                                    <span class="label-text font-medium">API Secret</span>
+                                    <span class="label-text-alt text-error">Copy now - shown only once!</span>
+                                </label>
+                                <div class="join w-full">
+                                    <input type="text" id="new-api-secret" readonly
+                                        class="input input-bordered join-item flex-1 font-mono text-sm bg-base-200">
+                                    <button type="button" class="btn btn-square join-item copy-btn" data-target="new-api-secret" title="Copy">
+                                        <span class="icon-[tabler--copy] size-5"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- How to Use Card --}}
+            <div class="card bg-base-100 {{ !$isEnabled ? 'opacity-50 pointer-events-none' : '' }}">
+                <div class="card-header border-b border-base-200 p-5">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-info/10 flex items-center justify-center">
+                            <span class="icon-[tabler--help-hexagon] size-5 text-info"></span>
+                        </span>
+                        How to Connect with FitNearYou
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <ol class="space-y-4">
+                        <li class="flex gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-primary-content text-sm font-bold flex items-center justify-center flex-shrink-0">1</span>
+                            <div>
+                                <p class="font-medium">Generate API Credentials</p>
+                                <p class="text-sm text-base-content/60">Click the button above to generate your unique API key and secret.</p>
+                            </div>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-primary-content text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
+                            <div>
+                                <p class="font-medium">Sign Up on FitNearYou</p>
+                                <p class="text-sm text-base-content/60">Create or log into your studio account on FitNearYou marketplace.</p>
+                            </div>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-primary-content text-sm font-bold flex items-center justify-center flex-shrink-0">3</span>
+                            <div>
+                                <p class="font-medium">Enter Your Credentials</p>
+                                <p class="text-sm text-base-content/60">Go to Settings → FitCRM Sync and enter your API key and secret.</p>
+                            </div>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-primary-content text-sm font-bold flex items-center justify-center flex-shrink-0">4</span>
+                            <div>
+                                <p class="font-medium">Sync Your Data</p>
+                                <p class="text-sm text-base-content/60">Your classes, services, deals, and events will sync to FitNearYou in draft status.</p>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        {{-- Right Column: Sync Settings --}}
+        <div class="space-y-6">
+            {{-- Sync Settings Card --}}
+            <div class="card bg-base-100 {{ !$isEnabled ? 'opacity-50 pointer-events-none' : '' }}" id="sync-settings-card">
+                <div class="card-header border-b border-base-200 p-5">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center">
+                            <span class="icon-[tabler--settings] size-5 text-secondary"></span>
+                        </span>
+                        Sync Settings
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form id="config-form" class="space-y-4">
+                        <div class="form-control">
+                            <label class="cursor-pointer flex items-center justify-between p-3 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--calendar] size-5 text-primary"></span>
+                                    <span class="label-text font-medium">Sync Classes</span>
+                                </div>
+                                <input type="checkbox" name="sync_classes" class="toggle toggle-primary toggle-sm"
+                                    {{ ($config['sync_classes'] ?? true) ? 'checked' : '' }}>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="cursor-pointer flex items-center justify-between p-3 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--briefcase] size-5 text-secondary"></span>
+                                    <span class="label-text font-medium">Sync Services</span>
+                                </div>
+                                <input type="checkbox" name="sync_services" class="toggle toggle-primary toggle-sm"
+                                    {{ ($config['sync_services'] ?? true) ? 'checked' : '' }}>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="cursor-pointer flex items-center justify-between p-3 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--discount] size-5 text-success"></span>
+                                    <span class="label-text font-medium">Sync Deals</span>
+                                </div>
+                                <input type="checkbox" name="sync_deals" class="toggle toggle-primary toggle-sm"
+                                    {{ ($config['sync_deals'] ?? true) ? 'checked' : '' }}>
+                            </label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="cursor-pointer flex items-center justify-between p-3 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--calendar-event] size-5 text-warning"></span>
+                                    <span class="label-text font-medium">Sync Events</span>
+                                </div>
+                                <input type="checkbox" name="sync_events" class="toggle toggle-primary toggle-sm"
+                                    {{ ($config['sync_events'] ?? true) ? 'checked' : '' }}>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-full" id="save-config-btn">
+                            <span class="icon-[tabler--check] size-5"></span>
+                            Save Settings
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {{-- Info Card --}}
+            <div class="card bg-gradient-to-br from-info/5 to-info/10 border border-info/20">
+                <div class="card-body p-5">
+                    <div class="flex items-start gap-3">
+                        <span class="icon-[tabler--info-circle] size-6 text-info shrink-0"></span>
+                        <div>
+                            <h3 class="font-semibold text-sm">About Sync</h3>
+                            <ul class="text-sm text-base-content/70 mt-2 space-y-1 list-disc list-inside">
+                                <li>Data syncs to FitNearYou in draft status</li>
+                                <li>Review and publish items on FitNearYou</li>
+                                <li>Changes here reflect on next sync</li>
+                                <li>Keep credentials secure</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- External Link --}}
+            <a href="https://fitnearyou.com" target="_blank" class="btn btn-outline w-full">
+                <span class="icon-[tabler--external-link] size-5"></span>
+                Visit FitNearYou
+            </a>
+        </div>
+    </div>
+
+    {{-- Back Link --}}
+    <div>
+        <a href="{{ route('marketplace.index') }}" class="btn btn-ghost">
+            <span class="icon-[tabler--arrow-left] size-5"></span>
+            Back to Marketplace
+        </a>
+    </div>
+</div>
+
 @else
 {{-- Default Layout for Other Features --}}
 <div class="max-w-3xl mx-auto space-y-6">
@@ -833,6 +1180,91 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 showAlert('error', 'An error occurred. Please try again.');
             });
+        });
+    });
+
+    // FitNearYou - Generate Credentials
+    const generateCredentialsBtn = document.getElementById('generate-credentials-btn');
+    const regenerateCredentialsBtn = document.getElementById('regenerate-credentials-btn');
+
+    function generateCredentials(isRegenerate = false) {
+        const btn = isRegenerate ? regenerateCredentialsBtn : generateCredentialsBtn;
+        const originalText = btn.innerHTML;
+
+        if (isRegenerate && !confirm('Are you sure you want to regenerate your API credentials? Your current credentials will be invalidated.')) {
+            return;
+        }
+
+        btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Generating...';
+        btn.disabled = true;
+
+        const url = isRegenerate
+            ? '{{ route("marketplace.fitnearyou.regenerate-credentials") }}'
+            : '{{ route("marketplace.fitnearyou.generate-credentials") }}';
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            if (data.success) {
+                // Show credentials display
+                const credentialsDisplay = document.getElementById('credentials-display');
+                if (credentialsDisplay) {
+                    document.getElementById('new-api-key').value = data.credentials.api_key;
+                    document.getElementById('new-api-secret').value = data.credentials.api_secret;
+                    credentialsDisplay.classList.remove('hidden');
+
+                    // Scroll to credentials
+                    credentialsDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+
+                showAlert('success', data.message);
+
+                // Reload page after 3 seconds to show updated UI
+                setTimeout(() => location.reload(), 3000);
+            } else {
+                showAlert('error', data.message);
+            }
+        })
+        .catch(error => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            showAlert('error', 'An error occurred. Please try again.');
+        });
+    }
+
+    if (generateCredentialsBtn) {
+        generateCredentialsBtn.addEventListener('click', () => generateCredentials(false));
+    }
+
+    if (regenerateCredentialsBtn) {
+        regenerateCredentialsBtn.addEventListener('click', () => generateCredentials(true));
+    }
+
+    // Copy to Clipboard functionality
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.dataset.target;
+            const input = document.getElementById(targetId);
+            if (input) {
+                navigator.clipboard.writeText(input.value).then(() => {
+                    // Show copied feedback
+                    const originalHtml = this.innerHTML;
+                    this.innerHTML = '<span class="icon-[tabler--check] size-5 text-success"></span>';
+                    setTimeout(() => {
+                        this.innerHTML = originalHtml;
+                    }, 2000);
+                });
+            }
         });
     });
 });

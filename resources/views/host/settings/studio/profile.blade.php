@@ -1,6 +1,6 @@
 @extends('layouts.settings')
 
-@section('title', 'Studio Profile — Settings')
+@section('title', $trans['settings.studio_profile_title'] ?? 'Studio Profile — Settings')
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('vendor/quill/quill.snow.css') }}" />
@@ -13,11 +13,11 @@
 
 @section('breadcrumbs')
     <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
+        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('settings.index') }}"><span class="icon-[tabler--settings] me-1 size-4"></span> Settings</a></li>
+        <li><a href="{{ route('settings.index') }}"><span class="icon-[tabler--settings] me-1 size-4"></span> {{ $trans['nav.settings'] ?? 'Settings' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">Studio Profile</li>
+        <li aria-current="page">{{ $trans['settings.studio_profile'] ?? 'Studio Profile' }}</li>
     </ol>
 @endsection
 
@@ -57,56 +57,56 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Basic Information</h2>
-                    <p class="text-base-content/60 text-sm">Your studio name, type, and location</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.basic_info'] ?? 'Basic Information' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.basic_info_desc'] ?? 'Your studio name, type, and location' }}</p>
                 </div>
                 <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-basic-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
             <div class="space-y-4">
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Studio Name</label>
-                    <p class="font-medium" id="display-studio-name">{{ $host->studio_name ?? 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_name'] ?? 'Studio Name' }}</label>
+                    <p class="font-medium" id="display-studio-name">{{ $host->studio_name ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Short Description</label>
-                    <p class="font-medium" id="display-short-description">{{ $host->short_description ?: 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.short_description'] ?? 'Short Description' }}</label>
+                    <p class="font-medium" id="display-short-description">{{ $host->short_description ?: ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Subdomain</label>
-                    <p class="font-medium" id="display-subdomain">{{ $host->subdomain ? $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz') : 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.subdomain'] ?? 'Subdomain' }}</label>
+                    <p class="font-medium" id="display-subdomain">{{ $host->subdomain ? $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz') : ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Studio Types</label>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_types'] ?? 'Studio Types' }}</label>
                     <div class="flex flex-wrap gap-1" id="display-types">
                         @if($host->studio_types && count($host->studio_types) > 0)
                             @foreach($host->studio_types as $type)
                                 <span class="badge badge-primary badge-soft badge-sm">{{ $type }}</span>
                             @endforeach
                         @else
-                            <span class="text-base-content/50">Not set</span>
+                            <span class="text-base-content/50">{{ $trans['settings.not_set'] ?? 'Not set' }}</span>
                         @endif
                     </div>
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Timezone</label>
-                    <p class="font-medium" id="display-timezone">{{ $host->timezone ?? 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.timezone'] ?? 'Timezone' }}</label>
+                    <p class="font-medium" id="display-timezone">{{ $host->timezone ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Location</label>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.location'] ?? 'Location' }}</label>
                     @if($defaultLocation ?? null)
                         <p class="font-medium" id="display-location">{{ $defaultLocation->full_address }}</p>
-                        <a href="{{ route('settings.locations.edit', $defaultLocation->id) }}" class="text-xs text-primary hover:underline">Edit in Location Settings</a>
+                        <a href="{{ route('settings.locations.edit', $defaultLocation->id) }}" class="text-xs text-primary hover:underline">{{ $trans['settings.edit_in_location'] ?? 'Edit in Location Settings' }}</a>
                     @else
-                        <p class="text-base-content/50" id="display-location">No location set</p>
-                        <a href="{{ route('settings.locations.create') }}" class="text-xs text-primary hover:underline">Add a location</a>
+                        <p class="text-base-content/50" id="display-location">{{ $trans['settings.no_location_set'] ?? 'No location set' }}</p>
+                        <a href="{{ route('settings.locations.create') }}" class="text-xs text-primary hover:underline">{{ $trans['settings.add_location'] ?? 'Add a location' }}</a>
                     @endif
                 </div>
             </div>
@@ -118,15 +118,15 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Branding</h2>
-                    <p class="text-base-content/60 text-sm">Logo and cover image for your booking page</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.branding'] ?? 'Branding' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.branding_desc'] ?? 'Logo and cover image for your booking page' }}</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {{-- Logo --}}
                 <div class="space-y-3">
-                    <label class="text-sm font-medium">Studio Logo</label>
+                    <label class="text-sm font-medium">{{ $trans['settings.studio_logo'] ?? 'Studio Logo' }}</label>
                     <div class="flex items-center gap-4">
                         <div id="logo-preview" class="w-20 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
                             @if($host->logo_path)
@@ -137,16 +137,16 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         </div>
                         <div>
                             <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-logo-drawer')">
-                                <span class="icon-[tabler--upload] size-4"></span> Upload Logo
+                                <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_logo'] ?? 'Upload Logo' }}
                             </button>
-                            <p class="text-xs text-base-content/50 mt-1">400x400px, max 5MB</p>
+                            <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.logo_size_hint'] ?? '400x400px, max 5MB' }}</p>
                         </div>
                     </div>
                 </div>
 
                 {{-- Cover Image --}}
                 <div class="space-y-3">
-                    <label class="text-sm font-medium">Cover Image</label>
+                    <label class="text-sm font-medium">{{ $trans['settings.cover_image'] ?? 'Cover Image' }}</label>
                     <div class="flex items-center gap-4">
                         <div id="cover-preview" class="w-32 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
                             @if($host->cover_image_path)
@@ -157,9 +157,9 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         </div>
                         <div>
                             <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-cover-drawer')">
-                                <span class="icon-[tabler--upload] size-4"></span> Upload Cover
+                                <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_cover'] ?? 'Upload Cover' }}
                             </button>
-                            <p class="text-xs text-base-content/50 mt-1">1200x400px, max 5MB</p>
+                            <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.cover_size_hint'] ?? '1200x400px, max 5MB' }}</p>
                         </div>
                     </div>
                 </div>
@@ -172,11 +172,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-lg font-semibold">About Your Studio</h2>
-                    <p class="text-base-content/60 text-sm">Description shown on your public booking page</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.about_studio'] ?? 'About Your Studio' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.about_studio_desc'] ?? 'Description shown on your public booking page' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" id="about-edit-btn" onclick="toggleAboutEdit()">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
@@ -185,7 +185,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 @if($host->about)
                     {!! $host->about !!}
                 @else
-                    <p class="text-base-content/50 italic">No description set. Click Edit to add a description.</p>
+                    <p class="text-base-content/50 italic">{{ $trans['settings.no_description'] ?? 'No description set. Click Edit to add a description.' }}</p>
                 @endif
             </div>
 
@@ -211,11 +211,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-lg font-semibold">Studio Gallery</h2>
-                    <p class="text-base-content/60 text-sm">Showcase your studio with photos (displays on booking page)</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.studio_gallery'] ?? 'Studio Gallery' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.gallery_desc'] ?? 'Showcase your studio with photos (displays on booking page)' }}</p>
                 </div>
                 <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('upload-gallery-drawer')">
-                    <span class="icon-[tabler--plus] size-4"></span> Add Image
+                    <span class="icon-[tabler--plus] size-4"></span> {{ $trans['settings.add_image'] ?? 'Add Image' }}
                 </button>
             </div>
 
@@ -246,7 +246,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 {{-- Add More Card - Always visible --}}
                 <button type="button" id="gallery-add-more-btn" onclick="openDrawer('upload-gallery-drawer')" class="aspect-video bg-base-200 hover:bg-base-300 border-2 border-dashed border-base-content/20 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer">
                     <span class="icon-[tabler--plus] size-8 text-base-content/40"></span>
-                    <span class="text-sm text-base-content/50">Add Images</span>
+                    <span class="text-sm text-base-content/50">{{ $trans['settings.add_images'] ?? 'Add Images' }}</span>
                 </button>
             </div>
         </div>
@@ -257,30 +257,30 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Contact Information</h2>
-                    <p class="text-base-content/60 text-sm">Public and internal contact details</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.contact_info'] ?? 'Contact Information' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.contact_info_desc'] ?? 'Public and internal contact details' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-contact-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
             <div class="space-y-4">
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Studio Email (Public)</label>
-                    <p class="font-medium" id="display-studio-email">{{ $host->studio_email ?? 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_email'] ?? 'Studio Email (Public)' }}</label>
+                    <p class="font-medium" id="display-studio-email">{{ $host->studio_email ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Studio Phone (Public)</label>
-                    <p class="font-medium" id="display-phone">{{ $host->phone ?? 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_phone'] ?? 'Studio Phone (Public)' }}</label>
+                    <p class="font-medium" id="display-phone">{{ $host->phone ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Contact Name (Internal)</label>
-                    <p class="font-medium" id="display-contact-name">{{ $host->contact_name ?? 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.contact_name'] ?? 'Contact Name (Internal)' }}</label>
+                    <p class="font-medium" id="display-contact-name">{{ $host->contact_name ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Support Email (Automated)</label>
-                    <p class="font-medium" id="display-support-email">{{ $host->support_email ?? 'Not set' }}</p>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.support_email'] ?? 'Support Email (Automated)' }}</label>
+                    <p class="font-medium" id="display-support-email">{{ $host->support_email ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
             </div>
         </div>
@@ -291,30 +291,30 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Social Links</h2>
-                    <p class="text-base-content/60 text-sm">Connect your social media profiles</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.social_links'] ?? 'Social Links' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.social_links_desc'] ?? 'Connect your social media profiles' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-social-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
             <div class="space-y-3">
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--brand-instagram] size-5 text-pink-500"></span>
-                    <span id="display-instagram" class="text-sm">{{ $host->social_links['instagram'] ?? 'Not connected' }}</span>
+                    <span id="display-instagram" class="text-sm">{{ $host->social_links['instagram'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--brand-facebook] size-5 text-blue-600"></span>
-                    <span id="display-facebook" class="text-sm">{{ $host->social_links['facebook'] ?? 'Not connected' }}</span>
+                    <span id="display-facebook" class="text-sm">{{ $host->social_links['facebook'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--world] size-5 text-base-content/70"></span>
-                    <span id="display-website" class="text-sm">{{ $host->social_links['website'] ?? 'Not connected' }}</span>
+                    <span id="display-website" class="text-sm">{{ $host->social_links['website'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--brand-tiktok] size-5 text-base-content"></span>
-                    <span id="display-tiktok" class="text-sm">{{ $host->social_links['tiktok'] ?? 'Not connected' }}</span>
+                    <span id="display-tiktok" class="text-sm">{{ $host->social_links['tiktok'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
                 </div>
             </div>
         </div>
@@ -325,11 +325,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Amenities</h2>
-                    <p class="text-base-content/60 text-sm">Facilities available at your studio</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.amenities'] ?? 'Amenities' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.amenities_desc'] ?? 'Facilities available at your studio' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-amenities-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
@@ -339,7 +339,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         <span class="badge badge-soft badge-sm">{{ $amenity }}</span>
                     @endforeach
                 @else
-                    <span class="text-base-content/50 text-sm">No amenities selected</span>
+                    <span class="text-base-content/50 text-sm">{{ $trans['settings.no_amenities'] ?? 'No amenities selected' }}</span>
                 @endif
             </div>
         </div>
@@ -350,11 +350,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Countries of Operation</h2>
-                    <p class="text-base-content/60 text-sm">Where your studio operates and serves clients</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.countries_operation'] ?? 'Countries of Operation' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.countries_desc'] ?? 'Where your studio operates and serves clients' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-countries-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
@@ -369,7 +369,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         @endif
                     @endforeach
                 @else
-                    <span class="text-base-content/50 text-sm">No countries selected</span>
+                    <span class="text-base-content/50 text-sm">{{ $trans['settings.no_countries'] ?? 'No countries selected' }}</span>
                 @endif
             </div>
         </div>
@@ -380,17 +380,17 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Business Currencies</h2>
-                    <p class="text-base-content/60 text-sm">Currencies accepted for pricing and transactions</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.business_currencies'] ?? 'Business Currencies' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.currencies_desc'] ?? 'Currencies accepted for pricing and transactions' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-currency-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
             {{-- Default Currency --}}
             <div class="mb-4">
-                <label class="text-sm text-base-content/60">Default Currency</label>
+                <label class="text-sm text-base-content/60">{{ $trans['settings.default_currency'] ?? 'Default Currency' }}</label>
                 <p class="font-medium text-lg" id="display-default-currency">
                     @php $defaultCurrency = $host->default_currency ?? 'USD'; @endphp
                     @if(isset($currencies[$defaultCurrency]))
@@ -404,7 +404,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 
             {{-- All Currencies --}}
             <div>
-                <label class="text-sm text-base-content/60 mb-2 block">Accepted Currencies</label>
+                <label class="text-sm text-base-content/60 mb-2 block">{{ $trans['settings.accepted_currencies'] ?? 'Accepted Currencies' }}</label>
                 <div class="flex flex-wrap gap-2" id="display-currencies">
                     @if($host->currencies && count($host->currencies) > 0)
                         @foreach($host->currencies as $code)
@@ -414,13 +414,13 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                                     <span class="text-sm font-medium">{{ $code }}</span>
                                     <span class="text-xs text-base-content/60">{{ $currencies[$code]['name'] }}</span>
                                     @if($code === $defaultCurrency)
-                                        <span class="badge badge-primary badge-xs">Default</span>
+                                        <span class="badge badge-primary badge-xs">{{ $trans['settings.default'] ?? 'Default' }}</span>
                                     @endif
                                 </div>
                             @endif
                         @endforeach
                     @else
-                        <span class="text-base-content/50 text-sm">No currencies selected</span>
+                        <span class="text-base-content/50 text-sm">{{ $trans['settings.no_currencies'] ?? 'No currencies selected' }}</span>
                     @endif
                 </div>
             </div>
@@ -440,18 +440,18 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Language Settings</h2>
-                    <p class="text-base-content/60 text-sm">Configure language preferences for your studio</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.language_settings'] ?? 'Language Settings' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.language_desc'] ?? 'Configure language preferences for your studio' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-language-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
             <div class="space-y-4">
                 {{-- Studio Languages (Multiple Selection) --}}
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Studio Languages</label>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_languages'] ?? 'Studio Languages' }}</label>
                     <div class="flex flex-wrap gap-2" id="display-studio-languages">
                         @php
                             $studioLanguages = $host->studio_languages ?? ['en'];
@@ -471,7 +471,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 
                 {{-- Default Studio Language --}}
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Default Studio Language</label>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.default_studio_language'] ?? 'Default Studio Language' }}</label>
                     <div class="flex items-center gap-2" id="display-language-app">
                         @php $langApp = $host->default_language_app ?? 'en'; @endphp
                         @if(isset($supportedLanguages[$langApp]))
@@ -484,7 +484,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 
                 {{-- Booking Page Language --}}
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Booking Page Language</label>
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.booking_page_language'] ?? 'Booking Page Language' }}</label>
                     <div class="flex items-center gap-2" id="display-language-booking">
                         @php $langBooking = $host->default_language_booking ?? 'en'; @endphp
                         @if(isset($supportedLanguages[$langBooking]))
@@ -504,11 +504,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">Booking Cancellation Policy</h2>
-                    <p class="text-base-content/60 text-sm">How far in advance clients must cancel bookings</p>
+                    <h2 class="text-lg font-semibold">{{ $trans['settings.cancellation_policy'] ?? 'Booking Cancellation Policy' }}</h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.cancellation_desc'] ?? 'How far in advance clients must cancel bookings' }}</p>
                 </div>
                 <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-cancellation-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
 
@@ -532,11 +532,11 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
                 <div>
                     @if(!$allowCancellations)
-                        <div class="font-semibold text-error">Cancellations Disabled</div>
-                        <p class="text-sm text-base-content/60">Clients cannot cancel their bookings</p>
+                        <div class="font-semibold text-error">{{ $trans['settings.cancellations_disabled'] ?? 'Cancellations Disabled' }}</div>
+                        <p class="text-sm text-base-content/60">{{ $trans['settings.cannot_cancel'] ?? 'Clients cannot cancel their bookings' }}</p>
                     @else
                         <div class="font-semibold" id="display-cancellation-window">{{ $cancellationOptions[$cancellationHours] ?? $cancellationHours . ' hours before class' }}</div>
-                        <p class="text-sm text-base-content/60">Clients must cancel at least this far in advance</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['settings.must_cancel_advance'] ?? 'Clients must cancel at least this far in advance' }}</p>
                     @endif
                 </div>
             </div>

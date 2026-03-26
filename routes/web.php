@@ -577,6 +577,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/online-1on1-meeting/grant-access', [MarketplaceController::class, 'grantOneOnOneAccess'])->name('one-on-one.grant-access');
         Route::post('/online-1on1-meeting/revoke-access/{bookingProfile}', [MarketplaceController::class, 'revokeOneOnOneAccess'])->name('one-on-one.revoke-access');
         Route::post('/online-1on1-meeting/resend-invitation/{bookingProfile}', [MarketplaceController::class, 'resendOneOnOneInvitation'])->name('one-on-one.resend-invitation');
+
+        // FitNearYou sync routes
+        Route::post('/fitnearyou-sync/generate-credentials', [MarketplaceController::class, 'generateFitNearYouCredentials'])->name('fitnearyou.generate-credentials');
+        Route::post('/fitnearyou-sync/regenerate-credentials', [MarketplaceController::class, 'regenerateFitNearYouCredentials'])->name('fitnearyou.regenerate-credentials');
     });
 
     // 1:1 Booking Setup (Team Member)
