@@ -252,6 +252,11 @@ class FeatureSeeder extends Seeder
                         'label' => 'Sync Events',
                         'default' => true,
                     ],
+                    'sync_schedule' => [
+                        'type' => 'boolean',
+                        'label' => 'Sync Class Schedule',
+                        'default' => true,
+                    ],
                 ],
                 'default_config' => [
                     'api_key' => null,
@@ -260,6 +265,7 @@ class FeatureSeeder extends Seeder
                     'sync_services' => true,
                     'sync_deals' => true,
                     'sync_events' => true,
+                    'sync_schedule' => true,
                 ],
             ],
         ];

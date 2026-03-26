@@ -40,8 +40,8 @@ class FitNearYouApiController extends Controller
         }
 
         // Verify the secret (stored as hash)
-        $storedSecret = $hostFeature->config['api_secret'] ?? null;
-        if (!$storedSecret || !hash_equals($storedSecret, hash('sha256', $apiSecret))) {
+        $storedSecretHash = $hostFeature->config['api_secret_hash'] ?? $hostFeature->config['api_secret'] ?? null;
+        if (!$storedSecretHash || !hash_equals($storedSecretHash, hash('sha256', $apiSecret))) {
             return null;
         }
 
@@ -89,6 +89,7 @@ class FitNearYouApiController extends Controller
                 'sync_services' => $config['sync_services'] ?? true,
                 'sync_deals' => $config['sync_deals'] ?? true,
                 'sync_events' => $config['sync_events'] ?? true,
+                'sync_schedule' => $config['sync_schedule'] ?? true,
             ],
         ];
 
@@ -112,6 +113,11 @@ class FitNearYouApiController extends Controller
             $data['events'] = $this->getEvents($host);
         }
 
+        // Include scheduled class sessions if enabled
+        if ($config['sync_schedule'] ?? true) {
+            $data['schedule'] = $this->getClassSessions($host);
+        }
+
         return response()->json([
             'success' => true,
             'data' => $data,
@@ -124,32 +130,18 @@ class FitNearYouApiController extends Controller
      */
     protected function getClasses(Host $host): array
     {
-        $classes = $host->classTypes()
+        $classes = $host->classPlans()
             ->where('is_active', true)
-            ->with(['location', 'instructors'])
             ->get();
 
         return $classes->map(function ($class) {
-            return [
-                'id' => $class->id,
-                'name' => $class->name,
-                'description' => $class->description,
-                'duration_minutes' => $class->duration_minutes,
-                'max_participants' => $class->max_participants,
-                'price' => $class->price,
-                'currency' => $class->currency ?? 'USD',
-                'image_url' => $class->image_url,
-                'category' => $class->category,
-                'difficulty_level' => $class->difficulty_level,
-                'location' => $class->location ? [
-                    'name' => $class->location->name,
-                    'address' => $class->location->address,
-                ] : null,
-                'instructors' => $class->instructors->map(fn($i) => [
-                    'name' => $i->name,
-                    'photo_url' => $i->photo_url,
-                ])->toArray(),
-            ];
+            $data = $class->toArray();
+            // Add computed attributes
+            $data['image_url'] = $class->image_url;
+            $data['formatted_price'] = $class->formatted_price;
+            $data['formatted_drop_in_price'] = $class->formatted_drop_in_price;
+            $data['formatted_duration'] = $class->formatted_duration;
+            return $data;
         })->toArray();
     }
 
@@ -158,30 +150,17 @@ class FitNearYouApiController extends Controller
      */
     protected function getServices(Host $host): array
     {
-        $services = $host->services()
+        $services = $host->servicePlans()
             ->where('is_active', true)
-            ->with(['location', 'instructor'])
             ->get();
 
         return $services->map(function ($service) {
-            return [
-                'id' => $service->id,
-                'name' => $service->name,
-                'description' => $service->description,
-                'duration_minutes' => $service->duration_minutes,
-                'price' => $service->price,
-                'currency' => $service->currency ?? 'USD',
-                'image_url' => $service->image_url,
-                'category' => $service->category,
-                'location' => $service->location ? [
-                    'name' => $service->location->name,
-                    'address' => $service->location->address,
-                ] : null,
-                'instructor' => $service->instructor ? [
-                    'name' => $service->instructor->name,
-                    'photo_url' => $service->instructor->photo_url,
-                ] : null,
-            ];
+            $data = $service->toArray();
+            // Add computed attributes
+            $data['image_url'] = $service->image_url;
+            $data['formatted_price'] = $service->formatted_price;
+            $data['formatted_duration'] = $service->formatted_duration;
+            return $data;
         })->toArray();
     }
 
@@ -190,26 +169,20 @@ class FitNearYouApiController extends Controller
      */
     protected function getDeals(Host $host): array
     {
-        $offers = $host->offers()
-            ->where('is_active', true)
+        $offers = \App\Models\Offer::where('host_id', $host->id)
+            ->where('status', \App\Models\Offer::STATUS_ACTIVE)
             ->where(function ($query) {
-                $query->whereNull('expires_at')
-                    ->orWhere('expires_at', '>', now());
+                $query->whereNull('end_date')
+                    ->orWhere('end_date', '>', now());
             })
             ->get();
 
         return $offers->map(function ($offer) {
-            return [
-                'id' => $offer->id,
-                'name' => $offer->name,
-                'description' => $offer->description,
-                'discount_type' => $offer->discount_type,
-                'discount_value' => $offer->discount_value,
-                'code' => $offer->code,
-                'starts_at' => $offer->starts_at?->toIso8601String(),
-                'expires_at' => $offer->expires_at?->toIso8601String(),
-                'image_url' => $offer->image_url,
-            ];
+            $data = $offer->toArray();
+            // Add computed attributes
+            $data['formatted_discount'] = $offer->getFormattedDiscount();
+            $data['is_available'] = $offer->isAvailable();
+            return $data;
         })->toArray();
     }
 
@@ -218,28 +191,62 @@ class FitNearYouApiController extends Controller
      */
     protected function getEvents(Host $host): array
     {
-        $events = $host->events()
-            ->where('is_active', true)
-            ->where('start_date', '>=', now())
-            ->with(['location'])
+        $events = \App\Models\Event::where('host_id', $host->id)
+            ->where('status', \App\Models\Event::STATUS_PUBLISHED)
+            ->where('start_datetime', '>=', now())
             ->get();
 
         return $events->map(function ($event) {
-            return [
-                'id' => $event->id,
-                'name' => $event->name,
-                'description' => $event->description,
-                'start_date' => $event->start_date?->toIso8601String(),
-                'end_date' => $event->end_date?->toIso8601String(),
-                'price' => $event->price,
-                'currency' => $event->currency ?? 'USD',
-                'max_participants' => $event->max_participants,
-                'image_url' => $event->image_url,
-                'location' => $event->location ? [
-                    'name' => $event->location->name,
-                    'address' => $event->location->address,
-                ] : null,
-            ];
+            $data = $event->toArray();
+            // Add computed attributes
+            $data['full_address'] = $event->full_address;
+            $data['formatted_date'] = $event->formatted_date;
+            $data['formatted_time'] = $event->formatted_time;
+            $data['spots_remaining'] = $event->spots_remaining;
+            $data['is_sold_out'] = $event->is_sold_out;
+            $data['event_type_label'] = $event->event_type_label;
+            $data['skill_level_label'] = $event->skill_level_label;
+            $data['status_label'] = $event->status_label;
+            return $data;
+        })->toArray();
+    }
+
+    /**
+     * Get scheduled class sessions data for sync.
+     * Include all sessions (not just future ones) so FitHQ can show history too.
+     */
+    protected function getClassSessions(Host $host): array
+    {
+        $sessions = \App\Models\ClassSession::where('host_id', $host->id)
+            ->whereIn('status', [
+                \App\Models\ClassSession::STATUS_PUBLISHED,
+                \App\Models\ClassSession::STATUS_COMPLETED,
+                \App\Models\ClassSession::STATUS_CANCELLED,
+            ])
+            ->with(['classPlan', 'primaryInstructor', 'location', 'room'])
+            ->orderBy('start_time')
+            ->get();
+
+        return $sessions->map(function ($session) {
+            $data = $session->toArray();
+            // Add computed attributes
+            $data['display_title'] = $session->display_title;
+            $data['formatted_time_range'] = $session->formatted_time_range;
+            $data['formatted_date'] = $session->formatted_date;
+            $data['formatted_price'] = $session->formatted_price;
+            $data['formatted_duration'] = $session->formatted_duration;
+            $data['effective_price'] = $session->getEffectivePrice();
+            $data['effective_capacity'] = $session->getEffectiveCapacity();
+            $data['available_spots'] = $session->getAvailableSpots();
+            $data['is_full'] = $session->isFull();
+            // Include related data
+            $data['class_plan_name'] = $session->classPlan?->name;
+            $data['class_plan_category'] = $session->classPlan?->category;
+            $data['class_plan_difficulty'] = $session->classPlan?->difficulty_level;
+            $data['instructor_name'] = $session->primaryInstructor?->name;
+            $data['location_name'] = $session->location?->name;
+            $data['room_name'] = $session->room?->name;
+            return $data;
         })->toArray();
     }
 

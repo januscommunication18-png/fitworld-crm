@@ -371,60 +371,65 @@
 {{-- FitNearYou Sync Feature Layout --}}
 <div class="max-w-5xl mx-auto space-y-6">
     {{-- Hero Header --}}
-    <div class="card bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-600 text-white overflow-hidden">
-        <div class="card-body p-8 relative">
-            {{-- Background Pattern --}}
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
-                <div class="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full translate-y-1/2 -translate-x-1/2"></div>
-            </div>
-
-            <div class="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div class="card bg-base-100 overflow-hidden">
+        <div class="card-body p-8">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div class="flex items-start gap-5">
-                    <div class="p-4 bg-white/20 backdrop-blur-sm rounded-2xl shadow-lg">
-                        <span class="icon-[tabler--cloud-share] size-12"></span>
+                    <div class="p-4 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
+                        <span class="icon-[tabler--cloud-share] size-12 text-white"></span>
                     </div>
                     <div>
                         <div class="flex items-center gap-3 flex-wrap">
-                            <h1 class="text-3xl font-bold">{{ $feature->name }}</h1>
-                            <span class="badge badge-soft bg-white/20 border-0 text-white">Free</span>
+                            <h1 class="text-3xl font-bold text-base-content">{{ $feature->name }}</h1>
+                            <span class="badge badge-success badge-soft">Free</span>
                         </div>
-                        <p class="text-white/80 mt-2 max-w-xl">{{ $feature->description }}</p>
-                        <div class="flex items-center gap-4 mt-4 flex-wrap">
-                            <div class="flex items-center gap-2 text-sm">
-                                <span class="icon-[tabler--calendar] size-4"></span>
-                                <span>Classes & Services</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-sm">
-                                <span class="icon-[tabler--discount] size-4"></span>
-                                <span>Deals & Promotions</span>
-                            </div>
-                            <div class="flex items-center gap-2 text-sm">
-                                <span class="icon-[tabler--calendar-event] size-4"></span>
-                                <span>Events</span>
-                            </div>
+                        <p class="text-base-content/70 mt-2 max-w-xl">{{ $feature->description }}</p>
+                        <div class="flex items-center gap-3 mt-4 flex-wrap">
+                            <span class="badge badge-primary badge-soft">
+                                <span class="icon-[tabler--calendar] size-3.5 mr-1"></span>
+                                Classes & Services
+                            </span>
+                            <span class="badge badge-secondary badge-soft">
+                                <span class="icon-[tabler--discount] size-3.5 mr-1"></span>
+                                Deals & Promotions
+                            </span>
+                            <span class="badge badge-warning badge-soft">
+                                <span class="icon-[tabler--calendar-event] size-3.5 mr-1"></span>
+                                Events
+                            </span>
+                            <span class="badge badge-info badge-soft">
+                                <span class="icon-[tabler--clock] size-3.5 mr-1"></span>
+                                Schedule
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                {{-- Toggle --}}
-                <div class="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-xl px-5 py-3">
-                    <div class="text-right">
-                        <p class="text-sm font-medium" id="status-text">{{ $isEnabled ? 'Feature Enabled' : 'Feature Disabled' }}</p>
-                        <span class="text-xs text-white/70" id="status-badge">{{ $isEnabled ? 'Ready to sync' : 'Toggle to enable' }}</span>
-                    </div>
+                {{-- Enable/Disable Button --}}
+                <div class="flex flex-col items-end gap-2">
                     @if($requiresUpgrade)
                         <a href="{{ route('settings.billing.plan') }}" class="btn btn-warning">
                             <span class="icon-[tabler--crown] size-5"></span>
                             Upgrade
                         </a>
                     @else
-                        <input type="checkbox"
-                            class="toggle toggle-lg bg-white/30 border-white/50 checked:bg-success checked:border-success"
-                            id="feature-toggle"
-                            data-feature-id="{{ $feature->id }}"
-                            {{ $isEnabled ? 'checked' : '' }}
-                        >
+                        @if($isEnabled)
+                            <button type="button" id="feature-toggle-btn"
+                                class="btn btn-success"
+                                data-feature-id="{{ $feature->id }}" data-enabled="true">
+                                <span class="icon-[tabler--circle-check] size-5"></span>
+                                Enabled
+                            </button>
+                            <span class="text-xs text-base-content/50" id="status-badge">Click to disable</span>
+                        @else
+                            <button type="button" id="feature-toggle-btn"
+                                class="btn btn-primary"
+                                data-feature-id="{{ $feature->id }}" data-enabled="false">
+                                <span class="icon-[tabler--power] size-5"></span>
+                                Enable Feature
+                            </button>
+                            <span class="text-xs text-base-content/50" id="status-badge">Click to enable</span>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -474,16 +479,32 @@
                             </div>
 
                             <div class="form-control">
-                                <label class="label" for="api-secret-display">
+                                <label class="label">
                                     <span class="label-text font-medium">API Secret</span>
                                 </label>
-                                <div class="p-3 bg-warning/10 border border-warning/30 rounded-lg">
-                                    <div class="flex items-start gap-2">
-                                        <span class="icon-[tabler--alert-triangle] size-5 text-warning flex-shrink-0 mt-0.5"></span>
-                                        <p class="text-sm text-base-content/70">
-                                            Your API secret was shown only once when generated. If you've lost it, you can regenerate new credentials below.
-                                        </p>
+                                {{-- Hidden Secret Display (shows after verification) --}}
+                                <div id="api-secret-container" class="hidden">
+                                    <div class="join w-full">
+                                        <input type="text" id="api-secret-revealed" readonly
+                                            class="input input-bordered join-item flex-1 font-mono text-sm bg-base-200">
+                                        <button type="button" class="btn btn-square join-item copy-btn" data-target="api-secret-revealed" title="Copy">
+                                            <span class="icon-[tabler--copy] size-5"></span>
+                                        </button>
                                     </div>
+                                    <div class="flex items-center gap-2 mt-2 text-warning">
+                                        <span class="icon-[tabler--clock] size-4"></span>
+                                        <span class="text-sm" id="secret-countdown">Visible for 2:00</span>
+                                    </div>
+                                </div>
+                                {{-- View Secret Button --}}
+                                <div id="view-secret-btn-container">
+                                    <button type="button" id="view-secret-btn" class="btn btn-outline btn-primary w-full">
+                                        <span class="icon-[tabler--eye] size-5"></span>
+                                        View API Secret
+                                    </button>
+                                    <p class="text-xs text-base-content/50 mt-2 text-center">
+                                        A verification code will be sent to your email
+                                    </p>
                                 </div>
                             </div>
 
@@ -591,7 +612,7 @@
                             <span class="w-6 h-6 rounded-full bg-primary text-primary-content text-sm font-bold flex items-center justify-center flex-shrink-0">2</span>
                             <div>
                                 <p class="font-medium">Sign Up on FitNearYou</p>
-                                <p class="text-sm text-base-content/60">Create or log into your studio account on FitNearYou marketplace.</p>
+                                <p class="text-sm text-base-content/60">Create or log into your studio account at <a href="https://fitcrm.club/" target="_blank" class="link link-primary">fitcrm.club</a></p>
                             </div>
                         </li>
                         <li class="flex gap-3">
@@ -671,6 +692,17 @@
                             </label>
                         </div>
 
+                        <div class="form-control">
+                            <label class="cursor-pointer flex items-center justify-between p-3 bg-base-200/50 rounded-lg hover:bg-base-200 transition-colors">
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--clock] size-5 text-info"></span>
+                                    <span class="label-text font-medium">Sync Class Schedule</span>
+                                </div>
+                                <input type="checkbox" name="sync_schedule" class="toggle toggle-primary toggle-sm"
+                                    {{ ($config['sync_schedule'] ?? true) ? 'checked' : '' }}>
+                            </label>
+                        </div>
+
                         <button type="submit" class="btn btn-primary w-full" id="save-config-btn">
                             <span class="icon-[tabler--check] size-5"></span>
                             Save Settings
@@ -698,7 +730,7 @@
             </div>
 
             {{-- External Link --}}
-            <a href="https://fitnearyou.com" target="_blank" class="btn btn-outline w-full">
+            <a href="https://fitcrm.club/" target="_blank" class="btn btn-outline w-full">
                 <span class="icon-[tabler--external-link] size-5"></span>
                 Visit FitNearYou
             </a>
@@ -711,6 +743,66 @@
             <span class="icon-[tabler--arrow-left] size-5"></span>
             Back to Marketplace
         </a>
+    </div>
+</div>
+
+{{-- Verification Code Modal --}}
+<div id="verify-secret-modal" class="fixed inset-0 z-[9999] hidden">
+    {{-- Backdrop --}}
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="modal-backdrop"></div>
+
+    {{-- Modal Content --}}
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-base-100 rounded-2xl shadow-2xl max-w-md w-full p-6 relative animate-in fade-in zoom-in duration-200">
+            <button type="button" id="close-modal-btn" class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+
+            {{-- Step 1: Request Code --}}
+            <div id="modal-step-request">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--shield-lock] size-8 text-primary"></span>
+                    </div>
+                    <h3 class="text-lg font-bold">View API Secret</h3>
+                    <p class="text-base-content/60 text-sm mt-2">
+                        For security, we'll send a verification code to your email.
+                    </p>
+                </div>
+                <button type="button" id="send-code-btn" class="btn btn-primary w-full">
+                    <span class="icon-[tabler--mail] size-5"></span>
+                    Send Verification Code
+                </button>
+            </div>
+
+            {{-- Step 2: Enter Code --}}
+            <div id="modal-step-verify" class="hidden">
+                <div class="text-center mb-6">
+                    <div class="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+                        <span class="icon-[tabler--mail-check] size-8 text-success"></span>
+                    </div>
+                    <h3 class="text-lg font-bold">Enter Verification Code</h3>
+                    <p class="text-base-content/60 text-sm mt-2">
+                        We've sent a 6-digit code to your email. It expires in 10 minutes.
+                    </p>
+                </div>
+                <div class="form-control mb-4">
+                    <input type="text" id="verification-code-input" maxlength="6" placeholder="000000"
+                        class="input input-bordered text-center text-2xl font-mono tracking-widest"
+                        autocomplete="off">
+                    <label class="label">
+                        <span class="label-text-alt text-error hidden" id="code-error"></span>
+                    </label>
+                </div>
+                <button type="button" id="verify-code-btn" class="btn btn-primary w-full">
+                    <span class="icon-[tabler--check] size-5"></span>
+                    Verify Code
+                </button>
+                <button type="button" id="resend-code-btn" class="btn btn-ghost btn-sm w-full mt-2">
+                    Didn't receive the code? Resend
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1011,6 +1103,73 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Toast notification helper
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        const bgClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-error' : type === 'warning' ? 'alert-warning' : 'alert-info';
+        const iconClass = type === 'success' ? 'icon-[tabler--check]' : type === 'error' ? 'icon-[tabler--x]' : type === 'warning' ? 'icon-[tabler--alert-triangle]' : 'icon-[tabler--info-circle]';
+
+        toast.className = `alert ${bgClass} fixed top-4 right-4 z-[10000] max-w-sm shadow-lg transition-all duration-300`;
+        toast.style.transform = 'translateX(100%)';
+        toast.style.opacity = '0';
+        toast.innerHTML = `<span class="${iconClass} size-5"></span><span>${message}</span>`;
+        document.body.appendChild(toast);
+
+        // Slide in
+        requestAnimationFrame(() => {
+            toast.style.transform = 'translateX(0)';
+            toast.style.opacity = '1';
+        });
+
+        // Slide out after delay
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // Handle FitNearYou feature toggle button
+    const featureToggleBtn = document.getElementById('feature-toggle-btn');
+    if (featureToggleBtn) {
+        featureToggleBtn.addEventListener('click', function() {
+            const isCurrentlyEnabled = this.dataset.enabled === 'true';
+            const enable = !isCurrentlyEnabled;
+
+            // Show loading state
+            const originalText = this.innerHTML;
+            this.innerHTML = '<span class="loading loading-spinner loading-sm"></span> ' + (enable ? 'Enabling...' : 'Disabling...');
+            this.disabled = true;
+
+            fetch(`{{ url('/marketplace') }}/${featureId}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ enable: enable })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Reload page to show updated state
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        });
+    }
+
     // Handle config form submission
     if (configForm) {
         configForm.addEventListener('submit', function(e) {
@@ -1054,15 +1213,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.disabled = false;
 
                 if (data.success) {
-                    showAlert('success', data.message);
+                    if (typeof showToast === 'function') {
+                        showToast(data.message, 'success');
+                    } else {
+                        showAlert('success', data.message);
+                    }
                 } else {
-                    showAlert('error', data.message || 'Failed to save configuration.');
+                    if (typeof showToast === 'function') {
+                        showToast(data.message || 'Failed to save configuration.', 'error');
+                    } else {
+                        showAlert('error', data.message || 'Failed to save configuration.');
+                    }
                 }
             })
             .catch(error => {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
-                showAlert('error', 'An error occurred. Please try again.');
+                if (typeof showToast === 'function') {
+                    showToast('An error occurred. Please try again.', 'error');
+                } else {
+                    showAlert('error', 'An error occurred. Please try again.');
+                }
             });
         });
     }
@@ -1227,18 +1398,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     credentialsDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
 
-                showAlert('success', data.message);
+                showToast(data.message, 'success');
 
                 // Reload page after 3 seconds to show updated UI
                 setTimeout(() => location.reload(), 3000);
             } else {
-                showAlert('error', data.message);
+                showToast(data.message, 'error');
             }
         })
         .catch(error => {
             btn.innerHTML = originalText;
             btn.disabled = false;
-            showAlert('error', 'An error occurred. Please try again.');
+            showToast('An error occurred. Please try again.', 'error');
         });
     }
 
@@ -1267,6 +1438,201 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // View Secret Flow
+    const viewSecretBtn = document.getElementById('view-secret-btn');
+    const verifySecretModal = document.getElementById('verify-secret-modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const modalBackdrop = document.getElementById('modal-backdrop');
+    const sendCodeBtn = document.getElementById('send-code-btn');
+    const verifyCodeBtn = document.getElementById('verify-code-btn');
+    const resendCodeBtn = document.getElementById('resend-code-btn');
+    const modalStepRequest = document.getElementById('modal-step-request');
+    const modalStepVerify = document.getElementById('modal-step-verify');
+    const verificationCodeInput = document.getElementById('verification-code-input');
+    const codeError = document.getElementById('code-error');
+    let secretCountdownTimer = null;
+
+    function openModal() {
+        verifySecretModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        verifySecretModal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    if (viewSecretBtn) {
+        viewSecretBtn.addEventListener('click', function() {
+            // Reset modal to initial state
+            modalStepRequest.classList.remove('hidden');
+            modalStepVerify.classList.add('hidden');
+            if (verificationCodeInput) verificationCodeInput.value = '';
+            if (codeError) {
+                codeError.classList.add('hidden');
+                codeError.textContent = '';
+            }
+            openModal();
+        });
+    }
+
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeModal);
+    }
+
+    if (modalBackdrop) {
+        modalBackdrop.addEventListener('click', closeModal);
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && verifySecretModal && !verifySecretModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    if (sendCodeBtn) {
+        sendCodeBtn.addEventListener('click', function() {
+            const originalText = this.innerHTML;
+            this.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Sending...';
+            this.disabled = true;
+
+            fetch('{{ route("marketplace.fitnearyou.send-secret-code") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    // Show verification step
+                    modalStepRequest.classList.add('hidden');
+                    modalStepVerify.classList.remove('hidden');
+                    verificationCodeInput.focus();
+                } else {
+                    showToast(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        });
+    }
+
+    if (resendCodeBtn) {
+        resendCodeBtn.addEventListener('click', function() {
+            sendCodeBtn.click();
+        });
+    }
+
+    if (verifyCodeBtn) {
+        verifyCodeBtn.addEventListener('click', function() {
+            const code = verificationCodeInput.value.trim();
+
+            if (code.length !== 6) {
+                codeError.textContent = 'Please enter a 6-digit code';
+                codeError.classList.remove('hidden');
+                return;
+            }
+
+            const originalText = this.innerHTML;
+            this.innerHTML = '<span class="loading loading-spinner loading-sm"></span> Verifying...';
+            this.disabled = true;
+            codeError.classList.add('hidden');
+
+            fetch('{{ route("marketplace.fitnearyou.verify-secret-code") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ code: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+
+                if (data.success) {
+                    // Close modal
+                    closeModal();
+
+                    // Show the secret
+                    const secretContainer = document.getElementById('api-secret-container');
+                    const secretInput = document.getElementById('api-secret-revealed');
+                    const viewSecretBtnContainer = document.getElementById('view-secret-btn-container');
+                    const countdownEl = document.getElementById('secret-countdown');
+
+                    if (secretContainer && secretInput) {
+                        secretInput.value = data.api_secret;
+                        secretContainer.classList.remove('hidden');
+                        viewSecretBtnContainer.classList.add('hidden');
+
+                        // Start countdown (2 minutes = 120 seconds)
+                        let timeLeft = data.expires_in || 120;
+
+                        function updateCountdown() {
+                            const minutes = Math.floor(timeLeft / 60);
+                            const seconds = timeLeft % 60;
+                            countdownEl.textContent = `Visible for ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                            if (timeLeft <= 0) {
+                                // Hide the secret
+                                secretContainer.classList.add('hidden');
+                                viewSecretBtnContainer.classList.remove('hidden');
+                                secretInput.value = '';
+                                clearInterval(secretCountdownTimer);
+                                showToast('API secret hidden for security', 'info');
+                            }
+                            timeLeft--;
+                        }
+
+                        updateCountdown();
+                        secretCountdownTimer = setInterval(updateCountdown, 1000);
+
+                        // Scroll to the secret
+                        secretContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+
+                    showToast(data.message, 'success');
+                } else {
+                    codeError.textContent = data.message;
+                    codeError.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+                showToast('An error occurred. Please try again.', 'error');
+            });
+        });
+    }
+
+    // Allow Enter key to submit code
+    if (verificationCodeInput) {
+        verificationCodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                verifyCodeBtn.click();
+            }
+        });
+
+        // Only allow numeric input
+        verificationCodeInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    }
 });
 </script>
 @endpush

@@ -11,6 +11,10 @@ use App\Services\FeatureService;
 use App\Services\BookingProfileInviteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\FitNearYouVerificationCodeMail;
 
 class MarketplaceController extends Controller
 {
@@ -296,17 +300,21 @@ class MarketplaceController extends Controller
             // Update config with new credentials
             $config = $hostFeature->config ?? [];
             $config['api_key'] = $apiKey;
-            $config['api_secret'] = hash('sha256', $apiSecret); // Store hashed secret
+            $config['api_secret_encrypted'] = Crypt::encryptString($apiSecret); // Store encrypted for retrieval
+            $config['api_secret_hash'] = hash('sha256', $apiSecret); // Store hash for API authentication
             $config['credentials_generated_at'] = now()->toIso8601String();
+
+            // Remove old api_secret key if exists
+            unset($config['api_secret']);
 
             $hostFeature->update(['config' => $config]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'API credentials generated successfully. Copy your secret key now - it will not be shown again.',
+                'message' => 'API credentials generated successfully.',
                 'credentials' => [
                     'api_key' => $apiKey,
-                    'api_secret' => $apiSecret, // Return plain text once
+                    'api_secret' => $apiSecret,
                 ],
             ]);
         } catch (\Exception $e) {
@@ -323,5 +331,129 @@ class MarketplaceController extends Controller
     public function regenerateFitNearYouCredentials(Request $request)
     {
         return $this->generateFitNearYouCredentials($request);
+    }
+
+    /**
+     * Send verification code to view API secret.
+     */
+    public function sendFitNearYouSecretCode(Request $request)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Get the FitNearYou feature
+        $feature = Feature::where('slug', 'fitnearyou-sync')->first();
+        $hostFeature = HostFeature::getForHost($host->id, $feature->id);
+
+        if (!$hostFeature || empty($hostFeature->config['api_secret_encrypted'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No API credentials found. Please generate credentials first.',
+            ], 400);
+        }
+
+        // Generate 6-digit verification code
+        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        // Store code in cache for 10 minutes
+        $cacheKey = "fitnearyou_secret_code_{$host->id}";
+        Cache::put($cacheKey, [
+            'code' => $code,
+            'attempts' => 0,
+        ], now()->addMinutes(10));
+
+        // Send email with code
+        try {
+            Mail::to($user->email)->send(
+                new FitNearYouVerificationCodeMail($code, $user->first_name ?? 'there')
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Verification code sent to your email.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send verification code. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Verify code and return API secret (visible for 2 minutes).
+     */
+    public function verifyFitNearYouSecretCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:6',
+        ]);
+
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        $cacheKey = "fitnearyou_secret_code_{$host->id}";
+        $cached = Cache::get($cacheKey);
+
+        if (!$cached) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Verification code expired. Please request a new code.',
+            ], 400);
+        }
+
+        // Check attempts (max 3)
+        if ($cached['attempts'] >= 3) {
+            Cache::forget($cacheKey);
+            return response()->json([
+                'success' => false,
+                'message' => 'Too many failed attempts. Please request a new code.',
+            ], 400);
+        }
+
+        // Verify code
+        if ($cached['code'] !== $request->code) {
+            // Increment attempts
+            Cache::put($cacheKey, [
+                'code' => $cached['code'],
+                'attempts' => $cached['attempts'] + 1,
+            ], now()->addMinutes(10));
+
+            $remaining = 3 - ($cached['attempts'] + 1);
+            return response()->json([
+                'success' => false,
+                'message' => "Invalid code. {$remaining} attempts remaining.",
+            ], 400);
+        }
+
+        // Code verified - get the secret
+        $feature = Feature::where('slug', 'fitnearyou-sync')->first();
+        $hostFeature = HostFeature::getForHost($host->id, $feature->id);
+
+        if (!$hostFeature || empty($hostFeature->config['api_secret_encrypted'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No API credentials found.',
+            ], 400);
+        }
+
+        try {
+            $apiSecret = Crypt::decryptString($hostFeature->config['api_secret_encrypted']);
+
+            // Clear the verification code
+            Cache::forget($cacheKey);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Code verified. Secret visible for 2 minutes.',
+                'api_secret' => $apiSecret,
+                'expires_in' => 120, // 2 minutes in seconds
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to decrypt secret. Please regenerate credentials.',
+            ], 500);
+        }
     }
 }

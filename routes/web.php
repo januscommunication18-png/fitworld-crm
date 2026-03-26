@@ -581,6 +581,8 @@ Route::middleware('auth')->group(function () {
         // FitNearYou sync routes
         Route::post('/fitnearyou-sync/generate-credentials', [MarketplaceController::class, 'generateFitNearYouCredentials'])->name('fitnearyou.generate-credentials');
         Route::post('/fitnearyou-sync/regenerate-credentials', [MarketplaceController::class, 'regenerateFitNearYouCredentials'])->name('fitnearyou.regenerate-credentials');
+        Route::post('/fitnearyou-sync/send-secret-code', [MarketplaceController::class, 'sendFitNearYouSecretCode'])->name('fitnearyou.send-secret-code');
+        Route::post('/fitnearyou-sync/verify-secret-code', [MarketplaceController::class, 'verifyFitNearYouSecretCode'])->name('fitnearyou.verify-secret-code');
     });
 
     // 1:1 Booking Setup (Team Member)
