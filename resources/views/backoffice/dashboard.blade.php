@@ -261,5 +261,113 @@
             </div>
         </div>
     </div>
+
+    {{-- Database Seeders Reference --}}
+    <div class="card bg-base-100">
+        <div class="card-header">
+            <div class="flex items-center gap-2">
+                <span class="icon-[tabler--database] size-5 text-primary"></span>
+                <h3 class="card-title">Database Seeders Reference</h3>
+            </div>
+            <span class="badge badge-soft badge-neutral">Run via: php artisan db:seed --class=SeederName</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra">
+                    <thead>
+                        <tr>
+                            <th>Seeder</th>
+                            <th>Purpose</th>
+                            <th>Command</th>
+                            <th>Safe to Re-run</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        <tr>
+                            <td class="font-mono font-medium text-primary">FeatureSeeder</td>
+                            <td>Seeds marketplace features (FitNearYou Sync, Progress Templates, 1:1 Meeting, Calendar Integrations, Payment Systems)</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=FeatureSeeder</code></td>
+                            <td><span class="badge badge-success badge-sm">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono font-medium text-primary">PlanSeeder</td>
+                            <td>Seeds subscription plans (Free, Starter, Professional, Enterprise)</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=PlanSeeder</code></td>
+                            <td><span class="badge badge-success badge-sm">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono font-medium text-primary">GlobalTranslationsSeeder</td>
+                            <td>Seeds all UI translations for multiple languages (en, es, fr, de, etc.)</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=GlobalTranslationsSeeder</code></td>
+                            <td><span class="badge badge-success badge-sm">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono font-medium text-primary">TaxRatesSeeder</td>
+                            <td>Seeds tax rates for different countries/regions</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=TaxRatesSeeder</code></td>
+                            <td><span class="badge badge-success badge-sm">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono font-medium text-primary">AdminUserSeeder</td>
+                            <td>Seeds initial admin user for backoffice access</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=AdminUserSeeder</code></td>
+                            <td><span class="badge badge-warning badge-sm">Check First</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono font-medium text-primary">BackofficeSeeder</td>
+                            <td>Seeds backoffice configurations and settings</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=BackofficeSeeder</code></td>
+                            <td><span class="badge badge-success badge-sm">Yes</span></td>
+                        </tr>
+                        <tr>
+                            <td class="font-mono font-medium text-secondary">ProgressTemplateSeeder</td>
+                            <td>Seeds sample progress tracking templates (fitness, martial arts, yoga)</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=ProgressTemplateSeeder</code></td>
+                            <td><span class="badge badge-warning badge-sm">Dev Only</span></td>
+                        </tr>
+                        <tr class="opacity-60">
+                            <td class="font-mono font-medium">ClassPlanSeeder</td>
+                            <td>Seeds sample class plans (yoga, HIIT, Zumba, etc.) - Development only</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=ClassPlanSeeder</code></td>
+                            <td><span class="badge badge-error badge-sm">Dev Only</span></td>
+                        </tr>
+                        <tr class="opacity-60">
+                            <td class="font-mono font-medium">ClassSessionSeeder</td>
+                            <td>Seeds sample scheduled class sessions - Development only</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=ClassSessionSeeder</code></td>
+                            <td><span class="badge badge-error badge-sm">Dev Only</span></td>
+                        </tr>
+                        <tr class="opacity-60">
+                            <td class="font-mono font-medium">ServicePlanSeeder</td>
+                            <td>Seeds sample service plans - Development only</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=ServicePlanSeeder</code></td>
+                            <td><span class="badge badge-error badge-sm">Dev Only</span></td>
+                        </tr>
+                        <tr class="opacity-60">
+                            <td class="font-mono font-medium">FaizanStudioSeeder</td>
+                            <td>Seeds complete test studio with all sample data - Development only</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=FaizanStudioSeeder</code></td>
+                            <td><span class="badge badge-error badge-sm">Dev Only</span></td>
+                        </tr>
+                        <tr class="opacity-60">
+                            <td class="font-mono font-medium">OfferSegmentTestSeeder</td>
+                            <td>Seeds test offers and segments - Development only</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=OfferSegmentTestSeeder</code></td>
+                            <td><span class="badge badge-error badge-sm">Dev Only</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-base-200/50 border-t border-base-200">
+            <div class="flex items-start gap-2 text-sm text-base-content/70">
+                <span class="icon-[tabler--info-circle] size-5 text-info shrink-0 mt-0.5"></span>
+                <div>
+                    <p><strong>Production Safe:</strong> FeatureSeeder, PlanSeeder, GlobalTranslationsSeeder, TaxRatesSeeder, BackofficeSeeder</p>
+                    <p class="mt-1"><strong>Dev Only:</strong> Seeders that create sample/test data should not be run on production.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
