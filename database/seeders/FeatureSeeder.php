@@ -277,6 +277,8 @@ class FeatureSeeder extends Seeder
             );
         }
 
-        $this->command->info('Features seeded successfully!');
+        if ($this->command) {
+            $this->command->info('Features seeded successfully!');
+        }
     }
 }
