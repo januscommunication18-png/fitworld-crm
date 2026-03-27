@@ -11,6 +11,7 @@ Route::prefix('v1')->group(function () {
     // Signup endpoints (public)
     Route::post('/signup/register', [SignupController::class, 'register']);
     Route::get('/signup/subdomain-check', [SignupController::class, 'checkSubdomain']);
+    Route::get('/signup/legal-pages', [SignupController::class, 'getLegalPages']);
 
     // Signup endpoints (authenticated — user registers at step 2, then continues)
     Route::middleware('auth:sanctum')->group(function () {

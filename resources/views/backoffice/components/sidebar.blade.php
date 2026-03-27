@@ -119,6 +119,15 @@
                 </a>
             </li>
 
+            {{-- CMS Pages --}}
+            <li>
+                <a href="{{ route('backoffice.cms.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.cms.*') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
+                    <span class="icon-[tabler--file-text] size-5 shrink-0"></span>
+                    <span>CMS</span>
+                </a>
+            </li>
+
             {{-- Section: Finance --}}
             <li class="menu-title pt-4">
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Finance</span>

@@ -29,6 +29,7 @@
                     :loading="loading"
                     :errors="errors"
                     :email-verified="isEmailVerified"
+                    :legal-pages="legalPages"
                     @next="nextStep"
                     @prev="prevStep"
                     @update="updateFormData"
@@ -66,6 +67,12 @@ const currentStep = ref(1)
 const loading = ref(false)
 const initialLoading = ref(false)
 const errors = ref({})
+const legalPages = ref({
+    has_terms: false,
+    has_privacy: false,
+    terms: null,
+    privacy: null,
+})
 
 const formData = ref({
     // Step 2: Account
@@ -74,6 +81,8 @@ const formData = ref({
     email: '',
     password: '',
     is_studio_owner: true,
+    agreed_terms: false,
+    agreed_privacy: false,
     // Step 4: Studio
     studio_name: '',
     studio_types: [],
@@ -106,9 +115,25 @@ const steps = {
 const stepComponent = computed(() => steps[currentStep.value])
 
 /**
+ * Fetch legal pages (Terms & Privacy) on mount.
+ */
+async function fetchLegalPages() {
+    try {
+        const res = await api.get('/signup/legal-pages')
+        legalPages.value = res.data.data
+    } catch (err) {
+        // Silently fail - pages just won't show
+        console.warn('Could not fetch legal pages:', err)
+    }
+}
+
+/**
  * Load saved progress on mount if user is authenticated.
  */
 onMounted(async () => {
+    // Fetch legal pages first
+    await fetchLegalPages()
+
     // Handle email verification redirect
     if (props.emailVerified && props.authenticated) {
         isEmailVerified.value = true

@@ -6,6 +6,7 @@ use App\Http\Controllers\Backoffice\Auth\PasswordController;
 use App\Http\Controllers\Backoffice\Auth\SecurityController;
 use App\Http\Controllers\Backoffice\AutomationController;
 use App\Http\Controllers\Backoffice\ClientController;
+use App\Http\Controllers\Backoffice\CmsPageController;
 use App\Http\Controllers\Backoffice\DashboardController;
 use App\Http\Controllers\Backoffice\EmailLogController;
 use App\Http\Controllers\Backoffice\EmailTemplateController;
@@ -121,6 +122,10 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                     Route::delete('/{id}', [TranslationController::class, 'destroy'])->name('destroy');
                     Route::post('/copy', [TranslationController::class, 'copy'])->name('copy');
                 });
+
+                // CMS Pages
+                Route::resource('cms', CmsPageController::class)->parameters(['cms' => 'cmsPage']);
+                Route::patch('/cms/{cmsPage}/toggle-status', [CmsPageController::class, 'toggleStatus'])->name('cms.toggle-status');
 
                 // Waitlist
                 Route::prefix('waitlist')->name('waitlist.')->group(function () {

@@ -10,6 +10,7 @@ use App\Http\Requests\Signup\LocationRequest;
 use App\Http\Requests\Signup\RegisterRequest;
 use App\Http\Requests\Signup\StudioBasicsRequest;
 use App\Http\Traits\ApiResponse;
+use App\Models\CmsPage;
 use App\Models\Host;
 use App\Models\Instructor;
 use App\Models\StudioClass;
@@ -81,6 +82,31 @@ class SignupController extends Controller
                 'skip_payments' => !$host->stripe_account_id,
                 'stripe_connected' => (bool) $host->stripe_account_id,
             ],
+        ]);
+    }
+
+    /**
+     * Get active legal pages (Terms & Privacy) for signup.
+     * Public endpoint - no authentication required.
+     */
+    public function getLegalPages(): JsonResponse
+    {
+        $termsPage = CmsPage::getActiveTermsConditions();
+        $privacyPage = CmsPage::getActivePrivacyPolicy();
+
+        return $this->success([
+            'terms' => $termsPage ? [
+                'id' => $termsPage->id,
+                'title' => $termsPage->title,
+                'content' => $termsPage->content,
+            ] : null,
+            'privacy' => $privacyPage ? [
+                'id' => $privacyPage->id,
+                'title' => $privacyPage->title,
+                'content' => $privacyPage->content,
+            ] : null,
+            'has_terms' => (bool) $termsPage,
+            'has_privacy' => (bool) $privacyPage,
         ]);
     }
 

@@ -320,6 +320,12 @@
                             <td><span class="badge badge-success badge-sm">Yes</span></td>
                         </tr>
                         <tr>
+                            <td class="font-mono font-medium text-primary">CmsPageSeeder</td>
+                            <td>Seeds default CMS pages (Terms & Conditions, Privacy Policy)</td>
+                            <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=CmsPageSeeder</code></td>
+                            <td><span class="badge badge-success badge-sm">Yes</span></td>
+                        </tr>
+                        <tr>
                             <td class="font-mono font-medium text-secondary">ProgressTemplateSeeder</td>
                             <td>Seeds sample progress tracking templates (fitness, martial arts, yoga)</td>
                             <td><code class="bg-base-200 px-2 py-1 rounded text-xs">php artisan db:seed --class=ProgressTemplateSeeder</code></td>
@@ -363,7 +369,7 @@
             <div class="flex items-start gap-2 text-sm text-base-content/70">
                 <span class="icon-[tabler--info-circle] size-5 text-info shrink-0 mt-0.5"></span>
                 <div>
-                    <p><strong>Production Safe:</strong> FeatureSeeder, PlanSeeder, GlobalTranslationsSeeder, TaxRatesSeeder, BackofficeSeeder</p>
+                    <p><strong>Production Safe:</strong> FeatureSeeder, PlanSeeder, GlobalTranslationsSeeder, TaxRatesSeeder, BackofficeSeeder, CmsPageSeeder</p>
                     <p class="mt-1"><strong>Dev Only:</strong> Seeders that create sample/test data should not be run on production.</p>
                 </div>
             </div>

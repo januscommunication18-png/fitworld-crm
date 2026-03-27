@@ -27,9 +27,11 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
-        $this->command->info('Default admin user created:');
-        $this->command->info('Email: admin@fitcrm.com');
-        $this->command->info('Password: password');
-        $this->command->warn('Please change the password after first login!');
+        if ($this->command) {
+            $this->command->info('Default admin user created:');
+            $this->command->info('Email: admin@fitcrm.com');
+            $this->command->info('Password: password');
+            $this->command->warn('Please change the password after first login!');
+        }
     }
 }
