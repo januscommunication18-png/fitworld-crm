@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\Feature;
 use App\Models\Host;
 use App\Models\HostFeature;
+use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class FeatureService
 {
@@ -91,7 +93,54 @@ class FeatureService
             'deactivated_at' => now(),
         ]);
 
+        // Remove related permissions from team members
+        $this->removeFeaturePermissions($host, $feature);
+
         return $hostFeature;
+    }
+
+    /**
+     * Remove permissions related to a feature from all team members
+     */
+    protected function removeFeaturePermissions(Host $host, Feature $feature): void
+    {
+        // Map features to their related permissions
+        $featurePermissions = [
+            'price-override' => ['pricing.override'],
+        ];
+
+        $permissionsToRemove = $featurePermissions[$feature->slug] ?? [];
+
+        if (empty($permissionsToRemove)) {
+            return;
+        }
+
+        // Get all team members with custom permissions
+        $teamMembers = $host->teamMembers()->get();
+
+        foreach ($teamMembers as $user) {
+            // Get permissions from pivot table
+            $pivotPermissions = $user->pivot->permissions;
+            if (is_string($pivotPermissions)) {
+                $pivotPermissions = json_decode($pivotPermissions, true);
+            }
+
+            if (!empty($pivotPermissions) && is_array($pivotPermissions)) {
+                $updatedPermissions = array_values(array_diff($pivotPermissions, $permissionsToRemove));
+
+                // Update pivot table permissions
+                DB::table('host_user')
+                    ->where('host_id', $host->id)
+                    ->where('user_id', $user->id)
+                    ->update(['permissions' => json_encode($updatedPermissions)]);
+            }
+
+            // Also update user's direct permissions if set
+            if (!empty($user->permissions) && is_array($user->permissions)) {
+                $updatedUserPermissions = array_values(array_diff($user->permissions, $permissionsToRemove));
+                $user->update(['permissions' => $updatedUserPermissions ?: null]);
+            }
+        }
     }
 
     /**

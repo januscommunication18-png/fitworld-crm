@@ -133,6 +133,10 @@
 
                     <div class="space-y-2">
                         @foreach($groupedPermissions as $category => $permissions)
+                        {{-- Skip pricing category if feature not enabled --}}
+                        @if($category === 'pricing' && !$hasPriceOverrideFeature)
+                            @continue
+                        @endif
                         <details class="group border border-base-content/10 rounded-lg overflow-hidden" id="perm-section-{{ $category }}">
                             <summary class="flex items-center gap-3 p-3 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
                                 <div class="w-8 h-8 rounded-lg flex items-center justify-center {{ $categoryColors[$category] ?? 'text-base-content bg-base-200' }}">
@@ -287,14 +291,23 @@
 // Role default permissions
 const roleDefaults = {
     admin: @json(\App\Models\User::getDefaultPermissionsForRole('admin')),
+    manager: @json(\App\Models\User::getDefaultPermissionsForRole('manager')),
     staff: @json(\App\Models\User::getDefaultPermissionsForRole('staff')),
     instructor: @json(\App\Models\User::getDefaultPermissionsForRole('instructor'))
 };
 
 const currentRole = '{{ $user->role }}';
+const hasPriceOverrideFeature = {{ $hasPriceOverrideFeature ? 'true' : 'false' }};
 
 function resetToRoleDefaults() {
-    const defaults = roleDefaults[currentRole] || [];
+    let defaults = roleDefaults[currentRole] || [];
+
+    // Filter out pricing permissions if feature is not enabled
+    if (!hasPriceOverrideFeature) {
+        defaults = defaults.filter(function(perm) {
+            return !perm.startsWith('pricing.');
+        });
+    }
 
     document.querySelectorAll('.permission-checkbox').forEach(function(checkbox) {
         checkbox.checked = defaults.includes(checkbox.dataset.permission);

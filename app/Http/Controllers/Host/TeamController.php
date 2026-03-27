@@ -111,6 +111,8 @@ class TeamController extends Controller
      */
     public function showInvite()
     {
+        $host = auth()->user()->currentHost();
+
         return view('host.settings.team.users.invite', [
             'roles' => User::getRoles(),
             'groupedPermissions' => User::getAllPermissions(),
@@ -118,6 +120,7 @@ class TeamController extends Controller
             'employmentTypes' => Instructor::getEmploymentTypes(),
             'rateTypes' => Instructor::getRateTypes(),
             'dayOptions' => Instructor::getDayOptions(),
+            'hasPriceOverrideFeature' => $host->hasFeature('price-override'),
         ]);
     }
 
@@ -1320,6 +1323,7 @@ class TeamController extends Controller
             'groupedPermissions' => $groupedPermissions,
             'roles' => User::getRoles(),
             'roleCounts' => $roleCounts,
+            'hasPriceOverrideFeature' => $host->hasFeature('price-override'),
         ]);
     }
 
@@ -1342,9 +1346,12 @@ class TeamController extends Controller
                 ->with('error', 'Cannot edit permissions for removed users.');
         }
 
+        $host = auth()->user()->currentHost();
+
         return view('host.settings.team.permissions.edit', [
             'user' => $user,
             'groupedPermissions' => User::getAllPermissions(),
+            'hasPriceOverrideFeature' => $host->hasFeature('price-override'),
         ]);
     }
 

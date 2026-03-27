@@ -27,10 +27,12 @@
             <p class="text-base-content/60 text-sm">{{ now()->format('l, F j, Y') }}</p>
         </div>
         <div class="flex gap-2">
+            @if($canViewRevenue ?? false)
             <a href="{{ route('reports.index') }}" class="btn btn-soft btn-sm">
                 <span class="icon-[tabler--chart-bar] size-4 mr-1"></span>
                 {{ $trans['nav.reports'] ?? 'Reports' }}
             </a>
+            @endif
             <a href="{{ route('walk-in.select') }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--plus] size-4 mr-1"></span>
                 {{ $trans['dashboard.quick_actions'] ?? 'New Booking' }}
@@ -38,8 +40,10 @@
         </div>
     </div>
 
+    @if($quickStats)
     {{-- Quick Stats Row --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        @if($canViewRevenue ?? false)
         {{-- Revenue Today --}}
         <div class="card bg-base-100">
             <div class="card-body p-4">
@@ -48,16 +52,18 @@
                         <span class="icon-[tabler--currency-dollar] size-6 text-success"></span>
                     </div>
                     <div>
-                        <div class="text-2xl font-bold">${{ number_format($quickStats['revenue_today'], 0) }}</div>
+                        <div class="text-2xl font-bold">${{ number_format($quickStats['revenue_today'] ?? 0, 0) }}</div>
                         <div class="text-xs text-base-content/60">{{ $trans['dashboard.revenue_today'] ?? 'Revenue Today' }}</div>
                     </div>
                 </div>
                 <div class="mt-2 text-xs text-base-content/50">
-                    MTD: ${{ number_format($quickStats['revenue_mtd'], 0) }}
+                    MTD: ${{ number_format($quickStats['revenue_mtd'] ?? 0, 0) }}
                 </div>
             </div>
         </div>
+        @endif
 
+        @if(isset($quickStats['active_members']))
         {{-- Active Members --}}
         <div class="card bg-base-100">
             <div class="card-body p-4">
@@ -71,11 +77,13 @@
                     </div>
                 </div>
                 <div class="mt-2 text-xs text-base-content/50">
-                    +{{ $quickStats['new_members_30d'] }} new (30 days)
+                    +{{ $quickStats['new_members_30d'] ?? 0 }} new (30 days)
                 </div>
             </div>
         </div>
+        @endif
 
+        @if(isset($quickStats['classes_today']))
         {{-- Classes Today --}}
         <div class="card bg-base-100">
             <div class="card-body p-4">
@@ -89,11 +97,13 @@
                     </div>
                 </div>
                 <div class="mt-2 text-xs text-base-content/50">
-                    {{ $quickStats['upcoming_classes'] }} upcoming
+                    {{ $quickStats['upcoming_classes'] ?? 0 }} upcoming
                 </div>
             </div>
         </div>
+        @endif
 
+        @if(isset($quickStats['attendance_rate']))
         {{-- Attendance Rate --}}
         <div class="card bg-base-100">
             <div class="card-body p-4">
@@ -111,9 +121,55 @@
                 </div>
             </div>
         </div>
-    </div>
+        @endif
 
-    {{-- Second Row: Revenue Chart + Today's Classes --}}
+        {{-- Instructor-specific stats --}}
+        @if(isset($quickStats['today_classes']))
+        <div class="card bg-base-100">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-warning/10 rounded-lg p-2.5">
+                        <span class="icon-[tabler--calendar-event] size-6 text-warning"></span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold">{{ $quickStats['today_classes'] }}</div>
+                        <div class="text-xs text-base-content/60">My Classes Today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-base-100">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-primary/10 rounded-lg p-2.5">
+                        <span class="icon-[tabler--calendar-week] size-6 text-primary"></span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold">{{ $quickStats['week_classes'] }}</div>
+                        <div class="text-xs text-base-content/60">My Classes This Week</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-base-100">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-success/10 rounded-lg p-2.5">
+                        <span class="icon-[tabler--users] size-6 text-success"></span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold">{{ $quickStats['month_bookings'] }}</div>
+                        <div class="text-xs text-base-content/60">My Bookings This Month</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+    @endif
+
+    @if($canViewRevenue ?? false)
+    {{-- Second Row: Revenue Chart + Financial Overview (Owner/Admin only) --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {{-- Revenue Chart --}}
         <div class="lg:col-span-2 card bg-base-100">
@@ -142,7 +198,7 @@
                             <span class="icon-[tabler--repeat] size-4 text-primary"></span>
                         </div>
                         <div class="text-2xl font-bold text-primary mt-1">
-                            ${{ number_format($metrics['members']['mrr'], 0) }}
+                            ${{ number_format($metrics['members']['mrr'] ?? 0, 0) }}
                         </div>
                     </div>
 
@@ -153,11 +209,11 @@
                             <span class="icon-[tabler--file-invoice] size-4 text-warning"></span>
                         </div>
                         <div class="text-2xl font-bold text-warning mt-1">
-                            ${{ number_format($metrics['outstanding_invoices']['total'], 0) }}
+                            ${{ number_format($metrics['outstanding_invoices']['total'] ?? 0, 0) }}
                         </div>
                         <div class="text-xs text-base-content/50 mt-1">
-                            {{ $metrics['outstanding_invoices']['count'] }} invoices
-                            @if($metrics['outstanding_invoices']['overdue_count'] > 0)
+                            {{ $metrics['outstanding_invoices']['count'] ?? 0 }} invoices
+                            @if(($metrics['outstanding_invoices']['overdue_count'] ?? 0) > 0)
                                 <span class="text-error">({{ $metrics['outstanding_invoices']['overdue_count'] }} overdue)</span>
                             @endif
                         </div>
@@ -170,14 +226,16 @@
                             <span class="icon-[tabler--trending-up] size-4 text-success"></span>
                         </div>
                         <div class="text-2xl font-bold text-success mt-1">
-                            ${{ number_format($metrics['revenue']['ytd']['gross'], 0) }}
+                            ${{ number_format($metrics['revenue']['ytd']['gross'] ?? 0, 0) }}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    @endif
 
+    @if($metrics && isset($metrics['todays_classes']))
     {{-- Today's Classes --}}
     <div class="card bg-base-100">
         <div class="card-body">
@@ -253,6 +311,7 @@
             @endif
         </div>
     </div>
+    @endif
 
     {{-- Upcoming Events --}}
     @if(isset($upcomingEvents) && $upcomingEvents->count() > 0)
@@ -336,6 +395,7 @@
     </div>
     @endif
 
+    @if($metrics && isset($metrics['attendance']))
     {{-- Bottom Row: Attendance Summary + Insights --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {{-- Attendance Summary --}}
@@ -346,19 +406,19 @@
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="text-center p-4 bg-success/5 rounded-lg">
-                        <div class="text-3xl font-bold text-success">{{ $metrics['attendance']['attendance_rate'] }}%</div>
+                        <div class="text-3xl font-bold text-success">{{ $metrics['attendance']['attendance_rate'] ?? 0 }}%</div>
                         <div class="text-sm text-base-content/60">Show Rate</div>
                     </div>
                     <div class="text-center p-4 bg-error/5 rounded-lg">
-                        <div class="text-3xl font-bold text-error">{{ $metrics['attendance']['no_show_rate'] }}%</div>
+                        <div class="text-3xl font-bold text-error">{{ $metrics['attendance']['no_show_rate'] ?? 0 }}%</div>
                         <div class="text-sm text-base-content/60">No-Show Rate</div>
                     </div>
                     <div class="text-center p-4 bg-warning/5 rounded-lg">
-                        <div class="text-3xl font-bold text-warning">{{ $metrics['attendance']['late_cancel_rate'] }}%</div>
+                        <div class="text-3xl font-bold text-warning">{{ $metrics['attendance']['late_cancel_rate'] ?? 0 }}%</div>
                         <div class="text-sm text-base-content/60">Late Cancel</div>
                     </div>
                     <div class="text-center p-4 bg-info/5 rounded-lg">
-                        <div class="text-3xl font-bold text-info">{{ $metrics['attendance']['capacity_utilization'] }}%</div>
+                        <div class="text-3xl font-bold text-info">{{ $metrics['attendance']['capacity_utilization'] ?? 0 }}%</div>
                         <div class="text-sm text-base-content/60">Capacity Used</div>
                     </div>
                 </div>
@@ -371,7 +431,7 @@
                 <h2 class="text-lg font-semibold mb-4">{{ $trans['insights.quick_insights'] ?? 'Quick Insights' }}</h2>
 
                 <div class="space-y-3">
-                    @if($metrics['members']['new_30_days'] > 0)
+                    @if(($metrics['members']['new_30_days'] ?? 0) > 0)
                         <div class="alert alert-soft alert-success">
                             <span class="icon-[tabler--user-plus] size-5"></span>
                             <div>
@@ -380,18 +440,20 @@
                         </div>
                     @endif
 
-                    @if($metrics['outstanding_invoices']['overdue_count'] > 0)
-                        <div class="alert alert-soft alert-warning">
-                            <span class="icon-[tabler--alert-triangle] size-5"></span>
-                            <div>
-                                <strong>{{ $metrics['outstanding_invoices']['overdue_count'] }} overdue invoices</strong>
-                                totaling ${{ number_format($metrics['outstanding_invoices']['overdue_total'], 0) }}.
-                                <a href="{{ route('payments.transactions') }}" class="link link-primary ml-1">Review</a>
+                    @if($canViewRevenue ?? false)
+                        @if(($metrics['outstanding_invoices']['overdue_count'] ?? 0) > 0)
+                            <div class="alert alert-soft alert-warning">
+                                <span class="icon-[tabler--alert-triangle] size-5"></span>
+                                <div>
+                                    <strong>{{ $metrics['outstanding_invoices']['overdue_count'] }} overdue invoices</strong>
+                                    totaling ${{ number_format($metrics['outstanding_invoices']['overdue_total'] ?? 0, 0) }}.
+                                    <a href="{{ route('payments.transactions') }}" class="link link-primary ml-1">Review</a>
+                                </div>
                             </div>
-                        </div>
+                        @endif
                     @endif
 
-                    @if($metrics['attendance']['no_show_rate'] > 10)
+                    @if(($metrics['attendance']['no_show_rate'] ?? 0) > 10)
                         <div class="alert alert-soft alert-info">
                             <span class="icon-[tabler--bulb] size-5"></span>
                             <div>
@@ -400,7 +462,7 @@
                         </div>
                     @endif
 
-                    @if($metrics['top_class'])
+                    @if($metrics['top_class'] ?? null)
                         <div class="alert alert-soft alert-primary">
                             <span class="icon-[tabler--trophy] size-5"></span>
                             <div>
@@ -413,10 +475,15 @@
             </div>
         </div>
     </div>
+    @endif
 </div>
 @endsection
 
 @push('head')
     @vite(['resources/js/apps/dashboard.js'])
+    @if($revenueChart ?? null)
     <script id="revenue-chart-data" type="application/json">@json($revenueChart)</script>
+    @else
+    <script id="revenue-chart-data" type="application/json">null</script>
+    @endif
 @endpush

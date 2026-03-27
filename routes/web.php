@@ -44,6 +44,7 @@ use App\Http\Controllers\Host\QuestionnaireController;
 use App\Http\Controllers\Host\ProgressTemplateController;
 use App\Http\Controllers\Host\ClassSessionProgressController;
 use App\Http\Controllers\Host\WalkInController;
+use App\Http\Controllers\Host\PriceOverrideController;
 use App\Http\Controllers\Host\ScheduledMembershipController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\QuestionnaireResponseController;
@@ -517,6 +518,22 @@ Route::middleware('auth')->group(function () {
     // Walk-In Event Registration
     Route::get('/walk-in/event/{event}', [WalkInController::class, 'event'])->name('walk-in.event');
     Route::post('/walk-in/event/{event}/register', [WalkInController::class, 'registerEvent'])->name('walk-in.event.register');
+
+    // Price Override
+    Route::prefix('price-override')->name('price-override.')->group(function () {
+        Route::get('/', [PriceOverrideController::class, 'index'])->name('index');
+        Route::post('/request', [PriceOverrideController::class, 'store'])->name('store');
+        Route::post('/verify', [PriceOverrideController::class, 'verify'])->name('verify');
+        Route::get('/can-request', [PriceOverrideController::class, 'canRequest'])->name('can-request');
+        Route::post('/fetch-approved', [PriceOverrideController::class, 'fetchApproved'])->name('fetch-approved');
+        Route::get('/pending', [PriceOverrideController::class, 'pending'])->name('pending');
+        Route::get('/history', [PriceOverrideController::class, 'history'])->name('history');
+        Route::get('/stats', [PriceOverrideController::class, 'stats'])->name('stats');
+        Route::get('/review/{code}', [PriceOverrideController::class, 'review'])->name('review');
+        Route::post('/{priceOverrideRequest}/approve', [PriceOverrideController::class, 'approve'])->name('approve');
+        Route::post('/{priceOverrideRequest}/reject', [PriceOverrideController::class, 'reject'])->name('reject');
+        Route::post('/{priceOverrideRequest}/cancel', [PriceOverrideController::class, 'cancel'])->name('cancel');
+    });
 
     // Class Requests
     Route::get('/class-requests', [ClassRequestController::class, 'index'])->name('class-requests.index');

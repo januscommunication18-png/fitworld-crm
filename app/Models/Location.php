@@ -50,6 +50,8 @@ class Location extends Model
         // Mobile/Travel fields
         'mobile_service_area',
         'mobile_travel_notes',
+        // Manager IDs
+        'manager_ids',
     ];
 
     protected function casts(): array
@@ -60,7 +62,19 @@ class Location extends Model
             'hide_link_until_booking' => 'boolean',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
+            'manager_ids' => 'array',
         ];
+    }
+
+    /**
+     * Get location managers (users)
+     */
+    public function getManagersAttribute()
+    {
+        if (empty($this->manager_ids)) {
+            return collect();
+        }
+        return User::whereIn('id', $this->manager_ids)->get();
     }
 
     // ========== Relationships ==========

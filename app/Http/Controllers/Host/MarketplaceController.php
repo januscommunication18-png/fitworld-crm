@@ -25,10 +25,25 @@ class MarketplaceController extends Controller
     }
 
     /**
+     * Check if user has access to marketplace (owner or admin only)
+     */
+    private function authorizeMarketplaceAccess(): void
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        if (!$user->isOwner($host) && !$user->isAdmin($host)) {
+            abort(403, 'Only owners and admins can access the Marketplace.');
+        }
+    }
+
+    /**
      * Display the marketplace with all available features.
      */
     public function index()
     {
+        $this->authorizeMarketplaceAccess();
+
         $user = auth()->user();
         $host = $user->currentHost() ?? $user->host;
 
@@ -43,6 +58,8 @@ class MarketplaceController extends Controller
      */
     public function show(Feature $feature)
     {
+        $this->authorizeMarketplaceAccess();
+
         // Ensure feature is globally active
         if (!$feature->is_active) {
             abort(404);
@@ -80,6 +97,8 @@ class MarketplaceController extends Controller
      */
     public function toggle(Request $request, Feature $feature)
     {
+        $this->authorizeMarketplaceAccess();
+
         $user = auth()->user();
         $host = $user->currentHost() ?? $user->host;
         $enable = $request->boolean('enable');

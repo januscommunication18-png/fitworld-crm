@@ -206,6 +206,10 @@
                                     $parts = explode('.', $permission);
                                     $category = ucfirst($parts[0]);
                                 @endphp
+                                {{-- Skip pricing permissions if feature not enabled --}}
+                                @if(str_starts_with($permission, 'pricing.') && !$hasPriceOverrideFeature)
+                                    @continue
+                                @endif
                                 @if($category !== $currentCategory)
                                     @php $currentCategory = $category; @endphp
                                     <tr>
@@ -267,6 +271,7 @@
                         </tbody>
                     </table>
                 </div>
+
             </div>
         </details>
     </div>

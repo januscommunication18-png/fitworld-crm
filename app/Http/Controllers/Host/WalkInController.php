@@ -428,6 +428,8 @@ class WalkInController extends Controller
             'offer_id' => 'nullable|integer|exists:offers,id',
             'promo_code' => 'nullable|string|max:50',
             'discount_amount' => 'nullable|numeric|min:0',
+            'price_override_code' => 'nullable|string|max:20',
+            'price_override_amount' => 'nullable|numeric|min:0',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
@@ -436,8 +438,26 @@ class WalkInController extends Controller
         $offer = null;
         $discountAmount = 0;
         $originalPrice = $classSession->price ?? $classSession->classPlan?->default_price ?? 0;
+        $priceOverrideRequest = null;
 
-        if (!empty($validated['offer_id'])) {
+        // Handle price override (takes precedence over promo codes)
+        if (!empty($validated['price_override_code'])) {
+            $priceOverrideRequest = \App\Models\PriceOverrideRequest::where('host_id', $host->id)
+                ->where('confirmation_code', strtoupper($validated['price_override_code']))
+                ->where('status', \App\Models\PriceOverrideRequest::STATUS_APPROVED)
+                ->first();
+
+            if ($priceOverrideRequest) {
+                $discountAmount = $priceOverrideRequest->discount_amount;
+                // Update the price_paid to reflect the override price
+                if (isset($validated['price_paid'])) {
+                    $validated['price_paid'] = $priceOverrideRequest->requested_price;
+                }
+            }
+        }
+
+        // Only process promo code offer if no price override was applied
+        if (!$priceOverrideRequest && !empty($validated['offer_id'])) {
             $offer = \App\Models\Offer::where('id', $validated['offer_id'])
                 ->where('host_id', $host->id)
                 ->first();
@@ -482,6 +502,15 @@ class WalkInController extends Controller
                     get_class($booking),
                     $booking->id
                 );
+            }
+
+            // Record price override usage if applicable
+            if ($priceOverrideRequest) {
+                $metadata = $priceOverrideRequest->metadata ?? [];
+                $metadata['applied_at'] = now()->toIso8601String();
+                $metadata['booking_id'] = $booking->id;
+                $metadata['booking_type'] = get_class($booking);
+                $priceOverrideRequest->update(['metadata' => $metadata]);
             }
 
             return redirect()

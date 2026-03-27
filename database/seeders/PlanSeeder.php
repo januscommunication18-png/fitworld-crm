@@ -72,6 +72,42 @@ class PlanSeeder extends Seeder
                     'ics_sync' => true,
                     'fitnearyou_attribution' => true,
                     'priority_support' => false,
+                    'premium_addons' => false,
+                ],
+            ]
+        );
+
+        // Pro Plan
+        Plan::firstOrCreate(
+            ['slug' => 'pro'],
+            [
+                'name' => 'Pro',
+                'description' => 'Professional features for busy studios with 0% platform fee.',
+                'price_monthly' => 49.00,
+                'price_yearly' => 490.00,
+                'is_active' => true,
+                'is_featured' => true,
+                'sort_order' => 3,
+                'features' => [
+                    'locations' => 1,
+                    'rooms' => 0, // unlimited
+                    'classes' => 0, // unlimited
+                    'students' => 1000,
+                    'team_members' => 5,
+                    'crm' => true,
+                    'stripe_payments' => true,
+                    'memberships' => true,
+                    'intro_offers' => true,
+                    'automated_emails' => true,
+                    'attendance_insights' => true,
+                    'revenue_insights' => true,
+                    'manual_payments' => true,
+                    'online_payments' => true,
+                    'ics_sync' => true,
+                    'fitnearyou_attribution' => false, // no branding - 0% platform fee
+                    'priority_support' => false,
+                    'premium_addons' => true, // Access to marketplace premium features like Price Override
+                    'included_features' => ['price-override'], // Auto-enabled features
                 ],
             ]
         );
@@ -85,8 +121,8 @@ class PlanSeeder extends Seeder
                 'price_monthly' => 79.00,
                 'price_yearly' => 790.00,
                 'is_active' => true,
-                'is_featured' => true,
-                'sort_order' => 3,
+                'is_featured' => false,
+                'sort_order' => 4,
                 'features' => [
                     'locations' => 3,
                     'rooms' => 0, // unlimited
@@ -104,6 +140,8 @@ class PlanSeeder extends Seeder
                     'ics_sync' => true,
                     'fitnearyou_attribution' => false, // no branding
                     'priority_support' => true,
+                    'premium_addons' => true,
+                    'included_features' => ['price-override'],
                 ],
             ]
         );
@@ -118,7 +156,7 @@ class PlanSeeder extends Seeder
                 'price_yearly' => 1990.00,
                 'is_active' => true,
                 'is_featured' => false,
-                'sort_order' => 4,
+                'sort_order' => 5,
                 'features' => [
                     'locations' => 0, // unlimited
                     'rooms' => 0,
@@ -136,10 +174,12 @@ class PlanSeeder extends Seeder
                     'ics_sync' => true,
                     'fitnearyou_attribution' => false,
                     'priority_support' => true,
+                    'premium_addons' => true,
+                    'included_features' => ['price-override'],
                 ],
             ]
         );
 
-        $this->command->info('Default plans created: Free, Starter, Premium, Enterprise');
+        $this->command->info('Default plans created: Free, Starter, Pro, Premium, Enterprise');
     }
 }

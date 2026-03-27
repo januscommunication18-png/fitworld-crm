@@ -135,10 +135,32 @@ class Feature extends Model
      */
     public static function isEnabledForHost(int $hostId, string $slug): bool
     {
-        return HostFeature::where('host_id', $hostId)
-            ->whereHas('feature', fn($q) => $q->where('slug', $slug)->where('is_active', true))
-            ->where('is_enabled', true)
-            ->exists();
+        // Get the feature
+        $feature = static::where('slug', $slug)->where('is_active', true)->first();
+        if (!$feature) {
+            return false;
+        }
+
+        // Check if there's an explicit host_feature record
+        $hostFeature = HostFeature::where('host_id', $hostId)
+            ->where('feature_id', $feature->id)
+            ->first();
+
+        // If explicitly set in host_features, use that value
+        if ($hostFeature) {
+            return (bool) $hostFeature->is_enabled;
+        }
+
+        // If no explicit record, check if included in host's plan (auto-enabled)
+        $host = Host::find($hostId);
+        if ($host && $host->plan) {
+            $includedFeatures = $host->plan->features['included_features'] ?? [];
+            if (in_array($slug, $includedFeatures)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

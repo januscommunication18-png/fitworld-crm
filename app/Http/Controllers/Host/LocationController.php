@@ -35,11 +35,24 @@ class LocationController extends Controller
 
         $countries = $this->getCountries();
 
+        // Get team members for manager selection
+        $teamMembers = $host->teamMembers()
+            ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'manager', 'staff', 'instructor')")
+            ->orderBy('first_name')
+            ->get();
+
+        // Find the owner to pre-select
+        $owner = $teamMembers->first(fn($u) => ($u->pivot->role ?? $u->role) === 'owner');
+
         return view('host.settings.locations.form', [
             'host' => $host,
-            'location' => new Location(['location_type' => Location::TYPE_IN_PERSON]),
+            'location' => new Location([
+                'location_type' => Location::TYPE_IN_PERSON,
+                'manager_ids' => $owner ? [$owner->id] : [],
+            ]),
             'countries' => $countries,
             'locationTypeOptions' => Location::getLocationTypeOptions(),
+            'teamMembers' => $teamMembers,
             'isEdit' => false,
         ]);
     }
@@ -58,11 +71,18 @@ class LocationController extends Controller
 
         $countries = $this->getCountries();
 
+        // Get team members for manager selection
+        $teamMembers = $host->teamMembers()
+            ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'manager', 'staff', 'instructor')")
+            ->orderBy('first_name')
+            ->get();
+
         return view('host.settings.locations.form', [
             'host' => $host,
             'location' => $location,
             'countries' => $countries,
             'locationTypeOptions' => Location::getLocationTypeOptions(),
+            'teamMembers' => $teamMembers,
             'isEdit' => true,
         ]);
     }
@@ -262,6 +282,8 @@ class LocationController extends Controller
             'phone' => 'nullable|string|max:50',
             'email' => 'nullable|email|max:255',
             'notes' => 'nullable|string|max:1000',
+            'manager_ids' => 'nullable|array',
+            'manager_ids.*' => 'integer|exists:users,id',
         ];
 
         // Physical location rules (in_person or public)

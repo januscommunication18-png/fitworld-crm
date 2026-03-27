@@ -31,36 +31,80 @@ class DashboardController extends Controller
 
         $host = $user->currentHost();
 
-        // Check if setup checklist is complete
-        $checklist = $this->getSetupChecklist($user, $host);
-        $completedCount = collect($checklist)->where('completed', true)->count();
-        $totalCount = count($checklist);
-        $progress = $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0;
+        // Get user role for this host
+        $userRole = $user->getRoleForHost($host) ?? $user->role;
+        $isOwnerOrAdmin = $user->isOwner($host) || $user->isAdmin($host);
+        $isManager = $user->isManager($host);
+        $isStaff = $user->isStaff($host);
+        $isInstructor = $user->hasInstructorRole($host);
 
-        // Show setup checklist if not all tasks are complete and user hasn't skipped
-        if ($progress < 100 && !$host->setup_completed_at) {
-            return view('host.dashboard.setup-checklist', [
-                'host' => $host,
-                'checklist' => $checklist,
-                'completedCount' => $completedCount,
-                'totalCount' => $totalCount,
-                'progress' => $progress,
-            ]);
+        // Check if setup checklist is complete (only for owner/admin)
+        if ($isOwnerOrAdmin) {
+            $checklist = $this->getSetupChecklist($user, $host);
+            $completedCount = collect($checklist)->where('completed', true)->count();
+            $totalCount = count($checklist);
+            $progress = $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0;
+
+            // Show setup checklist if not all tasks are complete and user hasn't skipped
+            if ($progress < 100 && !$host->setup_completed_at) {
+                return view('host.dashboard.setup-checklist', [
+                    'host' => $host,
+                    'checklist' => $checklist,
+                    'completedCount' => $completedCount,
+                    'totalCount' => $totalCount,
+                    'progress' => $progress,
+                ]);
+            }
         }
 
-        // Get dashboard metrics
-        $metrics = $this->reportingService->getDashboardMetrics($host);
-        $quickStats = $this->reportingService->getQuickStats($host);
-        $revenueChart = $this->reportingService->getRevenueChartData($host, 'month');
+        // Get dashboard data based on role
+        $metrics = null;
+        $quickStats = null;
+        $revenueChart = null;
+        $upcomingEvents = collect();
 
-        // Get upcoming events
-        $upcomingEvents = Event::forHost($host->id)
-            ->published()
-            ->upcoming()
-            ->withCount('registeredAttendees')
-            ->orderBy('start_datetime')
-            ->limit(5)
-            ->get();
+        // Owner, Admin, Manager get full metrics
+        if ($isOwnerOrAdmin || $isManager) {
+            $metrics = $this->reportingService->getDashboardMetrics($host);
+            $quickStats = $this->reportingService->getQuickStats($host);
+
+            // Only Owner and Admin see revenue data
+            if ($isOwnerOrAdmin) {
+                $revenueChart = $this->reportingService->getRevenueChartData($host, 'month');
+            }
+
+            // Get upcoming events
+            $upcomingEvents = Event::forHost($host->id)
+                ->published()
+                ->upcoming()
+                ->withCount('registeredAttendees')
+                ->orderBy('start_datetime')
+                ->limit(5)
+                ->get();
+        } elseif ($isStaff) {
+            // Staff get limited metrics (no revenue)
+            $metrics = $this->reportingService->getDashboardMetrics($host);
+            $quickStats = $this->reportingService->getQuickStats($host);
+
+            // Get upcoming events
+            $upcomingEvents = Event::forHost($host->id)
+                ->published()
+                ->upcoming()
+                ->withCount('registeredAttendees')
+                ->orderBy('start_datetime')
+                ->limit(5)
+                ->get();
+        } elseif ($isInstructor) {
+            // Instructor gets only their own data
+            $instructor = \App\Models\Instructor::where('host_id', $host->id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if ($instructor) {
+                // Get instructor-specific stats
+                $quickStats = $this->getInstructorQuickStats($host, $instructor);
+            }
+        }
 
         return view('host.dashboard', [
             'metrics' => $metrics,
@@ -68,7 +112,61 @@ class DashboardController extends Controller
             'revenueChart' => $revenueChart,
             'upcomingEvents' => $upcomingEvents,
             'currency' => $host->default_currency ?? 'USD',
+            'userRole' => $userRole,
+            'isOwnerOrAdmin' => $isOwnerOrAdmin,
+            'canViewRevenue' => $isOwnerOrAdmin,
         ]);
+    }
+
+    /**
+     * Get quick stats for instructor dashboard
+     */
+    protected function getInstructorQuickStats($host, $instructor): array
+    {
+        $today = Carbon::today();
+        $thisWeek = Carbon::now()->startOfWeek();
+        $thisMonth = Carbon::now()->startOfMonth();
+
+        // Get instructor's classes today
+        $todayClasses = ClassSession::where('host_id', $host->id)
+            ->whereDate('start_time', $today)
+            ->where(function ($q) use ($instructor) {
+                $q->where('primary_instructor_id', $instructor->id)
+                    ->orWhereHas('backupInstructors', fn($q) => $q->where('instructors.id', $instructor->id));
+            })
+            ->count();
+
+        // Get instructor's classes this week
+        $weekClasses = ClassSession::where('host_id', $host->id)
+            ->where('start_time', '>=', $thisWeek)
+            ->where('start_time', '<', $thisWeek->copy()->addWeek())
+            ->where(function ($q) use ($instructor) {
+                $q->where('primary_instructor_id', $instructor->id)
+                    ->orWhereHas('backupInstructors', fn($q) => $q->where('instructors.id', $instructor->id));
+            })
+            ->count();
+
+        // Get total bookings for instructor's classes this month
+        // First get the class session IDs where this instructor teaches
+        $instructorSessionIds = ClassSession::where('host_id', $host->id)
+            ->where('start_time', '>=', $thisMonth)
+            ->where(function ($q) use ($instructor) {
+                $q->where('primary_instructor_id', $instructor->id)
+                    ->orWhereHas('backupInstructors', fn($q2) => $q2->where('instructors.id', $instructor->id));
+            })
+            ->pluck('id');
+
+        $monthBookings = Booking::where('host_id', $host->id)
+            ->where('bookable_type', ClassSession::class)
+            ->whereIn('bookable_id', $instructorSessionIds)
+            ->where('status', Booking::STATUS_CONFIRMED)
+            ->count();
+
+        return [
+            'today_classes' => $todayClasses,
+            'week_classes' => $weekClasses,
+            'month_bookings' => $monthBookings,
+        ];
     }
 
     /**

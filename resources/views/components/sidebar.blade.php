@@ -208,6 +208,27 @@
             </li>
             @endif
 
+            {{-- Price Override - For owners, admins, and users with pricing.override permission --}}
+            @if($host->hasFeature('price-override') && ($user->isOwner($host) || $user->isAdmin($host) || $user->hasPermission('pricing.override', $host)))
+            @php
+                $pendingOverrideCount = \App\Models\PriceOverrideRequest::where('host_id', $host->id)
+                    ->where('status', 'pending')
+                    ->where(function($q) {
+                        $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                    })
+                    ->count();
+            @endphp
+            <li class="nav-item {{ request()->is('price-override*') ? 'active' : '' }}" data-nav="price-override">
+                <a href="{{ route('price-override.index') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors {{ request()->is('price-override*') ? 'bg-primary/10 text-primary font-medium' : '' }}">
+                    <span class="icon-[tabler--receipt-refund] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">{{ $trans['nav.price_override'] ?? 'Price Override' }}</span>
+                    @if($pendingOverrideCount > 0)
+                        <span class="badge badge-xs badge-warning">{{ $pendingOverrideCount }}</span>
+                    @endif
+                </a>
+            </li>
+            @endif
+
             {{-- Instructors - Requires team.view or team.instructors --}}
             @if($canViewTeam)
             <li class="nav-item {{ request()->is('instructors*') ? 'active' : '' }}" data-nav="instructors">
@@ -346,13 +367,15 @@
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">{{ $trans['nav.section.system'] ?? 'System' }}</span>
             </li>
 
-            {{-- Feature Marketplace --}}
+            {{-- Feature Marketplace - Only for Owner and Admin --}}
+            @if($user->isOwner($host) || $user->isAdmin($host))
             <li class="nav-item {{ request()->is('marketplace*') ? 'active' : '' }}" data-nav="marketplace">
                 <a href="{{ url('/marketplace') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors {{ request()->is('marketplace*') ? 'bg-primary/10 text-primary font-medium' : '' }}">
                     <span class="icon-[tabler--apps] size-5 shrink-0"></span>
                     <span class="sidebar-label">{{ $trans['nav.marketplace'] ?? 'Marketplace' }}</span>
                 </a>
             </li>
+            @endif
 
             {{-- Settings - Always visible since My Profile is accessible to all --}}
             <li class="nav-item {{ request()->is('settings*') ? 'active' : '' }}" data-nav="settings">

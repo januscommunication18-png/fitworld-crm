@@ -539,6 +539,10 @@
 
                         <div class="space-y-2">
                             @foreach($groupedPermissions as $category => $permissions)
+                                {{-- Skip pricing category if feature not enabled --}}
+                                @if($category === 'pricing' && !$hasPriceOverrideFeature)
+                                    @continue
+                                @endif
                                 <details class="group border border-base-content/10 rounded-lg overflow-hidden" id="perm-section-{{ $category }}">
                                     <summary class="flex items-center gap-3 p-3 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
                                         <div class="w-8 h-8 rounded-lg flex items-center justify-center {{ $categoryColors[$category] ?? 'text-base-content bg-base-200' }}">
@@ -662,6 +666,8 @@
                 instructor: @json(\App\Models\User::getDefaultPermissionsForRole('instructor'))
             };
 
+            const hasPriceOverrideFeature = {{ $hasPriceOverrideFeature ? 'true' : 'false' }};
+
             function showStep(step) {
                 // Hide all steps
                 for (let i = 1; i <= totalSteps; i++) {
@@ -740,7 +746,14 @@
             // Update permissions based on role selection
             function updatePermissionsForRole() {
                 const role = document.querySelector('input[name="role"]:checked')?.value || 'staff';
-                const defaults = roleDefaults[role] || [];
+                let defaults = roleDefaults[role] || [];
+
+                // Filter out pricing permissions if feature is not enabled
+                if (!hasPriceOverrideFeature) {
+                    defaults = defaults.filter(function(perm) {
+                        return !perm.startsWith('pricing.');
+                    });
+                }
 
                 document.querySelectorAll('.permission-checkbox').forEach(function(checkbox) {
                     checkbox.checked = defaults.includes(checkbox.dataset.permission);

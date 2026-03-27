@@ -207,7 +207,7 @@ class FeatureSeeder extends Seeder
                 'icon' => 'receipt-2',
                 'type' => Feature::TYPE_PREMIUM,
                 'category' => Feature::CATEGORY_PAYMENTS,
-                'is_active' => false,
+                'is_active' => true,
                 'sort_order' => 4,
             ],
 

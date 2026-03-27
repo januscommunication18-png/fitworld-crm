@@ -94,6 +94,50 @@
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+
+                {{-- Location Managers (multiselect) --}}
+                <div>
+                    <label class="label-text" for="manager_ids">Location Managers</label>
+                    <select
+                        id="manager_ids"
+                        name="manager_ids[]"
+                        multiple
+                        class="hidden @error('manager_ids') input-error @enderror"
+                        data-select='{
+                            "placeholder": "Select managers...",
+                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                            "toggleClasses": "advance-select-toggle",
+                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+                            "optionClasses": "advance-select-option selected:select-active",
+                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+                        }'
+                    >
+                        @php
+                            $selectedManagers = old('manager_ids', $location->manager_ids ?? []);
+                        @endphp
+                        @foreach($teamMembers as $member)
+                        @php
+                            $memberRole = $member->pivot->role ?? $member->role;
+                            $roleBadge = match($memberRole) {
+                                'owner' => '👑 Owner',
+                                'admin' => '🛡️ Admin',
+                                'manager' => '📋 Manager',
+                                'staff' => '👤 Staff',
+                                'instructor' => '🧘 Instructor',
+                                default => ''
+                            };
+                        @endphp
+                        <option value="{{ $member->id }}" {{ is_array($selectedManagers) && in_array($member->id, $selectedManagers) ? 'selected' : '' }}>
+                            {{ $member->full_name }} ({{ $roleBadge }})
+                        </option>
+                        @endforeach
+                    </select>
+                    <p class="text-base-content/60 text-sm mt-1">Select team members who can manage this location. The studio owner is selected by default.</p>
+                    @error('manager_ids')
+                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
         </div>
 
