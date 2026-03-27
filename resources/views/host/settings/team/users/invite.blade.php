@@ -185,6 +185,18 @@
                                     </div>
                                 </label>
 
+                                {{-- Manager --}}
+                                <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-warning has-[:checked]:bg-warning/5 hover:border-warning/30 transition-all">
+                                    <input type="radio" name="role" value="manager" class="radio radio-warning mt-1" {{ old('role') == 'manager' ? 'checked' : '' }} />
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="icon-[tabler--briefcase] size-5 text-warning"></span>
+                                            <span class="font-semibold">Manager</span>
+                                        </div>
+                                        <p class="text-sm text-base-content/60 mt-1">Can manage schedule, bookings, students, and view insights.</p>
+                                    </div>
+                                </label>
+
                                 {{-- Staff --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-info has-[:checked]:bg-info/5 hover:border-info/30 transition-all">
                                     <input type="radio" name="role" value="staff" class="radio radio-info mt-1" {{ old('role', 'staff') == 'staff' ? 'checked' : '' }} />
@@ -509,6 +521,7 @@
                                 'studio' => 'icon-[tabler--building-store]',
                                 'team' => 'icon-[tabler--users-group]',
                                 'billing' => 'icon-[tabler--receipt]',
+                                'pricing' => 'icon-[tabler--currency-dollar]',
                             ];
                             $categoryColors = [
                                 'schedule' => 'text-primary bg-primary/10',
@@ -520,6 +533,7 @@
                                 'studio' => 'text-primary bg-primary/10',
                                 'team' => 'text-secondary bg-secondary/10',
                                 'billing' => 'text-info bg-info/10',
+                                'pricing' => 'text-success bg-success/10',
                             ];
                         @endphp
 
@@ -643,6 +657,7 @@
             // Role default permissions
             const roleDefaults = {
                 admin: @json(\App\Models\User::getDefaultPermissionsForRole('admin')),
+                manager: @json(\App\Models\User::getDefaultPermissionsForRole('manager')),
                 staff: @json(\App\Models\User::getDefaultPermissionsForRole('staff')),
                 instructor: @json(\App\Models\User::getDefaultPermissionsForRole('instructor'))
             };

@@ -30,7 +30,7 @@
     @endif
 
     {{-- Overview Stats --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
         <div class="card bg-base-100">
             <div class="card-body p-4">
                 <div class="flex items-center gap-3">
@@ -40,6 +40,19 @@
                     <div>
                         <div class="text-2xl font-bold">{{ $roleCounts['admin'] ?? 0 }}</div>
                         <div class="text-xs text-base-content/60">Admins</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card bg-base-100">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                        <span class="icon-[tabler--briefcase] size-5 text-warning"></span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold">{{ $roleCounts['manager'] ?? 0 }}</div>
+                        <div class="text-xs text-base-content/60">Managers</div>
                     </div>
                 </div>
             </div>
@@ -112,10 +125,11 @@
             </summary>
             <div class="card-body border-t border-base-content/10">
                 {{-- Role Cards --}}
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     @php
                         $ownerPerms = \App\Models\User::getDefaultPermissionsForRole('owner');
                         $adminPerms = \App\Models\User::getDefaultPermissionsForRole('admin');
+                        $managerPerms = \App\Models\User::getDefaultPermissionsForRole('manager');
                         $staffPerms = \App\Models\User::getDefaultPermissionsForRole('staff');
                         $instructorPerms = \App\Models\User::getDefaultPermissionsForRole('instructor');
                     @endphp
@@ -126,6 +140,14 @@
                             <span class="badge badge-secondary badge-soft badge-sm ml-auto">{{ count($adminPerms) }} permissions</span>
                         </div>
                         <p class="text-xs text-base-content/60">Full management access except billing. Can manage team, schedule, students, and all settings.</p>
+                    </div>
+                    <div class="p-4 rounded-lg border border-warning/20 bg-warning/5">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="icon-[tabler--briefcase] size-5 text-warning"></span>
+                            <span class="font-semibold">Manager</span>
+                            <span class="badge badge-warning badge-soft badge-sm ml-auto">{{ count($managerPerms) }} permissions</span>
+                        </div>
+                        <p class="text-xs text-base-content/60">Managerial access. Can manage schedule, bookings, students, and view insights.</p>
                     </div>
                     <div class="p-4 rounded-lg border border-info/20 bg-info/5">
                         <div class="flex items-center gap-2 mb-3">
@@ -159,6 +181,12 @@
                                 </th>
                                 <th class="text-center w-24">
                                     <span class="flex items-center justify-center gap-1">
+                                        <span class="icon-[tabler--briefcase] size-4 text-warning"></span>
+                                        Manager
+                                    </span>
+                                </th>
+                                <th class="text-center w-24">
+                                    <span class="flex items-center justify-center gap-1">
                                         <span class="icon-[tabler--user] size-4 text-info"></span>
                                         Staff
                                     </span>
@@ -181,7 +209,7 @@
                                 @if($category !== $currentCategory)
                                     @php $currentCategory = $category; @endphp
                                     <tr>
-                                        <td colspan="4" class="bg-base-300/50 font-semibold text-sm py-2">
+                                        <td colspan="5" class="bg-base-300/50 font-semibold text-sm py-2">
                                             <span class="flex items-center gap-2">
                                                 @php
                                                     $catIcon = match(strtolower($category)) {
@@ -194,6 +222,7 @@
                                                         'studio' => 'icon-[tabler--building-store]',
                                                         'team' => 'icon-[tabler--users-group]',
                                                         'billing' => 'icon-[tabler--receipt]',
+                                                        'pricing' => 'icon-[tabler--currency-dollar]',
                                                         default => 'icon-[tabler--settings]'
                                                     };
                                                 @endphp
@@ -207,6 +236,13 @@
                                     <td class="text-sm pl-8">{{ $label }}</td>
                                     <td class="text-center">
                                         @if(in_array($permission, $adminPerms))
+                                            <span class="icon-[tabler--check] size-5 text-success"></span>
+                                        @else
+                                            <span class="icon-[tabler--minus] size-5 text-base-content/20"></span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if(in_array($permission, $managerPerms))
                                             <span class="icon-[tabler--check] size-5 text-success"></span>
                                         @else
                                             <span class="icon-[tabler--minus] size-5 text-base-content/20"></span>
@@ -285,101 +321,96 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Team Member</th>
+                            <th>User</th>
                             <th>Role</th>
                             <th>Status</th>
                             <th>Permissions</th>
-                            <th class="text-right">Actions</th>
+                            <th>Last Active</th>
+                            <th class="w-20"></th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
                         @foreach($users as $user)
-                        <tr class="user-row {{ $user->trashed() ? 'opacity-60' : '' }}" data-search="{{ strtolower($user->full_name . ' ' . $user->email . ' ' . $user->role) }}">
+                        @php
+                            $userRole = $user->pivot->role ?? $user->role;
+                            $hasLogin = !is_null($user->password);
+                            $isPending = $hasLogin && $user->status === 'invited';
+                            $userPermissions = $user->pivot->permissions ?? $user->permissions;
+                            $hasOverrides = !empty($userPermissions);
+                        @endphp
+                        <tr class="user-row {{ $user->trashed() ? 'opacity-50' : '' }}" data-search="{{ strtolower($user->full_name . ' ' . $user->email . ' ' . $userRole) }}">
                             <td>
                                 <div class="flex items-center gap-3">
                                     <div class="avatar placeholder">
                                         @php
-                                            $bgColor = match($user->role) {
+                                            $bgColor = match($userRole) {
+                                                'owner' => 'bg-primary text-primary-content',
                                                 'admin' => 'bg-secondary text-secondary-content',
+                                                'manager' => 'bg-warning text-warning-content',
                                                 'staff' => 'bg-info text-info-content',
                                                 'instructor' => 'bg-accent text-accent-content',
                                                 default => 'bg-base-300 text-base-content'
                                             };
                                         @endphp
-                                        <div class="{{ $bgColor }} w-10 rounded-full {{ $user->trashed() ? 'grayscale' : '' }}">
+                                        <div class="{{ $bgColor }} size-10 rounded-full">
                                             <span>{{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}</span>
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="font-medium">{{ $user->full_name }}</div>
+                                        <a href="{{ route('settings.team.users.show', $user) }}" class="font-medium hover:text-primary">{{ $user->full_name }}</a>
                                         <div class="text-sm text-base-content/60">{{ $user->email }}</div>
                                     </div>
                                 </div>
                             </td>
                             <td>
                                 @php
-                                    $roleBadge = match($user->role) {
+                                    $roleBadge = match($userRole) {
+                                        'owner' => 'badge-primary',
                                         'admin' => 'badge-secondary',
+                                        'manager' => 'badge-warning',
                                         'staff' => 'badge-info',
                                         'instructor' => 'badge-accent',
-                                        default => 'badge-ghost'
-                                    };
-                                    $roleIcon = match($user->role) {
-                                        'admin' => 'icon-[tabler--shield]',
-                                        'staff' => 'icon-[tabler--user]',
-                                        'instructor' => 'icon-[tabler--yoga]',
-                                        default => 'icon-[tabler--user]'
+                                        default => ''
                                     };
                                 @endphp
-                                <span class="badge {{ $roleBadge }} badge-soft gap-1">
-                                    <span class="{{ $roleIcon }} size-3.5"></span>
-                                    {{ ucfirst($user->role) }}
-                                </span>
+                                <span class="badge {{ $roleBadge }} badge-soft badge-sm">{{ ucfirst($userRole) }}</span>
                             </td>
                             <td>
                                 @if($user->trashed())
-                                    <span class="badge badge-error badge-soft gap-1">
-                                        <span class="icon-[tabler--user-off] size-3.5"></span>
-                                        Removed
-                                    </span>
+                                    <span class="badge badge-neutral badge-soft badge-sm">Removed</span>
                                 @elseif($user->status === 'suspended')
-                                    <span class="badge badge-warning badge-soft gap-1">
-                                        <span class="icon-[tabler--ban] size-3.5"></span>
-                                        Suspended
-                                    </span>
+                                    <span class="badge badge-error badge-soft badge-sm">Suspended</span>
                                 @elseif($user->status === 'deactivated')
-                                    <span class="badge badge-ghost gap-1">
-                                        <span class="icon-[tabler--user-pause] size-3.5"></span>
-                                        Deactivated
-                                    </span>
+                                    <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
                                 @else
-                                    <span class="badge badge-success badge-soft gap-1">
-                                        <span class="icon-[tabler--check] size-3.5"></span>
-                                        Active
-                                    </span>
+                                    <span class="badge badge-success badge-soft badge-sm">Active</span>
                                 @endif
                             </td>
                             <td>
-                                @php
-                                    $userPermissions = $user->permissions;
-                                    $hasOverrides = !empty($userPermissions);
-                                @endphp
-                                @if($hasOverrides)
+                                @if($userRole === 'owner')
+                                    <span class="badge badge-primary badge-soft badge-sm">Full Access</span>
+                                @elseif($hasOverrides)
                                     @php
                                         $permCount = is_array($userPermissions) ? count($userPermissions) : 0;
                                     @endphp
-                                    <span class="badge badge-primary badge-soft">
-                                        {{ $permCount }} custom permission{{ $permCount !== 1 ? 's' : '' }}
+                                    <span class="badge badge-info badge-soft badge-sm">
+                                        {{ $permCount }} custom
                                     </span>
                                 @else
-                                    <span class="text-base-content/50 text-sm">Using role defaults</span>
+                                    <span class="text-base-content/50 text-sm">Role defaults</span>
                                 @endif
                             </td>
-                            <td class="text-right">
-                                @if(!$user->trashed())
-                                <a href="{{ route('settings.team.permissions.edit', $user) }}" class="btn btn-sm btn-ghost gap-1">
+                            <td class="text-sm text-base-content/60">
+                                @if($user->last_login_at)
+                                    {{ $user->last_login_at->diffForHumans() }}
+                                @else
+                                    Never
+                                @endif
+                            </td>
+                            <td>
+                                @if(!$user->trashed() && $userRole !== 'owner')
+                                <a href="{{ route('settings.team.permissions.edit', $user) }}" class="btn btn-ghost btn-xs btn-square" title="Customize Permissions">
                                     <span class="icon-[tabler--adjustments] size-4"></span>
-                                    Customize
                                 </a>
                                 @else
                                 <span class="text-base-content/40 text-sm">N/A</span>

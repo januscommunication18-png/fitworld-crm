@@ -42,7 +42,7 @@ class AdminMemberController extends Controller
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'email' => $validated['email'],
-            'password' => Hash::make($password),
+            'password' => $password, // Model has 'hashed' cast
             'role' => $validated['role'],
             'permissions' => $validated['role'] === 'team_member' ? $this->processPermissions($request) : null,
             'status' => 'active',
@@ -120,7 +120,7 @@ class AdminMemberController extends Controller
         $password = Str::random(12);
 
         $adminMember->update([
-            'password' => Hash::make($password),
+            'password' => $password, // Model has 'hashed' cast
             'must_change_password' => true,
         ]);
 

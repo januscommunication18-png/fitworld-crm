@@ -55,9 +55,9 @@ class PasswordController extends Controller
             return back()->withErrors(['password' => 'New password must be different from current password.']);
         }
 
-        // Update password
+        // Update password (model has 'hashed' cast, so don't use Hash::make)
         $admin->update([
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             'must_change_password' => false,
         ]);
 
@@ -94,8 +94,9 @@ class PasswordController extends Controller
         $newPassword = $this->generateSecurePassword();
 
         // Update admin with new password and force change flag
+        // Model has 'hashed' cast, so don't use Hash::make
         $admin->update([
-            'password' => Hash::make($newPassword),
+            'password' => $newPassword,
             'must_change_password' => true,
         ]);
 

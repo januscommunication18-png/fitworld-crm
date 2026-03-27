@@ -89,6 +89,7 @@
                                             $bgColor = match($userRole) {
                                                 'owner' => 'bg-primary text-primary-content',
                                                 'admin' => 'bg-secondary text-secondary-content',
+                                                'manager' => 'bg-warning text-warning-content',
                                                 'staff' => 'bg-info text-info-content',
                                                 'instructor' => 'bg-accent text-accent-content',
                                                 default => 'bg-base-300 text-base-content'
@@ -109,6 +110,7 @@
                                     $roleBadge = match($userRole) {
                                         'owner' => 'badge-primary',
                                         'admin' => 'badge-secondary',
+                                        'manager' => 'badge-warning',
                                         'staff' => 'badge-info',
                                         'instructor' => 'badge-accent',
                                         default => ''
@@ -182,6 +184,7 @@
                                             $bgColor = match($invitation->role) {
                                                 'owner' => 'bg-primary text-primary-content',
                                                 'admin' => 'bg-secondary text-secondary-content',
+                                                'manager' => 'bg-warning text-warning-content',
                                                 'staff' => 'bg-info text-info-content',
                                                 'instructor' => 'bg-accent text-accent-content',
                                                 default => 'bg-base-300 text-base-content'
@@ -215,6 +218,7 @@
                                     $roleBadge = match($invitation->role) {
                                         'owner' => 'badge-primary',
                                         'admin' => 'badge-secondary',
+                                        'manager' => 'badge-warning',
                                         'staff' => 'badge-info',
                                         'instructor' => 'badge-accent',
                                         default => ''
@@ -406,6 +410,18 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <div class="font-medium flex items-center gap-2">
+                                <span class="icon-[tabler--briefcase] size-4 text-warning"></span>
+                                Manager
+                            </div>
+                            <div class="text-sm text-base-content/60">Can manage schedule, bookings, students, and view insights</div>
+                        </div>
+                        <span class="badge badge-soft badge-sm">{{ $roleCounts['manager'] ?? 0 }} users</span>
+                    </div>
+                </div>
+                <div class="p-4 border border-base-content/10 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="font-medium flex items-center gap-2">
                                 <span class="icon-[tabler--user] size-4 text-info"></span>
                                 Staff
                             </div>
@@ -479,6 +495,15 @@
                                 <span class="font-medium text-sm flex items-center gap-2">
                                     <span class="icon-[tabler--shield] size-4 text-secondary"></span>
                                     Admin
+                                </span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer flex items-center gap-3 p-3 rounded-lg border border-base-content/10 has-[:checked]:border-warning has-[:checked]:bg-warning/5 hover:border-warning/30 transition-all">
+                            <input type="radio" name="role" value="manager" class="radio radio-warning radio-sm" />
+                            <div class="flex-1">
+                                <span class="font-medium text-sm flex items-center gap-2">
+                                    <span class="icon-[tabler--briefcase] size-4 text-warning"></span>
+                                    Manager
                                 </span>
                             </div>
                         </label>

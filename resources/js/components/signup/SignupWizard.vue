@@ -81,8 +81,7 @@ const formData = ref({
     email: '',
     password: '',
     is_studio_owner: true,
-    agreed_terms: false,
-    agreed_privacy: false,
+    agreed_legal: false,
     // Step 4: Studio
     studio_name: '',
     studio_types: [],

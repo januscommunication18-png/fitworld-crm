@@ -36,30 +36,16 @@
                 </div>
 
                 <!-- Terms & Conditions and Privacy Policy -->
-                <div v-if="hasLegalPages" class="space-y-3 pt-2">
-                    <!-- Terms & Conditions -->
-                    <label v-if="legalPages.has_terms" class="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox" class="checkbox checkbox-primary mt-0.5" v-model="localData.agreed_terms" />
+                <div v-if="hasLegalPages" class="pt-2">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" class="checkbox checkbox-primary mt-0.5" v-model="localData.agreed_legal" />
                         <span class="text-sm">
                             I agree to the
-                            <button type="button" @click="showModal('terms')" class="text-primary hover:underline font-medium">
-                                Terms & Conditions
-                            </button>
+                            <button v-if="legalPages.has_terms" type="button" @click.prevent="showModal('terms')" class="text-primary hover:underline font-medium">Terms & Conditions</button><span v-if="legalPages.has_terms && legalPages.has_privacy"> and </span><button v-if="legalPages.has_privacy" type="button" @click.prevent="showModal('privacy')" class="text-primary hover:underline font-medium">Privacy Policy</button>.
                         </span>
                     </label>
 
-                    <!-- Privacy Policy -->
-                    <label v-if="legalPages.has_privacy" class="flex items-start gap-3 cursor-pointer">
-                        <input type="checkbox" class="checkbox checkbox-primary mt-0.5" v-model="localData.agreed_privacy" />
-                        <span class="text-sm">
-                            I agree to the
-                            <button type="button" @click="showModal('privacy')" class="text-primary hover:underline font-medium">
-                                Privacy Policy
-                            </button>
-                        </span>
-                    </label>
-
-                    <p v-if="showAgreementError" class="text-error text-xs">
+                    <p v-if="showAgreementError" class="text-error text-xs mt-2">
                         Please agree to the required terms to continue.
                     </p>
                 </div>
@@ -135,8 +121,7 @@ const localData = reactive({
     email: props.formData.email,
     password: props.formData.password,
     is_studio_owner: true, // Always true for host signup
-    agreed_terms: props.formData.agreed_terms || false,
-    agreed_privacy: props.formData.agreed_privacy || false,
+    agreed_legal: props.formData.agreed_legal || false,
 })
 
 const showAgreementError = ref(false)
@@ -189,19 +174,15 @@ const isValid = computed(() => {
         /[a-z]/.test(password) &&
         /\d/.test(password)
 
-    // Check legal agreements
-    const termsOk = !props.legalPages.has_terms || localData.agreed_terms
-    const privacyOk = !props.legalPages.has_privacy || localData.agreed_privacy
+    // Check legal agreement (required if any legal pages exist)
+    const legalOk = !hasLegalPages.value || localData.agreed_legal
 
-    return firstName && lastName && localData.email && passwordValid && termsOk && privacyOk
+    return firstName && lastName && localData.email && passwordValid && legalOk
 })
 
 function handleSubmit() {
-    // Check agreements
-    const termsOk = !props.legalPages.has_terms || localData.agreed_terms
-    const privacyOk = !props.legalPages.has_privacy || localData.agreed_privacy
-
-    if (!termsOk || !privacyOk) {
+    // Check agreement
+    if (hasLegalPages.value && !localData.agreed_legal) {
         showAgreementError.value = true
         return
     }

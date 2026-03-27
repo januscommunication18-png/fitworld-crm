@@ -109,6 +109,7 @@
                             'studio' => 'icon-[tabler--building-store]',
                             'team' => 'icon-[tabler--users-group]',
                             'billing' => 'icon-[tabler--receipt]',
+                            'pricing' => 'icon-[tabler--currency-dollar]',
                         ];
                         $categoryColors = [
                             'schedule' => 'text-primary bg-primary/10',
@@ -120,6 +121,7 @@
                             'studio' => 'text-primary bg-primary/10',
                             'team' => 'text-secondary bg-secondary/10',
                             'billing' => 'text-info bg-info/10',
+                            'pricing' => 'text-success bg-success/10',
                         ];
 
                         // Get current permissions

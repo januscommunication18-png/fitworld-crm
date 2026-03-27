@@ -29,7 +29,7 @@ class TeamController extends Controller
         // Use teamMembers() to get users from pivot table (supports multi-studio)
         $usersQuery = $host->teamMembers()
             ->withTrashed()
-            ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'staff', 'instructor')")
+            ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'manager', 'staff', 'instructor')")
             ->orderBy('first_name');
 
         if ($search) {
@@ -1296,8 +1296,7 @@ class TeamController extends Controller
         // Use teamMembers() to get users from pivot table (supports multi-studio)
         $users = $host->teamMembers()
             ->withTrashed()
-            ->where('host_user.role', '!=', User::ROLE_OWNER)
-            ->orderByRaw("FIELD(host_user.role, 'admin', 'staff', 'instructor')")
+            ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'manager', 'staff', 'instructor')")
             ->orderBy('first_name')
             ->get();
 

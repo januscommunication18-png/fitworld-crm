@@ -19,6 +19,7 @@ class User extends Authenticatable implements MustVerifyEmail
     // Role constants
     const ROLE_OWNER = 'owner';
     const ROLE_ADMIN = 'admin';
+    const ROLE_MANAGER = 'manager';
     const ROLE_STAFF = 'staff';
     const ROLE_INSTRUCTOR = 'instructor';
 
@@ -242,6 +243,17 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Check if user is manager (context-aware)
+     */
+    public function isManager(?Host $host = null): bool
+    {
+        if ($host) {
+            return $this->getRoleForHost($host) === self::ROLE_MANAGER;
+        }
+        return $this->getCurrentRole() === self::ROLE_MANAGER;
+    }
+
+    /**
      * Check if user is staff (context-aware)
      */
     public function isStaff(?Host $host = null): bool
@@ -330,6 +342,15 @@ class User extends Authenticatable implements MustVerifyEmail
                 'insights.attendance', 'insights.revenue',
                 'studio.profile', 'studio.locations', 'studio.booking_page', 'studio.policies',
                 'team.view', 'team.manage', 'team.instructors',
+                'pricing.override',
+            ],
+            self::ROLE_MANAGER => [
+                'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.cancel',
+                'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.waitlist', 'bookings.attendance',
+                'students.view', 'students.create', 'students.edit', 'students.notes',
+                'insights.attendance', 'insights.revenue',
+                'team.view', 'team.instructors',
+                'pricing.override',
             ],
             self::ROLE_STAFF => [
                 'schedule.view',
@@ -408,6 +429,9 @@ class User extends Authenticatable implements MustVerifyEmail
                 'billing.invoices' => 'View invoices',
                 'billing.payment' => 'Update payment method',
             ],
+            'pricing' => [
+                'pricing.override' => 'Override prices at checkout',
+            ],
         ];
     }
 
@@ -419,6 +443,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             self::ROLE_OWNER => 'Owner',
             self::ROLE_ADMIN => 'Admin',
+            self::ROLE_MANAGER => 'Manager',
             self::ROLE_STAFF => 'Staff',
             self::ROLE_INSTRUCTOR => 'Instructor',
         ];
