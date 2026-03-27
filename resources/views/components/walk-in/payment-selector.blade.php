@@ -67,6 +67,11 @@
             </label>
 
             {{-- Manual Payment Details (shown when selected) --}}
+            @php
+                $user = auth()->user();
+                $host = $user->currentHost() ?? $user->host;
+                $userCanApproveOverride = $user ? $user->canApprovePriceOverride($host) : false;
+            @endphp
             <div id="manual-payment-details" class="hidden mt-3 p-4 border border-base-300 rounded-lg bg-base-200/30 space-y-3">
                 <div class="form-control">
                     <label class="label py-1" for="manual-payment-type">
@@ -86,7 +91,12 @@
 
                 <div class="form-control">
                     <label class="label py-1" for="manual-payment-amount">
-                        <span class="label-text text-sm font-medium">Amount <span class="text-error">*</span></span>
+                        <span class="label-text text-sm font-medium flex items-center gap-2">
+                            Amount <span class="text-error">*</span>
+                            @if($userCanApproveOverride)
+                                <span class="badge badge-success badge-xs">Can Edit</span>
+                            @endif
+                        </span>
                     </label>
                     <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50">$</span>
@@ -97,8 +107,51 @@
                                min="0"
                                placeholder="0.00"
                                onchange="updatePricePaid(this.value)">
+                        @if($userCanApproveOverride)
+                            <span class="icon-[tabler--edit] size-4 text-success absolute right-3 top-1/2 -translate-y-1/2" title="You can edit this price"></span>
+                        @endif
                     </div>
+                    @if($userCanApproveOverride)
+                        <p class="text-xs text-success mt-1 flex items-center gap-1">
+                            <span class="icon-[tabler--shield-check] size-3"></span>
+                            You have permission to change the price
+                        </p>
+                    @endif
                 </div>
+
+                {{-- Price Override Section (only for staff without permission) --}}
+                @if(!$userCanApproveOverride)
+                <div class="border-t border-base-300 pt-3 mt-3">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="icon-[tabler--receipt-refund] size-4 text-primary"></span>
+                        <span class="text-sm font-medium">Price Override</span>
+                    </div>
+
+                    {{-- Applied Override Display --}}
+                    <div id="walk-in-applied-override" class="hidden mb-3">
+                        <div class="alert alert-success py-2">
+                            <span class="icon-[tabler--shield-check] size-4"></span>
+                            <div class="flex-1 text-sm">
+                                <span id="walk-in-override-supervisor"></span>
+                            </div>
+                            <button type="button" onclick="removeWalkInOverride()" class="btn btn-ghost btn-xs btn-circle">
+                                <span class="icon-[tabler--x] size-4"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Override Code Input --}}
+                    <div id="walk-in-override-input" class="flex gap-2">
+                        <input type="text" id="walk-in-override-code" placeholder="Enter code (PO-XXXXX or MY-XXXXX)"
+                               class="input input-bordered input-sm flex-1 uppercase" maxlength="10">
+                        <button type="button" onclick="verifyWalkInOverrideCode()" id="walk-in-verify-btn" class="btn btn-sm btn-outline">
+                            Verify
+                        </button>
+                    </div>
+                    <p id="walk-in-override-error" class="text-error text-xs mt-1 hidden"></p>
+                    <p id="walk-in-override-message" class="text-xs mt-1 hidden"></p>
+                </div>
+                @endif
 
                 <div class="form-control">
                     <label class="label py-1" for="manual-payment-notes">

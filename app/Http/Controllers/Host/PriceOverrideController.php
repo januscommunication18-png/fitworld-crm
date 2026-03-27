@@ -25,8 +25,7 @@ class PriceOverrideController extends Controller
         $host = $user->currentHost() ?? $user->host;
 
         // Check if user can action overrides (owner, admin, or manager)
-        $canApprove = $user->isOwner($host) || $user->isAdmin($host)
-            || $user->hasHostPermission($host, 'pricing.override');
+        $canApprove = $user->canApprovePriceOverride($host);
 
         // Get pending requests
         if ($user->isOwner($host) || $user->isAdmin($host)) {
@@ -41,11 +40,15 @@ class PriceOverrideController extends Controller
         // Get stats
         $stats = $this->priceOverrideService->getStats($host);
 
+        // Get personal override code if user can approve
+        $personalOverrideCode = $canApprove ? $user->getPersonalOverrideCode($host) : null;
+
         return view('host.price-override.index', compact(
             'pendingRequests',
             'history',
             'stats',
-            'canApprove'
+            'canApprove',
+            'personalOverrideCode'
         ));
     }
 
@@ -102,11 +105,11 @@ class PriceOverrideController extends Controller
         ]);
 
         try {
-            $location = $validated['location_id']
+            $location = !empty($validated['location_id'])
                 ? Location::where('host_id', $host->id)->find($validated['location_id'])
                 : null;
 
-            $client = $validated['client_id']
+            $client = !empty($validated['client_id'])
                 ? Client::where('host_id', $host->id)->find($validated['client_id'])
                 : null;
 
@@ -161,7 +164,7 @@ class PriceOverrideController extends Controller
     }
 
     /**
-     * Verify a confirmation code
+     * Verify a confirmation code (either personal code or override request code)
      */
     public function verify(Request $request)
     {
@@ -170,16 +173,50 @@ class PriceOverrideController extends Controller
 
         $validated = $request->validate([
             'code' => 'required|string|max:20',
+            'new_price' => 'nullable|numeric|min:0',
         ]);
 
+        $code = strtoupper(trim($validated['code']));
+
+        // Check if this is a personal override code (MY-XXXXX)
+        if ($this->priceOverrideService->isPersonalCode($code)) {
+            $codeOwner = $this->priceOverrideService->verifyPersonalCode($code, $host);
+
+            if (!$codeOwner) {
+                return response()->json([
+                    'success' => false,
+                    'valid' => false,
+                    'message' => 'Invalid personal override code.',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'valid' => true,
+                'is_personal_code' => true,
+                'code' => $code,
+                'data' => [
+                    'code' => $code,
+                    'is_personal_code' => true,
+                    'authorized_by' => [
+                        'id' => $codeOwner->id,
+                        'name' => $codeOwner->name,
+                    ],
+                    'message' => 'Personal override code verified. Price can be changed by ' . $codeOwner->name,
+                ],
+            ]);
+        }
+
+        // Otherwise, check as regular override request code
         $overrideRequest = PriceOverrideRequest::where('host_id', $host->id)
-            ->where('confirmation_code', strtoupper($validated['code']))
+            ->where('confirmation_code', $code)
             ->with(['requester', 'manager', 'actionedBy', 'client', 'location'])
             ->first();
 
         if (!$overrideRequest) {
             return response()->json([
                 'success' => false,
+                'valid' => false,
                 'message' => 'Invalid confirmation code.',
             ], 404);
         }
@@ -188,6 +225,7 @@ class PriceOverrideController extends Controller
         if ($overrideRequest->status === PriceOverrideRequest::STATUS_EXPIRED || $overrideRequest->is_expired) {
             return response()->json([
                 'success' => false,
+                'valid' => false,
                 'message' => 'This override request has expired.',
                 'status' => 'expired',
             ], 400);
@@ -196,6 +234,7 @@ class PriceOverrideController extends Controller
         if ($overrideRequest->status === PriceOverrideRequest::STATUS_REJECTED) {
             return response()->json([
                 'success' => false,
+                'valid' => false,
                 'message' => 'This override request was rejected.',
                 'status' => 'rejected',
                 'rejection_reason' => $overrideRequest->rejection_reason,
@@ -205,6 +244,7 @@ class PriceOverrideController extends Controller
         if ($overrideRequest->status === PriceOverrideRequest::STATUS_CANCELLED) {
             return response()->json([
                 'success' => false,
+                'valid' => false,
                 'message' => 'This override request was cancelled.',
                 'status' => 'cancelled',
             ], 400);
@@ -212,6 +252,10 @@ class PriceOverrideController extends Controller
 
         return response()->json([
             'success' => true,
+            'valid' => true,
+            'is_personal_code' => false,
+            'code' => $overrideRequest->confirmation_code,
+            'requested_price' => $overrideRequest->requested_price,
             'data' => [
                 'id' => $overrideRequest->id,
                 'confirmation_code' => $overrideRequest->confirmation_code,
@@ -248,6 +292,41 @@ class PriceOverrideController extends Controller
                 ] : null,
                 'approved_at' => $overrideRequest->approved_at?->toIso8601String(),
                 'created_at' => $overrideRequest->created_at->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * Get current user's personal override code (if they have one)
+     */
+    public function getPersonalCode()
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Check if user can approve overrides
+        if (!$user->canApprovePriceOverride($host)) {
+            return response()->json([
+                'success' => false,
+                'has_code' => false,
+                'message' => 'You do not have permission to use personal override codes.',
+            ]);
+        }
+
+        $code = $user->getPersonalOverrideCode($host);
+
+        // If no code exists, generate one
+        if (!$code) {
+            $code = $this->priceOverrideService->assignPersonalCode($user, $host);
+        }
+
+        return response()->json([
+            'success' => true,
+            'has_code' => (bool) $code,
+            'code' => $code,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
             ],
         ]);
     }
@@ -381,6 +460,43 @@ class PriceOverrideController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Price override request cancelled.',
+        ]);
+    }
+
+    /**
+     * Get the current status of a price override request
+     */
+    public function status(PriceOverrideRequest $priceOverrideRequest)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost() ?? $user->host;
+
+        // Verify request belongs to this host
+        if ($priceOverrideRequest->host_id !== $host->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Request not found.',
+            ], 404);
+        }
+
+        // Check if expired
+        if ($priceOverrideRequest->status === PriceOverrideRequest::STATUS_PENDING && $priceOverrideRequest->is_expired) {
+            $priceOverrideRequest->markExpired();
+        }
+
+        return response()->json([
+            'success' => true,
+            'id' => $priceOverrideRequest->id,
+            'code' => $priceOverrideRequest->confirmation_code,
+            'status' => $priceOverrideRequest->status,
+            'status_label' => $priceOverrideRequest->status_label,
+            'original_price' => $priceOverrideRequest->original_price,
+            'requested_price' => $priceOverrideRequest->requested_price,
+            'is_pending' => $priceOverrideRequest->is_pending,
+            'is_approved' => $priceOverrideRequest->is_approved,
+            'is_rejected' => $priceOverrideRequest->is_rejected,
+            'is_expired' => $priceOverrideRequest->is_expired,
+            'rejection_reason' => $priceOverrideRequest->rejection_reason,
         ]);
     }
 

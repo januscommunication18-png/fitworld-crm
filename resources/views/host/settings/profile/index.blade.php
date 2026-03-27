@@ -205,6 +205,127 @@
         </div>
     </div>
 
+    {{-- Personal Override Code Card (for users with override permission) --}}
+    @if($user->canApprovePriceOverride($host))
+    @php
+        $personalOverrideCode = $user->getPersonalOverrideCode($host);
+    @endphp
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        <span class="icon-[tabler--key] size-5 text-primary"></span>
+                        Personal Override Code
+                    </h2>
+                    <p class="text-base-content/60 text-sm">Use this code to authorize price changes during walk-in bookings</p>
+                </div>
+            </div>
+
+            <div class="bg-primary/5 border border-primary/20 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <label class="text-sm text-base-content/60">Your Personal Code</label>
+                        <div class="flex items-center gap-3">
+                            @if($personalOverrideCode)
+                            <p class="text-2xl font-mono font-bold text-primary tracking-wider" id="personal-code-display">
+                                ••••••••
+                            </p>
+                            <input type="hidden" id="personal-code-value" value="{{ $personalOverrideCode }}">
+                            @else
+                            <p class="text-2xl font-mono font-bold text-base-content/40">Not assigned</p>
+                            @endif
+                        </div>
+                    </div>
+                    @if($personalOverrideCode)
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="toggleCodeVisibility()" id="toggle-code-btn" class="btn btn-ghost btn-sm btn-circle" title="Show code">
+                            <span class="icon-[tabler--eye] size-5" id="toggle-code-icon"></span>
+                        </button>
+                        <button type="button" onclick="copyOverrideCode()" id="copy-code-btn" class="btn btn-primary btn-sm hidden">
+                            <span class="icon-[tabler--copy] size-4"></span>
+                            Copy
+                        </button>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="mt-4 text-sm text-base-content/60">
+                <p class="flex items-start gap-2">
+                    <span class="icon-[tabler--info-circle] size-4 mt-0.5 shrink-0"></span>
+                    <span>When staff is making a booking and you want to change the price, enter this code in the Price Override section. The price will be changed immediately without needing approval.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    let codeVisible = false;
+    let hideTimeout = null;
+
+    function toggleCodeVisibility() {
+        const display = document.getElementById('personal-code-display');
+        const code = document.getElementById('personal-code-value').value;
+        const icon = document.getElementById('toggle-code-icon');
+        const copyBtn = document.getElementById('copy-code-btn');
+
+        if (codeVisible) {
+            // Hide the code
+            hideCode();
+        } else {
+            // Show the code
+            display.textContent = code;
+            icon.className = 'icon-[tabler--eye-off] size-5';
+            copyBtn.classList.remove('hidden');
+            codeVisible = true;
+
+            // Clear any existing timeout
+            if (hideTimeout) {
+                clearTimeout(hideTimeout);
+            }
+
+            // Auto-hide after 30 seconds
+            hideTimeout = setTimeout(() => {
+                hideCode();
+            }, 30000);
+        }
+    }
+
+    function hideCode() {
+        const display = document.getElementById('personal-code-display');
+        const icon = document.getElementById('toggle-code-icon');
+        const copyBtn = document.getElementById('copy-code-btn');
+
+        display.textContent = '••••••••';
+        icon.className = 'icon-[tabler--eye] size-5';
+        copyBtn.classList.add('hidden');
+        codeVisible = false;
+
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+    }
+
+    function copyOverrideCode() {
+        const code = document.getElementById('personal-code-value').value;
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = document.getElementById('copy-code-btn');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Copied!';
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-success');
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+            }, 2000);
+        });
+    }
+    </script>
+    @endif
+
     {{-- Role & Permissions Card (Read-only) --}}
     <div class="card bg-base-100">
         <div class="card-body">
@@ -566,6 +687,31 @@ async function removePhoto() {
     } catch (error) {
         console.error('Error:', error);
     }
+}
+
+function copyOverrideCode() {
+    const code = document.getElementById('personal-code-display').textContent.trim();
+    if (!code || code === 'Not assigned') return;
+
+    navigator.clipboard.writeText(code).then(() => {
+        if (typeof Notyf !== 'undefined') {
+            new Notyf().success('Override code copied to clipboard!');
+        } else {
+            alert('Code copied: ' + code);
+        }
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = code;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        if (typeof Notyf !== 'undefined') {
+            new Notyf().success('Override code copied to clipboard!');
+        }
+    });
 }
 </script>
 @endpush

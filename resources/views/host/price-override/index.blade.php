@@ -3,7 +3,7 @@
 @section('title', 'Price Override Requests')
 
 @section('content')
-<div class="max-w-6xl mx-auto">
+<div class="w-full">
     {{-- Header --}}
     <div class="flex items-center justify-between mb-6">
         <div>
@@ -11,6 +11,38 @@
             <p class="text-base-content/60">Manage price override requests from your team</p>
         </div>
     </div>
+
+    {{-- Personal Override Code Card (for users with override permission) --}}
+    @if($canApprove && $personalOverrideCode)
+    <div class="card bg-base-100 border border-base-200 mb-6">
+        <div class="card-body py-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <span class="icon-[tabler--key] size-5 text-primary"></span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">Personal Override Code</h3>
+                        <p class="text-sm text-base-content/60">Use this code to authorize price changes</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-primary/5 border border-primary/20 rounded-lg px-4 py-2">
+                        <p class="text-xl font-mono font-bold text-primary tracking-wider" id="personal-code-display">••••••••</p>
+                        <input type="hidden" id="personal-code-value" value="{{ $personalOverrideCode }}">
+                    </div>
+                    <button type="button" onclick="toggleCodeVisibility()" id="toggle-code-btn" class="btn btn-ghost btn-sm btn-circle" title="Show code">
+                        <span class="icon-[tabler--eye] size-5" id="toggle-code-icon"></span>
+                    </button>
+                    <button type="button" onclick="copyOverrideCode()" id="copy-code-btn" class="btn btn-primary btn-sm hidden">
+                        <span class="icon-[tabler--copy] size-4"></span>
+                        Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Stats Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -216,6 +248,7 @@
                     <thead>
                         <tr>
                             <th>Code</th>
+                            <th>Type</th>
                             <th>Status</th>
                             <th>Requested By</th>
                             <th>Actioned By</th>
@@ -231,15 +264,89 @@
                                 <span class="font-mono text-sm">{{ $request->confirmation_code }}</span>
                             </td>
                             <td>
+                                @php
+                                    $bookableType = null;
+                                    $bookableName = null;
+                                    $bookableIcon = 'icon-[tabler--receipt]';
+
+                                    if ($request->bookable) {
+                                        $bookableClass = class_basename($request->bookable_type);
+                                        switch ($bookableClass) {
+                                            case 'ClassSession':
+                                                $bookableType = 'Class';
+                                                $bookableName = $request->bookable->classPlan?->name ?? $request->bookable->title ?? 'Class';
+                                                $bookableIcon = 'icon-[tabler--yoga]';
+                                                break;
+                                            case 'ServiceSlot':
+                                                $bookableType = 'Service';
+                                                $bookableName = $request->bookable->servicePlan?->name ?? 'Service';
+                                                $bookableIcon = 'icon-[tabler--massage]';
+                                                break;
+                                            case 'Membership':
+                                                $bookableType = 'Membership';
+                                                $bookableName = $request->bookable->name ?? 'Membership';
+                                                $bookableIcon = 'icon-[tabler--id-badge-2]';
+                                                break;
+                                            case 'MembershipPlan':
+                                                $bookableType = 'Membership';
+                                                $bookableName = $request->bookable->name ?? 'Membership';
+                                                $bookableIcon = 'icon-[tabler--id-badge-2]';
+                                                break;
+                                            case 'SpaceRentalConfig':
+                                                $bookableType = 'Space Rental';
+                                                $bookableName = $request->bookable->name ?? 'Space';
+                                                $bookableIcon = 'icon-[tabler--building]';
+                                                break;
+                                            default:
+                                                $bookableType = str_replace('_', ' ', Str::title(Str::snake($bookableClass)));
+                                                $bookableName = '-';
+                                        }
+                                    }
+                                @endphp
+                                @if($bookableType)
+                                <div class="flex items-center gap-2">
+                                    <span class="{{ $bookableIcon }} size-4 text-base-content/60"></span>
+                                    <div>
+                                        <div class="text-xs text-base-content/60">{{ $bookableType }}</div>
+                                        <div class="font-medium text-sm">{{ Str::limit($bookableName, 20) }}</div>
+                                    </div>
+                                </div>
+                                @else
+                                <span class="text-base-content/50">-</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($request->is_direct)
+                                <span class="badge badge-primary badge-sm">Direct</span>
+                                <span class="text-xs text-primary/60 ml-1">Self Override</span>
+                                @elseif($request->is_personal_approved)
+                                <span class="badge badge-success badge-sm">Approved</span>
+                                <span class="text-xs text-secondary ml-1">via {{ $request->metadata['personal_code'] ?? $request->confirmation_code }}</span>
+                                @else
                                 <span class="badge {{ $request->status_badge_class }} badge-sm">
                                     {{ $request->status_label }}
                                 </span>
+                                @endif
                             </td>
                             <td>{{ $request->requester->name ?? 'Unknown' }}</td>
-                            <td>{{ $request->actionedBy->name ?? '-' }}</td>
+                            <td>
+                                @if($request->is_direct)
+                                <span class="flex items-center gap-1">
+                                    <span class="icon-[tabler--edit] size-4 text-primary"></span>
+                                    {{ $request->actionedBy->name ?? '-' }}
+                                </span>
+                                @elseif($request->is_personal_approved)
+                                <span class="flex items-center gap-1">
+                                    <span class="icon-[tabler--shield-check] size-4 text-secondary"></span>
+                                    {{ $request->actionedBy->name ?? '-' }}
+                                </span>
+                                @else
+                                {{ $request->actionedBy->name ?? '-' }}
+                                @endif
+                            </td>
                             <td>${{ number_format($request->original_price, 2) }}</td>
                             <td>
-                                @if($request->is_approved)
+                                @if($request->is_approved || $request->is_personal_approved || $request->is_direct)
                                 <span class="text-success">${{ number_format($request->requested_price, 2) }}</span>
                                 @else
                                 <span class="text-base-content/50">-</span>
@@ -287,6 +394,79 @@
 
 @push('scripts')
 <script>
+// Personal Override Code Toggle
+let codeVisible = false;
+let hideTimeout = null;
+
+function toggleCodeVisibility() {
+    const display = document.getElementById('personal-code-display');
+    const codeInput = document.getElementById('personal-code-value');
+    const icon = document.getElementById('toggle-code-icon');
+    const copyBtn = document.getElementById('copy-code-btn');
+
+    if (!display || !codeInput) return;
+
+    const code = codeInput.value;
+
+    if (codeVisible) {
+        // Hide the code
+        hideCode();
+    } else {
+        // Show the code
+        display.textContent = code;
+        icon.className = 'icon-[tabler--eye-off] size-5';
+        copyBtn.classList.remove('hidden');
+        codeVisible = true;
+
+        // Clear any existing timeout
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+        }
+
+        // Auto-hide after 30 seconds
+        hideTimeout = setTimeout(() => {
+            hideCode();
+        }, 30000);
+    }
+}
+
+function hideCode() {
+    const display = document.getElementById('personal-code-display');
+    const icon = document.getElementById('toggle-code-icon');
+    const copyBtn = document.getElementById('copy-code-btn');
+
+    if (!display) return;
+
+    display.textContent = '••••••••';
+    icon.className = 'icon-[tabler--eye] size-5';
+    copyBtn.classList.add('hidden');
+    codeVisible = false;
+
+    if (hideTimeout) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
+    }
+}
+
+function copyOverrideCode() {
+    const codeInput = document.getElementById('personal-code-value');
+    if (!codeInput) return;
+
+    const code = codeInput.value;
+    navigator.clipboard.writeText(code).then(() => {
+        const btn = document.getElementById('copy-code-btn');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Copied!';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 2000);
+    });
+}
+
 function approveRequest(requestId) {
     if (!confirm('Are you sure you want to approve this price override?')) {
         return;

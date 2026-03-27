@@ -187,4 +187,69 @@
     <input type="hidden" name="capacity_override" id="walk-in-capacity-override" value="0">
     <input type="hidden" name="capacity_override_reason" id="walk-in-capacity-override-reason" value="">
     <input type="hidden" name="check_in_now" id="walk-in-check-in-now" value="0">
+    <input type="hidden" name="price_override_code" id="walk-in-price-override-code" value="">
 </form>
+
+{{-- Personal Override Modal (when manager enters their code for staff) --}}
+<div id="walk-in-personal-override-modal" class="fixed inset-0 z-[60] flex items-center justify-center hidden" role="dialog" aria-modal="true">
+    <div class="absolute inset-0 bg-black/50" onclick="closeWalkInPersonalOverrideModal()"></div>
+    <div class="relative bg-base-100 rounded-lg shadow-xl w-full max-w-md mx-4 p-6 max-h-[90vh] overflow-y-auto">
+        <button type="button" onclick="closeWalkInPersonalOverrideModal()" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+        <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+            <span class="icon-[tabler--shield-check] size-5 text-success"></span>
+            Override Price
+        </h3>
+
+        {{-- Supervised By Info --}}
+        <div class="alert alert-success mb-4">
+            <span class="icon-[tabler--user-check] size-5"></span>
+            <div>
+                <p class="font-semibold">Supervised by</p>
+                <p class="text-sm"><span id="walk-in-supervisor-name">Manager</span> (<span id="walk-in-supervisor-code">MY-XXXXX</span>)</p>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <div class="flex justify-between text-sm p-3 bg-base-200 rounded-lg">
+                <span class="text-base-content/60">Original Price</span>
+                <span class="font-semibold" id="walk-in-modal-original-price">$0.00</span>
+            </div>
+
+            <div class="form-control">
+                <label class="label" for="walk-in-override-new-price">
+                    <span class="label-text">New Price *</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50">$</span>
+                    <input type="number" id="walk-in-override-new-price" step="0.01" min="0"
+                           class="input input-bordered w-full pl-8" placeholder="0.00"
+                           oninput="updateWalkInOverridePreview()">
+                </div>
+            </div>
+
+            {{-- Discount Preview --}}
+            <div id="walk-in-override-preview" class="hidden p-3 bg-success/10 border border-success/20 rounded-lg">
+                <div class="flex justify-between text-sm">
+                    <span class="text-success/80">Discount Amount</span>
+                    <span class="font-semibold text-success" id="walk-in-preview-discount">$0.00</span>
+                </div>
+                <div class="flex justify-between text-sm mt-1">
+                    <span class="text-success/80">Discount Percentage</span>
+                    <span class="font-semibold text-success" id="walk-in-preview-percent">0%</span>
+                </div>
+            </div>
+
+            <p id="walk-in-override-modal-error" class="text-error text-sm hidden"></p>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-6">
+            <button type="button" onclick="closeWalkInPersonalOverrideModal()" class="btn btn-ghost">Cancel</button>
+            <button type="button" onclick="applyWalkInPersonalOverride()" id="walk-in-apply-override-btn" class="btn btn-success">
+                <span class="icon-[tabler--check] size-4"></span>
+                Apply Override
+            </button>
+        </div>
+    </div>
+</div>

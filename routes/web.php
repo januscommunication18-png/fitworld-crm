@@ -526,10 +526,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/verify', [PriceOverrideController::class, 'verify'])->name('verify');
         Route::get('/can-request', [PriceOverrideController::class, 'canRequest'])->name('can-request');
         Route::post('/fetch-approved', [PriceOverrideController::class, 'fetchApproved'])->name('fetch-approved');
+        Route::get('/personal-code', [PriceOverrideController::class, 'getPersonalCode'])->name('personal-code');
         Route::get('/pending', [PriceOverrideController::class, 'pending'])->name('pending');
         Route::get('/history', [PriceOverrideController::class, 'history'])->name('history');
         Route::get('/stats', [PriceOverrideController::class, 'stats'])->name('stats');
         Route::get('/review/{code}', [PriceOverrideController::class, 'review'])->name('review');
+        Route::get('/{priceOverrideRequest}/status', [PriceOverrideController::class, 'status'])->name('status');
         Route::post('/{priceOverrideRequest}/approve', [PriceOverrideController::class, 'approve'])->name('approve');
         Route::post('/{priceOverrideRequest}/reject', [PriceOverrideController::class, 'reject'])->name('reject');
         Route::post('/{priceOverrideRequest}/cancel', [PriceOverrideController::class, 'cancel'])->name('cancel');

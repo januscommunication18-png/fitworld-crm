@@ -34,6 +34,13 @@ class SpaceRentalService
                 $host->default_currency
             );
 
+            // Apply price override if provided
+            if (isset($data['override_total'])) {
+                $pricing['subtotal'] = $data['override_total'];
+                $pricing['tax_amount'] = 0; // No tax on overridden price
+                $pricing['total'] = $data['override_total'];
+            }
+
             // Determine deposit status
             $depositAmount = $config->getDepositForCurrency($host->default_currency) ?? 0;
             $depositStatus = $depositAmount > 0

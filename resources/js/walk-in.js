@@ -758,6 +758,196 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// ==========================================
+// Price Override Functions
+// ==========================================
+
+let walkInOverrideCode = null;
+let walkInOverrideSupervisor = null;
+
+async function verifyWalkInOverrideCode() {
+    const code = document.getElementById('walk-in-override-code').value.trim().toUpperCase();
+    const verifyBtn = document.getElementById('walk-in-verify-btn');
+    const errorEl = document.getElementById('walk-in-override-error');
+    const messageEl = document.getElementById('walk-in-override-message');
+
+    if (!code) {
+        errorEl.textContent = 'Please enter a code.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    errorEl.classList.add('hidden');
+    messageEl.classList.add('hidden');
+    verifyBtn.disabled = true;
+    verifyBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+
+    try {
+        const response = await fetch('/price-override/verify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ code: code })
+        });
+
+        const data = await response.json();
+
+        if (data.success || data.valid) {
+            if (data.is_personal_code) {
+                // Personal code (MY-XXXXX) - show modal to enter price
+                walkInOverrideCode = data.code;
+                walkInOverrideSupervisor = data.data?.authorized_by?.name || 'Manager';
+                showWalkInPersonalOverrideModal(data.code, walkInOverrideSupervisor);
+            } else if (data.data?.is_approved) {
+                // Approved override request - apply the preset price
+                applyWalkInApprovedOverride(data.data);
+            } else if (data.data?.is_pending) {
+                messageEl.textContent = 'This override is still pending approval.';
+                messageEl.className = 'text-xs mt-1 text-warning';
+                messageEl.classList.remove('hidden');
+            }
+        } else {
+            errorEl.textContent = data.message || 'Invalid code.';
+            errorEl.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Verify error:', error);
+        errorEl.textContent = 'Error verifying code. Please try again.';
+        errorEl.classList.remove('hidden');
+    } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = 'Verify';
+    }
+}
+
+function showWalkInPersonalOverrideModal(code, supervisorName) {
+    const modal = document.getElementById('walk-in-personal-override-modal');
+    document.getElementById('walk-in-supervisor-name').textContent = supervisorName;
+    document.getElementById('walk-in-supervisor-code').textContent = code;
+
+    // Set original price from session data
+    const originalPrice = walkInState.sessionData?.price || 0;
+    document.getElementById('walk-in-modal-original-price').textContent = '$' + parseFloat(originalPrice).toFixed(2);
+    document.getElementById('walk-in-override-new-price').value = '';
+    document.getElementById('walk-in-override-preview').classList.add('hidden');
+    document.getElementById('walk-in-override-modal-error').classList.add('hidden');
+
+    modal.classList.remove('hidden');
+
+    // Focus on price input
+    setTimeout(() => {
+        document.getElementById('walk-in-override-new-price').focus();
+    }, 100);
+}
+
+function closeWalkInPersonalOverrideModal() {
+    const modal = document.getElementById('walk-in-personal-override-modal');
+    modal.classList.add('hidden');
+}
+
+function updateWalkInOverridePreview() {
+    const newPrice = parseFloat(document.getElementById('walk-in-override-new-price').value) || 0;
+    const originalPrice = walkInState.sessionData?.price || 0;
+    const preview = document.getElementById('walk-in-override-preview');
+
+    if (newPrice > 0 && newPrice < originalPrice) {
+        const discountAmount = originalPrice - newPrice;
+        const discountPercent = ((discountAmount / originalPrice) * 100).toFixed(1);
+
+        document.getElementById('walk-in-preview-discount').textContent = '$' + discountAmount.toFixed(2);
+        document.getElementById('walk-in-preview-percent').textContent = discountPercent + '%';
+        preview.classList.remove('hidden');
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+function applyWalkInPersonalOverride() {
+    const newPrice = parseFloat(document.getElementById('walk-in-override-new-price').value);
+    const originalPrice = walkInState.sessionData?.price || 0;
+    const errorEl = document.getElementById('walk-in-override-modal-error');
+
+    if (!newPrice || newPrice < 0) {
+        errorEl.textContent = 'Please enter a valid price.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    if (newPrice >= originalPrice) {
+        errorEl.textContent = 'New price must be less than original price ($' + originalPrice.toFixed(2) + ').';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    // Apply the override
+    document.getElementById('walk-in-price-override-code').value = walkInOverrideCode;
+    document.getElementById('manual-payment-amount').value = newPrice.toFixed(2);
+    document.getElementById('walk-in-price-paid').value = newPrice.toFixed(2);
+
+    // Update UI
+    const overrideDisplay = document.getElementById('walk-in-applied-override');
+    const overrideInput = document.getElementById('walk-in-override-input');
+    const supervisorText = document.getElementById('walk-in-override-supervisor');
+
+    supervisorText.textContent = 'Supervised by ' + walkInOverrideSupervisor + ' (' + walkInOverrideCode + ')';
+    overrideDisplay.classList.remove('hidden');
+    overrideInput.classList.add('hidden');
+
+    // Clear the code input
+    document.getElementById('walk-in-override-code').value = '';
+    document.getElementById('walk-in-override-error').classList.add('hidden');
+
+    // Close modal
+    closeWalkInPersonalOverrideModal();
+
+    showToast('Price override applied: $' + newPrice.toFixed(2), 'success');
+}
+
+function applyWalkInApprovedOverride(data) {
+    // Apply the preset price from approved override
+    document.getElementById('walk-in-price-override-code').value = data.confirmation_code;
+    document.getElementById('manual-payment-amount').value = parseFloat(data.requested_price).toFixed(2);
+    document.getElementById('walk-in-price-paid').value = parseFloat(data.requested_price).toFixed(2);
+
+    // Update UI
+    const overrideDisplay = document.getElementById('walk-in-applied-override');
+    const overrideInput = document.getElementById('walk-in-override-input');
+    const supervisorText = document.getElementById('walk-in-override-supervisor');
+
+    const approvedBy = data.actioned_by?.name || data.manager?.name || 'Manager';
+    supervisorText.textContent = 'Approved by ' + approvedBy + ' (' + data.confirmation_code + ')';
+    overrideDisplay.classList.remove('hidden');
+    overrideInput.classList.add('hidden');
+
+    // Clear the code input
+    document.getElementById('walk-in-override-code').value = '';
+
+    showToast('Approved override applied: $' + parseFloat(data.requested_price).toFixed(2), 'success');
+}
+
+function removeWalkInOverride() {
+    walkInOverrideCode = null;
+    walkInOverrideSupervisor = null;
+
+    // Clear hidden field
+    document.getElementById('walk-in-price-override-code').value = '';
+
+    // Reset UI
+    const overrideDisplay = document.getElementById('walk-in-applied-override');
+    const overrideInput = document.getElementById('walk-in-override-input');
+
+    overrideDisplay.classList.add('hidden');
+    overrideInput.classList.remove('hidden');
+
+    // Reset price to original
+    const originalPrice = walkInState.sessionData?.price || 0;
+    document.getElementById('manual-payment-amount').value = originalPrice.toFixed(2);
+    document.getElementById('walk-in-price-paid').value = originalPrice.toFixed(2);
+}
+
 // Export for global access
 window.openWalkInModal = openWalkInModal;
 window.closeWalkInModal = closeWalkInModal;
@@ -776,3 +966,9 @@ window.selectIntakeOption = selectIntakeOption;
 window.updateIntakeWaiverReason = updateIntakeWaiverReason;
 window.toggleCheckInNow = toggleCheckInNow;
 window.startNewWalkIn = startNewWalkIn;
+window.verifyWalkInOverrideCode = verifyWalkInOverrideCode;
+window.showWalkInPersonalOverrideModal = showWalkInPersonalOverrideModal;
+window.closeWalkInPersonalOverrideModal = closeWalkInPersonalOverrideModal;
+window.updateWalkInOverridePreview = updateWalkInOverridePreview;
+window.applyWalkInPersonalOverride = applyWalkInPersonalOverride;
+window.removeWalkInOverride = removeWalkInOverride;

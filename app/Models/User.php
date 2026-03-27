@@ -78,7 +78,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hosts(): BelongsToMany
     {
         return $this->belongsToMany(Host::class, 'host_user')
-            ->withPivot(['role', 'permissions', 'instructor_id', 'is_primary', 'joined_at'])
+            ->withPivot(['role', 'permissions', 'instructor_id', 'is_primary', 'joined_at', 'personal_override_code'])
             ->withTimestamps();
     }
 
@@ -141,6 +141,26 @@ class User extends Authenticatable implements MustVerifyEmail
         $membership = $this->hosts()->where('hosts.id', $host->id)->first();
         $permissions = $membership?->pivot?->permissions;
         return is_string($permissions) ? json_decode($permissions, true) : $permissions;
+    }
+
+    /**
+     * Get user's personal override code for a specific host
+     */
+    public function getPersonalOverrideCode(Host $host): ?string
+    {
+        $membership = $this->hosts()->where('hosts.id', $host->id)->first();
+        return $membership?->pivot?->personal_override_code;
+    }
+
+    /**
+     * Check if user can approve price overrides (has pricing.override permission or is owner/admin)
+     */
+    public function canApprovePriceOverride(?Host $host = null): bool
+    {
+        $host = $host ?? $this->currentHost() ?? $this->host;
+        if (!$host) return false;
+
+        return $this->isOwner($host) || $this->isAdmin($host) || $this->hasPermission('pricing.override', $host);
     }
 
     /**

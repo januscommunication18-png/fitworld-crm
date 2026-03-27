@@ -421,7 +421,86 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-block" id="submit-btn" disabled>
+                        {{-- Price Override Section --}}
+                        @if($canOverridePrice || $canRequestOverride)
+                        <div class="divider my-2"></div>
+
+                        {{-- Hidden fields for override --}}
+                        <input type="hidden" name="price_override_code" id="price_override_code" value="">
+                        <input type="hidden" name="price_override_amount" id="price_override_amount" value="">
+
+                        {{-- Applied Override Display --}}
+                        <div id="applied-override" class="hidden mb-3">
+                            <div class="alert alert-success py-2">
+                                <div class="flex items-center justify-between w-full">
+                                    <div class="flex items-center gap-2">
+                                        <span class="icon-[tabler--discount-check] size-5"></span>
+                                        <div>
+                                            <span class="font-medium" id="applied-override-code">--</span>
+                                            <span class="text-sm" id="applied-override-price"></span>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="removeOverride()" class="btn btn-ghost btn-xs btn-circle">
+                                        <span class="icon-[tabler--x] size-4"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Override Input Section --}}
+                        <div id="override-input-section">
+                            @if($canOverridePrice)
+                            {{-- Direct price edit for managers/owners --}}
+                            <div class="form-control mb-2">
+                                <label class="label py-1" for="direct-override-price">
+                                    <span class="label-text text-sm">Override Total Price</span>
+                                </label>
+                                <div class="join w-full">
+                                    <span class="join-item btn btn-sm">{{ \App\Models\MembershipPlan::getCurrencySymbol($defaultCurrency) }}</span>
+                                    <input type="number" step="0.01" min="0" id="direct-override-price"
+                                           class="input input-bordered input-sm join-item flex-1"
+                                           placeholder="Enter new total">
+                                    <button type="button" onclick="applyDirectOverride()" class="btn btn-primary btn-sm join-item">Apply</button>
+                                </div>
+                            </div>
+                            @else
+                            {{-- Override code input for staff --}}
+                            <div class="form-control mb-2">
+                                <label class="label py-1" for="override_code_input">
+                                    <span class="label-text text-sm">Price Override Code</span>
+                                </label>
+                                <div class="join w-full">
+                                    <input type="text" id="override_code_input"
+                                           class="input input-bordered input-sm join-item flex-1 uppercase"
+                                           placeholder="PO-XXXXX or MY-XXXXX">
+                                    <button type="button" id="verify-override-btn" onclick="verifyOverrideCode()" class="btn btn-secondary btn-sm join-item">Verify</button>
+                                </div>
+                            </div>
+                            <p id="override-error" class="text-error text-xs mt-1 hidden"></p>
+
+                            {{-- Pending Override Display --}}
+                            <div id="override-pending" class="hidden">
+                                <div class="alert alert-warning py-2">
+                                    <span class="icon-[tabler--clock] size-5"></span>
+                                    <div class="flex-1">
+                                        <span class="text-sm">Awaiting approval: <strong id="pending-code">--</strong></span>
+                                    </div>
+                                    <button type="button" onclick="checkOverrideStatus()" class="btn btn-ghost btn-xs">
+                                        <span class="icon-[tabler--refresh] size-3"></span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {{-- Request Override Button --}}
+                            <button type="button" onclick="showOverrideModal()" id="request-override-btn" class="btn btn-outline btn-secondary btn-sm btn-block mt-2">
+                                <span class="icon-[tabler--discount] size-4"></span>
+                                Request Price Override
+                            </button>
+                            @endif
+                        </div>
+                        @endif
+
+                        <button type="submit" class="btn btn-primary btn-block mt-3" id="submit-btn" disabled>
                             <span class="icon-[tabler--check] size-5"></span>
                             {{ $trans['space_rentals.create_booking'] ?? 'Confirm Booking' }}
                         </button>
@@ -434,6 +513,78 @@
             </div>
         </div>
     </form>
+</div>
+
+{{-- Price Override Request Modal --}}
+@if($canRequestOverride)
+<div id="override-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="bg-base-100 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-lg font-bold mb-4">Request Price Override</h3>
+        <div class="space-y-4">
+            <div class="form-control">
+                <label class="label" for="override-new-price"><span class="label-text">New Total Price</span></label>
+                <div class="join w-full">
+                    <span class="join-item btn">{{ \App\Models\MembershipPlan::getCurrencySymbol($defaultCurrency) }}</span>
+                    <input type="number" step="0.01" min="0" id="override-new-price" class="input input-bordered join-item flex-1" placeholder="0.00">
+                </div>
+                <label class="label"><span class="label-text-alt">Original: <span id="modal-original-price">$0.00</span></span></label>
+            </div>
+            <div class="form-control">
+                <label class="label" for="override-reason"><span class="label-text">Reason</span></label>
+                <textarea id="override-reason" class="textarea textarea-bordered" rows="2" placeholder="Why is this override needed?"></textarea>
+            </div>
+            <p id="modal-error" class="text-error text-sm hidden"></p>
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+            <button type="button" onclick="closeOverrideModal()" class="btn btn-ghost">Cancel</button>
+            <button type="button" onclick="submitOverrideRequest()" id="submit-override-btn" class="btn btn-primary">
+                <span class="icon-[tabler--send] size-4"></span>
+                Send Request
+            </button>
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- Personal Override Modal --}}
+<div id="personal-override-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="bg-base-100 rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-lg font-bold mb-4">
+            <span class="icon-[tabler--shield-check] size-5 text-secondary mr-2"></span>
+            Personal Override
+        </h3>
+        <div class="alert alert-info mb-4 py-2">
+            <span class="icon-[tabler--info-circle] size-5"></span>
+            <span class="text-sm">Supervised by <strong id="personal-supervisor-name">--</strong> (<span id="personal-supervisor-code">--</span>)</span>
+        </div>
+        <div class="space-y-4">
+            <div class="flex justify-between text-sm">
+                <span class="text-base-content/60">Original Price:</span>
+                <span class="font-medium" id="personal-modal-original-price">$0.00</span>
+            </div>
+            <div class="form-control">
+                <label class="label" for="personal-override-new-price"><span class="label-text">New Total Price</span></label>
+                <div class="join w-full">
+                    <span class="join-item btn">{{ \App\Models\MembershipPlan::getCurrencySymbol($defaultCurrency) }}</span>
+                    <input type="number" step="0.01" min="0" id="personal-override-new-price" class="input input-bordered join-item flex-1" placeholder="0.00" oninput="updatePersonalOverridePreview()">
+                </div>
+            </div>
+            <div id="personal-override-preview" class="hidden bg-success/10 border border-success/30 rounded-lg p-3">
+                <div class="flex justify-between text-sm">
+                    <span>Discount:</span>
+                    <span class="font-bold text-success" id="personal-preview-discount">-$0.00</span>
+                </div>
+            </div>
+            <p id="personal-modal-error" class="text-error text-sm hidden"></p>
+        </div>
+        <div class="flex justify-end gap-2 mt-6">
+            <button type="button" onclick="closePersonalOverrideModal()" class="btn btn-ghost">Cancel</button>
+            <button type="button" onclick="applyPersonalOverride()" class="btn btn-success">
+                <span class="icon-[tabler--check] size-4"></span>
+                Apply Override
+            </button>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -771,6 +922,283 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSummary();
     validateForm();
 });
+
+// ========== Price Override Functions ==========
+let pendingOverrideId = null;
+let pendingOverrideCode = null;
+let statusCheckInterval = null;
+let personalOverrideCode = null;
+let personalOverrideSupervisor = null;
+
+function getCalculatedTotal() {
+    if (!selectedSpaceId || !spaceData[selectedSpaceId]) return 0;
+    const space = spaceData[selectedSpaceId];
+    const startInput = document.getElementById('start_time');
+    const endInput = document.getElementById('end_time');
+    if (!startInput.value || !endInput.value) return 0;
+    const start = new Date('2000-01-01 ' + startInput.value);
+    const end = new Date('2000-01-01 ' + endInput.value);
+    const hours = (end - start) / (1000 * 60 * 60);
+    return hours > 0 ? space.rate * hours : 0;
+}
+
+@if($canOverridePrice ?? false)
+function applyDirectOverride() {
+    const priceInput = document.getElementById('direct-override-price');
+    const newPrice = parseFloat(priceInput.value);
+    if (isNaN(newPrice) || newPrice < 0) {
+        showFormError('Please enter a valid price.');
+        return;
+    }
+    applyOverride('DIRECT', newPrice);
+    priceInput.value = '';
+}
+@endif
+
+@if($canRequestOverride ?? false)
+function showOverrideModal() {
+    const total = getCalculatedTotal();
+    document.getElementById('modal-original-price').textContent = currencySymbol + total.toFixed(2);
+    document.getElementById('override-new-price').value = '';
+    document.getElementById('override-reason').value = '';
+    document.getElementById('modal-error').classList.add('hidden');
+    document.getElementById('override-modal').classList.remove('hidden');
+}
+
+function closeOverrideModal() {
+    document.getElementById('override-modal').classList.add('hidden');
+}
+
+function submitOverrideRequest() {
+    const newPrice = parseFloat(document.getElementById('override-new-price').value);
+    const reason = document.getElementById('override-reason').value.trim();
+    const originalPrice = getCalculatedTotal();
+    const modalError = document.getElementById('modal-error');
+    const submitBtn = document.getElementById('submit-override-btn');
+
+    if (isNaN(newPrice) || newPrice < 0) {
+        modalError.textContent = 'Please enter a valid price.';
+        modalError.classList.remove('hidden');
+        return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="loading loading-spinner loading-sm"></span>';
+
+    fetch('{{ route("price-override.store") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            original_price: originalPrice,
+            requested_price: newPrice,
+            reason: reason,
+            bookable_type: 'space_rental',
+            client_id: selectedClientId || null
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            closeOverrideModal();
+            pendingOverrideId = data.data.id;
+            pendingOverrideCode = data.data.confirmation_code;
+            document.getElementById('pending-code').textContent = data.data.confirmation_code;
+            document.getElementById('override-input-section').querySelector('#request-override-btn')?.classList.add('hidden');
+            document.getElementById('override-pending').classList.remove('hidden');
+            startStatusCheck();
+        } else {
+            modalError.textContent = data.message || 'Failed to create override request.';
+            modalError.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        modalError.textContent = 'Failed to create override request. Please try again.';
+        modalError.classList.remove('hidden');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span class="icon-[tabler--send] size-4"></span> Send Request';
+    });
+}
+@endif
+
+function verifyOverrideCode() {
+    const code = document.getElementById('override_code_input').value.trim().toUpperCase();
+    const errorEl = document.getElementById('override-error');
+    const btn = document.getElementById('verify-override-btn');
+
+    if (!code) {
+        errorEl.textContent = 'Please enter a code.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    errorEl.classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+
+    fetch('{{ route("price-override.verify") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ code: code })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = 'Verify';
+
+        if (data.success || data.valid) {
+            if (data.is_personal_code) {
+                personalOverrideCode = data.code;
+                personalOverrideSupervisor = data.data?.authorized_by?.name || 'Manager';
+                showPersonalOverrideModal(data.code, personalOverrideSupervisor);
+            } else if (data.data?.is_approved || data.valid) {
+                applyOverride(data.code || data.data?.confirmation_code, data.requested_price || data.data?.requested_price);
+            } else if (data.data?.is_pending) {
+                document.getElementById('pending-code').textContent = data.data.confirmation_code;
+                document.getElementById('override-input-section').querySelector('#request-override-btn')?.classList.add('hidden');
+                document.getElementById('override-pending').classList.remove('hidden');
+                pendingOverrideId = data.data.id;
+                pendingOverrideCode = data.data.confirmation_code;
+                startStatusCheck();
+            }
+        } else {
+            errorEl.textContent = data.message || 'Invalid or expired code.';
+            errorEl.classList.remove('hidden');
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = 'Verify';
+        errorEl.textContent = 'Error verifying code.';
+        errorEl.classList.remove('hidden');
+    });
+}
+
+function showPersonalOverrideModal(code, supervisorName) {
+    document.getElementById('personal-supervisor-name').textContent = supervisorName;
+    document.getElementById('personal-supervisor-code').textContent = code;
+    const originalPrice = getCalculatedTotal();
+    document.getElementById('personal-modal-original-price').textContent = currencySymbol + originalPrice.toFixed(2);
+    document.getElementById('personal-override-new-price').value = '';
+    document.getElementById('personal-override-preview').classList.add('hidden');
+    document.getElementById('personal-modal-error').classList.add('hidden');
+    document.getElementById('personal-override-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('personal-override-new-price').focus(), 100);
+}
+
+function closePersonalOverrideModal() {
+    document.getElementById('personal-override-modal').classList.add('hidden');
+    personalOverrideCode = null;
+    personalOverrideSupervisor = null;
+}
+
+function updatePersonalOverridePreview() {
+    const newPrice = parseFloat(document.getElementById('personal-override-new-price').value);
+    const originalPrice = getCalculatedTotal();
+    const previewDiv = document.getElementById('personal-override-preview');
+
+    if (!isNaN(newPrice) && newPrice >= 0 && newPrice < originalPrice) {
+        const discount = originalPrice - newPrice;
+        document.getElementById('personal-preview-discount').textContent = '-' + currencySymbol + discount.toFixed(2);
+        previewDiv.classList.remove('hidden');
+    } else {
+        previewDiv.classList.add('hidden');
+    }
+}
+
+function applyPersonalOverride() {
+    const newPrice = parseFloat(document.getElementById('personal-override-new-price').value);
+    const errorEl = document.getElementById('personal-modal-error');
+
+    if (isNaN(newPrice) || newPrice < 0) {
+        errorEl.textContent = 'Please enter a valid price.';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+
+    applyOverride(personalOverrideCode, newPrice);
+    closePersonalOverrideModal();
+}
+
+function applyOverride(code, price) {
+    document.getElementById('price_override_code').value = code;
+    document.getElementById('price_override_amount').value = price;
+    document.getElementById('applied-override-code').textContent = code;
+    document.getElementById('applied-override-price').textContent = ' - ' + currencySymbol + parseFloat(price).toFixed(2);
+    document.getElementById('applied-override').classList.remove('hidden');
+    document.getElementById('override-input-section').classList.add('hidden');
+    document.getElementById('override-pending').classList.add('hidden');
+    const codeInput = document.getElementById('override_code_input');
+    if (codeInput) codeInput.value = '';
+
+    // Update summary total
+    document.getElementById('summary-subtotal').textContent = currencySymbol + parseFloat(price).toFixed(2);
+    document.getElementById('summary-total').textContent = currencySymbol + parseFloat(price).toFixed(2);
+
+    stopStatusCheck();
+}
+
+function removeOverride() {
+    document.getElementById('price_override_code').value = '';
+    document.getElementById('price_override_amount').value = '';
+    document.getElementById('applied-override').classList.add('hidden');
+    document.getElementById('override-input-section').classList.remove('hidden');
+    const requestBtn = document.getElementById('request-override-btn');
+    if (requestBtn) requestBtn.classList.remove('hidden');
+
+    // Reset summary to original price
+    updateSummary();
+    stopStatusCheck();
+}
+
+function startStatusCheck() {
+    if (statusCheckInterval) clearInterval(statusCheckInterval);
+    checkOverrideStatus();
+    statusCheckInterval = setInterval(checkOverrideStatus, 5000);
+}
+
+function stopStatusCheck() {
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        statusCheckInterval = null;
+    }
+}
+
+function checkOverrideStatus() {
+    if (!pendingOverrideId) return;
+
+    fetch(`{{ url('price-override') }}/${pendingOverrideId}/status`, {
+        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === 'approved') {
+            stopStatusCheck();
+            applyOverride(data.code, data.requested_price);
+        } else if (data.status === 'rejected' || data.status === 'expired') {
+            stopStatusCheck();
+            document.getElementById('override-pending').classList.add('hidden');
+            document.getElementById('override-input-section').classList.remove('hidden');
+            const requestBtn = document.getElementById('request-override-btn');
+            if (requestBtn) requestBtn.classList.remove('hidden');
+            const errorEl = document.getElementById('override-error');
+            errorEl.textContent = data.status === 'rejected'
+                ? 'Override request was rejected.' + (data.rejection_reason ? ' Reason: ' + data.rejection_reason : '')
+                : 'Override request expired.';
+            errorEl.classList.remove('hidden');
+            pendingOverrideId = null;
+            pendingOverrideCode = null;
+        }
+    })
+    .catch(error => console.error('Status check error:', error));
+}
 </script>
 @endpush
 @endsection

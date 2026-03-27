@@ -41,7 +41,8 @@ class SpaceRentalController extends Controller
 
     public function create(Request $request)
     {
-        $host = auth()->user()->host;
+        $user = auth()->user();
+        $host = $user->host;
         $configs = $host->spaceRentalConfigs()->active()->with(['location', 'room', 'host'])->orderBy('name')->get();
         $clients = $host->clients()->orderBy('updated_at', 'desc')->take(10)->get();
         $purposes = SpaceRentalConfig::getPurposes();
@@ -55,6 +56,10 @@ class SpaceRentalController extends Controller
         $defaultCurrency = $host->default_currency ?? 'USD';
         $currencySymbols = MembershipPlan::getCurrencySymbols();
 
+        // Price override permissions
+        $canOverridePrice = $user->canApprovePriceOverride($host);
+        $canRequestOverride = $host->hasFeature('price-override') && !$canOverridePrice;
+
         return view('host.space-rentals.create', compact(
             'configs',
             'clients',
@@ -63,13 +68,16 @@ class SpaceRentalController extends Controller
             'selectedConfig',
             'hostCurrencies',
             'defaultCurrency',
-            'currencySymbols'
+            'currencySymbols',
+            'canOverridePrice',
+            'canRequestOverride'
         ));
     }
 
     public function store(Request $request)
     {
-        $host = auth()->user()->host;
+        $user = auth()->user();
+        $host = $user->host;
 
         $data = $request->validate([
             'space_rental_config_id' => 'required|exists:space_rental_configs,id',
@@ -86,6 +94,8 @@ class SpaceRentalController extends Controller
             'end_time' => 'required|date_format:H:i|after:start_time',
             'internal_notes' => 'nullable|string',
             'status' => 'nullable|in:draft,pending,confirmed',
+            'price_override_code' => 'nullable|string|max:20',
+            'price_override_amount' => 'nullable|numeric|min:0',
         ]);
 
         // Verify config belongs to host
@@ -138,7 +148,70 @@ class SpaceRentalController extends Controller
             $rentalData['external_client_company'] = $data['external_client_company'];
         }
 
-        $rental = $this->spaceRentalService->createRental($rentalData, auth()->user());
+        // Handle price override
+        $priceOverrideRequest = null;
+        if (!empty($data['price_override_code'])) {
+            $overrideCode = strtoupper($data['price_override_code']);
+            $priceOverrideService = app(\App\Services\PriceOverrideService::class);
+
+            // Check if this is a direct override (manager/owner editing price directly)
+            if ($overrideCode === 'DIRECT' && !empty($data['price_override_amount'])) {
+                $overridePrice = floatval($data['price_override_amount']);
+                $originalPrice = $config->getHourlyRateForCurrency() * $hours;
+
+                // Log the direct override
+                $priceOverrideRequest = $priceOverrideService->logDirectOverride([
+                    'host_id' => $host->id,
+                    'location_id' => $config->location_id,
+                    'user_id' => $user->id,
+                    'bookable_type' => SpaceRentalConfig::class,
+                    'bookable_id' => $config->id,
+                    'client_id' => $data['client_id'] ?? null,
+                    'original_price' => $originalPrice,
+                    'new_price' => $overridePrice,
+                    'metadata' => [
+                        'space_name' => $config->name ?? 'Space Rental',
+                    ],
+                ]);
+
+                $rentalData['override_total'] = $overridePrice;
+            }
+            // Personal override code (MY-XXXXX)
+            elseif ($priceOverrideService->isPersonalCode($overrideCode)) {
+                $codeOwner = $priceOverrideService->verifyPersonalCode($overrideCode, $host);
+                if ($codeOwner && !empty($data['price_override_amount'])) {
+                    $overridePrice = floatval($data['price_override_amount']);
+                    $originalPrice = $config->getHourlyRateForCurrency() * $hours;
+
+                    // Log the personal override
+                    $priceOverrideRequest = $priceOverrideService->logPersonalOverride([
+                        'host_id' => $host->id,
+                        'location_id' => $config->location_id,
+                        'requested_by' => $user->id,
+                        'personal_code' => $overrideCode,
+                        'bookable_type' => SpaceRentalConfig::class,
+                        'bookable_id' => $config->id,
+                        'client_id' => $data['client_id'] ?? null,
+                        'original_price' => $originalPrice,
+                        'new_price' => $overridePrice,
+                    ]);
+
+                    $rentalData['override_total'] = $overridePrice;
+                }
+            } else {
+                // Regular override code (PO-XXXXX) - verify it's approved
+                $overrideRequest = \App\Models\PriceOverrideRequest::where('host_id', $host->id)
+                    ->where('confirmation_code', $overrideCode)
+                    ->where('status', \App\Models\PriceOverrideRequest::STATUS_APPROVED)
+                    ->first();
+
+                if ($overrideRequest) {
+                    $rentalData['override_total'] = $overrideRequest->requested_price;
+                }
+            }
+        }
+
+        $rental = $this->spaceRentalService->createRental($rentalData, $user);
 
         return redirect()->route('space-rentals.show', $rental)
             ->with('success', 'Space rental created successfully.');

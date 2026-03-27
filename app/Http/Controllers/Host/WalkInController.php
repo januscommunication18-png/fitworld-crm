@@ -51,7 +51,8 @@ class WalkInController extends Controller
      */
     public function selectSession(Request $request)
     {
-        $host = auth()->user()->currentHost();
+        $user = auth()->user();
+        $host = $user->currentHost();
         $date = $request->get('date', now()->format('Y-m-d'));
 
         // Check if a specific session is being preloaded
@@ -83,11 +84,19 @@ class WalkInController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        // Price override permissions - only if feature is enabled
+        $hasFeature = $host->hasFeature('price-override');
+        $canOverridePrice = $hasFeature && $user->canApprovePriceOverride($host);
+        $canRequestOverride = $hasFeature && !$user->canApprovePriceOverride($host);
+
         return view('host.walk-in.select-session', [
             'selectedDate' => $date,
             'classPlans' => $classPlans,
             'instructors' => $instructors,
             'preloadSession' => $preloadSession,
+            'canOverridePrice' => $canOverridePrice,
+            'canRequestOverride' => $canRequestOverride,
+            'host' => $host,
         ]);
     }
 
@@ -170,7 +179,8 @@ class WalkInController extends Controller
      */
     public function classSession(ClassSession $classSession)
     {
-        $host = auth()->user()->currentHost();
+        $user = auth()->user();
+        $host = $user->currentHost();
 
         // Verify session belongs to host
         if ($classSession->host_id !== $host->id) {
@@ -191,12 +201,19 @@ class WalkInController extends Controller
             ->where('status', '!=', Booking::STATUS_CANCELLED)
             ->count();
 
+        // Price override permissions - only if feature is enabled
+        $hasFeature = $host->hasFeature('price-override');
+        $canOverridePrice = $hasFeature && $user->canApprovePriceOverride($host);
+        $canRequestOverride = $hasFeature && !$user->canApprovePriceOverride($host);
+
         return view('host.walk-in.class-session', [
             'session' => $classSession,
             'recentClients' => $recentClients,
             'bookedCount' => $bookedCount,
             'spotsRemaining' => $classSession->capacity - $bookedCount,
             'host' => $host,
+            'canOverridePrice' => $canOverridePrice,
+            'canRequestOverride' => $canRequestOverride,
         ]);
     }
 
@@ -205,7 +222,8 @@ class WalkInController extends Controller
      */
     public function serviceSlot(ServiceSlot $serviceSlot)
     {
-        $host = auth()->user()->currentHost();
+        $user = auth()->user();
+        $host = $user->currentHost();
 
         // Verify slot belongs to host
         if ($serviceSlot->host_id !== $host->id) {
@@ -218,9 +236,17 @@ class WalkInController extends Controller
             ->limit(10)
             ->get();
 
+        // Price override permissions - only if feature is enabled
+        $hasFeature = $host->hasFeature('price-override');
+        $canOverridePrice = $hasFeature && $user->canApprovePriceOverride($host);
+        $canRequestOverride = $hasFeature && !$user->canApprovePriceOverride($host);
+
         return view('host.walk-in.service-slot', [
             'slot' => $serviceSlot,
             'recentClients' => $recentClients,
+            'host' => $host,
+            'canOverridePrice' => $canOverridePrice,
+            'canRequestOverride' => $canRequestOverride,
         ]);
     }
 
@@ -442,16 +468,70 @@ class WalkInController extends Controller
 
         // Handle price override (takes precedence over promo codes)
         if (!empty($validated['price_override_code'])) {
-            $priceOverrideRequest = \App\Models\PriceOverrideRequest::where('host_id', $host->id)
-                ->where('confirmation_code', strtoupper($validated['price_override_code']))
-                ->where('status', \App\Models\PriceOverrideRequest::STATUS_APPROVED)
-                ->first();
+            $overrideCode = strtoupper($validated['price_override_code']);
+            $priceOverrideService = app(\App\Services\PriceOverrideService::class);
 
-            if ($priceOverrideRequest) {
-                $discountAmount = $priceOverrideRequest->discount_amount;
+            // Check if this is a direct override (manager/owner editing price directly)
+            if ($overrideCode === 'DIRECT' && !empty($validated['price_override_amount'])) {
+                $overridePrice = floatval($validated['price_override_amount']);
+                $discountAmount = $originalPrice - $overridePrice;
+
+                // Log the direct override
+                $priceOverrideRequest = $priceOverrideService->logDirectOverride([
+                    'host_id' => $host->id,
+                    'location_id' => $classSession->location_id ?? null,
+                    'user_id' => auth()->id(),
+                    'bookable_type' => get_class($classSession),
+                    'bookable_id' => $classSession->id,
+                    'client_id' => $client->id,
+                    'original_price' => $originalPrice,
+                    'new_price' => $overridePrice,
+                    'metadata' => [
+                        'class_name' => $classSession->classPlan?->name ?? $classSession->title ?? 'Class',
+                    ],
+                ]);
+
                 // Update the price_paid to reflect the override price
-                if (isset($validated['price_paid'])) {
-                    $validated['price_paid'] = $priceOverrideRequest->requested_price;
+                $validated['price_paid'] = $overridePrice;
+            }
+            // Check if this is a personal code (MY-XXXXX)
+            elseif ($priceOverrideService->isPersonalCode($overrideCode)) {
+                // Verify the personal code
+                $codeOwner = $priceOverrideService->verifyPersonalCode($overrideCode, $host);
+
+                if ($codeOwner && !empty($validated['price_override_amount'])) {
+                    $overridePrice = floatval($validated['price_override_amount']);
+                    $discountAmount = $originalPrice - $overridePrice;
+
+                    // Log the personal override
+                    $priceOverrideRequest = $priceOverrideService->logPersonalOverride([
+                        'host_id' => $host->id,
+                        'location_id' => $classSession->location_id ?? null,
+                        'requested_by' => auth()->id(),
+                        'personal_code' => $overrideCode,
+                        'bookable_type' => get_class($classSession),
+                        'bookable_id' => $classSession->id,
+                        'client_id' => $client->id,
+                        'original_price' => $originalPrice,
+                        'new_price' => $overridePrice,
+                    ]);
+
+                    // Update the price_paid to reflect the override price
+                    $validated['price_paid'] = $overridePrice;
+                }
+            } else {
+                // Regular override request code (PO-XXXXX)
+                $priceOverrideRequest = \App\Models\PriceOverrideRequest::where('host_id', $host->id)
+                    ->where('confirmation_code', $overrideCode)
+                    ->where('status', \App\Models\PriceOverrideRequest::STATUS_APPROVED)
+                    ->first();
+
+                if ($priceOverrideRequest) {
+                    $discountAmount = $priceOverrideRequest->discount_amount;
+                    // Update the price_paid to reflect the override price
+                    if (isset($validated['price_paid'])) {
+                        $validated['price_paid'] = $priceOverrideRequest->requested_price;
+                    }
                 }
             }
         }
@@ -546,6 +626,8 @@ class WalkInController extends Controller
             'offer_id' => 'nullable|integer|exists:offers,id',
             'promo_code' => 'nullable|string|max:50',
             'discount_amount' => 'nullable|numeric|min:0',
+            'price_override_code' => 'nullable|string|max:20',
+            'price_override_amount' => 'nullable|numeric|min:0',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
@@ -554,8 +636,74 @@ class WalkInController extends Controller
         $offer = null;
         $discountAmount = 0;
         $originalPrice = $serviceSlot->price ?? $serviceSlot->servicePlan?->price ?? 0;
+        $priceOverrideRequest = null;
 
-        if (!empty($validated['offer_id'])) {
+        // Handle price override (takes precedence over promo codes)
+        if (!empty($validated['price_override_code'])) {
+            $overrideCode = strtoupper($validated['price_override_code']);
+            $priceOverrideService = app(\App\Services\PriceOverrideService::class);
+
+            // Check if this is a direct override (manager/owner editing price directly)
+            if ($overrideCode === 'DIRECT' && !empty($validated['price_override_amount'])) {
+                $overridePrice = floatval($validated['price_override_amount']);
+                $discountAmount = $originalPrice - $overridePrice;
+
+                // Log the direct override
+                $priceOverrideRequest = $priceOverrideService->logDirectOverride([
+                    'host_id' => $host->id,
+                    'location_id' => $serviceSlot->location_id ?? null,
+                    'user_id' => auth()->id(),
+                    'bookable_type' => get_class($serviceSlot),
+                    'bookable_id' => $serviceSlot->id,
+                    'client_id' => $client->id,
+                    'original_price' => $originalPrice,
+                    'new_price' => $overridePrice,
+                    'metadata' => [
+                        'service_name' => $serviceSlot->servicePlan?->name ?? 'Service',
+                    ],
+                ]);
+
+                $validated['price_paid'] = $overridePrice;
+            }
+            // Check if this is a personal code (MY-XXXXX)
+            elseif ($priceOverrideService->isPersonalCode($overrideCode)) {
+                $codeOwner = $priceOverrideService->verifyPersonalCode($overrideCode, $host);
+
+                if ($codeOwner && !empty($validated['price_override_amount'])) {
+                    $overridePrice = floatval($validated['price_override_amount']);
+                    $discountAmount = $originalPrice - $overridePrice;
+
+                    // Log the personal override
+                    $priceOverrideRequest = $priceOverrideService->logPersonalOverride([
+                        'host_id' => $host->id,
+                        'location_id' => $serviceSlot->location_id ?? null,
+                        'requested_by' => auth()->id(),
+                        'personal_code' => $overrideCode,
+                        'bookable_type' => get_class($serviceSlot),
+                        'bookable_id' => $serviceSlot->id,
+                        'client_id' => $client->id,
+                        'original_price' => $originalPrice,
+                        'new_price' => $overridePrice,
+                    ]);
+
+                    $validated['price_paid'] = $overridePrice;
+                }
+            } else {
+                // Regular override request code (PO-XXXXX)
+                $priceOverrideRequest = \App\Models\PriceOverrideRequest::where('host_id', $host->id)
+                    ->where('confirmation_code', $overrideCode)
+                    ->where('status', \App\Models\PriceOverrideRequest::STATUS_APPROVED)
+                    ->first();
+
+                if ($priceOverrideRequest) {
+                    $discountAmount = $priceOverrideRequest->discount_amount;
+                    $validated['price_paid'] = $priceOverrideRequest->requested_price;
+                }
+            }
+        }
+
+        // Only process promo code offer if no price override was applied
+        if (!$priceOverrideRequest && !empty($validated['offer_id'])) {
             $offer = \App\Models\Offer::where('id', $validated['offer_id'])
                 ->where('host_id', $host->id)
                 ->first();
@@ -595,6 +743,15 @@ class WalkInController extends Controller
                     get_class($booking),
                     $booking->id
                 );
+            }
+
+            // Record price override usage if applicable
+            if ($priceOverrideRequest && $priceOverrideRequest->status === \App\Models\PriceOverrideRequest::STATUS_APPROVED) {
+                $metadata = $priceOverrideRequest->metadata ?? [];
+                $metadata['applied_at'] = now()->toIso8601String();
+                $metadata['booking_id'] = $booking->id;
+                $metadata['booking_type'] = get_class($booking);
+                $priceOverrideRequest->update(['metadata' => $metadata]);
             }
 
             return redirect()
@@ -1055,7 +1212,8 @@ class WalkInController extends Controller
      */
     public function selectServiceSlot(Request $request)
     {
-        $host = auth()->user()->currentHost();
+        $user = auth()->user();
+        $host = $user->currentHost();
 
         // Get active service plans
         $servicePlans = ServicePlan::where('host_id', $host->id)
@@ -1082,11 +1240,19 @@ class WalkInController extends Controller
             ? $preloadSlot->start_time->format('Y-m-d')
             : $request->get('date', now()->format('Y-m-d'));
 
+        // Price override permissions - only if feature is enabled
+        $hasFeature = $host->hasFeature('price-override');
+        $canOverridePrice = $hasFeature && $user->canApprovePriceOverride($host);
+        $canRequestOverride = $hasFeature && !$user->canApprovePriceOverride($host);
+
         return view('host.walk-in.select-service-slot', compact(
             'servicePlans',
             'instructors',
             'selectedDate',
-            'preloadSlot'
+            'preloadSlot',
+            'host',
+            'canOverridePrice',
+            'canRequestOverride'
         ));
     }
 
@@ -1256,7 +1422,8 @@ class WalkInController extends Controller
      */
     public function selectMembership(Request $request)
     {
-        $host = auth()->user()->currentHost();
+        $user = auth()->user();
+        $host = $user->currentHost();
 
         // Get active membership plans
         $membershipPlans = MembershipPlan::where('host_id', $host->id)
@@ -1285,13 +1452,21 @@ class WalkInController extends Controller
             }
         }
 
+        // Price override permissions - only if feature is enabled
+        $hasFeature = $host->hasFeature('price-override');
+        $canOverridePrice = $hasFeature && $user->canApprovePriceOverride($host);
+        $canRequestOverride = $hasFeature && !$user->canApprovePriceOverride($host);
+
         return view('host.walk-in.select-membership', compact(
             'membershipPlans',
             'hostCurrencies',
             'defaultCurrency',
             'currencySymbols',
             'selectedClassSession',
-            'preselectedMembershipPlanId'
+            'preselectedMembershipPlanId',
+            'host',
+            'canOverridePrice',
+            'canRequestOverride'
         ));
     }
 
@@ -1348,6 +1523,8 @@ class WalkInController extends Controller
             'discount_amount' => 'nullable|numeric|min:0',
             'class_session_id' => 'nullable|exists:class_sessions,id',
             'book_into_class' => 'nullable|boolean',
+            'price_override_code' => 'nullable|string|max:20',
+            'price_override_amount' => 'nullable|numeric|min:0',
         ]);
 
         // Verify client belongs to host
@@ -1363,8 +1540,74 @@ class WalkInController extends Controller
         $discountAmount = 0;
         $defaultCurrency = $host->default_currency ?? 'USD';
         $originalPrice = $membershipPlan->getPriceForCurrency($defaultCurrency) ?? 0;
+        $priceOverrideRequest = null;
 
-        if (!empty($validated['offer_id'])) {
+        // Handle price override (takes precedence over promo codes)
+        if (!empty($validated['price_override_code'])) {
+            $overrideCode = strtoupper($validated['price_override_code']);
+            $priceOverrideService = app(\App\Services\PriceOverrideService::class);
+
+            // Check if this is a direct override (manager/owner editing price directly)
+            if ($overrideCode === 'DIRECT' && !empty($validated['price_override_amount'])) {
+                $overridePrice = floatval($validated['price_override_amount']);
+                $discountAmount = $originalPrice - $overridePrice;
+
+                // Log the direct override
+                $priceOverrideRequest = $priceOverrideService->logDirectOverride([
+                    'host_id' => $host->id,
+                    'location_id' => null,
+                    'user_id' => auth()->id(),
+                    'bookable_type' => MembershipPlan::class,
+                    'bookable_id' => $membershipPlan->id,
+                    'client_id' => $client->id,
+                    'original_price' => $originalPrice,
+                    'new_price' => $overridePrice,
+                    'metadata' => [
+                        'membership_name' => $membershipPlan->name ?? 'Membership',
+                    ],
+                ]);
+
+                $validated['price_paid'] = $overridePrice;
+            }
+            // Check if this is a personal code (MY-XXXXX)
+            elseif ($priceOverrideService->isPersonalCode($overrideCode)) {
+                $codeOwner = $priceOverrideService->verifyPersonalCode($overrideCode, $host);
+
+                if ($codeOwner && !empty($validated['price_override_amount'])) {
+                    $overridePrice = floatval($validated['price_override_amount']);
+                    $discountAmount = $originalPrice - $overridePrice;
+
+                    // Log the personal override
+                    $priceOverrideRequest = $priceOverrideService->logPersonalOverride([
+                        'host_id' => $host->id,
+                        'location_id' => null,
+                        'requested_by' => auth()->id(),
+                        'personal_code' => $overrideCode,
+                        'bookable_type' => MembershipPlan::class,
+                        'bookable_id' => $membershipPlan->id,
+                        'client_id' => $client->id,
+                        'original_price' => $originalPrice,
+                        'new_price' => $overridePrice,
+                    ]);
+
+                    $validated['price_paid'] = $overridePrice;
+                }
+            } else {
+                // Regular override request code (PO-XXXXX)
+                $priceOverrideRequest = \App\Models\PriceOverrideRequest::where('host_id', $host->id)
+                    ->where('confirmation_code', $overrideCode)
+                    ->where('status', \App\Models\PriceOverrideRequest::STATUS_APPROVED)
+                    ->first();
+
+                if ($priceOverrideRequest) {
+                    $discountAmount = $priceOverrideRequest->discount_amount;
+                    $validated['price_paid'] = $priceOverrideRequest->requested_price;
+                }
+            }
+        }
+
+        // Only process promo code offer if no price override was applied
+        if (!$priceOverrideRequest && !empty($validated['offer_id'])) {
             $offer = Offer::where('id', $validated['offer_id'])
                 ->where('host_id', $host->id)
                 ->first();
@@ -1426,6 +1669,15 @@ class WalkInController extends Controller
                     CustomerMembership::class,
                     $customerMembership->id
                 );
+            }
+
+            // Record price override usage if applicable
+            if ($priceOverrideRequest && $priceOverrideRequest->status === \App\Models\PriceOverrideRequest::STATUS_APPROVED) {
+                $metadata = $priceOverrideRequest->metadata ?? [];
+                $metadata['applied_at'] = now()->toIso8601String();
+                $metadata['booking_id'] = $customerMembership->id;
+                $metadata['booking_type'] = CustomerMembership::class;
+                $priceOverrideRequest->update(['metadata' => $metadata]);
             }
 
             // If a class session was specified and user wants to book into it

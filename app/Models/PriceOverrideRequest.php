@@ -18,6 +18,8 @@ class PriceOverrideRequest extends Model
     const STATUS_REJECTED = 'rejected';
     const STATUS_EXPIRED = 'expired';
     const STATUS_CANCELLED = 'cancelled';
+    const STATUS_PERSONAL_APPROVED = 'personal_approved';
+    const STATUS_DIRECT = 'direct';
 
     // Default expiry time in minutes
     const DEFAULT_EXPIRY_MINUTES = 30;
@@ -178,6 +180,8 @@ class PriceOverrideRequest extends Model
             self::STATUS_REJECTED => 'Rejected',
             self::STATUS_EXPIRED => 'Expired',
             self::STATUS_CANCELLED => 'Cancelled',
+            self::STATUS_PERSONAL_APPROVED => 'Approved',
+            self::STATUS_DIRECT => 'Direct',
             default => ucfirst($this->status),
         };
     }
@@ -190,8 +194,20 @@ class PriceOverrideRequest extends Model
             self::STATUS_REJECTED => 'badge-error',
             self::STATUS_EXPIRED => 'badge-warning',
             self::STATUS_CANCELLED => 'badge-neutral',
+            self::STATUS_PERSONAL_APPROVED => 'badge-success',
+            self::STATUS_DIRECT => 'badge-primary',
             default => 'badge-ghost',
         };
+    }
+
+    public function getIsDirectAttribute(): bool
+    {
+        return $this->status === self::STATUS_DIRECT;
+    }
+
+    public function getIsPersonalApprovedAttribute(): bool
+    {
+        return $this->status === self::STATUS_PERSONAL_APPROVED;
     }
 
     // ========== Static Helpers ==========
@@ -219,6 +235,8 @@ class PriceOverrideRequest extends Model
             self::STATUS_REJECTED => 'Rejected',
             self::STATUS_EXPIRED => 'Expired',
             self::STATUS_CANCELLED => 'Cancelled',
+            self::STATUS_PERSONAL_APPROVED => 'Personal Code',
+            self::STATUS_DIRECT => 'Direct Override',
         ];
     }
 
