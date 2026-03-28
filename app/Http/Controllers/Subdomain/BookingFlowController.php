@@ -766,6 +766,8 @@ class BookingFlowController extends Controller
         $validated = $request->validate([
             'payment_method' => 'required|string',
             'terms_accepted' => 'sometimes|accepted',
+            'email_opt_in' => 'nullable|boolean',
+            'sms_opt_in' => 'nullable|boolean',
             'offer_id' => 'nullable|integer|exists:offers,id',
             'promo_code' => 'nullable|string|max:50',
             'discount_amount' => 'nullable|numeric|min:0',
@@ -781,6 +783,12 @@ class BookingFlowController extends Controller
         if (!$client) {
             return back()->with('error', 'Unable to process your booking. Please try again.');
         }
+
+        // Update client communication preferences
+        $client->update([
+            'email_opt_in' => $request->boolean('email_opt_in'),
+            'sms_opt_in' => $request->boolean('sms_opt_in'),
+        ]);
 
         $selectedItem = $bookingState['selected_item'];
         $originalPrice = $selectedItem['price'] ?? 0;

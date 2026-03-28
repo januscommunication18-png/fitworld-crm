@@ -8,6 +8,7 @@ use App\Mail\OneOnOneBookingRescheduledMail;
 use App\Mail\OneOnOneBookingCancelledMail;
 use App\Mail\OneOnOneNewBookingMail;
 use App\Models\BookingProfile;
+use App\Models\Client;
 use App\Models\Host;
 use App\Models\Instructor;
 use App\Models\OneOnOneBooking;
@@ -235,6 +236,9 @@ class OneOnOnePublicController extends Controller
             'phone' => 'nullable|string|max:50',
             'notes' => 'nullable|string|max:1000',
             'timezone' => 'nullable|string|max:100',
+            'terms_accepted' => 'required|accepted',
+            'email_opt_in' => 'nullable|boolean',
+            'sms_opt_in' => 'nullable|boolean',
         ]);
 
         // Check if duration is allowed
@@ -273,10 +277,36 @@ class OneOnOnePublicController extends Controller
             ], 400);
         }
 
+        // Get or create client with notification preferences
+        $client = Client::where('host_id', $host->id)
+            ->where('email', strtolower($validated['email']))
+            ->first();
+
+        if (!$client) {
+            $client = Client::create([
+                'host_id' => $host->id,
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => strtolower($validated['email']),
+                'phone' => $validated['phone'] ?? null,
+                'status' => Client::STATUS_LEAD,
+                'lead_source' => Client::SOURCE_WEBSITE,
+                'email_opt_in' => $request->boolean('email_opt_in'),
+                'sms_opt_in' => $request->boolean('sms_opt_in'),
+            ]);
+        } else {
+            // Update notification preferences
+            $client->update([
+                'email_opt_in' => $request->boolean('email_opt_in'),
+                'sms_opt_in' => $request->boolean('sms_opt_in'),
+            ]);
+        }
+
         // Create the booking as pending (requires acceptance)
         $booking = OneOnOneBooking::create([
             'host_id' => $host->id,
             'booking_profile_id' => $profile->id,
+            'client_id' => $client->id,
             'guest_first_name' => $validated['first_name'],
             'guest_last_name' => $validated['last_name'],
             'guest_email' => $validated['email'],

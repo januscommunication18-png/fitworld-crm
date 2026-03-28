@@ -272,16 +272,38 @@
                                 </div>
                             </div>
 
-                            {{-- Legal Agreement (Terms & Privacy) --}}
-                            <div class="py-2">
-                                <label class="flex items-start gap-3 cursor-pointer">
-                                    <input type="checkbox" name="terms_accepted" value="1" required
+                            {{-- Legal Agreement & Communication Preferences --}}
+                            <div class="py-2 space-y-3">
+                                {{-- Terms & Privacy (Required) --}}
+                                <label for="terms_accepted" class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" name="terms_accepted" id="terms_accepted" value="1" required
                                            class="checkbox checkbox-primary mt-0.5">
                                     <span class="text-sm">
                                         I agree to the
                                         <button type="button" onclick="showLegalModal('terms')" class="text-primary hover:underline font-medium">Terms & Conditions</button>
                                         and
                                         <button type="button" onclick="showLegalModal('privacy')" class="text-primary hover:underline font-medium">Privacy Policy</button>.
+                                        <span class="text-error">*</span>
+                                    </span>
+                                </label>
+
+                                {{-- Email Notifications (Optional) --}}
+                                <label for="email_opt_in" class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" name="email_opt_in" id="email_opt_in" value="1"
+                                           class="checkbox checkbox-primary mt-0.5">
+                                    <span class="text-sm text-base-content/80">
+                                        Send me booking updates and offers via email.
+                                        <span class="text-base-content/50">(Optional)</span>
+                                    </span>
+                                </label>
+
+                                {{-- SMS Notifications (Optional) --}}
+                                <label for="sms_opt_in" class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" name="sms_opt_in" id="sms_opt_in" value="1"
+                                           class="checkbox checkbox-primary mt-0.5">
+                                    <span class="text-sm text-base-content/80">
+                                        Send me booking updates via SMS.
+                                        <span class="text-base-content/50">(Optional)</span>
                                     </span>
                                 </label>
                             </div>
