@@ -59,6 +59,10 @@ class PoliciesController extends Controller
             'house_rules' => 'nullable|string|max:5000',
             'liability_waiver_url' => 'nullable|url|max:500',
             'arrival_instructions' => 'nullable|string|max:2000',
+
+            // Legal Pages (stored separately, not in policies JSON)
+            'terms_of_service' => 'nullable|string|max:100000',
+            'privacy_policy' => 'nullable|string|max:100000',
         ]);
 
         // Convert checkbox values to booleans
@@ -74,9 +78,18 @@ class PoliciesController extends Controller
             $validated[$field] = $request->boolean($field);
         }
 
-        // Merge with existing policies
+        // Extract legal pages (stored separately)
+        $termsOfService = $validated['terms_of_service'] ?? null;
+        $privacyPolicy = $validated['privacy_policy'] ?? null;
+        unset($validated['terms_of_service'], $validated['privacy_policy']);
+
+        // Merge with existing policies (excluding legal pages)
         $currentPolicies = $host->policies ?? [];
         $host->policies = array_merge($currentPolicies, $validated);
+
+        // Save legal pages as separate columns
+        $host->terms_of_service = $termsOfService;
+        $host->privacy_policy = $privacyPolicy;
         $host->save();
 
         return redirect()->route('settings.locations.policies')

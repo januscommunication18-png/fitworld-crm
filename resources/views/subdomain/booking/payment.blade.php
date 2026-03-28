@@ -233,30 +233,6 @@
                             </div>
                             @endif
 
-                            {{-- Terms Agreement --}}
-                            @if($termsUrl)
-                            <div class="card bg-base-100 shadow-lg border border-base-200">
-                                <div class="card-body py-5">
-                                    <label class="flex items-start gap-4 cursor-pointer group">
-                                        <div class="pt-0.5">
-                                            <input type="checkbox" name="terms_accepted" value="1" required
-                                                   class="checkbox checkbox-primary checkbox-sm">
-                                        </div>
-                                        <div>
-                                            <span class="font-medium group-hover:text-primary transition-colors">I agree to the terms and conditions</span>
-                                            <p class="text-sm text-base-content/60 mt-1">
-                                                By checking this box, you agree to our
-                                                <a href="{{ $termsUrl }}" target="_blank" class="link link-primary font-medium">
-                                                    Terms & Conditions
-                                                </a>
-                                                and cancellation policy.
-                                            </p>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                            @endif
-
                             {{-- Payment Methods --}}
                             <div class="card bg-base-100 shadow-xl">
                                 <div class="card-body">
@@ -294,6 +270,20 @@
                                         @endforeach
                                     </div>
                                 </div>
+                            </div>
+
+                            {{-- Legal Agreement (Terms & Privacy) --}}
+                            <div class="py-2">
+                                <label class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" name="terms_accepted" value="1" required
+                                           class="checkbox checkbox-primary mt-0.5">
+                                    <span class="text-sm">
+                                        I agree to the
+                                        <button type="button" onclick="showLegalModal('terms')" class="text-primary hover:underline font-medium">Terms & Conditions</button>
+                                        and
+                                        <button type="button" onclick="showLegalModal('privacy')" class="text-primary hover:underline font-medium">Privacy Policy</button>.
+                                    </span>
+                                </label>
                             </div>
 
                             {{-- Complete Booking Button --}}
@@ -441,6 +431,56 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- Terms of Service Modal --}}
+                    <div id="terms-modal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+                        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeLegalModal('terms')"></div>
+                        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-base-100 rounded-xl shadow-2xl z-10 w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+                            <div class="flex items-center justify-between px-6 py-4 border-b border-base-200 shrink-0">
+                                <h3 class="text-lg font-bold">Terms & Conditions</h3>
+                                <button type="button" onclick="closeLegalModal('terms')" class="btn btn-ghost btn-sm btn-circle">
+                                    <span class="icon-[tabler--x] size-5"></span>
+                                </button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto px-6 py-4">
+                                <div class="prose prose-sm max-w-none">
+                                    @if($hasTerms ?? false)
+                                        {!! $termsContent !!}
+                                    @else
+                                        <p class="text-base-content/60 italic">No terms & conditions have been configured yet.</p>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="px-6 py-4 border-t border-base-200 shrink-0">
+                                <button type="button" onclick="closeLegalModal('terms')" class="btn btn-primary w-full">Close</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Privacy Policy Modal --}}
+                    <div id="privacy-modal" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true">
+                        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" onclick="closeLegalModal('privacy')"></div>
+                        <div class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-base-100 rounded-xl shadow-2xl z-10 w-full max-w-2xl max-h-[80vh] flex flex-col mx-4">
+                            <div class="flex items-center justify-between px-6 py-4 border-b border-base-200 shrink-0">
+                                <h3 class="text-lg font-bold">Privacy Policy</h3>
+                                <button type="button" onclick="closeLegalModal('privacy')" class="btn btn-ghost btn-sm btn-circle">
+                                    <span class="icon-[tabler--x] size-5"></span>
+                                </button>
+                            </div>
+                            <div class="flex-1 overflow-y-auto px-6 py-4">
+                                <div class="prose prose-sm max-w-none">
+                                    @if($hasPrivacy ?? false)
+                                        {!! $privacyContent !!}
+                                    @else
+                                        <p class="text-base-content/60 italic">No privacy policy has been configured yet.</p>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="px-6 py-4 border-t border-base-200 shrink-0">
+                                <button type="button" onclick="closeLegalModal('privacy')" class="btn btn-primary w-full">Close</button>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -449,6 +489,31 @@
 
 @push('scripts')
 <script>
+// Legal Modal Functions
+function showLegalModal(type) {
+    const modal = document.getElementById(type + '-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeLegalModal(type) {
+    const modal = document.getElementById(type + '-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeLegalModal('terms');
+        closeLegalModal('privacy');
+    }
+});
+
 // Store original price for calculations
 const originalPrice = {{ $item['price'] ?? 0 }};
 const currencySymbol = '{{ $currencySymbol }}';

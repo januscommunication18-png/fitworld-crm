@@ -579,8 +579,12 @@ class BookingFlowController extends Controller
             }
         }
 
-        // Get terms URL
+        // Get terms URL (legacy) and new legal pages
         $termsUrl = $host->getPolicy('liability_waiver_url') ?? null;
+        $hasTerms = $host->hasTermsOfService();
+        $hasPrivacy = $host->hasPrivacyPolicy();
+        $termsContent = $host->terms_of_service;
+        $privacyContent = $host->privacy_policy;
 
         // Check for auto-apply offers (if not using membership and has a price)
         $autoAppliedOffer = null;
@@ -635,6 +639,10 @@ class BookingFlowController extends Controller
             'bookingState' => $bookingState,
             'paymentMethods' => $enabledMethods,
             'termsUrl' => $termsUrl,
+            'hasTerms' => $hasTerms,
+            'hasPrivacy' => $hasPrivacy,
+            'termsContent' => $termsContent,
+            'privacyContent' => $privacyContent,
             'usingMembership' => $usingMembership,
             'autoAppliedOffer' => $autoAppliedOffer,
             'prefilledPromoCode' => $prefilledPromoCode,

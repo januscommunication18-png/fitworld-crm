@@ -66,6 +66,8 @@ class Host extends Model
         'client_settings',
         'member_portal_settings',
         'policies',
+        'terms_of_service',
+        'privacy_policy',
         'status',
         'verified_at',
         'plan_id',
@@ -196,6 +198,30 @@ class Host extends Model
     public function getPolicy(string $key, $default = null)
     {
         return $this->policies[$key] ?? $default;
+    }
+
+    /**
+     * Check if studio has Terms of Service configured
+     */
+    public function hasTermsOfService(): bool
+    {
+        return !empty($this->terms_of_service) && $this->terms_of_service !== '<p><br></p>';
+    }
+
+    /**
+     * Check if studio has Privacy Policy configured
+     */
+    public function hasPrivacyPolicy(): bool
+    {
+        return !empty($this->privacy_policy) && $this->privacy_policy !== '<p><br></p>';
+    }
+
+    /**
+     * Check if studio has any legal pages configured
+     */
+    public function hasLegalPages(): bool
+    {
+        return $this->hasTermsOfService() || $this->hasPrivacyPolicy();
     }
 
     /**

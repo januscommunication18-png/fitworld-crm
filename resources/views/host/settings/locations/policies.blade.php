@@ -13,7 +13,7 @@
 @endsection
 
 @section('settings-content')
-<form method="POST" action="{{ route('settings.policies.update') }}">
+<form id="policies-form" method="POST" action="{{ route('settings.policies.update') }}">
     @csrf
     @method('PUT')
 
@@ -397,7 +397,40 @@
             </div>
         </div>
 
-        {{-- Section E: Studio Rules --}}
+        {{-- Section E: Legal Pages --}}
+        <div class="card bg-base-100">
+            <div class="card-body">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="icon-[tabler--file-text] size-5 text-info"></span>
+                    <h2 class="text-lg font-semibold">Legal Pages</h2>
+                </div>
+                <p class="text-base-content/60 text-sm mb-6">Terms of Service and Privacy Policy shown to clients during booking on your public booking page</p>
+
+                <div class="space-y-6">
+                    {{-- Terms of Service --}}
+                    <div>
+                        <label class="label-text mb-2 block font-medium">Terms of Service <span class="text-base-content/50 font-normal">(optional)</span></label>
+                        <div id="terms-editor-container">
+                            <div id="terms-editor"></div>
+                        </div>
+                        <input type="hidden" name="terms_of_service" id="terms_of_service" value="{{ old('terms_of_service', $host->terms_of_service ?? '') }}">
+                        <p class="text-xs text-base-content/60 mt-2">Displayed in a modal when clients book on your public page</p>
+                    </div>
+
+                    {{-- Privacy Policy --}}
+                    <div>
+                        <label class="label-text mb-2 block font-medium">Privacy Policy <span class="text-base-content/50 font-normal">(optional)</span></label>
+                        <div id="privacy-editor-container">
+                            <div id="privacy-editor"></div>
+                        </div>
+                        <input type="hidden" name="privacy_policy" id="privacy_policy" value="{{ old('privacy_policy', $host->privacy_policy ?? '') }}">
+                        <p class="text-xs text-base-content/60 mt-2">Displayed in a modal when clients book on your public page</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Section F: Studio Rules --}}
         <div class="card bg-base-100">
             <div class="card-body">
                 <div class="flex items-center gap-2 mb-1">
@@ -466,5 +499,98 @@
             </button>
         </div>
     </div>
+
 </form>
+
+{{-- Quill Editor Styles --}}
+<link rel="stylesheet" href="{{ asset('vendor/quill/quill.snow.css') }}" />
+<style>
+    #terms-editor-container .ql-toolbar,
+    #privacy-editor-container .ql-toolbar {
+        border-radius: 0.5rem 0.5rem 0 0;
+        border-color: hsl(var(--bc) / 0.2);
+        background: hsl(var(--b2));
+    }
+    #terms-editor-container .ql-container,
+    #privacy-editor-container .ql-container {
+        border-radius: 0 0 0.5rem 0.5rem;
+        border-color: hsl(var(--bc) / 0.2);
+        min-height: 200px;
+        font-size: 0.9375rem;
+    }
+    #terms-editor-container .ql-editor,
+    #privacy-editor-container .ql-editor {
+        min-height: 180px;
+    }
+    .ql-editor.ql-blank::before {
+        color: hsl(var(--bc) / 0.4);
+        font-style: normal;
+    }
+</style>
+
+{{-- Quill Editor Scripts --}}
+<script src="{{ asset('vendor/quill/quill.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Full toolbar options like backoffice
+    const toolbarOptions = [
+        [{ 'header': [1, 2, 3, 4, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'color': [] }, { 'background': [] }],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'indent': '-1' }, { 'indent': '+1' }],
+        [{ 'align': [] }],
+        ['link'],
+        ['blockquote'],
+        ['clean']
+    ];
+
+    // Terms of Service Editor
+    var termsQuill = new Quill('#terms-editor', {
+        theme: 'snow',
+        placeholder: 'Enter your terms of service here...',
+        modules: {
+            toolbar: toolbarOptions
+        }
+    });
+
+    // Load existing content for Terms
+    var termsExisting = document.getElementById('terms_of_service').value;
+    if (termsExisting && termsExisting.trim() !== '') {
+        termsQuill.root.innerHTML = termsExisting;
+    }
+
+    // Privacy Policy Editor
+    var privacyQuill = new Quill('#privacy-editor', {
+        theme: 'snow',
+        placeholder: 'Enter your privacy policy here...',
+        modules: {
+            toolbar: toolbarOptions
+        }
+    });
+
+    // Load existing content for Privacy
+    var privacyExisting = document.getElementById('privacy_policy').value;
+    if (privacyExisting && privacyExisting.trim() !== '') {
+        privacyQuill.root.innerHTML = privacyExisting;
+    }
+
+    // Update hidden fields on form submit
+    document.getElementById('policies-form').addEventListener('submit', function(e) {
+        // Get terms content
+        var termsContent = termsQuill.root.innerHTML;
+        if (termsContent === '<p><br></p>' || termsContent === '<p></p>') {
+            termsContent = '';
+        }
+        document.getElementById('terms_of_service').value = termsContent;
+
+        // Get privacy content
+        var privacyContent = privacyQuill.root.innerHTML;
+        if (privacyContent === '<p><br></p>' || privacyContent === '<p></p>') {
+            privacyContent = '';
+        }
+        document.getElementById('privacy_policy').value = privacyContent;
+    });
+});
+</script>
 @endsection
