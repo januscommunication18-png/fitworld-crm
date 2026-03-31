@@ -39,6 +39,22 @@
                     </ul>
                 </div>
 
+                {{-- Support - Always visible to all users --}}
+                @php
+                    $pendingSupportCount = \App\Models\SupportRequest::where('host_id', auth()->user()->currentHost()?->id ?? auth()->user()->host_id)->whereIn('status', ['pending', 'in_progress'])->count();
+                @endphp
+                <div>
+                    <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-3 mb-1">Support</div>
+                    <ul class="menu menu-sm p-0">
+                        <li><a href="{{ route('support.requests.index') }}" class="{{ request()->routeIs('support.requests.*') ? 'active' : '' }}">
+                            <span class="icon-[tabler--headset] size-4"></span> Support Requests
+                            @if($pendingSupportCount > 0)
+                                <span class="badge badge-info badge-xs">{{ $pendingSupportCount }}</span>
+                            @endif
+                        </a></li>
+                    </ul>
+                </div>
+
                 {{-- Studio - Requires studio.profile --}}
                 @if($canEditStudio)
                 <div>

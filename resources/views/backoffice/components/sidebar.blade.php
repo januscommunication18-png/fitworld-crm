@@ -96,6 +96,21 @@
                 </a>
             </li>
 
+            {{-- Support Requests --}}
+            <li>
+                <a href="{{ route('backoffice.support.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.support.*') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
+                    <span class="icon-[tabler--headset] size-5 shrink-0"></span>
+                    <span>Support Requests</span>
+                    @php
+                        $pendingSupportCount = \App\Models\SupportRequest::whereIn('status', ['pending', 'in_progress'])->count();
+                    @endphp
+                    @if($pendingSupportCount > 0)
+                        <span class="badge badge-warning badge-xs ml-auto">{{ $pendingSupportCount }}</span>
+                    @endif
+                </a>
+            </li>
+
             {{-- Section: Content --}}
             <li class="menu-title pt-4">
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Content</span>
@@ -158,6 +173,29 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.features.*') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
                     <span class="icon-[tabler--puzzle] size-5 shrink-0"></span>
                     <span>Features</span>
+                </a>
+            </li>
+
+            {{-- Section: Partners --}}
+            <li class="menu-title pt-4">
+                <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Partners</span>
+            </li>
+
+            {{-- Partners --}}
+            <li>
+                <a href="{{ route('backoffice.partners.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.partners.*') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
+                    <span class="icon-[tabler--users] size-5 shrink-0"></span>
+                    <span>Partner</span>
+                </a>
+            </li>
+
+            {{-- Expenses --}}
+            <li>
+                <a href="{{ route('backoffice.expenses.index') }}"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors {{ request()->routeIs('backoffice.expenses.*') ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-base-content/5' }}">
+                    <span class="icon-[tabler--receipt] size-5 shrink-0"></span>
+                    <span>Expense</span>
                 </a>
             </li>
 

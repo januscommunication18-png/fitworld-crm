@@ -39,8 +39,10 @@ class ServicePlanRequest extends FormRequest
             'cancellation_hours' => ['nullable', 'integer', 'min:0', 'max:168'],
             'is_active' => ['nullable', 'boolean'],
             'is_visible_on_booking_page' => ['nullable', 'boolean'],
-            'instructor_ids' => ['nullable', 'array'],
-            'instructor_ids.*' => ['exists:instructors,id'],
+            'staff_member_ids' => ['nullable', 'array'],
+            'staff_member_ids.*' => ['exists:users,id'],
+            'billing_discounts' => ['nullable', 'array'],
+            'billing_discounts.*' => ['nullable', 'integer', 'min:0', 'max:100'],
         ];
     }
 

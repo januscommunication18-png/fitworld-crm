@@ -13,22 +13,14 @@
                 </div>
 
                 <div>
-                    <label class="label-text">Studio Types</label>
-                    <p class="text-xs text-base-content/50 mb-2">Select all that apply</p>
-                    <MultiSelect
-                        v-model="localData.studio_types"
-                        :options="studioTypeOptions"
-                        placeholder="Select studio types..."
+                    <label class="label-text">Studio Categories <span class="text-error">*</span></label>
+                    <p class="text-xs text-base-content/50 mb-2">Select all categories that apply to your studio</p>
+                    <MultiSelectCategories
+                        v-model="localData.studio_categories"
+                        :has-error="!!errors.studio_categories"
+                        placeholder="Search and select categories..."
                     />
-                    <div v-if="localData.studio_types.includes('Other')" class="mt-2">
-                        <input
-                            type="text"
-                            class="input w-full"
-                            v-model="localData.custom_studio_type"
-                            placeholder="Enter your studio type..."
-                            maxlength="50"
-                        />
-                    </div>
+                    <p v-if="errors.studio_categories" class="text-error text-xs mt-1">{{ errors.studio_categories[0] }}</p>
                 </div>
 
                 <!-- Country + State Row -->
@@ -126,8 +118,8 @@
 import { reactive, computed, ref, watch } from 'vue'
 import api from '../../utils/api.js'
 import { debounce } from '../../utils/debounce.js'
-import MultiSelect from './MultiSelect.vue'
 import SearchSelect from './SearchSelect.vue'
+import MultiSelectCategories from './MultiSelectCategories.vue'
 
 const props = defineProps({
     formData: { type: Object, required: true },
@@ -137,8 +129,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['next', 'prev', 'update'])
-
-const studioTypeOptions = ['Yoga', 'Pilates', 'Barre', 'Spinning', 'CrossFit', 'Dance', 'Martial Arts', 'Personal Training', 'Other']
 
 const currencies = {
     'USD': { symbol: '$', name: 'US Dollar' },
@@ -250,8 +240,7 @@ const subdomainManuallyEdited = ref(false)
 
 const localData = reactive({
     studio_name: props.formData.studio_name,
-    studio_types: [...props.formData.studio_types],
-    custom_studio_type: props.formData.custom_studio_type || '',
+    studio_categories: props.formData.studio_categories || [],
     country: props.formData.country || '',
     city: props.formData.city,
     state: props.formData.state || '',
@@ -260,7 +249,7 @@ const localData = reactive({
     default_currency: props.formData.default_currency || 'USD',
 })
 
-const isValid = computed(() => localData.studio_name && localData.country && localData.subdomain && subdomainAvailable.value !== false)
+const isValid = computed(() => localData.studio_name && localData.studio_categories.length > 0 && localData.country && localData.subdomain && subdomainAvailable.value !== false)
 
 function onCountryChange() {
     // Reset state when country changes

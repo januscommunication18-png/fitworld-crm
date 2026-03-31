@@ -211,12 +211,20 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'studio_name' => 'required|string|max:255',
+            'studio_structure' => 'required|in:solo,team',
+            'subdomain' => 'nullable|string|max:100|alpha_dash',
+            'studio_categories' => 'required|array|min:1',
+            'studio_categories.*' => 'string|max:255',
             'short_description' => 'nullable|string|max:200',
+            'timezone' => 'nullable|string|max:100',
             'city' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
-            'timezone' => 'required|string|max:100',
-            'studio_types' => 'nullable|array',
         ]);
+
+        // Only update subdomain if not already set
+        if ($host->subdomain && isset($validated['subdomain'])) {
+            unset($validated['subdomain']);
+        }
 
         $host->update($validated);
 
@@ -435,6 +443,28 @@ class SettingsController extends Controller
                 'studio_languages' => $studioLanguages,
                 'default_language_app' => $validated['default_language_app'],
                 'default_language_booking' => $validated['default_language_booking'],
+            ],
+        ]);
+    }
+
+    public function updateStudioCategories(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'studio_categories' => 'required|array|min:1',
+            'studio_categories.*' => 'string|max:255',
+        ]);
+
+        $host->update([
+            'studio_categories' => $validated['studio_categories'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Studio categories updated successfully',
+            'data' => [
+                'studio_categories' => $validated['studio_categories'],
             ],
         ]);
     }

@@ -18,7 +18,7 @@ class ClassPlanRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'category' => ['required', 'string', Rule::in(array_keys(ClassPlan::getCategories()))],
+            'category' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', Rule::in(array_keys(ClassPlan::getTypes()))],
             'default_duration_minutes' => ['required', 'integer', 'min:15', 'max:480'],
             'default_capacity' => ['required', 'integer', 'min:1', 'max:500'],
@@ -39,6 +39,10 @@ class ClassPlanRequest extends FormRequest
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'is_active' => ['nullable', 'boolean'],
             'is_visible_on_booking_page' => ['nullable', 'boolean'],
+            'staff_member_ids' => ['nullable', 'array'],
+            'staff_member_ids.*' => ['exists:users,id'],
+            'billing_discounts' => ['nullable', 'array'],
+            'billing_discounts.*' => ['nullable', 'integer', 'min:0', 'max:100'],
         ];
     }
 

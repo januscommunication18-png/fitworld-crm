@@ -6,7 +6,9 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('catalog.index', ['tab' => 'classes']) }}"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> Catalog</a></li>
+        <li><a href="{{ route('catalog.index') }}"><span class="icon-[tabler--layout-grid] size-4"></span> Classes & Services</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li><a href="{{ route('catalog.index', ['tab' => 'classes']) }}">Classes</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">{{ $classPlan->name }}</li>
     </ol>
@@ -220,6 +222,46 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Billing Period Discounts --}}
+            @if($classPlan->billing_discounts && count(array_filter($classPlan->billing_discounts)) > 0)
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--discount] size-5"></span>
+                        Billing Period Discounts
+                    </h2>
+                    <p class="text-sm text-base-content/60 mt-1">Discounts applied for longer billing commitments.</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
+                        @php
+                            $billingPeriods = [
+                                '1' => '1 Month',
+                                '3' => '3 Months',
+                                '6' => '6 Months',
+                                '9' => '9 Months',
+                                '12' => '12 Months',
+                            ];
+                        @endphp
+                        @foreach($billingPeriods as $months => $label)
+                            @php
+                                $discount = $classPlan->billing_discounts[$months] ?? 0;
+                            @endphp
+                            <div class="text-center p-3 rounded-lg {{ $discount > 0 ? 'bg-success/10' : 'bg-base-200/50' }}">
+                                <div class="text-sm text-base-content/60">{{ $label }}</div>
+                                <div class="text-xl font-bold {{ $discount > 0 ? 'text-success' : 'text-base-content/40' }}">
+                                    {{ $discount }}%
+                                </div>
+                                @if($discount > 0)
+                                    <div class="text-xs text-success">Save {{ $discount }}%</div>
+                                @else
+                                    <div class="text-xs text-base-content/40">Base price</div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
 
             {{-- Equipment Needed --}}
             @if($classPlan->equipment_needed && count($classPlan->equipment_needed) > 0)

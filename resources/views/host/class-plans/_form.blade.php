@@ -1,5 +1,6 @@
 @php
     $classPlan = $classPlan ?? null;
+    $assignedStaffMemberIds = $assignedStaffMemberIds ?? [];
 @endphp
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -37,6 +38,7 @@
                     <div>
                         <label class="label-text" for="category">Category</label>
                         <select id="category" name="category" class="select w-full @error('category') input-error @enderror" required>
+                            <option value="">Select a category...</option>
                             @foreach($categories as $value => $label)
                                 <option value="{{ $value }}" {{ old('category', $classPlan?->category) === $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
@@ -219,6 +221,44 @@
             </div>
         </div>
 
+        {{-- Billing Discounts --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <h3 class="card-title">Billing Period Discounts</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-sm text-base-content/60 mb-4">Set discount percentages for longer billing periods. Clients who commit to longer periods get a better rate.</p>
+
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                    @php
+                        $billingPeriods = [
+                            '1' => '1 Month',
+                            '3' => '3 Months',
+                            '6' => '6 Months',
+                            '9' => '9 Months',
+                            '12' => '12 Months',
+                        ];
+                        $defaultDiscounts = ['1' => 0, '3' => 5, '6' => 10, '9' => 15, '12' => 20];
+                    @endphp
+                    @foreach($billingPeriods as $months => $label)
+                    <div>
+                        <label class="label-text text-sm" for="billing_discounts_{{ $months }}">{{ $label }}</label>
+                        <label class="input input-bordered input-sm flex items-center gap-1 mt-1">
+                            <input type="number" id="billing_discounts_{{ $months }}" name="billing_discounts[{{ $months }}]" step="1" min="0" max="100"
+                                   value="{{ old('billing_discounts.' . $months, $classPlan?->billing_discounts[$months] ?? $defaultDiscounts[$months]) }}"
+                                   class="grow w-full" placeholder="0">
+                            <span class="text-base-content/60 text-sm">%</span>
+                        </label>
+                    </div>
+                    @endforeach
+                </div>
+                <p class="text-xs text-base-content/50 mt-3">
+                    <span class="icon-[tabler--info-circle] size-3 align-middle"></span>
+                    Example: A $100/month class with 10% discount for 6 months = $90/month ($540 total instead of $600)
+                </p>
+            </div>
+        </div>
+
         {{-- Additional Details --}}
         <div class="card bg-base-100">
             <div class="card-header">
@@ -322,6 +362,61 @@
             </div>
         </div>
 
+        {{-- Staff Members --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <h3 class="card-title">Assigned Staff Member</h3>
+            </div>
+            <div class="card-body">
+                @if($staffMembers->isEmpty())
+                <p class="text-base-content/60 text-sm">No team members available. <a href="{{ route('settings.team.users') }}" class="link link-primary">Add team members</a> first.</p>
+                @else
+                <p class="text-sm text-base-content/60 mb-3">Select staff members who can teach this class.</p>
+
+                {{-- Search and Selection Info --}}
+                <div class="flex flex-col gap-2 mb-3">
+                    <div class="relative">
+                        <span class="icon-[tabler--search] absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/50"></span>
+                        <input type="text" id="class-staff-search" placeholder="Search..."
+                            class="input input-sm w-full pl-9" autocomplete="off">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="class-staff-selected-count" class="badge badge-primary badge-xs">0 selected</span>
+                        <button type="button" id="class-staff-clear-all" class="btn btn-ghost btn-xs hidden">Clear</button>
+                    </div>
+                </div>
+
+                {{-- Staff Members List --}}
+                <div id="class-staff-members-list" class="space-y-2 max-h-64 overflow-y-auto">
+                    @foreach($staffMembers as $member)
+                    <label class="class-staff-member-item flex items-center gap-2 p-2 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200"
+                        data-name="{{ strtolower($member->name) }}" data-email="{{ strtolower($member->email) }}" data-role="{{ strtolower($member->role) }}">
+                        <input type="checkbox" name="staff_member_ids[]" value="{{ $member->id }}"
+                            class="checkbox checkbox-primary checkbox-sm class-staff-checkbox"
+                            {{ in_array($member->id, old('staff_member_ids', $assignedStaffMemberIds)) ? 'checked' : '' }}>
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
+                            @if($member->profile_photo_url)
+                            <img src="{{ $member->profile_photo_url }}" alt="{{ $member->name }}" class="w-8 h-8 rounded-full object-cover shrink-0">
+                            @else
+                            <div class="avatar avatar-placeholder shrink-0">
+                                <div class="bg-primary text-primary-content w-8 h-8 rounded-full font-bold text-xs">
+                                    {{ strtoupper(substr($member->name, 0, 2)) }}
+                                </div>
+                            </div>
+                            @endif
+                            <div class="min-w-0">
+                                <div class="font-medium text-sm truncate">{{ $member->name }}</div>
+                                <div class="text-xs text-base-content/60">{{ ucfirst($member->role) }}</div>
+                            </div>
+                        </div>
+                    </label>
+                    @endforeach
+                </div>
+                <p id="class-staff-no-results" class="text-base-content/50 text-sm py-2 text-center hidden">No staff found.</p>
+                @endif
+            </div>
+        </div>
+
         {{-- Actions --}}
         <div class="card bg-base-100">
             <div class="card-body space-y-2">
@@ -348,5 +443,56 @@
             document.getElementById('color').value = this.value;
         }
     });
+
+    // Staff member search and selection
+    (function() {
+        const searchInput = document.getElementById('class-staff-search');
+        const staffList = document.getElementById('class-staff-members-list');
+        const noResults = document.getElementById('class-staff-no-results');
+        const selectedCount = document.getElementById('class-staff-selected-count');
+        const clearAllBtn = document.getElementById('class-staff-clear-all');
+
+        if (!searchInput || !staffList) return;
+
+        const staffItems = staffList.querySelectorAll('.class-staff-member-item');
+        const checkboxes = staffList.querySelectorAll('.class-staff-checkbox');
+
+        function updateSelectedCount() {
+            const count = staffList.querySelectorAll('.class-staff-checkbox:checked').length;
+            selectedCount.textContent = count + ' selected';
+            clearAllBtn.classList.toggle('hidden', count === 0);
+        }
+
+        function filterStaff() {
+            const query = searchInput.value.toLowerCase().trim();
+            let visibleCount = 0;
+
+            staffItems.forEach(item => {
+                const name = item.dataset.name || '';
+                const email = item.dataset.email || '';
+                const role = item.dataset.role || '';
+                const matches = !query || name.includes(query) || email.includes(query) || role.includes(query);
+
+                item.classList.toggle('hidden', !matches);
+                if (matches) visibleCount++;
+            });
+
+            noResults.classList.toggle('hidden', visibleCount > 0);
+        }
+
+        searchInput.addEventListener('input', filterStaff);
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', updateSelectedCount);
+        });
+
+        clearAllBtn.addEventListener('click', function() {
+            checkboxes.forEach(cb => cb.checked = false);
+            updateSelectedCount();
+        });
+
+        // Initial count
+        updateSelectedCount();
+    })();
 </script>
 @endpush

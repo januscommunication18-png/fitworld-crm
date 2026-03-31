@@ -53,7 +53,7 @@ class SignupController extends Controller
                 'is_studio_owner' => $user->role === 'owner',
                 // Step 4: Studio
                 'studio_name' => $host->studio_name,
-                'studio_types' => $host->studio_types ?? [],
+                'studio_categories' => $host->studio_categories ?? [],
                 'country' => $host->country ?? '',
                 'city' => $host->city ?? '',
                 'state' => $host->state ?? '',
@@ -219,7 +219,7 @@ class SignupController extends Controller
 
         $host->update([
             'studio_name' => $data['studio_name'],
-            'studio_types' => $data['studio_types'] ?? [],
+            'studio_categories' => $data['studio_categories'] ?? [],
             'country' => $data['country'] ?? null,
             'city' => $data['city'] ?? null,
             'state' => $data['state'] ?? null,

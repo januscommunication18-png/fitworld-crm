@@ -29,12 +29,13 @@ class CatalogController extends Controller
 
         if ($tab === 'classes') {
             $classPlans = $host->classPlans()
+                ->withCount('activeStaffMembers')
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();
         } elseif ($tab === 'services') {
             $servicePlans = $host->servicePlans()
-                ->withCount('activeInstructors')
+                ->withCount('activeStaffMembers')
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get();

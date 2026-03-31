@@ -15,6 +15,7 @@ class ClassPlan extends Model
 {
     use HasFactory;
 
+    // Legacy category constants (kept for backward compatibility)
     const CATEGORY_YOGA = 'yoga';
     const CATEGORY_PILATES = 'pilates';
     const CATEGORY_FITNESS = 'fitness';
@@ -46,6 +47,7 @@ class ClassPlan extends Model
         'drop_in_prices',
         'new_member_prices',
         'new_member_drop_in_prices',
+        'billing_discounts',
         'color',
         'difficulty_level',
         'equipment_needed',
@@ -65,6 +67,7 @@ class ClassPlan extends Model
             'drop_in_prices' => 'array',
             'new_member_prices' => 'array',
             'new_member_drop_in_prices' => 'array',
+            'billing_discounts' => 'array',
             'is_active' => 'boolean',
             'is_visible_on_booking_page' => 'boolean',
         ];
@@ -116,6 +119,18 @@ class ClassPlan extends Model
         return $this->belongsToMany(ProgressTemplate::class, 'progress_template_attachments')
             ->withPivot('is_required', 'trigger_point', 'notify_instructor')
             ->withTimestamps();
+    }
+
+    public function staffMembers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'class_plan_users')
+            ->withPivot(['custom_price', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function activeStaffMembers(): BelongsToMany
+    {
+        return $this->staffMembers()->wherePivot('is_active', true);
     }
 
     /**
@@ -351,17 +366,102 @@ class ClassPlan extends Model
     }
 
     /**
-     * Get available categories
+     * Get available categories organized by groups
+     */
+    public static function getCategoryGroups(): array
+    {
+        return [
+            '🧘 Mind & Body' => [
+                'Yoga (Hatha, Vinyasa, Power, Yin, Restorative)',
+                'Pilates (Mat / Reformer)',
+                'Meditation / Mindfulness',
+                'Breathwork',
+                'Tai Chi',
+                'Qigong',
+                'Stretching / Mobility',
+                'Barre',
+            ],
+            '💪 Strength & Conditioning' => [
+                'Strength Training',
+                'Functional Training',
+                'CrossFit',
+                'Weightlifting (Olympic)',
+                'Powerlifting',
+                'Bodyweight Training (Calisthenics)',
+                'Bootcamp',
+                'Circuit Training',
+            ],
+            '🔥 Cardio & Endurance' => [
+                'HIIT (High-Intensity Interval Training)',
+                'Indoor Cycling / Spin',
+                'Running / Treadmill',
+                'Rowing',
+                'Step Aerobics',
+                'Cardio Kickboxing',
+            ],
+            '🥊 Combat & Martial Arts' => [
+                'Boxing',
+                'Kickboxing',
+                'Muay Thai',
+                'MMA (Mixed Martial Arts)',
+                'Brazilian Jiu-Jitsu (BJJ)',
+                'Karate',
+                'Taekwondo',
+                'Self-Defense',
+            ],
+            '💃 Dance & Movement' => [
+                'Zumba',
+                'Dance Fitness',
+                'Hip Hop Dance',
+                'Ballet Fitness',
+                'Jazzercise',
+            ],
+            '🏋️ Gym & General Fitness' => [
+                'Open Gym',
+                'Personal Training',
+                'Small Group Training',
+                'Beginner Fitness',
+                'Senior Fitness',
+                'Youth Fitness',
+            ],
+            '🧑‍🤝‍🧑 Specialty & Niche' => [
+                'Prenatal / Postnatal Fitness',
+                'Rehab / Physical Therapy',
+                'Injury Recovery',
+                'Adaptive Fitness',
+                'EMS (Electro Muscle Stimulation)',
+                'Sports Performance Training',
+                'Athlete Conditioning',
+            ],
+            '🌿 Wellness & Recovery' => [
+                'Recovery Sessions',
+                'Foam Rolling',
+                'Mobility & Flexibility',
+                'Sauna / Cold Therapy Sessions',
+                'Relaxation Therapy',
+            ],
+            '🧗 Outdoor & Activity-Based' => [
+                'Outdoor Bootcamp',
+                'Hiking Fitness',
+                'Trail Running',
+                'Cycling (Outdoor)',
+                'Adventure Fitness',
+            ],
+        ];
+    }
+
+    /**
+     * Get available categories as flat array for backward compatibility
      */
     public static function getCategories(): array
     {
-        return [
-            self::CATEGORY_YOGA => 'Yoga',
-            self::CATEGORY_PILATES => 'Pilates',
-            self::CATEGORY_FITNESS => 'Fitness',
-            self::CATEGORY_WELLNESS => 'Wellness',
-            self::CATEGORY_OTHER => 'Other',
-        ];
+        $categories = [];
+        foreach (self::getCategoryGroups() as $group => $options) {
+            foreach ($options as $option) {
+                $categories[$option] = $option;
+            }
+        }
+        return $categories;
     }
 
     /**

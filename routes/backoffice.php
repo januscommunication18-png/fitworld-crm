@@ -17,6 +17,9 @@ use App\Http\Controllers\Backoffice\SettingsController;
 use App\Http\Controllers\Backoffice\TranslationController;
 use App\Http\Controllers\Backoffice\WaitlistController;
 use App\Http\Controllers\Backoffice\NewsletterController;
+use App\Http\Controllers\Backoffice\SupportRequestController;
+use App\Http\Controllers\Backoffice\PartnerController;
+use App\Http\Controllers\Backoffice\ExpenseController;
 use App\Models\Host;
 use Illuminate\Support\Facades\Route;
 
@@ -135,6 +138,14 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                     Route::delete('/{waitlist}', [WaitlistController::class, 'destroy'])->name('destroy');
                 });
 
+                // Support Requests
+                Route::prefix('support')->name('support.')->group(function () {
+                    Route::get('/', [SupportRequestController::class, 'index'])->name('index');
+                    Route::get('/{supportRequest}', [SupportRequestController::class, 'show'])->name('show');
+                    Route::put('/{supportRequest}/status', [SupportRequestController::class, 'updateStatus'])->name('update-status');
+                    Route::delete('/{supportRequest}', [SupportRequestController::class, 'destroy'])->name('destroy');
+                });
+
                 // Newsletter Subscribers
                 Route::prefix('newsletter')->name('newsletter.')->group(function () {
                     Route::get('/', [NewsletterController::class, 'index'])->name('index');
@@ -142,6 +153,29 @@ Route::prefix('backoffice')->name('backoffice.')->group(function () {
                     Route::post('/', [NewsletterController::class, 'store'])->name('store');
                     Route::patch('/{subscriber}/toggle-status', [NewsletterController::class, 'toggleStatus'])->name('toggle-status');
                     Route::delete('/{subscriber}', [NewsletterController::class, 'destroy'])->name('destroy');
+                });
+
+                // Partners
+                Route::prefix('partners')->name('partners.')->group(function () {
+                    Route::get('/', [PartnerController::class, 'index'])->name('index');
+                    Route::get('/create', [PartnerController::class, 'create'])->name('create');
+                    Route::post('/', [PartnerController::class, 'store'])->name('store');
+                    Route::get('/{partner}/edit', [PartnerController::class, 'edit'])->name('edit');
+                    Route::put('/{partner}', [PartnerController::class, 'update'])->name('update');
+                    Route::delete('/{partner}', [PartnerController::class, 'destroy'])->name('destroy');
+                    Route::patch('/{partner}/toggle-status', [PartnerController::class, 'toggleStatus'])->name('toggle-status');
+                });
+
+                // Expenses
+                Route::prefix('expenses')->name('expenses.')->group(function () {
+                    Route::get('/', [ExpenseController::class, 'index'])->name('index');
+                    Route::get('/create', [ExpenseController::class, 'create'])->name('create');
+                    Route::post('/', [ExpenseController::class, 'store'])->name('store');
+                    Route::get('/{expense}', [ExpenseController::class, 'show'])->name('show');
+                    Route::get('/{expense}/edit', [ExpenseController::class, 'edit'])->name('edit');
+                    Route::put('/{expense}', [ExpenseController::class, 'update'])->name('update');
+                    Route::delete('/{expense}', [ExpenseController::class, 'destroy'])->name('destroy');
+                    Route::get('/{expense}/download-invoice', [ExpenseController::class, 'downloadInvoice'])->name('download-invoice');
                 });
 
                 // Coming Soon Placeholders

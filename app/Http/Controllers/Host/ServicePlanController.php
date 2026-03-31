@@ -22,7 +22,7 @@ class ServicePlanController extends Controller
         $category = $request->get('category');
 
         $servicePlans = $host->servicePlans()
-            ->withCount('activeInstructors')
+            ->withCount('activeStaffMembers')
             ->when($category, fn($q) => $q->where('category', $category))
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -38,7 +38,7 @@ class ServicePlanController extends Controller
         $host = auth()->user()->host;
         $categories = ServicePlan::getCategories();
         $locationTypes = ServicePlan::getLocationTypes();
-        $instructors = $host->instructors()->active()->get();
+        $staffMembers = $host->getAllTeamMembers();
         $questionnaires = $this->getPublishedQuestionnaires();
 
         // Multi-currency support
@@ -49,7 +49,7 @@ class ServicePlanController extends Controller
         return view('host.service-plans.create', compact(
             'categories',
             'locationTypes',
-            'instructors',
+            'staffMembers',
             'questionnaires',
             'hostCurrencies',
             'defaultCurrency',
@@ -101,9 +101,9 @@ class ServicePlanController extends Controller
 
         $servicePlan = $host->servicePlans()->create($data);
 
-        // Attach instructors if provided
-        if ($request->has('instructor_ids')) {
-            $servicePlan->instructors()->attach($request->input('instructor_ids'));
+        // Attach staff members if provided
+        if ($request->has('staff_member_ids')) {
+            $servicePlan->staffMembers()->attach($request->input('staff_member_ids'));
         }
 
         // Sync questionnaire attachments
@@ -164,8 +164,8 @@ class ServicePlanController extends Controller
         $host = auth()->user()->host;
         $categories = ServicePlan::getCategories();
         $locationTypes = ServicePlan::getLocationTypes();
-        $instructors = $host->instructors()->active()->get();
-        $assignedInstructorIds = $servicePlan->instructors->pluck('id')->toArray();
+        $staffMembers = $host->getAllTeamMembers();
+        $assignedStaffMemberIds = $servicePlan->staffMembers->pluck('id')->toArray();
         $questionnaires = $this->getPublishedQuestionnaires();
         $servicePlan->load('questionnaireAttachments');
 
@@ -178,8 +178,8 @@ class ServicePlanController extends Controller
             'servicePlan',
             'categories',
             'locationTypes',
-            'instructors',
-            'assignedInstructorIds',
+            'staffMembers',
+            'assignedStaffMemberIds',
             'questionnaires',
             'hostCurrencies',
             'defaultCurrency',
@@ -244,11 +244,11 @@ class ServicePlanController extends Controller
 
         $servicePlan->update($data);
 
-        // Sync instructors
-        if ($request->has('instructor_ids')) {
-            $servicePlan->instructors()->sync($request->input('instructor_ids'));
+        // Sync staff members
+        if ($request->has('staff_member_ids')) {
+            $servicePlan->staffMembers()->sync($request->input('staff_member_ids'));
         } else {
-            $servicePlan->instructors()->detach();
+            $servicePlan->staffMembers()->detach();
         }
 
         // Sync questionnaire attachments

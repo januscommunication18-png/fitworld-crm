@@ -6,9 +6,11 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('catalog.index', ['tab' => 'services']) }}"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> Catalog</a></li>
+        <li><a href="{{ route('catalog.index') }}"><span class="icon-[tabler--layout-grid] size-4"></span> Classes & Services</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">{{ $servicePlan->name }} - Instructors</li>
+        <li><a href="{{ route('catalog.index', ['tab' => 'services']) }}">Services</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li aria-current="page">{{ $servicePlan->name }} - Staff Members</li>
     </ol>
 @endsection
 
@@ -21,7 +23,7 @@
         </div>
         <a href="{{ route('catalog.index', ['tab' => 'services']) }}" class="btn btn-ghost">
             <span class="icon-[tabler--arrow-left] size-5"></span>
-            Back to Catalog
+            Back to Services
         </a>
     </div>
 

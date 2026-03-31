@@ -36,11 +36,20 @@ class ClassPlanController extends Controller
     public function create()
     {
         $host = auth()->user()->host;
-        $categories = ClassPlan::getCategories();
+
+        // Use studio's selected categories, or fall back to all categories
+        $studioCategories = $host->studio_categories ?? [];
+        if (!empty($studioCategories)) {
+            $categories = array_combine($studioCategories, $studioCategories);
+        } else {
+            $categories = ClassPlan::getCategories();
+        }
+
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
         $questionnaires = $this->getPublishedQuestionnaires();
         $progressTemplates = $this->getEnabledProgressTemplates();
+        $staffMembers = $host->getAllTeamMembers();
 
         // Multi-currency support
         $hostCurrencies = $host->currencies ?? ['USD'];
@@ -53,6 +62,7 @@ class ClassPlanController extends Controller
             'difficultyLevels',
             'questionnaires',
             'progressTemplates',
+            'staffMembers',
             'hostCurrencies',
             'defaultCurrency',
             'currencySymbols'
@@ -106,6 +116,11 @@ class ClassPlanController extends Controller
         $data['sort_order'] = $host->classPlans()->max('sort_order') + 1;
 
         $classPlan = $host->classPlans()->create($data);
+
+        // Attach staff members if provided
+        if ($request->has('staff_member_ids')) {
+            $classPlan->staffMembers()->attach($request->input('staff_member_ids'));
+        }
 
         // Sync questionnaire attachments
         $this->syncQuestionnaireAttachments($classPlan, $request);
@@ -164,11 +179,25 @@ class ClassPlanController extends Controller
         $this->authorizeHost($classPlan);
 
         $host = auth()->user()->host;
-        $categories = ClassPlan::getCategories();
+
+        // Use studio's selected categories, or fall back to all categories
+        $studioCategories = $host->studio_categories ?? [];
+        if (!empty($studioCategories)) {
+            $categories = array_combine($studioCategories, $studioCategories);
+            // Include the current category even if it's not in studio categories (for existing plans)
+            if ($classPlan->category && !isset($categories[$classPlan->category])) {
+                $categories[$classPlan->category] = $classPlan->category;
+            }
+        } else {
+            $categories = ClassPlan::getCategories();
+        }
+
         $types = ClassPlan::getTypes();
         $difficultyLevels = ClassPlan::getDifficultyLevels();
         $questionnaires = $this->getPublishedQuestionnaires();
         $progressTemplates = $this->getEnabledProgressTemplates();
+        $staffMembers = $host->getAllTeamMembers();
+        $assignedStaffMemberIds = $classPlan->staffMembers->pluck('id')->toArray();
         $classPlan->load(['questionnaireAttachments', 'progressTemplateAttachments']);
 
         // Multi-currency support
@@ -183,6 +212,8 @@ class ClassPlanController extends Controller
             'difficultyLevels',
             'questionnaires',
             'progressTemplates',
+            'staffMembers',
+            'assignedStaffMemberIds',
             'hostCurrencies',
             'defaultCurrency',
             'currencySymbols'
@@ -249,6 +280,13 @@ class ClassPlanController extends Controller
         $data['is_visible_on_booking_page'] = $request->boolean('is_visible_on_booking_page');
 
         $classPlan->update($data);
+
+        // Sync staff members
+        if ($request->has('staff_member_ids')) {
+            $classPlan->staffMembers()->sync($request->input('staff_member_ids'));
+        } else {
+            $classPlan->staffMembers()->detach();
+        }
 
         // Sync questionnaire attachments
         $this->syncQuestionnaireAttachments($classPlan, $request);

@@ -3,13 +3,19 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Mail\TeamInvitationMail;
 use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Event;
+use App\Models\Instructor;
+use App\Models\TeamInvitation;
+use App\Models\User;
 use App\Services\Reporting\ReportingService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 class DashboardController extends Controller
 {
@@ -41,18 +47,46 @@ class DashboardController extends Controller
         // Check if setup checklist is complete (only for owner/admin)
         if ($isOwnerOrAdmin) {
             $checklist = $this->getSetupChecklist($user, $host);
+
+            // Calculate progress based on required items only (exclude optional items)
+            $requiredItems = collect($checklist)->filter(fn($item) => !($item['optional'] ?? false));
+            $requiredCompletedCount = $requiredItems->where('completed', true)->count();
+            $requiredTotalCount = $requiredItems->count();
+
+            // For display, show all items
             $completedCount = collect($checklist)->where('completed', true)->count();
             $totalCount = count($checklist);
-            $progress = $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0;
+            $progress = $requiredTotalCount > 0 ? round(($requiredCompletedCount / $requiredTotalCount) * 100) : 0;
 
-            // Show setup checklist if not all tasks are complete and user hasn't skipped
+            // Auto-complete setup when all required items are done
+            if ($progress >= 100 && !$host->setup_completed_at) {
+                $host->update(['setup_completed_at' => now()]);
+            }
+
+            // Show setup checklist if not all required tasks are complete
             if ($progress < 100 && !$host->setup_completed_at) {
+                // Get team members for staff section
+                $teamMembers = $host->users()
+                    ->with(['instructor' => fn($q) => $q->where('host_id', $host->id)])
+                    ->get()
+                    ->map(function ($member) use ($host) {
+                        return [
+                            'id' => $member->id,
+                            'name' => $member->full_name,
+                            'email' => $member->email,
+                            'role' => $member->pivot->role ?? $member->role,
+                            'is_owner' => $member->isOwner($host),
+                            'status' => $member->status,
+                        ];
+                    });
+
                 return view('host.dashboard.setup-checklist', [
                     'host' => $host,
                     'checklist' => $checklist,
                     'completedCount' => $completedCount,
                     'totalCount' => $totalCount,
                     'progress' => $progress,
+                    'teamMembers' => $teamMembers,
                 ]);
             }
         }
@@ -175,53 +209,77 @@ class DashboardController extends Controller
     protected function getSetupChecklist($user, $host): array
     {
         return [
-            'verify_account' => [
+            'verify_email' => [
                 'completed' => $user->hasVerifiedEmail(),
-                'label' => 'Verify Your Email',
+                'label' => 'Verify Email Address',
                 'route' => 'verification.notice',
             ],
-            'studio_profile' => [
-                'completed' => $this->isStudioProfileComplete($host),
-                'label' => 'Complete Studio Profile',
+            'verify_phone' => [
+                'completed' => $this->isPhoneVerified($user),
+                'label' => 'Verify Phone Number',
                 'route' => 'settings.studio.profile',
+                'optional' => true,
             ],
-            'payment' => [
-                'completed' => $this->isPaymentSetupComplete($host),
-                'label' => 'Setup Payment System',
-                'route' => 'settings.payments.settings',
+            'studio_info' => [
+                'completed' => $this->isStudioProfileComplete($host),
+                'label' => 'Studio Information',
+                'route' => 'settings.studio.profile',
             ],
             'location' => [
                 'completed' => $host->locations()->exists(),
-                'label' => 'Setup Location',
+                'label' => 'Location Information',
                 'route' => 'settings.locations.index',
             ],
-            'instructor' => [
+            'staff_member' => [
                 'completed' => $this->isInstructorSetupComplete($host),
-                'label' => 'Setup Instructor / Staff',
+                'label' => 'Staff Member',
                 'route' => 'settings.team.instructors',
             ],
-            'catalog' => [
-                'completed' => $this->isCatalogSetupComplete($host),
-                'label' => 'Classes and Services',
-                'route' => 'catalog.index',
+            'booking_page' => [
+                'completed' => $this->isBookingPageSetup($host),
+                'label' => 'Booking Page',
+                'route' => 'settings.locations.booking-page',
             ],
         ];
     }
 
     /**
-     * Check if instructor setup is complete
-     * At least one instructor must have a complete profile (time slots configured)
+     * Check if user's phone is verified
+     */
+    protected function isPhoneVerified($user): bool
+    {
+        return !empty($user->phone_verified_at);
+    }
+
+    /**
+     * Check if booking page is setup (published)
+     */
+    protected function isBookingPageSetup($host): bool
+    {
+        // Check if booking page is published
+        return $host->booking_page_status === 'published';
+    }
+
+    /**
+     * Check if staff member setup is complete
+     * For solo studios: owner counts as staff
+     * For team studios: at least one additional team member (invited or active)
      */
     protected function isInstructorSetupComplete($host): bool
     {
-        $instructors = $host->instructors;
-
-        if ($instructors->isEmpty()) {
-            return false;
+        // For solo studios, having the owner is enough
+        if ($host->studio_structure === 'solo') {
+            return true;
         }
 
-        // Check if at least one instructor has a complete profile
-        return $instructors->contains(fn($instructor) => $instructor->isProfileComplete());
+        // For team studios, check if there's at least one non-owner user
+        $teamMemberCount = $host->users()
+            ->where(function ($query) use ($host) {
+                $query->where('id', '!=', $host->owner_id);
+            })
+            ->count();
+
+        return $teamMemberCount > 0;
     }
 
     /**
@@ -235,13 +293,36 @@ class DashboardController extends Controller
 
     /**
      * Check if studio profile is complete
+     * Required fields:
+     * - Studio Name
+     * - Studio Structure (solo/team)
+     * - Sub-domain name
+     * - Studio Categories (at least one)
+     * - Language Setting
+     * - Currency Setting
+     * - Booking cancellation Policy
      */
     protected function isStudioProfileComplete($host): bool
     {
-        // Check required fields for a complete profile
-        return !empty($host->studio_name)
-            && !empty($host->timezone)
-            && !empty($host->country);
+        // Check all mandatory fields for studio information
+        $hasStudioName = !empty($host->studio_name);
+        $hasStudioStructure = !empty($host->studio_structure);
+        $hasSubdomain = !empty($host->subdomain);
+        $hasStudioCategories = !empty($host->studio_categories) && is_array($host->studio_categories) && count($host->studio_categories) > 0;
+        $hasLanguageSetting = !empty($host->default_language_app);
+        $hasCurrencySetting = !empty($host->default_currency);
+
+        // Check booking cancellation policy is configured
+        $bookingSettings = $host->booking_settings ?? [];
+        $hasCancellationPolicy = isset($bookingSettings['allow_cancellations']);
+
+        return $hasStudioName
+            && $hasStudioStructure
+            && $hasSubdomain
+            && $hasStudioCategories
+            && $hasLanguageSetting
+            && $hasCurrencySetting
+            && $hasCancellationPolicy;
     }
 
     /**
@@ -277,6 +358,169 @@ class DashboardController extends Controller
         ]);
 
         return redirect()->route('dashboard')->with('success', 'You can complete your setup anytime from Settings.');
+    }
+
+    /**
+     * Save studio information from setup checklist
+     */
+    public function saveStudioInfo(Request $request)
+    {
+        $validated = $request->validate([
+            'studio_name' => 'required|string|max:255',
+            'studio_structure' => 'required|in:solo,team',
+            'subdomain' => 'nullable|string|max:100|alpha_dash',
+            'studio_categories' => 'required|array|min:1',
+            'studio_categories.*' => 'string|max:255',
+            'default_language_app' => 'required|string|max:10',
+            'default_currency' => 'required|string|size:3',
+            'allow_cancellations' => 'boolean',
+            'cancellation_deadline_hours' => 'nullable|integer|min:1|max:168',
+        ]);
+
+        $user = Auth::user();
+        $host = $user->currentHost();
+
+        // Build booking settings with cancellation policy
+        $bookingSettings = $host->booking_settings ?? [];
+        $bookingSettings['allow_cancellations'] = $validated['allow_cancellations'] ?? false;
+        if ($validated['allow_cancellations'] ?? false) {
+            $bookingSettings['cancellation_deadline_hours'] = $validated['cancellation_deadline_hours'] ?? 24;
+        }
+
+        // Prepare update data
+        $updateData = [
+            'studio_name' => $validated['studio_name'],
+            'studio_structure' => $validated['studio_structure'],
+            'studio_categories' => $validated['studio_categories'],
+            'default_language_app' => $validated['default_language_app'],
+            'default_currency' => $validated['default_currency'],
+            'currencies' => array_unique(array_merge($host->currencies ?? [], [$validated['default_currency']])),
+            'booking_settings' => $bookingSettings,
+        ];
+
+        // Only update subdomain if not already set
+        if (empty($host->subdomain) && !empty($validated['subdomain'])) {
+            $updateData['subdomain'] = $validated['subdomain'];
+        }
+
+        $host->update($updateData);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Studio information saved successfully!',
+        ]);
+    }
+
+    /**
+     * Quick invite a team member from setup checklist
+     */
+    public function quickInviteMember(Request $request)
+    {
+        $host = Auth::user()->currentHost();
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:50',
+            'last_name' => 'nullable|string|max:50',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users', 'email'),
+                Rule::unique('team_invitations', 'email')
+                    ->where('host_id', $host->id)
+                    ->where('status', TeamInvitation::STATUS_PENDING),
+            ],
+            'role' => 'required|in:admin,manager,staff,instructor',
+        ], [
+            'email.unique' => 'This email is already registered or has a pending invitation.',
+        ]);
+
+        $fullName = trim($validated['first_name'] . ' ' . ($validated['last_name'] ?? ''));
+        $instructorId = null;
+
+        // Create User record with status 'invited'
+        // The user is automatically associated with the host via host_id
+        $user = User::create([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'] ?? '',
+            'email' => $validated['email'],
+            'password' => null,
+            'host_id' => $host->id,
+            'role' => $validated['role'],
+            'status' => User::STATUS_INVITED,
+        ]);
+
+        // If role is instructor, create instructor record
+        if ($validated['role'] === 'instructor') {
+            $instructor = Instructor::create([
+                'host_id' => $host->id,
+                'user_id' => $user->id,
+                'name' => $fullName,
+                'email' => $validated['email'],
+                'status' => Instructor::STATUS_PENDING,
+                'is_active' => true,
+                'is_visible' => true,
+            ]);
+            $instructorId = $instructor->id;
+            $user->update(['instructor_id' => $instructor->id]);
+        }
+
+        // Create invitation
+        $invitation = TeamInvitation::create([
+            'host_id' => $host->id,
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+            'instructor_id' => $instructorId,
+            'token' => TeamInvitation::generateToken(),
+            'status' => TeamInvitation::STATUS_PENDING,
+            'expires_at' => now()->addDays(7),
+            'invited_by' => Auth::id(),
+        ]);
+
+        // Send invitation email
+        Mail::to($invitation->email)->send(new TeamInvitationMail(
+            $invitation,
+            $host->studio_name ?? 'Our Studio',
+            $fullName
+        ));
+
+        return response()->json([
+            'success' => true,
+            'message' => "Invitation sent to {$validated['email']}!",
+        ]);
+    }
+
+    /**
+     * Quick save booking page settings from setup checklist
+     */
+    public function saveBookingPage(Request $request)
+    {
+        $host = Auth::user()->currentHost();
+
+        $validated = $request->validate([
+            'booking_page_status' => 'required|in:draft,published',
+            'default_view' => 'nullable|in:calendar,list',
+        ]);
+
+        // Update booking page status
+        $host->booking_page_status = $validated['booking_page_status'];
+
+        // Update booking settings (store default_view in booking_settings)
+        $settings = $host->booking_settings ?? [];
+        if (isset($validated['default_view'])) {
+            $settings['default_view'] = $validated['default_view'];
+        }
+        $host->booking_settings = $settings;
+
+        $host->save();
+
+        $message = $validated['booking_page_status'] === 'published'
+            ? 'Booking page published successfully!'
+            : 'Booking page saved as draft.';
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+        ]);
     }
 
     /**

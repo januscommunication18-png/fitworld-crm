@@ -65,40 +65,65 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </button>
             </div>
 
-            <div class="space-y-4">
+            {{-- Required Fields Notice --}}
+            <div class="alert alert-info mb-4">
+                <span class="icon-[tabler--info-circle] size-5"></span>
+                <span class="text-sm">{{ $trans['settings.required_fields_notice'] ?? 'Complete all required fields below to finish your studio setup.' }}</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Studio Name (Required) --}}
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_name'] ?? 'Studio Name' }}</label>
+                    <label class="text-sm text-base-content/60 flex items-center gap-1">
+                        {{ $trans['settings.studio_name'] ?? 'Studio Name' }}
+                        <span class="text-error">*</span>
+                    </label>
                     <p class="font-medium" id="display-studio-name">{{ $host->studio_name ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
 
+                {{-- Studio Structure (Required) --}}
                 <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.short_description'] ?? 'Short Description' }}</label>
-                    <p class="font-medium" id="display-short-description">{{ $host->short_description ?: ($trans['settings.not_set'] ?? 'Not set') }}</p>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.subdomain'] ?? 'Subdomain' }}</label>
-                    <p class="font-medium" id="display-subdomain">{{ $host->subdomain ? $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz') : ($trans['settings.not_set'] ?? 'Not set') }}</p>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_types'] ?? 'Studio Types' }}</label>
-                    <div class="flex flex-wrap gap-1" id="display-types">
-                        @if($host->studio_types && count($host->studio_types) > 0)
-                            @foreach($host->studio_types as $type)
-                                <span class="badge badge-primary badge-soft badge-sm">{{ $type }}</span>
-                            @endforeach
+                    <label class="text-sm text-base-content/60 flex items-center gap-1">
+                        {{ $trans['settings.studio_structure'] ?? 'Studio Structure' }}
+                        <span class="text-error">*</span>
+                    </label>
+                    <p class="font-medium" id="display-studio-structure">
+                        @if($host->studio_structure === 'solo')
+                            {{ $trans['settings.structure_solo'] ?? 'Solo (Just me)' }}
+                        @elseif($host->studio_structure === 'team')
+                            {{ $trans['settings.structure_team'] ?? 'With a Team (Staff members)' }}
                         @else
                             <span class="text-base-content/50">{{ $trans['settings.not_set'] ?? 'Not set' }}</span>
                         @endif
-                    </div>
+                    </p>
                 </div>
 
+                {{-- Subdomain (Required) --}}
+                <div class="space-y-1">
+                    <label class="text-sm text-base-content/60 flex items-center gap-1">
+                        {{ $trans['settings.subdomain'] ?? 'Sub-domain Name' }}
+                        <span class="text-error">*</span>
+                    </label>
+                    <p class="font-medium" id="display-subdomain">{{ $host->subdomain ? $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz') : ($trans['settings.not_set'] ?? 'Not set') }}</p>
+                </div>
+
+                {{-- Timezone --}}
                 <div class="space-y-1">
                     <label class="text-sm text-base-content/60">{{ $trans['settings.timezone'] ?? 'Timezone' }}</label>
                     <p class="font-medium" id="display-timezone">{{ $host->timezone ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
+            </div>
 
+            {{-- Optional: Short Description --}}
+            <div class="mt-4 pt-4 border-t border-base-200">
+                <div class="space-y-1">
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.short_description'] ?? 'Short Description' }}</label>
+                    <p class="font-medium" id="display-short-description">{{ $host->short_description ?: ($trans['settings.not_set'] ?? 'Not set') }}</p>
+                </div>
+            </div>
+
+            {{-- Location Reference --}}
+            <div class="mt-4 pt-4 border-t border-base-200">
                 <div class="space-y-1">
                     <label class="text-sm text-base-content/60">{{ $trans['settings.location'] ?? 'Location' }}</label>
                     @if($defaultLocation ?? null)
@@ -111,6 +136,73 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
             </div>
         </div>
+    </div>
+
+    {{-- Required Settings Quick Links --}}
+    <div class="card bg-warning/5 border border-warning/20">
+        <div class="card-body py-4">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="icon-[tabler--alert-triangle] size-5 text-warning"></span>
+                <h3 class="font-semibold text-sm">{{ $trans['settings.required_settings'] ?? 'Complete These Required Settings' }}</h3>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <button type="button" onclick="openDrawer('edit-categories-drawer')" class="flex items-center gap-2 p-3 rounded-lg bg-base-100 hover:bg-base-200 transition-colors border border-base-200 text-left">
+                    <span class="icon-[tabler--category] size-5 text-primary"></span>
+                    <div>
+                        <p class="text-sm font-medium">{{ $trans['settings.studio_categories'] ?? 'Studio Categories' }}</p>
+                        @php $hasCategories = !empty($host->studio_categories); @endphp
+                        <p class="text-xs text-base-content/50">{{ $hasCategories ? 'Configured' : 'Required' }}</p>
+                    </div>
+                    @if($hasCategories)
+                        <span class="icon-[tabler--check] size-4 text-success ml-auto"></span>
+                    @else
+                        <span class="icon-[tabler--alert-circle] size-4 text-warning ml-auto"></span>
+                    @endif
+                </button>
+                <button type="button" onclick="openDrawer('edit-language-drawer')" class="flex items-center gap-2 p-3 rounded-lg bg-base-100 hover:bg-base-200 transition-colors border border-base-200 text-left">
+                    <span class="icon-[tabler--language] size-5 text-primary"></span>
+                    <div>
+                        <p class="text-sm font-medium">{{ $trans['settings.language_settings'] ?? 'Language Settings' }}</p>
+                        <p class="text-xs text-base-content/50">{{ $host->default_language_app ? 'Configured' : 'Required' }}</p>
+                    </div>
+                    @if($host->default_language_app)
+                        <span class="icon-[tabler--check] size-4 text-success ml-auto"></span>
+                    @else
+                        <span class="icon-[tabler--alert-circle] size-4 text-warning ml-auto"></span>
+                    @endif
+                </button>
+                <button type="button" onclick="openDrawer('edit-currency-drawer')" class="flex items-center gap-2 p-3 rounded-lg bg-base-100 hover:bg-base-200 transition-colors border border-base-200 text-left">
+                    <span class="icon-[tabler--currency-dollar] size-5 text-primary"></span>
+                    <div>
+                        <p class="text-sm font-medium">{{ $trans['settings.business_currencies'] ?? 'Currency Settings' }}</p>
+                        <p class="text-xs text-base-content/50">{{ $host->default_currency ? 'Configured' : 'Required' }}</p>
+                    </div>
+                    @if($host->default_currency)
+                        <span class="icon-[tabler--check] size-4 text-success ml-auto"></span>
+                    @else
+                        <span class="icon-[tabler--alert-circle] size-4 text-warning ml-auto"></span>
+                    @endif
+                </button>
+                <button type="button" onclick="openDrawer('edit-cancellation-drawer')" class="flex items-center gap-2 p-3 rounded-lg bg-base-100 hover:bg-base-200 transition-colors border border-base-200 text-left">
+                    <span class="icon-[tabler--calendar-off] size-5 text-primary"></span>
+                    <div>
+                        <p class="text-sm font-medium">{{ $trans['settings.cancellation_policy'] ?? 'Cancellation Policy' }}</p>
+                        @php $hasCancellation = isset($host->booking_settings['allow_cancellations']); @endphp
+                        <p class="text-xs text-base-content/50">{{ $hasCancellation ? 'Configured' : 'Required' }}</p>
+                    </div>
+                    @if($hasCancellation)
+                        <span class="icon-[tabler--check] size-4 text-success ml-auto"></span>
+                    @else
+                        <span class="icon-[tabler--alert-circle] size-4 text-warning ml-auto"></span>
+                    @endif
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Section Divider: Optional Settings --}}
+    <div class="divider text-base-content/40 text-sm">
+        <span class="icon-[tabler--settings] size-4 mr-1"></span> {{ $trans['settings.optional_settings'] ?? 'Optional Settings' }}
     </div>
 
     {{-- Branding Card --}}
@@ -375,15 +467,18 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
-    {{-- Currency Card --}}
-    <div class="card bg-base-100">
+    {{-- Currency Card (Required) --}}
+    <div id="currency-settings" class="card bg-base-100 scroll-mt-20">
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.business_currencies'] ?? 'Business Currencies' }}</h2>
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        {{ $trans['settings.business_currencies'] ?? 'Business Currencies' }}
+                        <span class="badge badge-error badge-sm">Required</span>
+                    </h2>
                     <p class="text-base-content/60 text-sm">{{ $trans['settings.currencies_desc'] ?? 'Currencies accepted for pricing and transactions' }}</p>
                 </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-currency-drawer')">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-currency-drawer')">
                     <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
@@ -427,7 +522,61 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
-    {{-- Language Settings Card --}}
+    {{-- Section Divider: Required Settings --}}
+    <div class="divider text-base-content/40 text-sm">
+        <span class="icon-[tabler--asterisk] size-4 mr-1 text-error"></span> {{ $trans['settings.required_settings_section'] ?? 'Required Settings' }}
+    </div>
+
+    {{-- Studio Categories Card (Required) --}}
+    @php
+        $categoryGroups = [
+            'Mind & Body' => ['Yoga (Hatha, Vinyasa, Power, Yin, Restorative)', 'Pilates (Mat / Reformer)', 'Meditation / Mindfulness', 'Breathwork', 'Tai Chi', 'Qigong', 'Stretching / Mobility', 'Barre'],
+            'Strength & Conditioning' => ['Strength Training', 'Functional Training', 'CrossFit', 'Weightlifting (Olympic)', 'Powerlifting', 'Bodyweight Training (Calisthenics)', 'Bootcamp', 'Circuit Training'],
+            'Cardio & Endurance' => ['HIIT (High-Intensity Interval Training)', 'Indoor Cycling / Spin', 'Running / Treadmill', 'Rowing', 'Step Aerobics', 'Cardio Kickboxing'],
+            'Combat & Martial Arts' => ['Boxing / MMA', 'Kickboxing', 'Muay Thai', 'Jiu-Jitsu / Judo', 'Karate / Taekwondo', 'Krav Maga'],
+            'Dance & Movement' => ['Dance Fitness (Zumba, etc.)', 'Hip Hop Dance', 'Ballet / Contemporary', 'Pole Fitness', 'Aerobics'],
+            'Water Sports' => ['Swimming (Lessons / Laps)', 'Aqua Aerobics', 'Water Polo', 'Diving / Snorkeling'],
+            'Recovery & Wellness' => ['Massage Therapy', 'Physical Therapy / Rehab', 'Foam Rolling / Myofascial Release', 'Cryotherapy', 'Sauna / Steam', 'Acupuncture'],
+            'Outdoor & Adventure' => ['Hiking / Trail Running', 'Rock Climbing / Bouldering', 'Kayaking / Paddleboarding', 'Skiing / Snowboarding', 'Surfing'],
+            'Team Sports & Recreation' => ['Basketball', 'Soccer / Football', 'Tennis / Racquet Sports', 'Golf', 'Volleyball'],
+            'Specialty & Emerging' => ['EMS Training', 'VR Fitness', 'Trampoline Fitness', 'Obstacle Course Training', 'Animal Flow'],
+        ];
+        $selectedCategories = $host->studio_categories ?? [];
+        if (is_string($selectedCategories)) {
+            $selectedCategories = json_decode($selectedCategories, true) ?? [];
+        }
+    @endphp
+    <div id="studio-categories-settings" class="card bg-base-100 scroll-mt-20">
+        <div class="card-body">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        {{ $trans['settings.studio_categories'] ?? 'Studio Categories' }}
+                        <span class="badge badge-error badge-sm">Required</span>
+                    </h2>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.studio_categories_desc'] ?? 'What types of services does your studio offer?' }}</p>
+                </div>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-categories-drawer')">
+                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                </button>
+            </div>
+
+            <div class="space-y-1">
+                <label class="text-sm text-base-content/60">{{ $trans['settings.selected_categories'] ?? 'Selected Categories' }}</label>
+                <div class="flex flex-wrap gap-2" id="display-studio-categories">
+                    @if(count($selectedCategories) > 0)
+                        @foreach($selectedCategories as $category)
+                            <span class="badge badge-soft badge-primary">{{ $category }}</span>
+                        @endforeach
+                    @else
+                        <span class="text-base-content/50">{{ $trans['settings.no_categories_selected'] ?? 'No categories selected' }}</span>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Language Settings Card (Required) --}}
     @php
         $supportedLanguages = [
             'en' => ['name' => 'English'],
@@ -436,14 +585,17 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
             'es' => ['name' => 'Spanish'],
         ];
     @endphp
-    <div class="card bg-base-100">
+    <div id="language-settings" class="card bg-base-100 scroll-mt-20">
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.language_settings'] ?? 'Language Settings' }}</h2>
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        {{ $trans['settings.language_settings'] ?? 'Language Settings' }}
+                        <span class="badge badge-error badge-sm">Required</span>
+                    </h2>
                     <p class="text-base-content/60 text-sm">{{ $trans['settings.language_desc'] ?? 'Configure language preferences for your studio' }}</p>
                 </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-language-drawer')">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-language-drawer')">
                     <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
@@ -499,15 +651,18 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
-    {{-- Booking Cancellation Policy Card --}}
-    <div class="card bg-base-100">
+    {{-- Booking Cancellation Policy Card (Required) --}}
+    <div id="cancellation-settings" class="card bg-base-100 scroll-mt-20">
         <div class="card-body">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.cancellation_policy'] ?? 'Booking Cancellation Policy' }}</h2>
+                    <h2 class="text-lg font-semibold flex items-center gap-2">
+                        {{ $trans['settings.cancellation_policy'] ?? 'Booking Cancellation Policy' }}
+                        <span class="badge badge-error badge-sm">Required</span>
+                    </h2>
                     <p class="text-base-content/60 text-sm">{{ $trans['settings.cancellation_desc'] ?? 'How far in advance clients must cancel bookings' }}</p>
                 </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-cancellation-drawer')">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-cancellation-drawer')">
                     <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </button>
             </div>
@@ -633,46 +788,47 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     <form id="edit-basic-form" class="flex flex-col flex-1 overflow-hidden">
         <div class="flex-1 overflow-y-auto p-4">
             <div class="space-y-4">
+                {{-- Studio Name --}}
                 <div>
                     <label class="label-text" for="studio_name">Studio Name <span class="text-error">*</span></label>
                     <input id="studio_name" type="text" class="input w-full" value="{{ $host->studio_name ?? '' }}" required />
                 </div>
+
+                {{-- Studio Structure --}}
+                <div>
+                    <label class="label-text" for="studio_structure">Studio Structure <span class="text-error">*</span></label>
+                    <select id="studio_structure" class="select w-full" required>
+                        <option value="">Select structure...</option>
+                        <option value="solo" {{ ($host->studio_structure ?? '') == 'solo' ? 'selected' : '' }}>Solo (Just me)</option>
+                        <option value="team" {{ ($host->studio_structure ?? '') == 'team' ? 'selected' : '' }}>With a Team (Staff members)</option>
+                    </select>
+                    <p class="text-xs text-base-content/50 mt-1">Tell us how your studio is structured</p>
+                </div>
+
+                {{-- Subdomain --}}
+                <div>
+                    <label class="label-text" for="subdomain">Sub-domain Name <span class="text-error">*</span></label>
+                    <div class="join w-full">
+                        <input id="subdomain" type="text" class="input join-item flex-1 {{ $host->subdomain ? 'input-disabled bg-base-200 cursor-not-allowed' : '' }}" value="{{ $host->subdomain ?? '' }}" {{ $host->subdomain ? 'readonly' : 'required' }} />
+                        <span class="btn btn-soft join-item pointer-events-none">.{{ config('app.booking_domain', 'fitcrm.biz') }}</span>
+                    </div>
+                    @if($host->subdomain)
+                        <p class="text-xs text-base-content/50 mt-1">Subdomain cannot be changed after setup</p>
+                    @else
+                        <p class="text-xs text-base-content/50 mt-1">Choose your unique booking page URL</p>
+                    @endif
+                </div>
+
+                {{-- Short Description (Optional) --}}
                 <div>
                     <label class="label-text" for="short_description">Short Description</label>
                     <input id="short_description" type="text" class="input w-full" value="{{ $host->short_description ?? '' }}" maxlength="200" placeholder="A brief tagline for your studio" />
                     <p class="text-xs text-base-content/50 mt-1">Shown in the hero section of your booking page (max 200 characters)</p>
                 </div>
+
+                {{-- Timezone --}}
                 <div>
-                    <label class="label-text" for="subdomain">Subdomain</label>
-                    <div class="join w-full">
-                        <input id="subdomain" type="text" class="input join-item flex-1 input-disabled bg-base-200 cursor-not-allowed" value="{{ $host->subdomain ?? '' }}" readonly />
-                        <span class="btn btn-soft join-item pointer-events-none">.{{ config('app.booking_domain', 'fitcrm.biz') }}</span>
-                    </div>
-                    <p class="text-xs text-base-content/50 mt-1">Subdomain cannot be changed after setup</p>
-                </div>
-                <div>
-                    <label class="label-text">Studio Types <span class="text-error">*</span></label>
-                    <p class="text-xs text-base-content/50 mb-2">Select all that apply</p>
-                    <div id="studio-types-select" class="relative">
-                        <button type="button" id="types-toggle" class="advance-select-toggle w-full" onclick="toggleTypesDropdown()">
-                            <span id="types-placeholder" class="text-base-content/50 hidden">Select studio types...</span>
-                            <span id="types-badges" class="flex flex-wrap gap-1 pe-6"></span>
-                            <span class="icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content absolute top-1/2 end-3 -translate-y-1/2"></span>
-                        </button>
-                        <div id="types-dropdown" class="advance-select-menu max-h-48 overflow-y-auto absolute z-50 w-full mt-1 hidden">
-                            @foreach($studioTypesList as $type)
-                            <div class="advance-select-option cursor-pointer" data-type="{{ $type }}" onclick="toggleTypeOption('{{ $type }}')">
-                                <div class="flex justify-between items-center flex-1">
-                                    <span>{{ $type }}</span>
-                                    <span class="type-check icon-[tabler--check] shrink-0 size-4 text-primary hidden"></span>
-                                </div>
-                            </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <label class="label-text" for="timezone">Timezone <span class="text-error">*</span></label>
+                    <label class="label-text" for="timezone">Timezone</label>
                     <select id="timezone" class="select w-full">
                         <option value="America/New_York" {{ ($host->timezone ?? '') == 'America/New_York' ? 'selected' : '' }}>Eastern (ET)</option>
                         <option value="America/Chicago" {{ ($host->timezone ?? '') == 'America/Chicago' ? 'selected' : '' }}>Central (CT)</option>
@@ -1057,6 +1213,152 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     </form>
 </div>
 
+{{-- Edit Studio Categories Drawer --}}
+<div id="edit-categories-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Studio Categories</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-categories-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="edit-categories-form" class="flex flex-col flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-sm text-base-content/60 mb-4">Select all categories that apply to your studio. You can choose multiple.</p>
+
+            @php
+                $allCategoriesList = [
+                    'Yoga (Hatha, Vinyasa, Power, Yin, Restorative)',
+                    'Pilates (Mat / Reformer)',
+                    'Meditation / Mindfulness',
+                    'Breathwork',
+                    'Tai Chi',
+                    'Qigong',
+                    'Stretching / Mobility',
+                    'Barre',
+                    'Strength Training',
+                    'Functional Training',
+                    'CrossFit',
+                    'Weightlifting (Olympic)',
+                    'Powerlifting',
+                    'Bodyweight Training (Calisthenics)',
+                    'Bootcamp',
+                    'Circuit Training',
+                    'HIIT (High-Intensity Interval Training)',
+                    'Indoor Cycling / Spin',
+                    'Running / Treadmill',
+                    'Rowing',
+                    'Step Aerobics',
+                    'Cardio Kickboxing',
+                    'Boxing',
+                    'Kickboxing',
+                    'Muay Thai',
+                    'MMA (Mixed Martial Arts)',
+                    'Brazilian Jiu-Jitsu (BJJ)',
+                    'Karate',
+                    'Taekwondo',
+                    'Self-Defense',
+                    'Zumba',
+                    'Dance Fitness',
+                    'Hip Hop Dance',
+                    'Ballet Fitness',
+                    'Jazzercise',
+                    'Open Gym',
+                    'Personal Training',
+                    'Small Group Training',
+                    'Beginner Fitness',
+                    'Senior Fitness',
+                    'Youth Fitness',
+                    'Prenatal / Postnatal Fitness',
+                    'Rehab / Physical Therapy',
+                    'Injury Recovery',
+                    'Adaptive Fitness',
+                    'EMS (Electro Muscle Stimulation)',
+                    'Sports Performance Training',
+                    'Athlete Conditioning',
+                    'Recovery Sessions',
+                    'Foam Rolling',
+                    'Mobility & Flexibility',
+                    'Sauna / Cold Therapy Sessions',
+                    'Relaxation Therapy',
+                    'Outdoor Bootcamp',
+                    'Hiking Fitness',
+                    'Trail Running',
+                    'Cycling (Outdoor)',
+                    'Adventure Fitness',
+                ];
+                $selectedCategoriesDrawer = $host->studio_categories ?? [];
+                if (is_string($selectedCategoriesDrawer)) {
+                    $selectedCategoriesDrawer = json_decode($selectedCategoriesDrawer, true) ?? [];
+                }
+                // Separate predefined and custom categories
+                $selectedPredefined = array_intersect($selectedCategoriesDrawer, $allCategoriesList);
+                $customCategories = array_diff($selectedCategoriesDrawer, $allCategoriesList);
+            @endphp
+
+            {{-- Search Input --}}
+            <div class="relative mb-3">
+                <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
+                <input type="text" id="category-search-input" class="input input-bordered w-full pl-10" placeholder="Search categories..." oninput="filterCategories(this.value)">
+            </div>
+
+            {{-- Selected Categories Tags --}}
+            <div id="selected-categories-tags" class="flex flex-wrap gap-1 mb-3 {{ count($selectedPredefined) == 0 ? 'hidden' : '' }}">
+                @foreach($selectedPredefined as $cat)
+                <span class="badge badge-primary badge-sm gap-1 selected-tag" data-category="{{ $cat }}">
+                    {{ Str::limit($cat, 25) }}
+                    <button type="button" class="hover:text-primary-content/70" onclick="toggleCategory('{{ addslashes($cat) }}')">
+                        <span class="icon-[tabler--x] size-3"></span>
+                    </button>
+                </span>
+                @endforeach
+            </div>
+
+            {{-- Category Checkboxes --}}
+            <div id="category-list" class="max-h-64 overflow-y-auto border border-base-200 rounded-lg p-2 space-y-1">
+                @foreach($allCategoriesList as $option)
+                <label class="category-item flex items-center gap-3 cursor-pointer p-2 hover:bg-base-200 rounded-lg" data-search="{{ strtolower($option) }}">
+                    <input type="checkbox" name="studio_categories[]" value="{{ $option }}" class="checkbox checkbox-primary checkbox-sm category-checkbox" {{ in_array($option, $selectedCategoriesDrawer) ? 'checked' : '' }} onchange="onCategoryChange(this)" />
+                    <span class="text-sm">{{ $option }}</span>
+                </label>
+                @endforeach
+            </div>
+
+            {{-- Others Option --}}
+            <div class="mt-4 border-t border-base-200 pt-4">
+                <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-base-200 rounded-lg">
+                    <input type="checkbox" id="others-checkbox" class="checkbox checkbox-primary checkbox-sm" {{ count($customCategories) > 0 ? 'checked' : '' }} onchange="toggleOthersSection()">
+                    <span class="text-sm font-medium">Others (Add custom categories)</span>
+                </label>
+            </div>
+
+            {{-- Custom Categories Section --}}
+            <div id="custom-categories-section" class="{{ count($customCategories) == 0 ? 'hidden' : '' }} mt-3 space-y-2">
+                <label class="label-text text-sm font-medium">Custom Categories</label>
+                <p class="text-xs text-base-content/50">Add your own categories (one per line)</p>
+                <textarea id="custom-categories-textarea" class="textarea textarea-bordered w-full" rows="3" placeholder="Enter custom categories, one per line...&#10;e.g.&#10;Aerial Yoga&#10;Pole Fitness&#10;Aqua Aerobics">{{ implode("\n", $customCategories) }}</textarea>
+                <div id="custom-categories-tags" class="flex flex-wrap gap-1">
+                    @foreach($customCategories as $custom)
+                    <span class="badge badge-secondary badge-sm">{{ $custom }}</span>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Selected Count --}}
+            <div class="mt-3 flex items-center justify-between text-xs text-base-content/60">
+                <span id="category-count">{{ count($selectedCategoriesDrawer) }} categor{{ count($selectedCategoriesDrawer) === 1 ? 'y' : 'ies' }} selected</span>
+                <button type="button" class="link link-primary" onclick="clearAllCategories()">Clear all</button>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-categories-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="categories-spinner"></span>
+                Save Changes
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-categories-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
 {{-- Edit Cancellation Policy Drawer --}}
 <div id="edit-cancellation-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
@@ -1310,8 +1612,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 <script src="{{ asset('vendor/sortablejs/Sortable.min.js') }}"></script>
 <script>
 var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-var selectedTypes = {!! json_encode($host->studio_types ?? []) !!};
-var typesDropdownOpen = false;
 var currencies = @json($currencies);
 
 // Toast function
@@ -1338,7 +1638,7 @@ function captureDrawerData(id) {
                 studioName: document.getElementById('studio_name')?.value || '',
                 shortDescription: document.getElementById('short_description')?.value || '',
                 timezone: document.getElementById('timezone')?.value || '',
-                studioTypes: [...selectedTypes]
+                studioCategories: Array.from(document.querySelectorAll('.studio-category-checkbox:checked')).map(function(cb) { return cb.value; })
             };
             break;
         case 'edit-contact-drawer':
@@ -1404,9 +1704,10 @@ function resetDrawerData(id) {
             if (document.getElementById('studio_name')) document.getElementById('studio_name').value = data.studioName;
             if (document.getElementById('short_description')) document.getElementById('short_description').value = data.shortDescription;
             if (document.getElementById('timezone')) document.getElementById('timezone').value = data.timezone;
-            // Reset studio types
-            selectedTypes = [...data.studioTypes];
-            updateTypesBadges();
+            // Reset studio categories checkboxes
+            document.querySelectorAll('.studio-category-checkbox').forEach(function(cb) {
+                cb.checked = data.studioCategories.includes(cb.value);
+            });
             break;
         case 'edit-contact-drawer':
             if (document.getElementById('studio_email')) document.getElementById('studio_email').value = data.studioEmail;
@@ -1503,7 +1804,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-categories-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -1523,62 +1824,8 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAllDrawers();
 });
 
-// Studio Types Multi-select
-function toggleTypesDropdown() {
-    typesDropdownOpen = !typesDropdownOpen;
-    document.getElementById('types-dropdown').classList.toggle('hidden', !typesDropdownOpen);
-}
-
-function toggleTypeOption(type) {
-    var index = selectedTypes.indexOf(type);
-    if (index === -1) selectedTypes.push(type);
-    else selectedTypes.splice(index, 1);
-    updateTypesDisplay();
-}
-
-function removeType(type, event) {
-    event.stopPropagation();
-    var index = selectedTypes.indexOf(type);
-    if (index !== -1) selectedTypes.splice(index, 1);
-    updateTypesDisplay();
-}
-
-function updateTypesDisplay() {
-    var badgesContainer = document.getElementById('types-badges');
-    var placeholder = document.getElementById('types-placeholder');
-
-    if (selectedTypes.length === 0) {
-        placeholder.classList.remove('hidden');
-        badgesContainer.innerHTML = '';
-    } else {
-        placeholder.classList.add('hidden');
-        var html = selectedTypes.slice(0, 3).map(function(type) {
-            return '<span class="badge badge-soft badge-primary badge-sm gap-1">' + type + '<button type="button" class="hover:text-error" onclick="removeType(\'' + type + '\', event)"><span class="icon-[tabler--x] size-3"></span></button></span>';
-        }).join('');
-        if (selectedTypes.length > 3) html += '<span class="badge badge-soft badge-neutral badge-sm">+' + (selectedTypes.length - 3) + '</span>';
-        badgesContainer.innerHTML = html;
-    }
-
-    document.querySelectorAll('#types-dropdown .advance-select-option').forEach(function(option) {
-        var type = option.dataset.type;
-        var check = option.querySelector('.type-check');
-        var isSelected = selectedTypes.includes(type);
-        option.classList.toggle('select-active', isSelected);
-        check.classList.toggle('hidden', !isSelected);
-    });
-}
-
-document.addEventListener('click', function(e) {
-    var selectContainer = document.getElementById('studio-types-select');
-    if (selectContainer && !selectContainer.contains(e.target)) {
-        typesDropdownOpen = false;
-        document.getElementById('types-dropdown').classList.add('hidden');
-    }
-});
-
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    updateTypesDisplay();
     initImageUpload('logo');
     initImageUpload('cover');
 });
@@ -1621,24 +1868,47 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
     var spinner = document.getElementById('basic-spinner');
     btn.disabled = true; spinner.classList.remove('hidden');
 
+    var studioStructure = document.getElementById('studio_structure').value;
+    var subdomain = document.getElementById('subdomain').value;
+
+    // Collect selected studio categories
+    var selectedCategories = [];
+    document.querySelectorAll('.studio-category-checkbox:checked').forEach(function(cb) {
+        selectedCategories.push(cb.value);
+    });
+
     fetch('{{ route("settings.studio.profile.update") }}', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
         body: JSON.stringify({
             studio_name: document.getElementById('studio_name').value,
+            studio_structure: studioStructure,
+            subdomain: subdomain,
+            studio_categories: selectedCategories,
             short_description: document.getElementById('short_description').value,
-            timezone: document.getElementById('timezone').value,
-            studio_types: selectedTypes
+            timezone: document.getElementById('timezone').value
         })
     })
     .then(function(r) { return r.json(); })
     .then(function(result) {
         if (result.success) {
             document.getElementById('display-studio-name').textContent = document.getElementById('studio_name').value || 'Not set';
+
+            // Update studio structure display
+            var structureText = studioStructure === 'solo' ? 'Solo (Just me)' : (studioStructure === 'team' ? 'With a Team (Staff members)' : 'Not set');
+            document.getElementById('display-studio-structure').innerHTML = studioStructure ? structureText : '<span class="text-base-content/50">Not set</span>';
+
+            // Update subdomain display
+            var subdomainDisplay = subdomain ? subdomain + '.{{ config("app.booking_domain", "fitcrm.biz") }}' : 'Not set';
+            document.getElementById('display-subdomain').textContent = subdomainDisplay;
+
+            // Update categories display - show as badges
+            var categoriesHtml = selectedCategories.length > 0 ? selectedCategories.map(function(c) { return '<span class="badge badge-primary badge-soft badge-sm">' + c + '</span>'; }).join('') : '<span class="text-base-content/50">Not set</span>';
+            document.getElementById('display-studio-categories').innerHTML = categoriesHtml;
+
             document.getElementById('display-short-description').textContent = document.getElementById('short_description').value || 'Not set';
             document.getElementById('display-timezone').textContent = document.getElementById('timezone').value || 'Not set';
-            var typesHtml = selectedTypes.length > 0 ? selectedTypes.map(function(t) { return '<span class="badge badge-primary badge-soft badge-sm">' + t + '</span>'; }).join('') : '<span class="text-base-content/50">Not set</span>';
-            document.getElementById('display-types').innerHTML = typesHtml;
+
             captureDrawerData('edit-basic-drawer'); // Update original data so close doesn't reset
             closeDrawer('edit-basic-drawer');
             setTimeout(function() { showToast('Basic information updated!'); }, 350);
@@ -1833,6 +2103,128 @@ document.getElementById('edit-currency-form').addEventListener('submit', functio
 
             closeDrawer('edit-currency-drawer');
             setTimeout(function() { showToast('Currencies updated!'); }, 350);
+        } else { showToast(result.message || 'Failed to update', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Studio Categories - Search filter
+function filterCategories(query) {
+    var items = document.querySelectorAll('.category-item');
+    var lowerQuery = query.toLowerCase();
+    items.forEach(function(item) {
+        var searchText = item.getAttribute('data-search');
+        item.style.display = searchText.includes(lowerQuery) ? '' : 'none';
+    });
+}
+
+// Toggle category checkbox
+function toggleCategory(category) {
+    var checkbox = document.querySelector('.category-checkbox[value="' + category + '"]');
+    if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        onCategoryChange(checkbox);
+    }
+}
+
+// On category change - update tags and count
+function onCategoryChange(checkbox) {
+    updateSelectedTags();
+    updateCategoryCount();
+}
+
+// Update selected tags display
+function updateSelectedTags() {
+    var tagsContainer = document.getElementById('selected-categories-tags');
+    var checkboxes = document.querySelectorAll('.category-checkbox:checked');
+    var html = '';
+    checkboxes.forEach(function(cb) {
+        var label = cb.value.length > 25 ? cb.value.substring(0, 22) + '...' : cb.value;
+        html += '<span class="badge badge-primary badge-sm gap-1 selected-tag" data-category="' + cb.value + '">' + label + '<button type="button" class="hover:text-primary-content/70" onclick="toggleCategory(\'' + cb.value.replace(/'/g, "\\'") + '\')"><span class="icon-[tabler--x] size-3"></span></button></span>';
+    });
+    tagsContainer.innerHTML = html;
+    tagsContainer.classList.toggle('hidden', checkboxes.length === 0);
+}
+
+// Update category count
+function updateCategoryCount() {
+    var predefinedCount = document.querySelectorAll('.category-checkbox:checked').length;
+    var customText = document.getElementById('custom-categories-textarea').value.trim();
+    var customCount = customText ? customText.split('\n').filter(function(l) { return l.trim(); }).length : 0;
+    var total = predefinedCount + customCount;
+    document.getElementById('category-count').textContent = total + ' categor' + (total === 1 ? 'y' : 'ies') + ' selected';
+}
+
+// Toggle Others section
+function toggleOthersSection() {
+    var checkbox = document.getElementById('others-checkbox');
+    var section = document.getElementById('custom-categories-section');
+    section.classList.toggle('hidden', !checkbox.checked);
+    if (!checkbox.checked) {
+        document.getElementById('custom-categories-textarea').value = '';
+        document.getElementById('custom-categories-tags').innerHTML = '';
+    }
+    updateCategoryCount();
+}
+
+// Update custom tags on textarea input
+document.getElementById('custom-categories-textarea').addEventListener('input', function() {
+    var lines = this.value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l; });
+    var html = lines.map(function(l) { return '<span class="badge badge-secondary badge-sm">' + l + '</span>'; }).join('');
+    document.getElementById('custom-categories-tags').innerHTML = html;
+    updateCategoryCount();
+});
+
+// Clear all categories
+function clearAllCategories() {
+    document.querySelectorAll('.category-checkbox:checked').forEach(function(cb) { cb.checked = false; });
+    document.getElementById('others-checkbox').checked = false;
+    document.getElementById('custom-categories-section').classList.add('hidden');
+    document.getElementById('custom-categories-textarea').value = '';
+    document.getElementById('custom-categories-tags').innerHTML = '';
+    updateSelectedTags();
+    updateCategoryCount();
+}
+
+// Studio Categories form submit
+document.getElementById('edit-categories-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-categories-btn');
+    var spinner = document.getElementById('categories-spinner');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    // Get selected predefined categories
+    var selectedCategories = [];
+    document.querySelectorAll('.category-checkbox:checked').forEach(function(cb) {
+        selectedCategories.push(cb.value);
+    });
+
+    // Get custom categories
+    var customText = document.getElementById('custom-categories-textarea').value.trim();
+    if (customText && document.getElementById('others-checkbox').checked) {
+        var customCats = customText.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l; });
+        selectedCategories = selectedCategories.concat(customCats);
+    }
+
+    if (selectedCategories.length === 0) {
+        showToast('Please select at least one category', 'error');
+        btn.disabled = false; spinner.classList.add('hidden');
+        return;
+    }
+
+    fetch('{{ route("settings.studio.categories.update") }}', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({ studio_categories: selectedCategories })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var displayHtml = selectedCategories.map(function(cat) { return '<span class="badge badge-soft badge-primary">' + cat + '</span>'; }).join('');
+            document.getElementById('display-studio-categories').innerHTML = displayHtml;
+            closeDrawer('edit-categories-drawer');
+            setTimeout(function() { showToast('Studio categories updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })

@@ -10,6 +10,31 @@
     $canViewInsights = $user->hasPermission('insights.attendance') || $user->hasPermission('insights.revenue');
     $canViewPayments = $user->hasPermission('payments.view');
     $canAccessSettings = $user->hasPermission('studio.profile') || $user->hasPermission('team.view') || $user->hasPermission('billing.plan');
+
+    // Check if setup checklist is complete (for owner/admin only)
+    $isOwnerOrAdmin = $user->isOwner($host) || $user->isAdmin($host);
+    $setupComplete = true; // Default to true for non-owner/admin users
+    if ($isOwnerOrAdmin && !$host->setup_completed_at) {
+        // Calculate setup progress - check key items
+        $hasVerifiedEmail = $user->hasVerifiedEmail();
+
+        // Studio Info check - all mandatory fields
+        $bookingSettings = $host->booking_settings ?? [];
+        $hasStudioInfo = !empty($host->studio_name)
+            && !empty($host->studio_structure)
+            && !empty($host->subdomain)
+            && !empty($host->studio_types) && is_array($host->studio_types) && count($host->studio_types) > 0
+            && !empty($host->studio_category)
+            && !empty($host->default_language_app)
+            && !empty($host->default_currency)
+            && isset($bookingSettings['allow_cancellations']);
+
+        $hasLocation = $host->locations()->exists();
+        $hasStaff = $host->instructors()->exists() && $host->instructors->contains(fn($i) => $i->isProfileComplete());
+        $hasBookingPage = !empty($host->subdomain) && !empty($host->studio_name);
+        $setupComplete = $hasVerifiedEmail && $hasStudioInfo && $hasLocation && $hasStaff && $hasBookingPage;
+    }
+    $sidebarDisabled = !$setupComplete;
 @endphp
 <aside id="main-sidebar" class="sticky top-0 h-screen bg-base-100 border-e border-base-content/10 flex flex-col">
 
@@ -26,6 +51,16 @@
 
     {{-- Sidebar body --}}
     <div class="flex-1 overflow-y-auto px-3 py-4">
+        {{-- Setup incomplete notice --}}
+        @if($sidebarDisabled)
+        <div class="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+            <div class="flex items-center gap-2 text-warning text-xs font-medium">
+                <span class="icon-[tabler--alert-triangle] size-4"></span>
+                {{ $trans['nav.setup_required'] ?? 'Complete setup to unlock navigation' }}
+            </div>
+        </div>
+        @endif
+
         <ul class="menu space-y-0.5 p-0">
 
             {{-- Section: Main --}}
@@ -34,27 +69,27 @@
             </li>
 
             {{-- Dashboard - Everyone can see --}}
-            <li class="nav-item {{ request()->is('dashboard*') ? 'active' : '' }}" data-nav="dashboard">
-                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
+            <li class="nav-item {{ request()->is('dashboard*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="dashboard">
+                <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" {{ $sidebarDisabled ? 'disabled' : '' }} onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--home] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.dashboard'] ?? 'Dashboard' }}</span>
                     <span class="icon-[tabler--chevron-down] size-4 sidebar-chevron transition-transform duration-200"></span>
                 </button>
                 <ul class="sidebar-submenu {{ request()->is('dashboard*') ? 'open' : '' }} pl-8 space-y-0.5 mt-0.5">
-                    <li><a href="{{ url('/dashboard') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content">
+                    <li><a href="{{ url('/dashboard') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content" {{ $sidebarDisabled ? 'tabindex=-1' : '' }}>
                         <span class="icon-[tabler--layout-dashboard] size-4 mr-2"></span>{{ $trans['nav.dashboard.overview'] ?? 'Overview' }}
                     </a></li>
                     @if($canViewSchedule)
-                    <li><a href="{{ route('dashboard.todays-classes') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.todays-classes') ? 'bg-primary/10 text-primary' : '' }}">
+                    <li><a href="{{ route('dashboard.todays-classes') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.todays-classes') ? 'bg-primary/10 text-primary' : '' }}" {{ $sidebarDisabled ? 'tabindex=-1' : '' }}>
                         <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>{{ $trans['nav.dashboard.todays_classes'] ?? "Today's Classes" }}
                     </a></li>
                     @endif
                     @if($canViewBookings)
-                    <li><a href="{{ route('dashboard.upcoming-bookings') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.upcoming-bookings') ? 'bg-primary/10 text-primary' : '' }}">
+                    <li><a href="{{ route('dashboard.upcoming-bookings') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.upcoming-bookings') ? 'bg-primary/10 text-primary' : '' }}" {{ $sidebarDisabled ? 'tabindex=-1' : '' }}>
                         <span class="icon-[tabler--book] size-4 mr-2"></span>{{ $trans['nav.dashboard.upcoming_bookings'] ?? 'Upcoming Bookings' }}
                     </a></li>
                     @endif
-                    <li><a href="{{ route('dashboard.alerts') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.alerts') ? 'bg-primary/10 text-primary' : '' }}">
+                    <li><a href="{{ route('dashboard.alerts') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->routeIs('dashboard.alerts') ? 'bg-primary/10 text-primary' : '' }}" {{ $sidebarDisabled ? 'tabindex=-1' : '' }}>
                         <span class="icon-[tabler--bell] size-4 mr-2"></span>{{ $trans['nav.dashboard.alerts'] ?? 'Alerts & Reminders' }}
                     </a></li>
                 </ul>
@@ -70,7 +105,7 @@
                 $scheduleActive = request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') || request()->is('one-on-one*') || request()->is('one-on-one-setup*');
             @endphp
             @if($canViewSchedule || $showOneOnOneMenu)
-            <li class="nav-item {{ $scheduleActive ? 'active' : '' }}" data-nav="schedule">
+            <li class="nav-item {{ $scheduleActive ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="schedule">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--calendar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.schedule'] ?? 'Schedule' }}</span>
@@ -111,7 +146,7 @@
 
             {{-- Bookings - Requires bookings.view or bookings.view_own --}}
             @if($canViewBookings)
-            <li class="nav-item {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') || request()->is('rentals/fulfillment*') || request()->is('space-rentals/create*') ? 'active' : '' }}" data-nav="bookings">
+            <li class="nav-item {{ request()->is('bookings*') || request()->is('class-requests*') || request()->is('waitlist*') || request()->is('rentals/fulfillment*') || request()->is('space-rentals/create*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="bookings">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--book] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.bookings'] ?? 'Bookings' }}</span>
@@ -162,7 +197,7 @@
 
             {{-- Clients - Requires students.view (renamed from Students) --}}
             @if($canViewClients)
-            <li class="nav-item {{ request()->is('clients*') ? 'active' : '' }}" data-nav="clients">
+            <li class="nav-item {{ request()->is('clients*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="clients">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--users] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.clients'] ?? 'Clients' }}</span>
@@ -197,7 +232,7 @@
             @php
                 $openTicketCount = auth()->user()?->host?->helpdeskTickets()->unresolved()->count() ?? 0;
             @endphp
-            <li class="nav-item {{ request()->is('helpdesk*') ? 'active' : '' }}" data-nav="helpdesk">
+            <li class="nav-item {{ request()->is('helpdesk*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="helpdesk">
                 <a href="{{ url('/helpdesk') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
                     <span class="icon-[tabler--help] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.helpdesk'] ?? 'Help Desk' }}</span>
@@ -218,7 +253,7 @@
                     })
                     ->count();
             @endphp
-            <li class="nav-item {{ request()->is('price-override*') ? 'active' : '' }}" data-nav="price-override">
+            <li class="nav-item {{ request()->is('price-override*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="price-override">
                 <a href="{{ route('price-override.index') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors {{ request()->is('price-override*') ? 'bg-primary/10 text-primary font-medium' : '' }}">
                     <span class="icon-[tabler--receipt-refund] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.price_override'] ?? 'Price Override' }}</span>
@@ -231,7 +266,7 @@
 
             {{-- Instructors - Requires team.view or team.instructors --}}
             @if($canViewTeam)
-            <li class="nav-item {{ request()->is('instructors*') ? 'active' : '' }}" data-nav="instructors">
+            <li class="nav-item {{ request()->is('instructors*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="instructors">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--user-star] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.instructors'] ?? 'Instructors' }}</span>
@@ -256,7 +291,7 @@
 
             {{-- Classes & Services - Requires schedule permissions --}}
             @if($canManageSchedule)
-            <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }}" data-nav="catalog">
+            <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="catalog">
                 <a href="{{ url('/catalog') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
                     <span class="icon-[tabler--layout-grid] size-5 shrink-0"></span>
                     <span class="sidebar-label">{{ $trans['nav.classes_services'] ?? 'Classes & Services' }}</span>
@@ -272,7 +307,7 @@
 
             {{-- Marketing - Segments & Offers --}}
             @if($canViewOffers)
-            <li class="nav-item {{ request()->is('segments*') || request()->is('offers*') ? 'active' : '' }}" data-nav="marketing">
+            <li class="nav-item {{ request()->is('segments*') || request()->is('offers*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="marketing">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--speakerphone] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.marketing'] ?? 'Marketing' }}</span>
@@ -299,7 +334,7 @@
 
             {{-- Insights - Requires insights permissions --}}
             @if($canViewInsights)
-            <li class="nav-item {{ request()->is('reports*') ? 'active' : '' }}" data-nav="insights">
+            <li class="nav-item {{ request()->is('reports*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="insights">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--chart-bar] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.insights'] ?? 'Insights' }}</span>
@@ -331,7 +366,7 @@
 
             {{-- Payments - Requires payments.view --}}
             @if($canViewPayments)
-            <li class="nav-item {{ request()->is('payments*') || request()->is('rentals/invoice*') ? 'active' : '' }}" data-nav="payments">
+            <li class="nav-item {{ request()->is('payments*') || request()->is('rentals/invoice*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="payments">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--credit-card] size-5 shrink-0"></span>
                     <span class="sidebar-label flex-1 text-left">{{ $trans['nav.paymentsinvoice'] ?? 'Payments & Invoice' }}</span>
@@ -369,7 +404,7 @@
 
             {{-- Feature Marketplace - Only for Owner and Admin --}}
             @if($user->isOwner($host) || $user->isAdmin($host))
-            <li class="nav-item {{ request()->is('marketplace*') ? 'active' : '' }}" data-nav="marketplace">
+            <li class="nav-item {{ request()->is('marketplace*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="marketplace">
                 <a href="{{ url('/marketplace') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors {{ request()->is('marketplace*') ? 'bg-primary/10 text-primary font-medium' : '' }}">
                     <span class="icon-[tabler--apps] size-5 shrink-0"></span>
                     <span class="sidebar-label">{{ $trans['nav.marketplace'] ?? 'Marketplace' }}</span>

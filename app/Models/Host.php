@@ -31,7 +31,10 @@ class Host extends Model
         'studio_name',
         'short_description',
         'subdomain',
+        'studio_structure',
         'studio_types',
+        'studio_category',
+        'studio_categories',
         'city',
         'state',
         'country',
@@ -84,6 +87,7 @@ class Host extends Model
     {
         return [
             'studio_types' => 'array',
+            'studio_categories' => 'array',
             'room_capacities' => 'array',
             'amenities' => 'array',
             'operating_countries' => 'array',

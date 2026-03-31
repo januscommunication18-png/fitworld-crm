@@ -6,7 +6,9 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('catalog.index', ['tab' => 'services']) }}"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> Catalog</a></li>
+        <li><a href="{{ route('catalog.index') }}"><span class="icon-[tabler--layout-grid] size-4"></span> Classes & Services</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li><a href="{{ route('catalog.index', ['tab' => 'services']) }}">Services</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">{{ $servicePlan->name }}</li>
     </ol>
@@ -54,10 +56,6 @@
             <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--edit] size-4"></span>
                 Edit
-            </a>
-            <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-soft btn-sm">
-                <span class="icon-[tabler--users] size-4"></span>
-                Manage Instructors
             </a>
         </div>
     </div>
@@ -219,6 +217,46 @@
                 </div>
             </div>
 
+            {{-- Billing Period Discounts --}}
+            @if($servicePlan->billing_discounts && count(array_filter($servicePlan->billing_discounts)) > 0)
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--discount] size-5"></span>
+                        Billing Period Discounts
+                    </h2>
+                    <p class="text-sm text-base-content/60 mt-1">Discounts applied for longer billing commitments.</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
+                        @php
+                            $billingPeriods = [
+                                '1' => '1 Month',
+                                '3' => '3 Months',
+                                '6' => '6 Months',
+                                '9' => '9 Months',
+                                '12' => '12 Months',
+                            ];
+                        @endphp
+                        @foreach($billingPeriods as $months => $label)
+                            @php
+                                $discount = $servicePlan->billing_discounts[$months] ?? 0;
+                            @endphp
+                            <div class="text-center p-3 rounded-lg {{ $discount > 0 ? 'bg-success/10' : 'bg-base-200/50' }}">
+                                <div class="text-sm text-base-content/60">{{ $label }}</div>
+                                <div class="text-xl font-bold {{ $discount > 0 ? 'text-success' : 'text-base-content/40' }}">
+                                    {{ $discount }}%
+                                </div>
+                                @if($discount > 0)
+                                    <div class="text-xs text-success">Save {{ $discount }}%</div>
+                                @else
+                                    <div class="text-xs text-base-content/40">Base price</div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
             {{-- Booking Rules --}}
             <div class="card bg-base-100">
                 <div class="card-body">
@@ -239,56 +277,55 @@
                 </div>
             </div>
 
-            {{-- Assigned Instructors --}}
+            {{-- Assigned Staff Members --}}
             <div class="card bg-base-100">
                 <div class="card-body">
                     <div class="flex items-center justify-between">
                         <h2 class="card-title text-lg">
                             <span class="icon-[tabler--users] size-5"></span>
-                            Assigned Instructors
+                            Assigned Staff Members
                         </h2>
-                        <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-ghost btn-xs">
+                        <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-ghost btn-xs">
                             Manage
                         </a>
                     </div>
                     @php
-                        $instructors = $servicePlan->instructors()->with('user')->get();
+                        $staffMembers = $servicePlan->staffMembers()->get();
                     @endphp
-                    @if($instructors->isEmpty())
+                    @if($staffMembers->isEmpty())
                         <div class="text-center py-8">
                             <span class="icon-[tabler--user-off] size-10 text-base-content/20"></span>
-                            <p class="text-base-content/60 mt-2">No instructors assigned yet.</p>
-                            <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-primary btn-sm mt-4">
+                            <p class="text-base-content/60 mt-2">No staff members assigned yet.</p>
+                            <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-primary btn-sm mt-4">
                                 <span class="icon-[tabler--plus] size-4"></span>
-                                Assign Instructors
+                                Assign Staff Members
                             </a>
                         </div>
                     @else
                         <div class="space-y-3 mt-4">
-                            @foreach($instructors as $instructor)
+                            @foreach($staffMembers as $member)
                                 <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg">
                                     <div class="flex items-center gap-3">
-                                        @if($instructor->photo_url)
-                                            <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
+                                        @if($member->profile_photo_url)
+                                            <img src="{{ $member->profile_photo_url }}" alt="{{ $member->name }}"
                                                  class="w-10 h-10 rounded-full object-cover">
                                         @else
                                             <div class="avatar placeholder">
                                                 <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold text-sm">
-                                                    {{ $instructor->initials }}
+                                                    {{ strtoupper(substr($member->name, 0, 2)) }}
                                                 </div>
                                             </div>
                                         @endif
                                         <div>
-                                            <a href="{{ route('instructors.show', $instructor) }}" class="font-medium hover:text-primary">
-                                                {{ $instructor->name }}
-                                            </a>
-                                            @if($instructor->pivot->custom_price !== null)
-                                                <p class="text-sm text-success">${{ number_format($instructor->pivot->custom_price, 2) }}</p>
+                                            <span class="font-medium">{{ $member->name }}</span>
+                                            <p class="text-sm text-base-content/60">{{ ucfirst($member->role) }}</p>
+                                            @if($member->pivot->custom_price !== null)
+                                                <p class="text-sm text-success">${{ number_format($member->pivot->custom_price, 2) }}</p>
                                             @endif
                                         </div>
                                     </div>
                                     <div class="flex items-center gap-2">
-                                        @if($instructor->pivot->is_active)
+                                        @if($member->pivot->is_active)
                                             <span class="badge badge-soft badge-success badge-xs">Active</span>
                                         @else
                                             <span class="badge badge-soft badge-neutral badge-xs">Inactive</span>
@@ -315,7 +352,7 @@
                         $totalSlots = $servicePlan->slots()->count();
                         $upcomingSlots = $servicePlan->slots()->where('start_time', '>', now())->count();
                         $completedSlots = $servicePlan->slots()->where('start_time', '<', now())->count();
-                        $instructorCount = $servicePlan->instructors()->count();
+                        $staffMemberCount = $servicePlan->staffMembers()->count();
                     @endphp
                     <div class="space-y-3 mt-4">
                         <div class="flex items-center justify-between">
@@ -331,8 +368,8 @@
                             <span class="font-bold text-success">{{ $completedSlots }}</span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Assigned Instructors</span>
-                            <span class="font-bold">{{ $instructorCount }}</span>
+                            <span class="text-base-content/60">Assigned Staff</span>
+                            <span class="font-bold">{{ $staffMemberCount }}</span>
                         </div>
                     </div>
                 </div>

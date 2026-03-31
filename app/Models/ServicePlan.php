@@ -44,6 +44,7 @@ class ServicePlan extends Model
         'color',
         'booking_notice_hours',
         'cancellation_hours',
+        'billing_discounts',
         'is_active',
         'is_visible_on_booking_page',
         'sort_order',
@@ -58,6 +59,7 @@ class ServicePlan extends Model
             'deposit_prices' => 'array',
             'new_member_prices' => 'array',
             'new_member_deposit_prices' => 'array',
+            'billing_discounts' => 'array',
             'is_active' => 'boolean',
             'is_visible_on_booking_page' => 'boolean',
         ];
@@ -89,6 +91,18 @@ class ServicePlan extends Model
     public function activeInstructors(): BelongsToMany
     {
         return $this->instructors()->wherePivot('is_active', true);
+    }
+
+    public function staffMembers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'service_plan_users')
+            ->withPivot(['custom_price', 'is_active'])
+            ->withTimestamps();
+    }
+
+    public function activeStaffMembers(): BelongsToMany
+    {
+        return $this->staffMembers()->wherePivot('is_active', true);
     }
 
     public function slots(): HasMany

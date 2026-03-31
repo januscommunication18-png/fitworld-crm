@@ -18,8 +18,8 @@ class StudioBasicsRequest extends FormRequest
 
         return [
             'studio_name' => ['required', 'string', 'max:255'],
-            'studio_types' => ['array'],
-            'studio_types.*' => ['string'],
+            'studio_categories' => ['required', 'array', 'min:1'],
+            'studio_categories.*' => ['string', 'max:255'],
             'country' => ['required', 'string', 'max:2', 'in:US,CA,GB,DE,AU,IN'],
             'city' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],

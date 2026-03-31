@@ -4,6 +4,7 @@ use App\Http\Controllers\Host\AuthController;
 use App\Http\Controllers\Host\BookingController;
 use App\Http\Controllers\Host\DashboardController;
 use App\Http\Controllers\Host\EmailVerificationController;
+use App\Http\Controllers\Auth\PhoneVerificationController;
 use App\Http\Controllers\Host\EventController;
 use App\Http\Controllers\Host\InstructorController;
 use App\Http\Controllers\Host\InvitationController;
@@ -46,6 +47,7 @@ use App\Http\Controllers\Host\ClassSessionProgressController;
 use App\Http\Controllers\Host\WalkInController;
 use App\Http\Controllers\Host\PriceOverrideController;
 use App\Http\Controllers\Host\ScheduledMembershipController;
+use App\Http\Controllers\Host\SupportRequestController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\QuestionnaireResponseController;
 use App\Http\Controllers\SecurityCodeController;
@@ -203,6 +205,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->name('verification.send');
 
+    // Phone Verification
+    Route::post('/phone/verification-send', [PhoneVerificationController::class, 'send'])->name('verification.phone.send');
+    Route::post('/phone/verification-verify', [PhoneVerificationController::class, 'verify'])->name('verification.phone.verify');
+
     // Studio Selection (for multi-studio users)
     Route::get('/select-studio', [AuthController::class, 'selectStudio'])->name('select-studio');
     Route::post('/switch-studio', [AuthController::class, 'switchStudio'])->name('switch-studio');
@@ -213,6 +219,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/upcoming-bookings', [DashboardController::class, 'upcomingBookings'])->name('dashboard.upcoming-bookings');
     Route::get('/dashboard/alerts', [DashboardController::class, 'alerts'])->name('dashboard.alerts');
     Route::post('/dashboard/skip-setup', [DashboardController::class, 'skipSetup'])->name('dashboard.skip-setup');
+    Route::post('/dashboard/save-studio-info', [DashboardController::class, 'saveStudioInfo'])->name('dashboard.save-studio-info');
+    Route::post('/dashboard/quick-invite-member', [DashboardController::class, 'quickInviteMember'])->name('dashboard.quick-invite-member');
+    Route::post('/dashboard/save-booking-page', [DashboardController::class, 'saveBookingPage'])->name('dashboard.save-booking-page');
+
+    // Support Requests
+    Route::get('/support/requests', [SupportRequestController::class, 'index'])->name('support.requests.index');
+    Route::post('/support/requests', [SupportRequestController::class, 'store'])->name('support.requests.store');
+    Route::get('/support/requests/{supportRequest}', [SupportRequestController::class, 'show'])->name('support.requests.show');
 
     // Dashboard API (for charts)
     Route::prefix('api/dashboard')->group(function () {
@@ -661,6 +675,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/studio/currency', [SettingsController::class, 'updateStudioCurrency'])->name('settings.studio.currency.update');
     Route::put('/settings/studio/countries', [SettingsController::class, 'updateStudioCountries'])->name('settings.studio.countries.update');
     Route::put('/settings/studio/language', [SettingsController::class, 'updateStudioLanguage'])->name('settings.studio.language.update');
+    Route::put('/settings/studio/categories', [SettingsController::class, 'updateStudioCategories'])->name('settings.studio.categories.update');
     Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
 
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');

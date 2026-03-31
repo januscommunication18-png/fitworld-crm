@@ -158,7 +158,7 @@
                     <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $classPlan->description }}</p>
                     @endif
 
-                    <div class="mt-4 flex items-center gap-4 text-sm">
+                    <div class="mt-4 flex items-center gap-4 text-sm flex-wrap">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
                             <span class="font-medium">{{ $classPlan->formatted_price }}</span>
@@ -166,6 +166,10 @@
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
                             <span>{{ $classPlan->default_capacity }} {{ $trans['common.max'] ?? 'max' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--user] size-4 text-base-content/60"></span>
+                            <span>{{ $classPlan->active_staff_members_count }} staff</span>
                         </div>
                         <span class="badge {{ $classPlan->getDifficultyBadgeClass() }} badge-sm capitalize">{{ str_replace('_', ' ', $classPlan->difficulty_level) }}</span>
                     </div>
@@ -217,7 +221,7 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-6 text-sm mt-2">
+                    <div class="flex items-center gap-6 text-sm mt-2 flex-wrap">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
                             <span class="font-medium">{{ $classPlan->formatted_price }}</span>
@@ -225,6 +229,10 @@
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
                             <span>{{ $classPlan->default_capacity }} {{ $trans['common.max'] ?? 'max' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--user] size-4 text-base-content/60"></span>
+                            <span>{{ $classPlan->active_staff_members_count }} staff</span>
                         </div>
                         @if($classPlan->description)
                         <p class="text-base-content/60 line-clamp-1 flex-1">{{ $classPlan->description }}</p>
@@ -305,7 +313,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->active_instructors_count }} {{ $trans['common.instructor'] ?? 'instructor' }}{{ $servicePlan->active_instructors_count !== 1 ? 's' : '' }}</span>
+                            <span>{{ $servicePlan->active_staff_members_count }} {{ $trans['common.staff_member'] ?? 'staff' }}</span>
                         </div>
                         <span class="badge badge-soft badge-neutral badge-sm capitalize">{{ str_replace('_', ' ', $servicePlan->location_type) }}</span>
                     </div>
@@ -318,9 +326,6 @@
                         <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
                             <span class="icon-[tabler--edit] size-4"></span>
                             {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-info">
-                            <span class="icon-[tabler--users] size-4"></span>
                         </a>
                         <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
@@ -367,7 +372,7 @@
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->active_instructors_count }} {{ $trans['common.instructor'] ?? 'instructor' }}{{ $servicePlan->active_instructors_count !== 1 ? 's' : '' }}</span>
+                            <span>{{ $servicePlan->active_staff_members_count }} {{ $trans['common.staff_member'] ?? 'staff' }}</span>
                         </div>
                         @if($servicePlan->description)
                         <p class="text-base-content/60 line-clamp-1 flex-1">{{ $servicePlan->description }}</p>
@@ -383,10 +388,6 @@
                         <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary">
                             <span class="icon-[tabler--edit] size-4"></span>
                             {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <a href="{{ route('service-plans.instructors', $servicePlan) }}" class="btn btn-sm btn-soft btn-info">
-                            <span class="icon-[tabler--users] size-4"></span>
-                            {{ $trans['nav.instructors'] ?? 'Instructors' }}
                         </a>
                         <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
                             <span class="icon-[tabler--trash] size-4"></span>
