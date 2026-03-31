@@ -24,6 +24,7 @@ class HelpdeskTicket extends Model
     const SOURCE_GENERAL_INQUIRY = 'general_inquiry';
     const SOURCE_LEAD_MAGNET = 'lead_magnet';
     const SOURCE_MANUAL = 'manual';
+    const SOURCE_ONBOARDING_SUPPORT = 'onboarding_support';
 
     protected $fillable = [
         'host_id',
@@ -293,6 +294,7 @@ class HelpdeskTicket extends Model
             self::SOURCE_GENERAL_INQUIRY => 'General Inquiry',
             self::SOURCE_LEAD_MAGNET => 'Lead Magnet',
             self::SOURCE_MANUAL => 'Manual',
+            self::SOURCE_ONBOARDING_SUPPORT => 'Onboarding Support',
         ];
     }
 }

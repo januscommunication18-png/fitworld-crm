@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\SignupController;
+use App\Http\Controllers\Api\OnboardingController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\Api\WalkInBookingController;
 use App\Http\Controllers\Api\FitNearYouApiController;
@@ -23,6 +24,36 @@ Route::prefix('v1')->group(function () {
         Route::post('/signup/classes', [SignupController::class, 'saveClass']);
         Route::post('/signup/payments', [SignupController::class, 'savePayments']);
         Route::post('/signup/complete', [SignupController::class, 'complete']);
+    });
+
+    // Post-signup onboarding endpoints (authenticated)
+    Route::middleware('auth:sanctum')->prefix('onboarding')->group(function () {
+        // Progress
+        Route::get('/progress', [OnboardingController::class, 'progress']);
+
+        // Step 1: Email & Phone Verification
+        Route::post('/resend-email', [OnboardingController::class, 'resendEmailVerification']);
+        Route::post('/send-phone-code', [OnboardingController::class, 'sendPhoneCode']);
+        Route::post('/verify-phone-code', [OnboardingController::class, 'verifyPhoneCode']);
+
+        // Step 2: Studio Information
+        Route::post('/studio-info', [OnboardingController::class, 'saveStudioInfo']);
+
+        // Step 3: Location
+        Route::post('/location', [OnboardingController::class, 'saveLocation']);
+
+        // Step 4: Staff Member
+        Route::post('/staff-member', [OnboardingController::class, 'saveStaffMember']);
+
+        // Step 5: Booking Page
+        Route::post('/booking-page', [OnboardingController::class, 'saveBookingPage']);
+        Route::post('/booking-page/logo', [OnboardingController::class, 'uploadLogo']);
+
+        // Completion
+        Route::post('/complete', [OnboardingController::class, 'completeOnboarding']);
+
+        // Tech Support
+        Route::post('/tech-support', [OnboardingController::class, 'requestTechSupport']);
     });
 
     // Questionnaire Builder API (authenticated)

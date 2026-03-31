@@ -10,6 +10,7 @@ use App\Http\Controllers\Host\InvitationController;
 use App\Http\Controllers\Host\MarketplaceController;
 use App\Http\Controllers\Host\OneOnOneSetupController;
 use App\Http\Controllers\Host\OneOnOneBookingController;
+use App\Http\Controllers\Host\OnboardingWebController;
 use App\Http\Controllers\Host\LocationController;
 use App\Http\Controllers\Host\RoomController;
 use App\Http\Controllers\Host\BookingPageController;
@@ -206,6 +207,9 @@ Route::middleware('auth')->group(function () {
     // Studio Selection (for multi-studio users)
     Route::get('/select-studio', [AuthController::class, 'selectStudio'])->name('select-studio');
     Route::post('/switch-studio', [AuthController::class, 'switchStudio'])->name('switch-studio');
+
+    // Post-signup onboarding
+    Route::get('/onboarding', [OnboardingWebController::class, 'index'])->name('onboarding');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

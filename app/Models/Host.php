@@ -27,6 +27,10 @@ class Host extends Model
     const BOOKING_PAGE_DRAFT = 'draft';
     const BOOKING_PAGE_PUBLISHED = 'published';
 
+    // Studio structure constants
+    const STRUCTURE_SOLO = 'solo';
+    const STRUCTURE_TEAM = 'team';
+
     protected $fillable = [
         'studio_name',
         'short_description',
@@ -78,6 +82,19 @@ class Host extends Model
         'booking_page_status',
         'show_address',
         'show_social_links',
+        // Post-signup onboarding fields
+        'post_signup_step',
+        'post_signup_completed_at',
+        'tech_support_requested',
+        'tech_support_requested_at',
+        'tech_support_completed_at',
+        'tech_support_ticket_id',
+        'owner_phone_number',
+        'owner_phone_country_code',
+        'owner_phone_verified',
+        'owner_phone_verified_at',
+        'studio_structure',
+        'studio_categories',
     ];
 
     protected function casts(): array
@@ -105,6 +122,14 @@ class Host extends Model
             'verified_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'subscription_ends_at' => 'datetime',
+            // Post-signup onboarding casts
+            'post_signup_completed_at' => 'datetime',
+            'tech_support_requested' => 'boolean',
+            'tech_support_requested_at' => 'datetime',
+            'tech_support_completed_at' => 'datetime',
+            'owner_phone_verified' => 'boolean',
+            'owner_phone_verified_at' => 'datetime',
+            'studio_categories' => 'array',
         ];
     }
 
@@ -694,5 +719,111 @@ class Host extends Model
             self::BOOKING_PAGE_DRAFT => 'Draft',
             self::BOOKING_PAGE_PUBLISHED => 'Published',
         ];
+    }
+
+    /**
+     * Check if post-signup onboarding is complete.
+     */
+    public function hasCompletedPostSignupOnboarding(): bool
+    {
+        return $this->post_signup_completed_at !== null;
+    }
+
+    /**
+     * Check if tech support has been requested.
+     */
+    public function hasTechSupportRequested(): bool
+    {
+        return $this->tech_support_requested === true;
+    }
+
+    /**
+     * Check if tech support is pending (requested but not completed).
+     */
+    public function hasTechSupportPending(): bool
+    {
+        return $this->tech_support_requested && $this->tech_support_completed_at === null;
+    }
+
+    /**
+     * Check if owner phone is verified.
+     */
+    public function hasOwnerPhoneVerified(): bool
+    {
+        return $this->owner_phone_verified === true;
+    }
+
+    /**
+     * Mark owner phone as verified.
+     */
+    public function markOwnerPhoneVerified(string $phoneNumber, string $countryCode): void
+    {
+        $this->update([
+            'owner_phone_number' => $phoneNumber,
+            'owner_phone_country_code' => $countryCode,
+            'owner_phone_verified' => true,
+            'owner_phone_verified_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark tech support as requested.
+     */
+    public function markTechSupportRequested(int $ticketId): void
+    {
+        $this->update([
+            'tech_support_requested' => true,
+            'tech_support_requested_at' => now(),
+            'tech_support_ticket_id' => $ticketId,
+        ]);
+    }
+
+    /**
+     * Mark tech support as completed.
+     */
+    public function markTechSupportCompleted(): void
+    {
+        $this->update([
+            'tech_support_completed_at' => now(),
+            'post_signup_completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Mark post-signup onboarding as complete.
+     */
+    public function markPostSignupOnboardingComplete(): void
+    {
+        $this->update([
+            'post_signup_completed_at' => now(),
+            'setup_completed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Get available studio structures.
+     */
+    public static function getStudioStructures(): array
+    {
+        return [
+            self::STRUCTURE_SOLO => 'Solo (Just me)',
+            self::STRUCTURE_TEAM => 'With a Team (Staff members)',
+        ];
+    }
+
+    /**
+     * Get the tech support ticket relation.
+     */
+    public function techSupportTicket(): BelongsTo
+    {
+        return $this->belongsTo(HelpdeskTicket::class, 'tech_support_ticket_id');
+    }
+
+    /**
+     * Phone verification codes for this host.
+     */
+    public function phoneVerificationCodes(): HasMany
+    {
+        return $this->hasMany(PhoneVerificationCode::class);
     }
 }

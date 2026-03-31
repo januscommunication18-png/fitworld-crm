@@ -31,6 +31,11 @@ class DashboardController extends Controller
 
         $host = $user->currentHost();
 
+        // Redirect to post-signup onboarding if not completed (and not in tech support mode)
+        if (!$host->hasCompletedPostSignupOnboarding() && !$host->hasTechSupportPending()) {
+            return redirect()->route('onboarding');
+        }
+
         // Get user role for this host
         $userRole = $user->getRoleForHost($host) ?? $user->role;
         $isOwnerOrAdmin = $user->isOwner($host) || $user->isAdmin($host);
