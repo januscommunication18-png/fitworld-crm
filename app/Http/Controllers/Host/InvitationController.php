@@ -47,9 +47,13 @@ class InvitationController extends Controller
         // Check if there's an existing user with this email
         $existingUser = User::where('email', $invitation->email)->first();
 
+        // Determine if this is an "invited" user (no password yet) - should show registration form
+        $isInvitedUser = $existingUser && (is_null($existingUser->password) || $existingUser->status === User::STATUS_INVITED);
+
         return view('auth.invitation-accept', [
             'invitation' => $invitation,
             'existingUser' => $existingUser,
+            'isInvitedUser' => $isInvitedUser,
             'host' => $invitation->host,
         ]);
     }
@@ -73,36 +77,75 @@ class InvitationController extends Controller
         $instructorId = $invitation->instructor_id;
 
         if ($existingUser) {
-            // Existing user - verify password and link to host
-            $request->validate([
-                'password' => 'required|string',
-            ]);
+            // Check if this is an invited user (no password yet) or an existing user with a password
+            $isInvitedUser = is_null($existingUser->password) || $existingUser->status === User::STATUS_INVITED;
 
-            if (!Hash::check($request->password, $existingUser->password)) {
-                return back()->withErrors(['password' => 'The password is incorrect.']);
+            if ($isInvitedUser) {
+                // Invited user - they need to set their password
+                $request->validate([
+                    'first_name' => ['required', 'string', 'max:255', 'regex:/^[^\d]+$/'],
+                    'last_name' => ['required', 'string', 'max:255', 'regex:/^[^\d]+$/'],
+                    'password' => ['required', 'string', 'min:8', 'confirmed'],
+                ]);
+
+                // Auto-create instructor record if role is instructor and no instructor_id
+                if ($invitation->role === 'instructor' && !$instructorId) {
+                    $fullName = trim($request->first_name . ' ' . $request->last_name);
+                    $instructorId = $this->ensureInstructorRecord(
+                        $invitation->host_id,
+                        $fullName,
+                        $invitation->email
+                    );
+                }
+
+                // Update the invited user with their details and password
+                $existingUser->update([
+                    'first_name' => $request->first_name,
+                    'last_name' => $request->last_name,
+                    'password' => Hash::make($request->password),
+                    'host_id' => $invitation->host_id,
+                    'role' => $invitation->role,
+                    'permissions' => $invitation->permissions,
+                    'status' => User::STATUS_ACTIVE,
+                    'instructor_id' => $instructorId,
+                    'is_instructor' => $invitation->role === 'instructor',
+                    'email_verified_at' => now(),
+                    'last_login_at' => now(),
+                ]);
+
+                $user = $existingUser;
+            } else {
+                // Existing user with password - verify password and link to host
+                $request->validate([
+                    'password' => 'required|string',
+                ]);
+
+                if (!Hash::check($request->password, $existingUser->password)) {
+                    return back()->withErrors(['password' => 'The password is incorrect.']);
+                }
+
+                // Auto-create instructor record if role is instructor and no instructor_id
+                if ($invitation->role === 'instructor' && !$instructorId) {
+                    $instructorId = $this->ensureInstructorRecord(
+                        $invitation->host_id,
+                        $existingUser->full_name,
+                        $invitation->email
+                    );
+                }
+
+                // Update user to be linked to this host (for backwards compatibility)
+                $existingUser->update([
+                    'host_id' => $invitation->host_id,
+                    'role' => $invitation->role,
+                    'permissions' => $invitation->permissions,
+                    'status' => User::STATUS_ACTIVE,
+                    'instructor_id' => $instructorId,
+                    'is_instructor' => $invitation->role === 'instructor',
+                    'last_login_at' => now(),
+                ]);
+
+                $user = $existingUser;
             }
-
-            // Auto-create instructor record if role is instructor and no instructor_id
-            if ($invitation->role === 'instructor' && !$instructorId) {
-                $instructorId = $this->ensureInstructorRecord(
-                    $invitation->host_id,
-                    $existingUser->full_name,
-                    $invitation->email
-                );
-            }
-
-            // Update user to be linked to this host (for backwards compatibility)
-            $existingUser->update([
-                'host_id' => $invitation->host_id,
-                'role' => $invitation->role,
-                'permissions' => $invitation->permissions,
-                'status' => User::STATUS_ACTIVE,
-                'instructor_id' => $instructorId,
-                'is_instructor' => $invitation->role === 'instructor',
-                'last_login_at' => now(),
-            ]);
-
-            $user = $existingUser;
         } else {
             // New user - create account
             $request->validate([

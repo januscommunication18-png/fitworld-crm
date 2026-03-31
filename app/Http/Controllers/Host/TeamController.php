@@ -525,6 +525,24 @@ class TeamController extends Controller
         // Otherwise, send invitation (existing flow)
         $instructorId = null;
 
+        // Create User record upfront with status 'invited' (so they appear in users list)
+        $user = User::create([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $email,
+            'password' => null, // No password until they accept the invitation
+            'host_id' => $host->id,
+            'phone' => $validated['phone'] ?? null,
+            'bio' => $validated['bio'] ?? null,
+            'status' => User::STATUS_INVITED,
+        ]);
+
+        // Attach user to host with role and permissions
+        $host->users()->attach($user->id, [
+            'role' => $validated['role'],
+            'permissions' => json_encode($validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role'])),
+        ]);
+
         // Auto-create instructor record when inviting with instructor role
         if ($validated['role'] === User::ROLE_INSTRUCTOR) {
             // Check if instructor already exists with this email
@@ -534,12 +552,16 @@ class TeamController extends Controller
 
             if ($existingInstructor) {
                 $instructorId = $existingInstructor->id;
-                // Update existing instructor with new details
-                $existingInstructor->update($this->extractInstructorData($validated, $fullName, $email));
+                // Update existing instructor with new details and link to user
+                $existingInstructor->update(array_merge(
+                    $this->extractInstructorData($validated, $fullName, $email),
+                    ['user_id' => $user->id]
+                ));
             } else {
                 // Create a full instructor record with all details
                 $instructorData = $this->extractInstructorData($validated, $fullName, $email);
                 $instructorData['host_id'] = $host->id;
+                $instructorData['user_id'] = $user->id;
                 $instructor = Instructor::create($instructorData);
                 $instructorId = $instructor->id;
             }

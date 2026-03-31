@@ -836,7 +836,27 @@
 
                 // Day overrides toggle
                 document.getElementById('enable-day-overrides').addEventListener('change', function() {
-                    document.getElementById('day-overrides-container').classList.toggle('hidden', !this.checked);
+                    const container = document.getElementById('day-overrides-container');
+                    container.classList.toggle('hidden', !this.checked);
+
+                    // If enabling overrides, populate empty fields with default times
+                    if (this.checked) {
+                        const defaultFrom = document.getElementById('availability_default_from').value || '09:00';
+                        const defaultTo = document.getElementById('availability_default_to').value || '17:00';
+
+                        container.querySelectorAll('.flatpickr-time-override').forEach(function(input) {
+                            if (!input.value) {
+                                const isFromField = input.name.includes('[from]');
+                                const defaultValue = isFromField ? defaultFrom : defaultTo;
+                                const fpInstance = input._flatpickr;
+                                if (fpInstance) {
+                                    fpInstance.setDate(defaultValue, true);
+                                } else {
+                                    input.value = defaultValue;
+                                }
+                            }
+                        });
+                    }
                 });
 
                 // Initialize Flatpickr

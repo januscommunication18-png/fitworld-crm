@@ -172,7 +172,7 @@
                             @endif
                             <div class="flex-1 min-w-0">
                                 <div class="font-medium text-sm">{{ $trans['setup.instructor'] ?? 'Setup Instructor / Staff' }}</div>
-                                <div class="text-xs text-base-content/50 truncate">{{ $trans['setup.instructor_desc'] ?? 'Add team members with availability & time slots' }}</div>
+                                <div class="text-xs text-base-content/50 truncate">{{ $trans['setup.instructor_desc'] ?? 'Add team members with availability & time slots' }}{{'( - Complete Profile)'}}</div>
                             </div>
                             @if($item['completed'])
                                 <span class="badge badge-success badge-soft badge-sm">{{ $trans['setup.done'] ?? 'Done' }}</span>

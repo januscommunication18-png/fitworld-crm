@@ -117,11 +117,10 @@ $enabledManualMethods = $paymentSettings['manual_methods'] ?? [];
                     <div class="manual-method-details px-4 pb-4 {{ $isEnabled ? '' : 'hidden' }}">
                         <div class="pl-12">
                             <label class="label-text text-sm" for="manual_{{ $methodKey }}_instructions">Payment Instructions</label>
-                            <input type="text"
-                                   id="manual_{{ $methodKey }}_instructions"
-                                   class="input input-bordered input-sm w-full mt-1"
-                                   placeholder="{{ $method['placeholder'] }}"
-                                   value="{{ $instructions }}" />
+                            <textarea id="manual_{{ $methodKey }}_instructions"
+                                      class="textarea textarea-bordered textarea-sm w-full mt-1"
+                                      rows="2"
+                                      placeholder="{{ $method['placeholder'] }}">{{ $instructions }}</textarea>
                             <p class="text-xs text-base-content/50 mt-1">This will be shown to clients when they select this payment method</p>
                         </div>
                     </div>
@@ -277,11 +276,11 @@ function savePaymentSettings() {
     document.querySelectorAll('.manual-method-item').forEach(function(item) {
         var methodKey = item.dataset.method;
         var toggle = item.querySelector('.manual-method-toggle');
-        var instructionsInput = item.querySelector('input[type="text"]');
+        var instructionsTextarea = item.querySelector('textarea');
 
         manualMethods[methodKey] = {
             enabled: toggle.checked,
-            instructions: instructionsInput ? instructionsInput.value : ''
+            instructions: instructionsTextarea ? instructionsTextarea.value : ''
         };
     });
 

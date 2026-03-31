@@ -46,8 +46,8 @@
             <form method="POST" action="{{ route('invitation.accept', $invitation->token) }}">
                 @csrf
 
-                @if($existingUser)
-                    {{-- Existing User - Just need password --}}
+                @if($existingUser && !$isInvitedUser)
+                    {{-- Existing User with password - Just need password verification --}}
                     <div class="alert alert-soft alert-info mb-4">
                         <span class="icon-[tabler--info-circle] size-5"></span>
                         <span>You already have an account. Enter your password to join this studio.</span>
@@ -145,7 +145,7 @@
         </div>
     </div>
 
-@if(!$existingUser)
+@if(!$existingUser || $isInvitedUser)
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var passwordInput = document.getElementById('password');

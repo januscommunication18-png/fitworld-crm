@@ -196,8 +196,190 @@
                                     <p class="font-medium">{{ $statusText }}</p>
                                 </div>
                             </div>
+
+                            {{-- Specialties --}}
+                            @if($instructor && !empty($instructor->specialties))
+                                <div class="divider my-3"></div>
+                                <div>
+                                    <label class="text-sm text-base-content/60 block mb-2">Specialties</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($instructor->specialties as $specialty)
+                                            <span class="badge badge-soft badge-primary">{{ $specialty }}</span>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
+
+                    {{-- Employment Details --}}
+                    @if($instructor)
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--briefcase] size-5"></span>
+                                    Employment Details
+                                </h2>
+                                <a href="{{ route('settings.team.users.edit', $user) }}?step=2" class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] size-4"></span>
+                                    Edit
+                                </a>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label class="text-sm text-base-content/60">Employment Type</label>
+                                    <p class="font-medium">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Rate</label>
+                                    <p class="font-medium">{{ $instructor->getFormattedRate() ?? '-' }}</p>
+                                </div>
+                                @if($instructor->compensation_notes)
+                                <div class="col-span-2">
+                                    <label class="text-sm text-base-content/60">Compensation Notes</label>
+                                    <p class="font-medium text-sm">{{ $instructor->compensation_notes }}</p>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Workload Limits --}}
+                    @if($instructor)
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--chart-bar] size-5"></span>
+                                    Workload Limits
+                                </h2>
+                                <a href="{{ route('settings.team.users.edit', $user) }}?step=3" class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] size-4"></span>
+                                    Edit
+                                </a>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label class="text-sm text-base-content/60">Hours per Week</label>
+                                    <p class="font-medium">{{ $instructor->hours_per_week ? number_format($instructor->hours_per_week, 1) . ' hrs' : '-' }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Max Classes per Week</label>
+                                    <p class="font-medium">{{ $instructor->max_classes_per_week ?? '-' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    @php
+                        $dayOptions = \App\Models\Instructor::getDayOptions();
+                        $dayEmojis = ['☀️', '🌙', '🔥', '💧', '⚡', '🐟', '⭐'];
+                    @endphp
+
+                    {{-- Working Days --}}
+                    @if($instructor)
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--calendar-week] size-5"></span>
+                                    Working Days
+                                </h2>
+                                <a href="{{ route('settings.team.users.edit', $user) }}?step=4" class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] size-4"></span>
+                                    Edit
+                                </a>
+                            </div>
+                            <div class="mt-4">
+                                @if(!empty($instructor->working_days))
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($dayOptions as $value => $label)
+                                            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm {{ in_array($value, $instructor->working_days) ? 'bg-primary/10 text-primary font-medium' : 'bg-base-200/50 text-base-content/40' }}">
+                                                <span>{{ $dayEmojis[$value] }}</span>
+                                                <span>{{ substr($label, 0, 3) }}</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <p class="text-base-content/50 italic">No working days set (available all days)</p>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Availability Hours --}}
+                    @if($instructor)
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <h2 class="card-title text-lg">
+                                    <span class="icon-[tabler--clock] size-5"></span>
+                                    Availability Hours
+                                </h2>
+                                <a href="{{ route('settings.team.users.edit', $user) }}?step=5" class="btn btn-ghost btn-sm">
+                                    <span class="icon-[tabler--edit] size-4"></span>
+                                    Edit
+                                </a>
+                            </div>
+                            <div class="mt-4 space-y-4">
+                                {{-- Default Hours --}}
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1">
+                                        <label class="text-sm text-base-content/60">Default Hours</label>
+                                        @if($instructor->availability_default_from && $instructor->availability_default_to)
+                                            <p class="font-medium">
+                                                {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_from)->format('g:i A') }}
+                                                —
+                                                {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_to)->format('g:i A') }}
+                                            </p>
+                                        @else
+                                            <p class="text-base-content/50 italic">Not set</p>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                {{-- Day-Specific Overrides --}}
+                                @if(!empty($instructor->availability_by_day))
+                                    @php
+                                        $hasOverrides = false;
+                                        foreach($instructor->availability_by_day as $day => $times) {
+                                            if (!empty($times['from']) && !empty($times['to'])) {
+                                                $hasOverrides = true;
+                                                break;
+                                            }
+                                        }
+                                    @endphp
+                                    @if($hasOverrides)
+                                        <div class="border-t border-base-200 pt-4">
+                                            <label class="text-sm text-base-content/60 block mb-2">Day-Specific Overrides</label>
+                                            <div class="space-y-2">
+                                                @foreach($instructor->availability_by_day as $day => $times)
+                                                    @if(!empty($times['from']) && !empty($times['to']))
+                                                        @php
+                                                            $dayName = $dayOptions[$day] ?? "Day $day";
+                                                        @endphp
+                                                        <div class="flex items-center justify-between py-2 px-3 bg-base-200/30 rounded-lg">
+                                                            <span class="font-medium text-sm">{{ $dayName }}</span>
+                                                            <span class="text-sm">
+                                                                {{ \Carbon\Carbon::createFromFormat('H:i', $times['from'])->format('g:i A') }}
+                                                                —
+                                                                {{ \Carbon\Carbon::createFromFormat('H:i', $times['to'])->format('g:i A') }}
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endif
 
                     {{-- About --}}
                     <div class="card bg-base-100">
