@@ -335,16 +335,10 @@ class Host extends Model
      */
     public function getAllTeamMembers()
     {
-        // Get users from pivot table
-        $pivotUserIds = $this->teamMembers()->pluck('users.id')->toArray();
-
-        // Get users with direct host_id
-        $directUserIds = $this->users()->pluck('id')->toArray();
-
-        // Combine and get unique
-        $allUserIds = array_unique(array_merge($pivotUserIds, $directUserIds));
-
-        return User::whereIn('id', $allUserIds)->orderBy('first_name')->get();
+        return $this->teamMembers()
+            ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'manager', 'staff', 'instructor')")
+            ->orderBy('first_name')
+            ->get();
     }
 
     public function instructors(): HasMany

@@ -390,7 +390,7 @@
                 <div id="class-staff-members-list" class="space-y-2 max-h-64 overflow-y-auto">
                     @foreach($staffMembers as $member)
                     <label class="class-staff-member-item flex items-center gap-2 p-2 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200"
-                        data-name="{{ strtolower($member->name) }}" data-email="{{ strtolower($member->email) }}" data-role="{{ strtolower($member->role) }}">
+                        data-name="{{ strtolower($member->name) }}" data-email="{{ strtolower($member->email) }}" data-role="{{ strtolower($member->pivot->role ?? $member->role) }}">
                         <input type="checkbox" name="staff_member_ids[]" value="{{ $member->id }}"
                             class="checkbox checkbox-primary checkbox-sm class-staff-checkbox"
                             {{ in_array($member->id, old('staff_member_ids', $assignedStaffMemberIds)) ? 'checked' : '' }}>
@@ -406,7 +406,7 @@
                             @endif
                             <div class="min-w-0">
                                 <div class="font-medium text-sm truncate">{{ $member->name }}</div>
-                                <div class="text-xs text-base-content/60">{{ ucfirst($member->role) }}</div>
+                                <div class="text-xs text-base-content/60">{{ ucfirst($member->pivot->role ?? $member->role) }}</div>
                             </div>
                         </div>
                     </label>

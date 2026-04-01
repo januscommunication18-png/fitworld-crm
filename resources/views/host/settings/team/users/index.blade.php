@@ -74,8 +74,8 @@
                         @foreach($users as $user)
                         @php
                             $userRole = $user->pivot->role ?? $user->role;
-                            $hasLogin = !is_null($user->password);
-                            $isPending = $hasLogin && $user->status === 'invited';
+                            $hasLogin = !is_null($user->password) || $user->status === 'invited';
+                            $isPending = $user->status === 'invited';
                             $isActive = !$user->trashed() && !in_array($user->status, ['suspended', 'deactivated']);
                         @endphp
                         <tr class="{{ $user->trashed() ? 'opacity-50' : '' }}">

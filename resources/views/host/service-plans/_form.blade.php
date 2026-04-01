@@ -298,32 +298,32 @@
                 </div>
 
                 {{-- Staff Members List --}}
-                <div id="staff-members-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-80 overflow-y-auto">
+                <div id="staff-members-list" class="space-y-2 max-h-64 overflow-y-auto">
                     @foreach($staffMembers as $member)
-                    <label class="staff-member-item flex items-center gap-3 p-3 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200"
-                        data-name="{{ strtolower($member->name) }}" data-email="{{ strtolower($member->email) }}" data-role="{{ strtolower($member->role) }}">
+                    <label class="staff-member-item flex items-center gap-2 p-2 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200"
+                        data-name="{{ strtolower($member->name) }}" data-email="{{ strtolower($member->email) }}" data-role="{{ strtolower($member->pivot->role ?? $member->role) }}">
                         <input type="checkbox" name="staff_member_ids[]" value="{{ $member->id }}"
                             class="checkbox checkbox-primary checkbox-sm staff-checkbox"
                             {{ in_array($member->id, old('staff_member_ids', $assignedStaffMemberIds)) ? 'checked' : '' }}>
-                        <div class="flex items-center gap-3 flex-1">
+                        <div class="flex items-center gap-2 flex-1 min-w-0">
                             @if($member->profile_photo_url)
-                            <img src="{{ $member->profile_photo_url }}" alt="{{ $member->name }}" class="w-10 h-10 rounded-full object-cover">
+                            <img src="{{ $member->profile_photo_url }}" alt="{{ $member->name }}" class="w-8 h-8 rounded-full object-cover shrink-0">
                             @else
-                            <div class="avatar avatar-placeholder">
-                                <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold text-sm">
+                            <div class="avatar avatar-placeholder shrink-0">
+                                <div class="bg-primary text-primary-content w-8 h-8 rounded-full font-bold text-xs">
                                     {{ strtoupper(substr($member->name, 0, 2)) }}
                                 </div>
                             </div>
                             @endif
-                            <div>
-                                <div class="font-medium">{{ $member->name }}</div>
-                                <div class="text-xs text-base-content/60">{{ ucfirst($member->role) }}</div>
+                            <div class="min-w-0">
+                                <div class="font-medium text-sm truncate">{{ $member->name }}</div>
+                                <div class="text-xs text-base-content/60">{{ ucfirst($member->pivot->role ?? $member->role) }}</div>
                             </div>
                         </div>
                     </label>
                     @endforeach
                 </div>
-                <p id="staff-no-results" class="text-base-content/50 text-sm py-4 text-center hidden">No staff members found matching your search.</p>
+                <p id="staff-no-results" class="text-base-content/50 text-sm py-2 text-center hidden">No staff found.</p>
                 @endif
             </div>
         </div>

@@ -48,21 +48,21 @@
             @csrf
             @method('PUT')
 
-            <div class="space-y-6">
-                {{-- Section 1: Profile Information --}}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-header border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <span class="icon-[tabler--user] size-5 text-primary"></span>
-                            </div>
-                            <div>
-                                <h3 class="card-title text-lg">Profile Information</h3>
-                                <p class="text-base-content/60 text-sm">Basic details about the team member</p>
-                            </div>
+            <div class="card bg-base-100 shadow-sm overflow-hidden">
+
+                {{-- 1. Profile (always open) --}}
+                <details class="group edit-accordion-section" data-section="profile" open>
+                    <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <span class="icon-[tabler--user] size-5 text-primary"></span>
                         </div>
-                    </div>
-                    <div class="card-body space-y-5">
+                        <div class="flex-1">
+                            <h3 class="font-semibold">Profile</h3>
+                            <p class="text-base-content/60 text-sm">Basic details, role, and contact information</p>
+                        </div>
+                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                    </summary>
+                    <div class="p-5 space-y-5 border-b border-base-200">
                         {{-- User Display (read-only) --}}
                         <div class="flex items-center gap-4 p-4 bg-base-200/50 rounded-lg">
                             <div class="avatar placeholder">
@@ -104,350 +104,222 @@
                                 <span class="label-text font-medium">Role <span class="text-error">*</span></span>
                             </label>
                             <div class="flex flex-col gap-3">
-                                {{-- Admin --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-secondary has-[:checked]:bg-secondary/5 hover:border-secondary/30 transition-all">
                                     <input type="radio" name="role" value="admin" class="radio radio-secondary mt-1" {{ old('role', $pivotRole) == 'admin' ? 'checked' : '' }} />
                                     <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--shield] size-5 text-secondary"></span>
-                                            <span class="font-semibold">Admin</span>
-                                        </div>
+                                        <div class="flex items-center gap-2"><span class="icon-[tabler--shield] size-5 text-secondary"></span><span class="font-semibold">Admin</span></div>
                                         <p class="text-sm text-base-content/60 mt-1">Full access to manage scheduling, bookings, students, instructors, and team settings.</p>
                                     </div>
                                 </label>
-
-                                {{-- Manager --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-warning has-[:checked]:bg-warning/5 hover:border-warning/30 transition-all">
                                     <input type="radio" name="role" value="manager" class="radio radio-warning mt-1" {{ old('role', $pivotRole) == 'manager' ? 'checked' : '' }} />
                                     <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--briefcase] size-5 text-warning"></span>
-                                            <span class="font-semibold">Manager</span>
-                                        </div>
+                                        <div class="flex items-center gap-2"><span class="icon-[tabler--briefcase] size-5 text-warning"></span><span class="font-semibold">Manager</span></div>
                                         <p class="text-sm text-base-content/60 mt-1">Can manage schedule, bookings, students, and view insights.</p>
                                     </div>
                                 </label>
-
-                                {{-- Staff --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-info has-[:checked]:bg-info/5 hover:border-info/30 transition-all">
                                     <input type="radio" name="role" value="staff" class="radio radio-info mt-1" {{ old('role', $pivotRole) == 'staff' ? 'checked' : '' }} />
                                     <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--user] size-5 text-info"></span>
-                                            <span class="font-semibold">Staff</span>
-                                        </div>
+                                        <div class="flex items-center gap-2"><span class="icon-[tabler--user] size-5 text-info"></span><span class="font-semibold">Staff</span></div>
                                         <p class="text-sm text-base-content/60 mt-1">Can manage daily operations like bookings, check-ins, and student management.</p>
                                     </div>
                                 </label>
-
-                                {{-- Instructor --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-accent has-[:checked]:bg-accent/5 hover:border-accent/30 transition-all">
                                     <input type="radio" name="role" value="instructor" class="radio radio-accent mt-1" {{ old('role', $pivotRole) == 'instructor' ? 'checked' : '' }} />
                                     <div class="flex-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="icon-[tabler--yoga] size-5 text-accent"></span>
-                                            <span class="font-semibold">Instructor</span>
-                                        </div>
+                                        <div class="flex items-center gap-2"><span class="icon-[tabler--yoga] size-5 text-accent"></span><span class="font-semibold">Instructor</span></div>
                                         <p class="text-sm text-base-content/60 mt-1">Can view their own schedule and mark attendance for classes they teach.</p>
                                     </div>
                                 </label>
                             </div>
-                            @error('role')
-                            <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
-                            @enderror
+                            @error('role') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                         </div>
 
                         <div class="form-control">
-                            <label class="label" for="bio">
-                                <span class="label-text font-medium">Bio</span>
-                                <span class="label-text-alt text-base-content/50">Optional</span>
-                            </label>
+                            <label class="label" for="bio"><span class="label-text font-medium">Bio</span><span class="label-text-alt text-base-content/50">Optional</span></label>
                             <textarea id="bio" name="bio" class="textarea textarea-bordered w-full @error('bio') input-error @enderror" rows="3"
                                       placeholder="A brief introduction about this team member...">{{ old('bio', $user->bio ?? $instructor?->bio) }}</textarea>
                         </div>
 
                         <div class="form-control">
-                            <label class="label">
-                                <span class="label-text font-medium">Specialties</span>
-                            </label>
-                            <div class="flex flex-col gap-2">
-                                @php
-                                    $selectedSpecialties = old('specialties', $instructor?->specialties ?? []);
-                                @endphp
+                            <label class="label"><span class="label-text font-medium">Specialties</span></label>
+                            <div class="flex flex-wrap gap-2">
+                                @php $selectedSpecialties = old('specialties', $instructor?->specialties ?? []); @endphp
                                 @foreach($specialties as $specialty)
-                                    <label class="cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all hover:border-primary/30">
+                                    <label class="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all hover:border-primary/30">
                                         <input type="checkbox" name="specialties[]" value="{{ $specialty }}" class="checkbox checkbox-sm checkbox-primary"
                                             {{ in_array($specialty, $selectedSpecialties ?? []) ? 'checked' : '' }} />
-                                        <span class="flex-1">{{ $specialty }}</span>
+                                        <span class="text-sm">{{ $specialty }}</span>
                                     </label>
                                 @endforeach
                             </div>
                         </div>
-
-                        <div class="form-control">
-                            <label class="label" for="certifications_text">
-                                <span class="label-text font-medium">Certifications (Text)</span>
-                            </label>
-                            <textarea id="certifications_text" name="certifications_text" class="textarea textarea-bordered w-full" rows="2"
-                                      placeholder="RYT-200, ACE Certified, etc.">{{ old('certifications_text', $instructor?->certifications) }}</textarea>
-                        </div>
                     </div>
-                </div>
+                </details>
 
-                {{-- Section 2: Employment Details --}}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-header border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
-                                <span class="icon-[tabler--briefcase] size-5 text-secondary"></span>
-                            </div>
-                            <div>
-                                <h3 class="card-title text-lg">Employment Details</h3>
-                                <p class="text-base-content/60 text-sm">Compensation and employment type</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body space-y-5">
+                {{-- 2. Employment (collapsed) --}}
+                <details class="group edit-accordion-section" data-section="employment">
+                    <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                        <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--briefcase] size-5 text-secondary"></span></div>
+                        <div class="flex-1"><h3 class="font-semibold">Employment</h3><p class="text-base-content/60 text-sm">Compensation and employment type</p></div>
+                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                    </summary>
+                    <div class="p-5 space-y-5 border-b border-base-200">
                         <div class="form-control">
-                            <label class="label" for="employment_type">
-                                <span class="label-text font-medium">Employment Type</span>
-                            </label>
+                            <label class="label" for="employment_type"><span class="label-text font-medium">Employment Type</span></label>
                             <select id="employment_type" name="employment_type" class="hidden"
-                                    data-select='{
-                                "placeholder": "Select employment type...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
+                                    data-select='{"placeholder":"Select employment type...","toggleTag":"<button type=\"button\" aria-expanded=\"false\"></button>","toggleClasses":"advance-select-toggle","dropdownClasses":"advance-select-menu","optionClasses":"advance-select-option selected:select-active","optionTemplate":"<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>","extraMarkup":"<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"}'>
                                 <option value="">Select employment type...</option>
                                 @foreach($employmentTypes as $value => $label)
                                     <option value="{{ $value }}" {{ old('employment_type', $instructor?->employment_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
-
                         <div class="form-control">
-                            <label class="label" for="rate_type">
-                                <span class="label-text font-medium">Rate Type</span>
-                            </label>
+                            <label class="label" for="rate_type"><span class="label-text font-medium">Rate Type</span></label>
                             <select id="rate_type" name="rate_type" class="hidden"
-                                    data-select='{
-                                "placeholder": "Select how they are paid...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
+                                    data-select='{"placeholder":"Select how they are paid...","toggleTag":"<button type=\"button\" aria-expanded=\"false\"></button>","toggleClasses":"advance-select-toggle","dropdownClasses":"advance-select-menu","optionClasses":"advance-select-option selected:select-active","optionTemplate":"<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>","extraMarkup":"<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"}'>
                                 <option value="">Select how they're paid...</option>
                                 @foreach($rateTypes as $value => $label)
                                     <option value="{{ $value }}" {{ old('rate_type', $instructor?->rate_type) == $value ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
-
                         <div id="rate-amount-wrapper" class="form-control {{ old('rate_type', $instructor?->rate_type) ? '' : 'hidden' }}">
-                            <label class="label" for="rate_amount">
-                                <span class="label-text font-medium">Rate Amount</span>
-                            </label>
+                            <label class="label" for="rate_amount"><span class="label-text font-medium">Rate Amount</span></label>
                             <div class="relative">
                                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60 font-medium">$</span>
                                 <input type="number" id="rate_amount" name="rate_amount" class="input input-bordered w-full pl-8 @error('rate_amount') input-error @enderror"
                                        step="0.01" min="0" placeholder="0.00" value="{{ old('rate_amount', $instructor?->rate_amount) }}" />
                             </div>
-                            @error('rate_amount')
-                            <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
-                            @enderror
+                            @error('rate_amount') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                         </div>
-
                         <div class="form-control">
-                            <label class="label" for="compensation_notes">
-                                <span class="label-text font-medium">Compensation Notes</span>
-                                <span class="label-text-alt text-base-content/50">Optional</span>
-                            </label>
+                            <label class="label" for="compensation_notes"><span class="label-text font-medium">Compensation Notes</span><span class="label-text-alt text-base-content/50">Optional</span></label>
                             <textarea id="compensation_notes" name="compensation_notes" class="textarea textarea-bordered w-full" rows="2"
-                                      placeholder="e.g., Bonus for classes over 20 students, Travel reimbursement included...">{{ old('compensation_notes', $instructor?->compensation_notes) }}</textarea>
+                                      placeholder="e.g., Bonus for classes over 20 students...">{{ old('compensation_notes', $instructor?->compensation_notes) }}</textarea>
                         </div>
                     </div>
-                </div>
+                </details>
 
-                {{-- Section 3: Schedule & Availability --}}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-header border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                                <span class="icon-[tabler--calendar-clock] size-5 text-accent"></span>
+                {{-- 3. Workload (collapsed) --}}
+                <details class="group edit-accordion-section" data-section="workload">
+                    <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                        <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--chart-bar] size-5 text-warning"></span></div>
+                        <div class="flex-1"><h3 class="font-semibold">Workload</h3><p class="text-base-content/60 text-sm">Weekly hours and class limits</p></div>
+                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                    </summary>
+                    <div class="p-5 space-y-5 border-b border-base-200">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label" for="hours_per_week"><span class="label-text font-medium">Hours per Week</span></label>
+                                <div class="relative">
+                                    <span class="icon-[tabler--clock-hour-4] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
+                                    <input type="number" id="hours_per_week" name="hours_per_week" class="input input-bordered w-full pl-10"
+                                           step="0.5" min="0" max="168" placeholder="e.g., 20" value="{{ old('hours_per_week', $instructor?->hours_per_week) }}" />
+                                </div>
+                                <label class="label"><span class="label-text-alt text-base-content/50">Used for scheduling warnings</span></label>
                             </div>
-                            <div>
-                                <h3 class="card-title text-lg">Schedule & Availability</h3>
-                                <p class="text-base-content/60 text-sm">Workload limits, working days, and hours</p>
+                            <div class="form-control">
+                                <label class="label" for="max_classes_per_week"><span class="label-text font-medium">Max Classes per Week</span></label>
+                                <div class="relative">
+                                    <span class="icon-[tabler--calendar-event] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
+                                    <input type="number" id="max_classes_per_week" name="max_classes_per_week" class="input input-bordered w-full pl-10"
+                                           min="0" max="100" placeholder="e.g., 15" value="{{ old('max_classes_per_week', $instructor?->max_classes_per_week) }}" />
+                                </div>
+                                <label class="label"><span class="label-text-alt text-base-content/50">Soft limit for scheduling</span></label>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body space-y-6">
-                        {{-- Workload Limits --}}
-                        <div>
-                            <h4 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-4">Workload Limits</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="form-control">
-                                    <label class="label" for="hours_per_week">
-                                        <span class="label-text font-medium">Hours per Week</span>
-                                    </label>
-                                    <div class="relative">
-                                        <span class="icon-[tabler--clock-hour-4] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
-                                        <input type="number" id="hours_per_week" name="hours_per_week" class="input input-bordered w-full pl-10"
-                                               step="0.5" min="0" max="168" placeholder="e.g., 20" value="{{ old('hours_per_week', $instructor?->hours_per_week) }}" />
+                </details>
+
+                {{-- 4. Days (collapsed) --}}
+                <details class="group edit-accordion-section" data-section="days">
+                    <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                        <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--calendar-week] size-5 text-accent"></span></div>
+                        <div class="flex-1"><h3 class="font-semibold">Days</h3><p class="text-base-content/60 text-sm">Working days of the week</p></div>
+                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                    </summary>
+                    <div class="p-5 space-y-4 border-b border-base-200">
+                        @php $selectedDays = old('working_days', $instructor?->working_days ?? []); @endphp
+                        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                            @foreach($dayOptions as $value => $label)
+                                <label class="cursor-pointer flex flex-col items-center p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/10 hover:border-primary/30 transition-all">
+                                    <input type="checkbox" name="working_days[]" value="{{ $value }}" class="hidden"
+                                        {{ in_array($value, $selectedDays ?? []) ? 'checked' : '' }} />
+                                    <span class="text-2xl mb-1">{{ ['Sun' => "\u{2600}\u{FE0F}", 'Mon' => "\u{1F319}", 'Tue' => "\u{1F525}", 'Wed' => "\u{1F4A7}", 'Thu' => "\u{26A1}", 'Fri' => "\u{1F41F}", 'Sat' => "\u{2B50}"][substr($label, 0, 3)] }}</span>
+                                    <span class="font-medium text-sm">{{ substr($label, 0, 3) }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="text-sm text-base-content/50 text-center">
+                            <span class="icon-[tabler--info-circle] size-4 inline-block align-text-bottom mr-1"></span>
+                            Select the days this team member typically works
+                        </p>
+                    </div>
+                </details>
+
+                {{-- 5. Hours (collapsed) --}}
+                <details class="group edit-accordion-section" data-section="hours">
+                    <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                        <div class="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--clock] size-5 text-info"></span></div>
+                        <div class="flex-1"><h3 class="font-semibold">Hours</h3><p class="text-base-content/60 text-sm">Availability time ranges</p></div>
+                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                    </summary>
+                    <div class="p-5 space-y-4 border-b border-base-200">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="form-control">
+                                <label class="label" for="availability_default_from"><span class="label-text font-medium">Start Time</span></label>
+                                <input type="text" id="availability_default_from" name="availability_default_from"
+                                       class="input input-bordered w-full flatpickr-time" placeholder="Select start time..."
+                                       value="{{ old('availability_default_from', $instructor?->availability_default_from) }}" />
+                            </div>
+                            <div class="form-control">
+                                <label class="label" for="availability_default_to"><span class="label-text font-medium">End Time</span></label>
+                                <input type="text" id="availability_default_to" name="availability_default_to"
+                                       class="input input-bordered w-full flatpickr-time" placeholder="Select end time..."
+                                       value="{{ old('availability_default_to', $instructor?->availability_default_to) }}" />
+                            </div>
+                        </div>
+                        @php $hasOverrides = !empty(old('availability_by_day', $instructor?->availability_by_day)); @endphp
+                        <label class="cursor-pointer flex items-center gap-3 px-4 py-3 mt-4 rounded-lg border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all hover:border-primary/30">
+                            <input type="checkbox" id="enable-day-overrides" class="checkbox checkbox-sm checkbox-primary" {{ $hasOverrides ? 'checked' : '' }} />
+                            <div class="flex-1"><span class="font-medium">Day-Specific Overrides</span><span class="text-xs text-base-content/60 block">Set different hours for specific days</span></div>
+                            <span class="icon-[tabler--adjustments-horizontal] size-5 text-base-content/40"></span>
+                        </label>
+                        <div id="day-overrides-container" class="space-y-3 mt-4 {{ $hasOverrides ? '' : 'hidden' }}">
+                            @php $overrides = old('availability_by_day', $instructor?->availability_by_day ?? []); @endphp
+                            @foreach($dayOptions as $value => $label)
+                                <div class="flex flex-col gap-2 p-4 bg-base-200/30 rounded-lg">
+                                    <span class="font-medium text-sm">{{ $label }}</span>
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <input type="text" name="availability_by_day[{{ $value }}][from]" class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="Start time" value="{{ $overrides[$value]['from'] ?? '' }}" />
+                                        <input type="text" name="availability_by_day[{{ $value }}][to]" class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="End time" value="{{ $overrides[$value]['to'] ?? '' }}" />
                                     </div>
-                                    <label class="label"><span class="label-text-alt text-base-content/50">Used for scheduling warnings</span></label>
                                 </div>
-
-                                <div class="form-control">
-                                    <label class="label" for="max_classes_per_week">
-                                        <span class="label-text font-medium">Max Classes per Week</span>
-                                    </label>
-                                    <div class="relative">
-                                        <span class="icon-[tabler--calendar-event] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
-                                        <input type="number" id="max_classes_per_week" name="max_classes_per_week" class="input input-bordered w-full pl-10"
-                                               min="0" max="100" placeholder="e.g., 15" value="{{ old('max_classes_per_week', $instructor?->max_classes_per_week) }}" />
-                                    </div>
-                                    <label class="label"><span class="label-text-alt text-base-content/50">Soft limit for scheduling</span></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="divider my-0"></div>
-
-                        {{-- Working Days --}}
-                        <div>
-                            <h4 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-4">Working Days</h4>
-                            @php
-                                $selectedDays = old('working_days', $instructor?->working_days ?? []);
-                            @endphp
-                            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-                                @foreach($dayOptions as $value => $label)
-                                    <label class="cursor-pointer flex flex-col items-center p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/10 hover:border-primary/30 transition-all">
-                                        <input type="checkbox" name="working_days[]" value="{{ $value }}" class="hidden"
-                                            {{ in_array($value, $selectedDays ?? []) ? 'checked' : '' }} />
-                                        <span class="text-2xl mb-1">{{ ['Sun' => "\u{2600}\u{FE0F}", 'Mon' => "\u{1F319}", 'Tue' => "\u{1F525}", 'Wed' => "\u{1F4A7}", 'Thu' => "\u{26A1}", 'Fri' => "\u{1F41F}", 'Sat' => "\u{2B50}"][substr($label, 0, 3)] }}</span>
-                                        <span class="font-medium text-sm">{{ substr($label, 0, 3) }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                            <p class="text-sm text-base-content/50 mt-3 text-center">
-                                <span class="icon-[tabler--info-circle] size-4 inline-block align-text-bottom mr-1"></span>
-                                Select the days this team member typically works
-                            </p>
-                        </div>
-
-                        <div class="divider my-0"></div>
-
-                        {{-- Availability Hours --}}
-                        <div>
-                            <h4 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-4">Availability Hours</h4>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="form-control">
-                                    <label class="label" for="availability_default_from">
-                                        <span class="label-text font-medium">Start Time</span>
-                                    </label>
-                                    <input type="text" id="availability_default_from" name="availability_default_from"
-                                           class="input input-bordered w-full flatpickr-time" placeholder="Select start time..."
-                                           value="{{ old('availability_default_from', $instructor?->availability_default_from) }}" />
-                                </div>
-
-                                <div class="form-control">
-                                    <label class="label" for="availability_default_to">
-                                        <span class="label-text font-medium">End Time</span>
-                                    </label>
-                                    <input type="text" id="availability_default_to" name="availability_default_to"
-                                           class="input input-bordered w-full flatpickr-time" placeholder="Select end time..."
-                                           value="{{ old('availability_default_to', $instructor?->availability_default_to) }}" />
-                                </div>
-                            </div>
-
-                            @php
-                                $hasOverrides = !empty(old('availability_by_day', $instructor?->availability_by_day));
-                            @endphp
-                            <label class="cursor-pointer flex items-center gap-3 px-4 py-3 mt-4 rounded-lg border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all hover:border-primary/30">
-                                <input type="checkbox" id="enable-day-overrides" class="checkbox checkbox-sm checkbox-primary" {{ $hasOverrides ? 'checked' : '' }} />
-                                <div class="flex-1">
-                                    <span class="font-medium">Day-Specific Overrides</span>
-                                    <span class="text-xs text-base-content/60 block">Set different hours for specific days</span>
-                                </div>
-                                <span class="icon-[tabler--adjustments-horizontal] size-5 text-base-content/40"></span>
-                            </label>
-
-                            <div id="day-overrides-container" class="space-y-3 mt-4 {{ $hasOverrides ? '' : 'hidden' }}">
-                                @php
-                                    $overrides = old('availability_by_day', $instructor?->availability_by_day ?? []);
-                                @endphp
-                                @foreach($dayOptions as $value => $label)
-                                    <div class="flex flex-col gap-2 p-4 bg-base-200/30 rounded-lg">
-                                        <span class="font-medium text-sm">{{ $label }}</span>
-                                        <div class="grid grid-cols-2 gap-3">
-                                            <input type="text" name="availability_by_day[{{ $value }}][from]"
-                                                   class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="Start time"
-                                                   value="{{ $overrides[$value]['from'] ?? '' }}" />
-                                            <input type="text" name="availability_by_day[{{ $value }}][to]"
-                                                   class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="End time"
-                                                   value="{{ $overrides[$value]['to'] ?? '' }}" />
-                                        </div>
-                                    </div>
-                                @endforeach
-                                <p class="text-xs text-base-content/50">Leave blank to use default hours for that day.</p>
-                            </div>
+                            @endforeach
+                            <p class="text-xs text-base-content/50">Leave blank to use default hours for that day.</p>
                         </div>
                     </div>
-                </div>
+                </details>
 
-                {{-- Section 4: Permissions --}}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-header border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center">
-                                <span class="icon-[tabler--shield-cog] size-5 text-secondary"></span>
-                            </div>
-                            <div>
-                                <h3 class="card-title text-lg">Permissions</h3>
-                                <p class="text-base-content/60 text-sm">Customize what this user can access</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
+                {{-- 6. Permissions (collapsed) --}}
+                <details class="group edit-accordion-section" data-section="permissions">
+                    <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                        <div class="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--shield-cog] size-5 text-error"></span></div>
+                        <div class="flex-1"><h3 class="font-semibold">Permissions</h3><p class="text-base-content/60 text-sm">Customize what this user can access</p></div>
+                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                    </summary>
+                    <div class="p-5 border-b border-base-200">
                         @php
-                            $categoryIcons = [
-                                'schedule' => 'icon-[tabler--calendar]',
-                                'bookings' => 'icon-[tabler--clipboard-list]',
-                                'students' => 'icon-[tabler--users]',
-                                'offers' => 'icon-[tabler--tag]',
-                                'insights' => 'icon-[tabler--chart-bar]',
-                                'payments' => 'icon-[tabler--credit-card]',
-                                'studio' => 'icon-[tabler--building-store]',
-                                'team' => 'icon-[tabler--users-group]',
-                                'billing' => 'icon-[tabler--receipt]',
-                                'pricing' => 'icon-[tabler--currency-dollar]',
-                            ];
-                            $categoryColors = [
-                                'schedule' => 'text-primary bg-primary/10',
-                                'bookings' => 'text-secondary bg-secondary/10',
-                                'students' => 'text-info bg-info/10',
-                                'offers' => 'text-warning bg-warning/10',
-                                'insights' => 'text-accent bg-accent/10',
-                                'payments' => 'text-success bg-success/10',
-                                'studio' => 'text-primary bg-primary/10',
-                                'team' => 'text-secondary bg-secondary/10',
-                                'billing' => 'text-info bg-info/10',
-                                'pricing' => 'text-success bg-success/10',
-                            ];
+                            $categoryIcons = ['schedule'=>'icon-[tabler--calendar]','bookings'=>'icon-[tabler--clipboard-list]','students'=>'icon-[tabler--users]','offers'=>'icon-[tabler--tag]','insights'=>'icon-[tabler--chart-bar]','payments'=>'icon-[tabler--credit-card]','studio'=>'icon-[tabler--building-store]','team'=>'icon-[tabler--users-group]','billing'=>'icon-[tabler--receipt]','pricing'=>'icon-[tabler--currency-dollar]'];
+                            $categoryColors = ['schedule'=>'text-primary bg-primary/10','bookings'=>'text-secondary bg-secondary/10','students'=>'text-info bg-info/10','offers'=>'text-warning bg-warning/10','insights'=>'text-accent bg-accent/10','payments'=>'text-success bg-success/10','studio'=>'text-primary bg-primary/10','team'=>'text-secondary bg-secondary/10','billing'=>'text-info bg-info/10','pricing'=>'text-success bg-success/10'];
                             $userPermissions = old('permissions', $pivotPermissions ?? []);
                         @endphp
-
                         <div class="space-y-2">
                             @foreach($groupedPermissions as $category => $permissions)
-                                <details class="group border border-base-content/10 rounded-lg overflow-hidden" id="perm-section-{{ $category }}">
+                                <details class="group/perm border border-base-content/10 rounded-lg overflow-hidden" id="perm-section-{{ $category }}">
                                     <summary class="flex items-center gap-3 p-3 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
                                         <div class="w-8 h-8 rounded-lg flex items-center justify-center {{ $categoryColors[$category] ?? 'text-base-content bg-base-200' }}">
                                             <span class="{{ $categoryIcons[$category] ?? 'icon-[tabler--settings]' }} size-4"></span>
@@ -456,22 +328,17 @@
                                             <h4 class="font-medium text-sm">{{ ucfirst($category) }}</h4>
                                             <p class="text-xs text-base-content/50" id="perm-count-{{ $category }}">0 of {{ count($permissions) }} enabled</p>
                                         </div>
-                                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open/perm:rotate-180"></span>
                                     </summary>
                                     <div class="border-t border-base-content/10 bg-base-200/30 p-3 space-y-1">
                                         <div class="flex justify-end mb-2">
-                                            <button type="button" class="text-xs text-primary hover:underline" onclick="toggleCategory('{{ $category }}')">
-                                                Toggle all
-                                            </button>
+                                            <button type="button" class="text-xs text-primary hover:underline" onclick="toggleCategory('{{ $category }}')">Toggle all</button>
                                         </div>
                                         @foreach($permissions as $permission => $label)
                                             <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-100 cursor-pointer transition-colors">
-                                                <input type="checkbox"
-                                                       name="permissions[]"
-                                                       value="{{ $permission }}"
+                                                <input type="checkbox" name="permissions[]" value="{{ $permission }}"
                                                        class="checkbox checkbox-primary checkbox-sm permission-checkbox"
-                                                       data-permission="{{ $permission }}"
-                                                       data-category="{{ $category }}"
+                                                       data-permission="{{ $permission }}" data-category="{{ $category }}"
                                                        onchange="updateCategoryCount('{{ $category }}')"
                                                     {{ in_array($permission, $userPermissions ?? []) ? 'checked' : '' }} />
                                                 <span class="text-sm">{{ $label }}</span>
@@ -481,35 +348,22 @@
                                 </details>
                             @endforeach
                         </div>
-
                         <div class="flex justify-end mt-4">
                             <button type="button" class="btn btn-ghost btn-sm gap-2" onclick="resetToRoleDefaults()">
-                                <span class="icon-[tabler--refresh] size-4"></span>
-                                Reset to Role Defaults
+                                <span class="icon-[tabler--refresh] size-4"></span> Reset to Role Defaults
                             </button>
                         </div>
                     </div>
-                </div>
+                </details>
 
-                {{-- Section 5: Certifications --}}
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-header border-b border-base-200">
-                        <div class="flex items-center justify-between w-full">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                                    <span class="icon-[tabler--certificate] size-5 text-warning"></span>
-                                </div>
-                                <div>
-                                    <h3 class="card-title text-lg">Certifications & Credentials</h3>
-                                    <p class="text-base-content/60 text-sm">Track certifications, licenses, and credentials</p>
-                                </div>
-                            </div>
-                            <button type="button" class="btn btn-primary btn-sm" onclick="openUserCertDrawer()">
-                                <span class="icon-[tabler--plus] size-4"></span> Add
-                            </button>
-                        </div>
-                    </div>
-                    <div class="card-body">
+                {{-- 7. Certifications (collapsed) --}}
+                <details class="group edit-accordion-section" data-section="certifications">
+                    <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
+                        <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--certificate] size-5 text-success"></span></div>
+                        <div class="flex-1"><h3 class="font-semibold">Certifications</h3><p class="text-base-content/60 text-sm">Track certifications, licenses, and credentials</p></div>
+                        <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                    </summary>
+                    <div class="p-5 border-t border-base-200">
                         <div id="user-certifications-list">
                             @if($certifications->isEmpty())
                                 <div class="text-center py-8" id="no-user-certs-message">
@@ -524,48 +378,32 @@
                                     @foreach($certifications as $cert)
                                     <div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="{{ $cert->id }}">
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                                <span class="icon-[tabler--certificate] size-5 text-primary"></span>
-                                            </div>
+                                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--certificate] size-5 text-primary"></span></div>
                                             <div>
                                                 <div class="font-medium">{{ $cert->name }}</div>
-                                                @if($cert->certification_name)
-                                                    <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div>
-                                                @endif
+                                                @if($cert->certification_name) <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div> @endif
                                                 @if($cert->expire_date)
-                                                    <div class="text-xs mt-1">
-                                                        <span class="badge {{ $cert->status_badge_class }} badge-xs">
-                                                            @if($cert->isExpired())
-                                                                Expired {{ $cert->expire_date->format('M j, Y') }}
-                                                            @else
-                                                                Expires {{ $cert->expire_date->format('M j, Y') }}
-                                                            @endif
-                                                        </span>
-                                                    </div>
+                                                    <div class="text-xs mt-1"><span class="badge {{ $cert->status_badge_class }} badge-xs">{{ $cert->isExpired() ? 'Expired' : 'Expires' }} {{ $cert->expire_date->format('M j, Y') }}</span></div>
                                                 @endif
                                             </div>
                                         </div>
                                         <div class="flex items-center gap-1">
-                                            @if($cert->file_path)
-                                            <a href="{{ $cert->file_url }}" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File">
-                                                <span class="icon-[tabler--file-download] size-4"></span>
-                                            </a>
-                                            @endif
-                                            <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editUserCert({{ $cert->id }})" title="Edit">
-                                                <span class="icon-[tabler--pencil] size-4"></span>
-                                            </button>
-                                            <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteUserCert({{ $cert->id }})" title="Delete">
-                                                <span class="icon-[tabler--trash] size-4"></span>
-                                            </button>
+                                            @if($cert->file_path) <a href="{{ $cert->file_url }}" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File"><span class="icon-[tabler--file-download] size-4"></span></a> @endif
+                                            <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editUserCert({{ $cert->id }})" title="Edit"><span class="icon-[tabler--pencil] size-4"></span></button>
+                                            <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteUserCert({{ $cert->id }})" title="Delete"><span class="icon-[tabler--trash] size-4"></span></button>
                                         </div>
                                     </div>
                                     @endforeach
                                 </div>
+                                <button type="button" class="btn btn-soft btn-primary btn-sm w-full mt-4" onclick="openUserCertDrawer()">
+                                    <span class="icon-[tabler--plus] size-4"></span> Add Certification
+                                </button>
                             @endif
                         </div>
                     </div>
-                </div>
-            </div>
+                </details>
+
+            </div>{{-- end single card wrapper --}}
 
             {{-- Submit --}}
             <div class="flex items-center justify-end gap-3 pt-6">
@@ -776,6 +614,32 @@
 
             // Set initial category counts
             updateAllCategoryCounts();
+
+            // Accordion: only one section open at a time (first always stays open)
+            var allSections = document.querySelectorAll('.edit-accordion-section');
+            var firstSection = allSections[0];
+            allSections.forEach(function(details) {
+                details.addEventListener('toggle', function() {
+                    if (this.open) {
+                        allSections.forEach(function(other) {
+                            if (other !== details && other !== firstSection && other.open) {
+                                other.removeAttribute('open');
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Auto-open section from URL ?section= parameter
+            var urlParams = new URLSearchParams(window.location.search);
+            var targetSection = urlParams.get('section');
+            if (targetSection) {
+                var target = document.querySelector('.edit-accordion-section[data-section="' + targetSection + '"]');
+                if (target) {
+                    target.setAttribute('open', '');
+                    setTimeout(function() { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+                }
+            }
         });
 
         // ============================================

@@ -212,145 +212,108 @@
                         </div>
                     </div>
 
+                    @php
+                        $dayOptions = \App\Models\Instructor::getDayOptions();
+                        $dayEmojis = ['☀️', '🌙', '🔥', '💧', '⚡', '🐟', '⭐'];
+                        $socialLinks = $user->social_links ?? [];
+                        $userCertifications = $user->certifications;
+                    @endphp
+
+                    <div class="card bg-base-100 overflow-hidden">
+
                     {{-- Employment Details --}}
                     @if($instructor)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--briefcase] size-5"></span>
-                                    Employment Details
-                                </h2>
-                                <a href="{{ route('settings.team.users.edit', $user) }}?step=2" class="btn btn-ghost btn-sm">
-                                    <span class="icon-[tabler--edit] size-4"></span>
-                                    Edit
-                                </a>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                <div>
-                                    <label class="text-sm text-base-content/60">Employment Type</label>
-                                    <p class="font-medium">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Rate</label>
-                                    <p class="font-medium">{{ $instructor->getFormattedRate() ?? '-' }}</p>
-                                </div>
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                            <span class="icon-[tabler--briefcase] size-5 text-secondary"></span>
+                            <h2 class="flex-1 font-semibold">Employment Details</h2>
+                            <a href="{{ route('settings.team.users.edit', $user) }}?section=employment" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-b border-base-200">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-sm text-base-content/60">Employment Type</label><p class="font-medium">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</p></div>
+                                <div><label class="text-sm text-base-content/60">Rate</label><p class="font-medium">{{ $instructor->getFormattedRate() ?? '-' }}</p></div>
                                 @if($instructor->compensation_notes)
-                                <div class="col-span-2">
-                                    <label class="text-sm text-base-content/60">Compensation Notes</label>
-                                    <p class="font-medium text-sm">{{ $instructor->compensation_notes }}</p>
-                                </div>
+                                <div class="col-span-2"><label class="text-sm text-base-content/60">Compensation Notes</label><p class="font-medium text-sm">{{ $instructor->compensation_notes }}</p></div>
                                 @endif
                             </div>
                         </div>
-                    </div>
+                    </details>
                     @endif
 
                     {{-- Workload Limits --}}
                     @if($instructor)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--chart-bar] size-5"></span>
-                                    Workload Limits
-                                </h2>
-                                <a href="{{ route('settings.team.users.edit', $user) }}?step=3" class="btn btn-ghost btn-sm">
-                                    <span class="icon-[tabler--edit] size-4"></span>
-                                    Edit
-                                </a>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                <div>
-                                    <label class="text-sm text-base-content/60">Hours per Week</label>
-                                    <p class="font-medium">{{ $instructor->hours_per_week ? number_format($instructor->hours_per_week, 1) . ' hrs' : '-' }}</p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Max Classes per Week</label>
-                                    <p class="font-medium">{{ $instructor->max_classes_per_week ?? '-' }}</p>
-                                </div>
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                            <span class="icon-[tabler--chart-bar] size-5 text-warning"></span>
+                            <h2 class="flex-1 font-semibold">Workload Limits</h2>
+                            <a href="{{ route('settings.team.users.edit', $user) }}?section=workload" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-b border-base-200">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-sm text-base-content/60">Hours per Week</label><p class="font-medium">{{ $instructor->hours_per_week ? number_format($instructor->hours_per_week, 1) . ' hrs' : '-' }}</p></div>
+                                <div><label class="text-sm text-base-content/60">Max Classes per Week</label><p class="font-medium">{{ $instructor->max_classes_per_week ?? '-' }}</p></div>
                             </div>
                         </div>
-                    </div>
+                    </details>
                     @endif
-
-                    @php
-                        $dayOptions = \App\Models\Instructor::getDayOptions();
-                        $dayEmojis = ['☀️', '🌙', '🔥', '💧', '⚡', '🐟', '⭐'];
-                    @endphp
 
                     {{-- Working Days --}}
                     @if($instructor)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--calendar-week] size-5"></span>
-                                    Working Days
-                                </h2>
-                                <a href="{{ route('settings.team.users.edit', $user) }}?step=4" class="btn btn-ghost btn-sm">
-                                    <span class="icon-[tabler--edit] size-4"></span>
-                                    Edit
-                                </a>
-                            </div>
-                            <div class="mt-4">
-                                @if(!empty($instructor->working_days))
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($dayOptions as $value => $label)
-                                            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm {{ in_array($value, $instructor->working_days) ? 'bg-primary/10 text-primary font-medium' : 'bg-base-200/50 text-base-content/40' }}">
-                                                <span>{{ $dayEmojis[$value] }}</span>
-                                                <span>{{ substr($label, 0, 3) }}</span>
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @else
-                                    <p class="text-base-content/50 italic">No working days set (available all days)</p>
-                                @endif
-                            </div>
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                            <span class="icon-[tabler--calendar-week] size-5 text-accent"></span>
+                            <h2 class="flex-1 font-semibold">Working Days</h2>
+                            <a href="{{ route('settings.team.users.edit', $user) }}?section=days" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-b border-base-200">
+                            @if(!empty($instructor->working_days))
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach($dayOptions as $value => $label)
+                                        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm {{ in_array($value, $instructor->working_days) ? 'bg-primary/10 text-primary font-medium' : 'bg-base-200/50 text-base-content/40' }}">
+                                            <span>{{ $dayEmojis[$value] }}</span>
+                                            <span>{{ substr($label, 0, 3) }}</span>
+                                        </span>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-base-content/50 italic">No working days set (available all days)</p>
+                            @endif
                         </div>
-                    </div>
+                    </details>
                     @endif
 
                     {{-- Availability Hours --}}
                     @if($instructor)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--clock] size-5"></span>
-                                    Availability Hours
-                                </h2>
-                                <a href="{{ route('settings.team.users.edit', $user) }}?step=5" class="btn btn-ghost btn-sm">
-                                    <span class="icon-[tabler--edit] size-4"></span>
-                                    Edit
-                                </a>
-                            </div>
-                            <div class="mt-4 space-y-4">
-                                {{-- Default Hours --}}
-                                <div class="flex items-center gap-4">
-                                    <div class="flex-1">
-                                        <label class="text-sm text-base-content/60">Default Hours</label>
-                                        @if($instructor->availability_default_from && $instructor->availability_default_to)
-                                            <p class="font-medium">
-                                                {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_from)->format('g:i A') }}
-                                                —
-                                                {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_to)->format('g:i A') }}
-                                            </p>
-                                        @else
-                                            <p class="text-base-content/50 italic">Not set</p>
-                                        @endif
-                                    </div>
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                            <span class="icon-[tabler--clock] size-5 text-info"></span>
+                            <h2 class="flex-1 font-semibold">Availability Hours</h2>
+                            <a href="{{ route('settings.team.users.edit', $user) }}?section=hours" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-b border-base-200">
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-sm text-base-content/60">Default Hours</label>
+                                    @if($instructor->availability_default_from && $instructor->availability_default_to)
+                                        <p class="font-medium">
+                                            {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_from)->format('g:i A') }}
+                                            —
+                                            {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_to)->format('g:i A') }}
+                                        </p>
+                                    @else
+                                        <p class="text-base-content/50 italic">Not set</p>
+                                    @endif
                                 </div>
-
-                                {{-- Day-Specific Overrides --}}
                                 @if(!empty($instructor->availability_by_day))
                                     @php
                                         $hasOverrides = false;
                                         foreach($instructor->availability_by_day as $day => $times) {
-                                            if (!empty($times['from']) && !empty($times['to'])) {
-                                                $hasOverrides = true;
-                                                break;
-                                            }
+                                            if (!empty($times['from']) && !empty($times['to'])) { $hasOverrides = true; break; }
                                         }
                                     @endphp
                                     @if($hasOverrides)
@@ -359,11 +322,8 @@
                                             <div class="space-y-2">
                                                 @foreach($instructor->availability_by_day as $day => $times)
                                                     @if(!empty($times['from']) && !empty($times['to']))
-                                                        @php
-                                                            $dayName = $dayOptions[$day] ?? "Day $day";
-                                                        @endphp
                                                         <div class="flex items-center justify-between py-2 px-3 bg-base-200/30 rounded-lg">
-                                                            <span class="font-medium text-sm">{{ $dayName }}</span>
+                                                            <span class="font-medium text-sm">{{ $dayOptions[$day] ?? "Day $day" }}</span>
                                                             <span class="text-sm">
                                                                 {{ \Carbon\Carbon::createFromFormat('H:i', $times['from'])->format('g:i A') }}
                                                                 —
@@ -378,195 +338,136 @@
                                 @endif
                             </div>
                         </div>
-                    </div>
+                    </details>
                     @endif
 
                     {{-- About --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--info-circle] size-5"></span>
-                                    About
-                                </h2>
-                                @if($user->id !== auth()->id() && $userRole !== 'owner' || $user->id === auth()->id())
-                                    <button type="button" class="btn btn-ghost btn-sm" onclick="openDrawer('edit-bio-drawer')">
-                                        <span class="icon-[tabler--edit] size-4"></span>
-                                        Edit
-                                    </button>
-                                @endif
-                            </div>
-                            <div class="mt-4">
-                                @if($user->bio)
-                                    <p class="text-base-content/80 whitespace-pre-wrap">{{ $user->bio }}</p>
-                                @else
-                                    <p class="text-base-content/50 italic">No bio added yet.</p>
-                                @endif
-                            </div>
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                            <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
+                            <h2 class="flex-1 font-semibold">About</h2>
+                            @if($user->id !== auth()->id() && $userRole !== 'owner' || $user->id === auth()->id())
+                                <button type="button" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation(); openDrawer('edit-bio-drawer')"><span class="icon-[tabler--edit] size-4"></span></button>
+                            @endif
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-b border-base-200">
+                            @if($user->bio)
+                                <p class="text-base-content/80 whitespace-pre-wrap">{{ $user->bio }}</p>
+                            @else
+                                <p class="text-base-content/50 italic">No bio added yet.</p>
+                            @endif
                         </div>
-                    </div>
+                    </details>
 
                     {{-- Social Links --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--share] size-5"></span>
-                                    Social Links
-                                </h2>
-                                @if($user->id !== auth()->id() && $userRole !== 'owner' || $user->id === auth()->id())
-                                    <button type="button" class="btn btn-ghost btn-sm" onclick="openDrawer('edit-social-drawer')">
-                                        <span class="icon-[tabler--edit] size-4"></span>
-                                        Edit
-                                    </button>
-                                @endif
-                            </div>
-                            <div class="space-y-3 mt-4">
-                                @php
-                                    $socialLinks = $user->social_links ?? [];
-                                @endphp
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                            <span class="icon-[tabler--share] size-5 text-secondary"></span>
+                            <h2 class="flex-1 font-semibold">Social Links</h2>
+                            @if($user->id !== auth()->id() && $userRole !== 'owner' || $user->id === auth()->id())
+                                <button type="button" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation(); openDrawer('edit-social-drawer')"><span class="icon-[tabler--edit] size-4"></span></button>
+                            @endif
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-b border-base-200">
+                            <div class="space-y-3">
                                 <div class="flex items-center gap-3">
                                     <span class="icon-[tabler--brand-instagram] size-5 text-pink-500"></span>
-                                    @if(!empty($socialLinks['instagram']))
-                                        <a href="{{ $socialLinks['instagram'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['instagram'] }}</a>
-                                    @else
-                                        <span class="text-sm text-base-content/50">Not connected</span>
-                                    @endif
+                                    @if(!empty($socialLinks['instagram'])) <a href="{{ $socialLinks['instagram'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['instagram'] }}</a> @else <span class="text-sm text-base-content/50">Not connected</span> @endif
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <span class="icon-[tabler--brand-facebook] size-5 text-blue-600"></span>
-                                    @if(!empty($socialLinks['facebook']))
-                                        <a href="{{ $socialLinks['facebook'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['facebook'] }}</a>
-                                    @else
-                                        <span class="text-sm text-base-content/50">Not connected</span>
-                                    @endif
+                                    @if(!empty($socialLinks['facebook'])) <a href="{{ $socialLinks['facebook'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['facebook'] }}</a> @else <span class="text-sm text-base-content/50">Not connected</span> @endif
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <span class="icon-[tabler--brand-x] size-5 text-base-content"></span>
-                                    @if(!empty($socialLinks['twitter']))
-                                        <a href="{{ $socialLinks['twitter'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['twitter'] }}</a>
-                                    @else
-                                        <span class="text-sm text-base-content/50">Not connected</span>
-                                    @endif
+                                    @if(!empty($socialLinks['twitter'])) <a href="{{ $socialLinks['twitter'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['twitter'] }}</a> @else <span class="text-sm text-base-content/50">Not connected</span> @endif
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <span class="icon-[tabler--brand-linkedin] size-5 text-blue-700"></span>
-                                    @if(!empty($socialLinks['linkedin']))
-                                        <a href="{{ $socialLinks['linkedin'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['linkedin'] }}</a>
-                                    @else
-                                        <span class="text-sm text-base-content/50">Not connected</span>
-                                    @endif
+                                    @if(!empty($socialLinks['linkedin'])) <a href="{{ $socialLinks['linkedin'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['linkedin'] }}</a> @else <span class="text-sm text-base-content/50">Not connected</span> @endif
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <span class="icon-[tabler--world] size-5 text-base-content/70"></span>
-                                    @if(!empty($socialLinks['website']))
-                                        <a href="{{ $socialLinks['website'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['website'] }}</a>
-                                    @else
-                                        <span class="text-sm text-base-content/50">Not connected</span>
-                                    @endif
+                                    @if(!empty($socialLinks['website'])) <a href="{{ $socialLinks['website'] }}" target="_blank" class="text-sm link link-primary">{{ $socialLinks['website'] }}</a> @else <span class="text-sm text-base-content/50">Not connected</span> @endif
                                 </div>
                             </div>
-
-                            {{-- Public Visibility Toggle (for instructors only) --}}
                             @if($userRole === 'instructor' && $instructor)
                                 <div class="divider my-3"></div>
                                 <div class="flex items-center justify-between">
-                                    <div>
-                                        <label class="font-medium text-sm">Show on Public Profile</label>
-                                        <p class="text-xs text-base-content/60">Display social links on the public instructor page</p>
-                                    </div>
-                                    <input type="checkbox"
-                                           class="toggle toggle-primary toggle-sm"
-                                           id="toggle-social-visibility"
-                                           {{ $instructor->show_social_links ? 'checked' : '' }}
-                                           onchange="toggleSocialVisibility(this.checked)">
+                                    <div><label class="font-medium text-sm">Show on Public Profile</label><p class="text-xs text-base-content/60">Display social links on the public instructor page</p></div>
+                                    <input type="checkbox" class="toggle toggle-primary toggle-sm" id="toggle-social-visibility" {{ $instructor->show_social_links ? 'checked' : '' }} onchange="toggleSocialVisibility(this.checked)">
                                 </div>
                             @endif
                         </div>
-                    </div>
+                    </details>
 
                     {{-- Certifications --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--certificate] size-5"></span>
-                                    Certifications
-                                </h2>
-                                <a href="{{ route('settings.team.users.edit', $user) }}?step=7" class="btn btn-ghost btn-sm">
-                                    <span class="icon-[tabler--edit] size-4"></span>
-                                    Manage
-                                </a>
-                            </div>
-                            @php
-                                $userCertifications = $user->certifications;
-                            @endphp
-                            @if($userCertifications->count() > 0)
-                                <div class="space-y-3 mt-4">
-                                    @foreach($userCertifications as $cert)
-                                        <div class="flex items-center justify-between p-3 bg-base-200/50 rounded-lg">
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
+                            <span class="icon-[tabler--certificate] size-5 text-success"></span>
+                            <h2 class="flex-1 font-semibold">Certifications</h2>
+                            <button type="button" class="btn btn-primary btn-xs z-10" onclick="event.stopPropagation(); openUserCertDrawer()"><span class="icon-[tabler--plus] size-4"></span> Add</button>
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-b border-base-200">
+                            <div id="user-certifications-list">
+                                @if($userCertifications->count() > 0)
+                                    <div class="space-y-3" id="user-certs-container">
+                                        @foreach($userCertifications as $cert)
+                                        <div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="{{ $cert->id }}">
                                             <div class="flex items-center gap-3">
-                                                <div class="w-10 h-10 rounded-lg {{ $cert->isExpired() ? 'bg-error/10' : ($cert->isExpiringSoon() ? 'bg-warning/10' : 'bg-success/10') }} flex items-center justify-center">
+                                                <div class="w-10 h-10 rounded-lg {{ $cert->isExpired() ? 'bg-error/10' : ($cert->isExpiringSoon() ? 'bg-warning/10' : 'bg-success/10') }} flex items-center justify-center shrink-0">
                                                     <span class="icon-[tabler--certificate] size-5 {{ $cert->isExpired() ? 'text-error' : ($cert->isExpiringSoon() ? 'text-warning' : 'text-success') }}"></span>
                                                 </div>
                                                 <div>
                                                     <div class="font-medium">{{ $cert->name }}</div>
-                                                    @if($cert->certification_name)
-                                                        <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div>
+                                                    @if($cert->certification_name) <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div> @endif
+                                                    @if($cert->expire_date)
+                                                        <div class="text-xs mt-1"><span class="badge {{ $cert->status_badge_class }} badge-xs">{{ $cert->status_label }} {{ $cert->expire_date->format('M d, Y') }}</span></div>
                                                     @endif
                                                 </div>
                                             </div>
-                                            <div class="text-right">
-                                                @if($cert->expire_date)
-                                                    <span class="badge {{ $cert->status_badge_class }} badge-sm">
-                                                        {{ $cert->status_label }}
-                                                    </span>
-                                                    <div class="text-xs text-base-content/60 mt-1">
-                                                        {{ $cert->expire_date->format('M d, Y') }}
-                                                    </div>
-                                                @else
-                                                    <span class="badge badge-neutral badge-soft badge-sm">No Expiry</span>
+                                            <div class="flex items-center gap-1">
+                                                @if($cert->file_path)
+                                                <a href="{{ $cert->file_url }}" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File"><span class="icon-[tabler--file-download] size-4"></span></a>
                                                 @endif
+                                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editUserCert({{ $cert->id }})" title="Edit"><span class="icon-[tabler--pencil] size-4"></span></button>
+                                                <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteUserCert({{ $cert->id }})" title="Delete"><span class="icon-[tabler--trash] size-4"></span></button>
                                             </div>
                                         </div>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="text-center py-6 mt-4">
-                                    <span class="icon-[tabler--certificate] size-10 text-base-content/20 block mx-auto"></span>
-                                    <p class="text-base-content/50 mt-2">No certifications added</p>
-                                    <a href="{{ route('settings.team.users.edit', $user) }}?step=7" class="btn btn-primary btn-sm mt-3">
-                                        <span class="icon-[tabler--plus] size-4"></span>
-                                        Add Certification
-                                    </a>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Permissions --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--lock] size-5"></span>
-                                    Permissions
-                                </h2>
-                                @if($userRole !== 'owner')
-                                    <a href="{{ route('settings.team.permissions.edit', $user) }}" class="btn btn-ghost btn-sm">
-                                        <span class="icon-[tabler--edit] size-4"></span>
-                                        Edit Permissions
-                                    </a>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-center py-6" id="no-user-certs-message">
+                                        <span class="icon-[tabler--certificate] size-10 text-base-content/20 block mx-auto"></span>
+                                        <p class="text-base-content/50 mt-2">No certifications added</p>
+                                        <button type="button" class="btn btn-primary btn-sm mt-3" onclick="openUserCertDrawer()"><span class="icon-[tabler--plus] size-4"></span> Add Certification</button>
+                                    </div>
                                 @endif
                             </div>
+                        </div>
+                    </details>
 
+                    {{-- Permissions --}}
+                    <details class="group show-accordion-section">
+                        <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
+                            <span class="icon-[tabler--lock] size-5 text-error"></span>
+                            <h2 class="flex-1 font-semibold">Permissions</h2>
+                            @if($userRole !== 'owner')
+                                <a href="{{ route('settings.team.permissions.edit', $user) }}" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            @endif
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-5 border-t border-base-200">
                             @if($userRole === 'owner')
-                                <div class="alert alert-soft alert-primary mt-4">
+                                <div class="alert alert-soft alert-primary">
                                     <span class="icon-[tabler--crown] size-5"></span>
                                     <span>Owner has full access to all features including billing and danger zone.</span>
                                 </div>
                             @elseif($userPermissions && count($userPermissions) > 0)
-                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mt-4">
+                                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                                     @foreach($userPermissions as $permission)
                                         <div class="flex items-center gap-2 p-2 bg-base-200/50 rounded">
                                             <span class="icon-[tabler--check] size-4 text-success"></span>
@@ -575,10 +476,12 @@
                                     @endforeach
                                 </div>
                             @else
-                                <p class="text-base-content/60 mt-4">No specific permissions assigned. Using default permissions for {{ ucfirst($userRole) }} role.</p>
+                                <p class="text-base-content/60">No specific permissions assigned. Using default permissions for {{ ucfirst($userRole) }} role.</p>
                             @endif
                         </div>
-                    </div>
+                    </details>
+
+                    </div>{{-- end accordion card --}}
                 </div>
 
                 {{-- Sidebar --}}
@@ -854,6 +757,93 @@
     </div>
 </div>
 
+{{-- User Certification Drawer --}}
+<div id="user-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold" id="user-cert-drawer-title">Add Certification</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeUserCertDrawer()">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="user-cert-form" class="flex flex-col flex-1 overflow-hidden" enctype="multipart/form-data">
+        <input type="hidden" id="user-cert-id" value="" />
+        <input type="hidden" id="user-cert-remove-file" value="" />
+        <div class="flex-1 overflow-y-auto p-4">
+            <div class="space-y-4">
+                <div>
+                    <label class="label-text font-medium" for="user_cert_name">Name <span class="text-error">*</span></label>
+                    <input type="text" id="user_cert_name" name="name" class="input w-full" placeholder="e.g., First Aid, CPR, Management Training" required />
+                </div>
+                <div>
+                    <label class="label-text font-medium" for="user_cert_certification_name">Certification / Credential Name</label>
+                    <input type="text" id="user_cert_certification_name" name="certification_name" class="input w-full" placeholder="e.g., Red Cross Certified, License #12345" />
+                </div>
+                <div>
+                    <label class="label-text font-medium" for="user_cert_expire_date">Expiration Date</label>
+                    <input type="date" id="user_cert_expire_date" name="expire_date" class="input w-full" />
+                    <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
+                </div>
+                <div>
+                    <label class="label-text font-medium" for="user_cert_reminder_days">Reminder</label>
+                    <select id="user_cert_reminder_days" name="reminder_days" class="select w-full">
+                        <option value="">No reminder</option>
+                        <option value="7">7 days before expiry</option>
+                        <option value="14">14 days before expiry</option>
+                        <option value="30">30 days before expiry</option>
+                        <option value="60">60 days before expiry</option>
+                        <option value="90">90 days before expiry</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="label-text font-medium">Upload Document</label>
+                    <div class="flex flex-col items-center justify-center border-2 border-dashed border-base-content/20 rounded-lg p-6 hover:border-primary transition-colors cursor-pointer" id="user-cert-drop-zone">
+                        <input type="file" id="user_cert_file" name="file" class="hidden" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                        <div id="user-cert-upload-placeholder">
+                            <span class="icon-[tabler--cloud-upload] size-8 text-base-content/30 mb-2 block mx-auto"></span>
+                            <p class="text-sm text-base-content/60 text-center">Drag and drop file here, or</p>
+                            <button type="button" class="btn btn-soft btn-sm mt-2 mx-auto block" id="user-cert-browse-btn">Browse Files</button>
+                        </div>
+                        <div id="user-cert-upload-preview" class="hidden w-full text-center">
+                            <span class="icon-[tabler--file-check] size-8 text-success mb-2 block mx-auto"></span>
+                            <p id="user-cert-preview-name" class="text-sm font-medium"></p>
+                            <button type="button" class="btn btn-ghost btn-xs mt-2" id="user-cert-remove-preview-btn"><span class="icon-[tabler--x] size-4"></span> Remove</button>
+                        </div>
+                        <div id="user-cert-existing-file" class="hidden w-full text-center">
+                            <span class="icon-[tabler--file-check] size-8 text-primary mb-2 block mx-auto"></span>
+                            <p id="user-cert-existing-file-name" class="text-sm font-medium"></p>
+                            <button type="button" class="btn btn-ghost btn-xs mt-2" id="user-cert-remove-existing-btn"><span class="icon-[tabler--x] size-4"></span> Remove</button>
+                        </div>
+                    </div>
+                    <p class="text-xs text-base-content/50 text-center mt-2">PDF, JPG, PNG, WebP. Max 10MB</p>
+                </div>
+                <div>
+                    <label class="label-text font-medium" for="user_cert_notes">Notes</label>
+                    <textarea id="user_cert_notes" name="notes" class="textarea w-full" rows="2" placeholder="Additional notes..."></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-user-cert-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="user-cert-spinner"></span>
+                Save
+            </button>
+            <button type="button" class="btn btn-soft btn-secondary" onclick="closeUserCertDrawer()">Cancel</button>
+        </div>
+    </form>
+</div>
+<dialog id="delete-user-cert-modal" class="modal">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg">Delete Certification</h3>
+        <p class="py-4">Are you sure you want to delete this certification? This action cannot be undone.</p>
+        <input type="hidden" id="delete-user-cert-id" value="" />
+        <div class="modal-action">
+            <button type="button" class="btn btn-error" id="confirm-delete-user-cert-btn">Delete</button>
+            <button type="button" class="btn" onclick="document.getElementById('delete-user-cert-modal').close()">Cancel</button>
+        </div>
+    </div>
+</dialog>
+<div id="user-cert-backdrop" class="fixed inset-0 bg-black/50 z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeUserCertDrawer()"></div>
+
 @push('scripts')
 <script>
 const userId = {{ $user->id }};
@@ -863,6 +853,20 @@ const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute
 
 // Tab switching
 document.addEventListener('DOMContentLoaded', function() {
+    // Accordion: exclusive open for show page sections
+    var showSections = document.querySelectorAll('.show-accordion-section');
+    showSections.forEach(function(details) {
+        details.addEventListener('toggle', function() {
+            if (this.open) {
+                showSections.forEach(function(other) {
+                    if (other !== details && other.open) {
+                        other.removeAttribute('open');
+                    }
+                });
+            }
+        });
+    });
+
     const tabs = document.querySelectorAll('.tabs .tab');
     const contents = document.querySelectorAll('.tab-content');
 
@@ -1121,6 +1125,250 @@ document.addEventListener('keydown', function(e) {
         closeDrawer('edit-bio-drawer');
         closeDrawer('edit-social-drawer');
     }
+});
+
+// ========== Certification Drawer ==========
+var editingUserCertId = null;
+var certApiBase = '{{ url("settings/team/users/" . $user->id . "/certifications") }}';
+
+function showToast(message, type) {
+    type = type || 'success';
+    var toast = document.createElement('div');
+    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] alert alert-' + type + ' shadow-lg max-w-sm';
+    toast.innerHTML = '<span class="icon-[tabler--' + (type === 'success' ? 'check' : 'alert-circle') + '] size-5"></span><span>' + message + '</span>';
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(function() { toast.remove(); }, 300); }, 3000);
+}
+
+function openUserCertDrawer() {
+    resetUserCertForm();
+    var drawer = document.getElementById('user-cert-drawer');
+    var backdrop = document.getElementById('user-cert-backdrop');
+    if (drawer && backdrop) {
+        backdrop.classList.remove('opacity-0', 'pointer-events-none');
+        backdrop.classList.add('opacity-100', 'pointer-events-auto');
+        drawer.classList.remove('translate-x-full');
+        drawer.classList.add('translate-x-0');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeUserCertDrawer() {
+    var drawer = document.getElementById('user-cert-drawer');
+    var backdrop = document.getElementById('user-cert-backdrop');
+    if (drawer && backdrop) {
+        drawer.classList.remove('translate-x-0');
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+        document.body.style.overflow = '';
+    }
+}
+
+function resetUserCertForm() {
+    editingUserCertId = null;
+    document.getElementById('user-cert-drawer-title').textContent = 'Add Certification';
+    document.getElementById('user-cert-id').value = '';
+    document.getElementById('user_cert_name').value = '';
+    document.getElementById('user_cert_certification_name').value = '';
+    document.getElementById('user_cert_expire_date').value = '';
+    document.getElementById('user_cert_reminder_days').value = '';
+    document.getElementById('user_cert_notes').value = '';
+    document.getElementById('user_cert_file').value = '';
+    document.getElementById('user-cert-remove-file').value = '';
+    var placeholder = document.getElementById('user-cert-upload-placeholder');
+    var preview = document.getElementById('user-cert-upload-preview');
+    var existingFile = document.getElementById('user-cert-existing-file');
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (preview) preview.classList.add('hidden');
+    if (existingFile) existingFile.classList.add('hidden');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function editUserCert(id) {
+    editingUserCertId = id;
+    document.getElementById('user-cert-drawer-title').textContent = 'Edit Certification';
+    var spinner = document.getElementById('user-cert-spinner');
+    spinner.classList.remove('hidden');
+
+    fetch(certApiBase + '/' + id, {
+        method: 'GET', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var cert = result.certification;
+            document.getElementById('user-cert-id').value = cert.id;
+            document.getElementById('user_cert_name').value = cert.name || '';
+            document.getElementById('user_cert_certification_name').value = cert.certification_name || '';
+            document.getElementById('user_cert_expire_date').value = cert.expire_date || '';
+            document.getElementById('user_cert_reminder_days').value = cert.reminder_days || '';
+            document.getElementById('user_cert_notes').value = cert.notes || '';
+
+            var placeholder = document.getElementById('user-cert-upload-placeholder');
+            var preview = document.getElementById('user-cert-upload-preview');
+            var existingFile = document.getElementById('user-cert-existing-file');
+            var existingFileName = document.getElementById('user-cert-existing-file-name');
+
+            if (cert.file_name && existingFile && existingFileName) {
+                existingFileName.textContent = cert.file_name;
+                existingFile.classList.remove('hidden');
+                if (placeholder) placeholder.classList.add('hidden');
+            } else {
+                if (existingFile) existingFile.classList.add('hidden');
+                if (placeholder) placeholder.classList.remove('hidden');
+            }
+            if (preview) preview.classList.add('hidden');
+            openUserCertDrawer();
+        } else { showToast(result.message || 'Failed to load', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { spinner.classList.add('hidden'); });
+}
+
+function deleteUserCert(id) {
+    document.getElementById('delete-user-cert-id').value = id;
+    document.getElementById('delete-user-cert-modal').showModal();
+}
+
+document.getElementById('confirm-delete-user-cert-btn').addEventListener('click', function() {
+    var btn = this;
+    var id = document.getElementById('delete-user-cert-id').value;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Deleting...';
+
+    fetch(certApiBase + '/' + id, {
+        method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var item = document.querySelector('[data-cert-id="' + id + '"]');
+            if (item) item.remove();
+            var container = document.getElementById('user-certs-container');
+            if (container && container.querySelectorAll('[data-cert-id]').length === 0) {
+                document.getElementById('user-certifications-list').innerHTML =
+                    '<div class="text-center py-6" id="no-user-certs-message">' +
+                    '<span class="icon-[tabler--certificate] size-10 text-base-content/20 block mx-auto"></span>' +
+                    '<p class="text-base-content/50 mt-2">No certifications added</p>' +
+                    '<button type="button" class="btn btn-primary btn-sm mt-3" onclick="openUserCertDrawer()"><span class="icon-[tabler--plus] size-4"></span> Add Certification</button></div>';
+            }
+            document.getElementById('delete-user-cert-modal').close();
+            showToast('Certification deleted!');
+        } else { showToast(result.message || 'Failed to delete', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; btn.innerHTML = 'Delete'; });
+});
+
+// File upload handling
+(function() {
+    var fileInput = document.getElementById('user_cert_file');
+    var browseBtn = document.getElementById('user-cert-browse-btn');
+    var dropZone = document.getElementById('user-cert-drop-zone');
+    var placeholder = document.getElementById('user-cert-upload-placeholder');
+    var preview = document.getElementById('user-cert-upload-preview');
+    var previewName = document.getElementById('user-cert-preview-name');
+    var removeBtn = document.getElementById('user-cert-remove-preview-btn');
+    var existingFile = document.getElementById('user-cert-existing-file');
+
+    if (!fileInput) return;
+    if (browseBtn) browseBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
+    if (dropZone) {
+        dropZone.addEventListener('click', function(e) { if (!e.target.closest('button')) fileInput.click(); });
+        dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); });
+        dropZone.addEventListener('dragleave', function(e) { e.preventDefault(); dropZone.classList.remove('border-primary', 'bg-primary/5'); });
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault(); dropZone.classList.remove('border-primary', 'bg-primary/5');
+            if (e.dataTransfer.files.length > 0) { fileInput.files = e.dataTransfer.files; handleCertFile(e.dataTransfer.files[0]); }
+        });
+    }
+    fileInput.addEventListener('change', function() { if (this.files.length > 0) handleCertFile(this.files[0]); });
+    if (removeBtn) removeBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fileInput.value = ''; if (preview) preview.classList.add('hidden'); if (placeholder) placeholder.classList.remove('hidden'); });
+
+    function handleCertFile(file) {
+        var validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+        if (!validTypes.includes(file.type)) { showToast('Please upload PDF, JPG, PNG, or WebP', 'error'); return; }
+        if (file.size > 10 * 1024 * 1024) { showToast('File must be under 10MB', 'error'); return; }
+        if (previewName) previewName.textContent = file.name;
+        if (placeholder) placeholder.classList.add('hidden');
+        if (existingFile) existingFile.classList.add('hidden');
+        if (preview) preview.classList.remove('hidden');
+    }
+
+    var removeExistingBtn = document.getElementById('user-cert-remove-existing-btn');
+    if (removeExistingBtn) removeExistingBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); if (existingFile) existingFile.classList.add('hidden'); if (placeholder) placeholder.classList.remove('hidden'); document.getElementById('user-cert-remove-file').value = '1'; });
+})();
+
+// Cert form submit
+document.getElementById('user-cert-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-user-cert-btn');
+    var spinner = document.getElementById('user-cert-spinner');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    var formData = new FormData();
+    formData.append('name', document.getElementById('user_cert_name').value);
+    formData.append('certification_name', document.getElementById('user_cert_certification_name').value);
+    formData.append('expire_date', document.getElementById('user_cert_expire_date').value);
+    formData.append('reminder_days', document.getElementById('user_cert_reminder_days').value);
+    formData.append('notes', document.getElementById('user_cert_notes').value);
+
+    var fileInput = document.getElementById('user_cert_file');
+    if (fileInput.files.length > 0) formData.append('file', fileInput.files[0]);
+    if (document.getElementById('user-cert-remove-file').value === '1') formData.append('remove_file', '1');
+    var certId = document.getElementById('user-cert-id').value;
+    var isEdit = certId && certId !== '';
+    if (isEdit) formData.append('id', certId);
+
+    fetch(certApiBase, {
+        method: 'POST', headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }, body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var cert = result.certification;
+            var list = document.getElementById('user-certifications-list');
+            var statusIcon = cert.days_until_expiry !== null ? (cert.days_until_expiry < 0 ? 'bg-error/10' : (cert.days_until_expiry <= 30 ? 'bg-warning/10' : 'bg-success/10')) : 'bg-success/10';
+            var statusIconColor = cert.days_until_expiry !== null ? (cert.days_until_expiry < 0 ? 'text-error' : (cert.days_until_expiry <= 30 ? 'text-warning' : 'text-success')) : 'text-success';
+
+            var itemHtml = '<div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="' + cert.id + '">' +
+                '<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg ' + statusIcon + ' flex items-center justify-center shrink-0"><span class="icon-[tabler--certificate] size-5 ' + statusIconColor + '"></span></div>' +
+                '<div><div class="font-medium">' + escapeHtml(cert.name) + '</div>';
+            if (cert.certification_name) itemHtml += '<div class="text-xs text-base-content/60">' + escapeHtml(cert.certification_name) + '</div>';
+            if (cert.expire_date_formatted) itemHtml += '<div class="text-xs mt-1"><span class="badge ' + cert.status_badge_class + ' badge-xs">' + (cert.days_until_expiry < 0 ? 'Expired ' : 'Expires ') + cert.expire_date_formatted + '</span></div>';
+            itemHtml += '</div></div><div class="flex items-center gap-1">';
+            if (cert.file_url) itemHtml += '<a href="' + cert.file_url + '" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File"><span class="icon-[tabler--file-download] size-4"></span></a>';
+            itemHtml += '<button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editUserCert(' + cert.id + ')" title="Edit"><span class="icon-[tabler--pencil] size-4"></span></button>' +
+                '<button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteUserCert(' + cert.id + ')" title="Delete"><span class="icon-[tabler--trash] size-4"></span></button></div></div>';
+
+            if (isEdit) {
+                var existingItem = document.querySelector('[data-cert-id="' + cert.id + '"]');
+                if (existingItem) existingItem.outerHTML = itemHtml;
+            } else {
+                var emptyState = document.getElementById('no-user-certs-message');
+                if (emptyState) {
+                    list.innerHTML = '<div class="space-y-3" id="user-certs-container">' + itemHtml + '</div>';
+                } else {
+                    var container = document.getElementById('user-certs-container');
+                    if (container) container.insertAdjacentHTML('beforeend', itemHtml);
+                    else list.innerHTML = '<div class="space-y-3" id="user-certs-container">' + itemHtml + '</div>';
+                }
+            }
+            resetUserCertForm();
+            closeUserCertDrawer();
+            setTimeout(function() { showToast(isEdit ? 'Certification updated!' : 'Certification added!'); }, 350);
+        } else { showToast(result.message || 'Failed to save', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
 });
 
 // Toggle social links visibility for instructors

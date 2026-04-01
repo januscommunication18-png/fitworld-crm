@@ -27,8 +27,8 @@ class TeamController extends Controller
         $search = $request->get('search');
 
         // Use teamMembers() to get users from pivot table (supports multi-studio)
+        // Only show non-deleted users (removed users are detached from pivot)
         $usersQuery = $host->teamMembers()
-            ->withTrashed()
             ->orderByRaw("FIELD(host_user.role, 'owner', 'admin', 'manager', 'staff', 'instructor')")
             ->orderBy('first_name');
 
@@ -332,7 +332,7 @@ class TeamController extends Controller
         $host = auth()->user()->currentHost();
 
         $validated = $request->validate([
-            'role' => 'required|in:admin,staff,instructor',
+            'role' => 'required|in:admin,manager,staff,instructor',
             'permissions' => 'nullable|array',
             // Profile fields
             'phone' => 'nullable|string|max:50',
@@ -451,14 +451,14 @@ class TeamController extends Controller
         $host = auth()->user()->currentHost();
         $isQuickInvite = $request->input('invite_mode') === 'quick';
 
-        // For quick invite mode, map quick_ fields to standard fields and force send_invite
+        // For quick invite mode, map quick_ fields to standard fields
         if ($isQuickInvite) {
             $request->merge([
                 'first_name' => $request->input('quick_first_name'),
                 'last_name' => $request->input('quick_last_name'),
                 'email' => $request->input('quick_email'),
                 'role' => $request->input('quick_role'),
-                'send_invite' => true,
+                'send_invite' => $request->boolean('quick_send_invite'),
             ]);
         }
 
@@ -481,7 +481,12 @@ class TeamController extends Controller
                 'phone' => 'nullable|string|max:50',
                 'bio' => 'nullable|string|max:2000',
                 'specialties' => 'nullable|array',
-                'certifications' => 'nullable|string|max:1000',
+                'certs' => 'nullable|array',
+                'certs.*.name' => 'required|string|max:255',
+                'certs.*.certification_name' => 'nullable|string|max:255',
+                'certs.*.expire_date' => 'nullable|date',
+                'certs.*.reminder_days' => 'nullable|integer|min:1|max:365',
+                'certs.*.notes' => 'nullable|string|max:1000',
                 // Employment Details
                 'employment_type' => ['nullable', Rule::in(array_keys(Instructor::getEmploymentTypes()))],
                 'rate_type' => ['nullable', Rule::in(array_keys(Instructor::getRateTypes()))],
@@ -504,7 +509,7 @@ class TeamController extends Controller
             $rules['email'] = [
                 'required',
                 'email',
-                Rule::unique('users', 'email'),
+                Rule::unique('users', 'email')->whereNull('deleted_at'),
                 Rule::unique('team_invitations', 'email')
                     ->where('host_id', $host->id)
                     ->where('status', TeamInvitation::STATUS_PENDING),
@@ -528,19 +533,36 @@ class TeamController extends Controller
         // Otherwise, send invitation (existing flow)
         $instructorId = null;
 
-        // Create User record upfront with status 'invited' (so they appear in users list)
-        $user = User::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $email,
-            'password' => null, // No password until they accept the invitation
-            'host_id' => $host->id,
-            'phone' => $validated['phone'] ?? null,
-            'bio' => $validated['bio'] ?? null,
-            'status' => User::STATUS_INVITED,
-        ]);
+        // Check if a soft-deleted user exists with this email — restore and reuse
+        $user = $email ? User::withTrashed()->where('email', $email)->first() : null;
 
-        // Attach user to host with role and permissions
+        if ($user && $user->trashed()) {
+            $user->restore();
+            $user->update([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'password' => null,
+                'host_id' => $host->id,
+                'phone' => $validated['phone'] ?? null,
+                'bio' => $validated['bio'] ?? null,
+                'status' => User::STATUS_INVITED,
+            ]);
+        } elseif (!$user) {
+            // Create User record upfront with status 'invited' (so they appear in users list)
+            $user = User::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => $email,
+                'password' => null, // No password until they accept the invitation
+                'host_id' => $host->id,
+                'phone' => $validated['phone'] ?? null,
+                'bio' => $validated['bio'] ?? null,
+                'status' => User::STATUS_INVITED,
+            ]);
+        }
+
+        // Sync pivot (detach first in case old pivot row still exists, then attach)
+        $host->teamMembers()->detach($user->id);
         $host->teamMembers()->attach($user->id, [
             'role' => $validated['role'],
             'permissions' => json_encode($validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role'])),
@@ -569,6 +591,9 @@ class TeamController extends Controller
                 $instructorId = $instructor->id;
             }
         }
+
+        // Create certifications if provided (full setup mode)
+        $this->storeCertsFromForm($validated['certs'] ?? [], $host, $user);
 
         $invitation = TeamInvitation::create([
             'host_id' => $host->id,
@@ -662,24 +687,44 @@ class TeamController extends Controller
         // Use a placeholder email if none provided (ensures unique constraint is met)
         $userEmail = $email ?? $this->generatePlaceholderEmail($host, $fullName);
 
-        $user = User::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $userEmail,
-            'password' => null, // No password = cannot login
-            'host_id' => $host->id,
-            'role' => $validated['role'],
-            'permissions' => $validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role']),
-            'email_verified_at' => null,
-        ]);
+        // Check if a soft-deleted user exists with this email — restore and reuse
+        $user = $email ? User::withTrashed()->where('email', $email)->first() : null;
 
-        // Attach to host via pivot table
+        if ($user && $user->trashed()) {
+            $user->restore();
+            $user->update([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'password' => null,
+                'host_id' => $host->id,
+                'role' => $validated['role'],
+                'permissions' => $validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role']),
+                'email_verified_at' => null,
+            ]);
+        } else {
+            $user = User::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => $userEmail,
+                'password' => null,
+                'host_id' => $host->id,
+                'role' => $validated['role'],
+                'permissions' => $validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role']),
+                'email_verified_at' => null,
+            ]);
+        }
+
+        // Sync pivot (detach first in case old pivot row still exists, then attach)
+        $host->teamMembers()->detach($user->id);
         $host->teamMembers()->attach($user->id, [
             'role' => $validated['role'],
             'permissions' => json_encode($validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role'])),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+
+        // Create certifications if provided (full setup mode)
+        $this->storeCertsFromForm($validated['certs'] ?? [], $host, $user);
 
         return redirect()->route('settings.team.users')
             ->with('success', 'Team member "' . $fullName . '" added without login access.');
@@ -872,13 +917,21 @@ class TeamController extends Controller
         // Store removal reason as a note before deleting
         $host = auth()->user()->currentHost();
         UserNote::create([
-            'user_id' => $user->id,
+            'subject_user_id' => $user->id,
             'host_id' => $host->id,
             'author_id' => auth()->id(),
-            'note' => 'Removed from team. Reason: ' . $request->input('reason'),
-            'type' => 'system',
+            'content' => 'Removed from team. Reason: ' . $request->input('reason'),
+            'note_type' => 'system',
         ]);
 
+        // Cancel any pending invitations for this email
+        TeamInvitation::where('host_id', $host->id)
+            ->where('email', $user->email)
+            ->where('status', TeamInvitation::STATUS_PENDING)
+            ->update(['status' => TeamInvitation::STATUS_CANCELLED]);
+
+        // Detach from host pivot and soft-delete
+        $host->teamMembers()->detach($user->id);
         $user->delete();
 
         return back()->with('success', $user->full_name . ' has been removed from the team.');
@@ -1584,6 +1637,28 @@ class TeamController extends Controller
             'status_badge_class' => $certification->status_badge_class,
             'days_until_expiry' => $certification->days_until_expiry,
         ];
+    }
+
+    /**
+     * Store certifications from the invite form's certs array.
+     */
+    protected function storeCertsFromForm(array $certs, $host, User $user): void
+    {
+        foreach ($certs as $certData) {
+            if (empty($certData['name'])) {
+                continue;
+            }
+
+            \App\Models\StudioCertification::create([
+                'host_id' => $host->id,
+                'user_id' => $user->id,
+                'name' => $certData['name'],
+                'certification_name' => $certData['certification_name'] ?? null,
+                'expire_date' => !empty($certData['expire_date']) ? $certData['expire_date'] : null,
+                'reminder_days' => !empty($certData['reminder_days']) ? (int) $certData['reminder_days'] : null,
+                'notes' => $certData['notes'] ?? null,
+            ]);
+        }
     }
 
     /**

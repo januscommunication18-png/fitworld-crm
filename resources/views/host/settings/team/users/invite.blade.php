@@ -146,9 +146,20 @@
                             @enderror
                         </div>
 
+                        <label class="cursor-pointer flex items-center gap-4 p-4 rounded-xl border-2 border-dashed border-base-content/10 hover:border-primary/30 hover:bg-primary/5 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                            <input type="checkbox" name="quick_send_invite" value="1" class="checkbox checkbox-primary" checked />
+                            <div class="flex-1">
+                                <span class="font-medium flex items-center gap-2">
+                                    <span class="icon-[tabler--mail-forward] size-5 text-primary"></span>
+                                    Grant Login Access
+                                </span>
+                                <span class="text-sm text-base-content/60 block mt-0.5">Team member will receive an email invitation to create their account</span>
+                            </div>
+                        </label>
+
                         <p class="text-xs text-base-content/50">
                             <span class="icon-[tabler--info-circle] size-3.5 inline-block align-text-bottom mr-0.5"></span>
-                            An invitation email will be sent. Default permissions will be applied based on the selected role. You can customize details later from their profile.
+                            Default permissions will be applied based on the selected role. You can customize details later from their profile.
                         </p>
                     </div>
                 </div>
@@ -664,15 +675,56 @@
                         </div>
                         <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
                     </summary>
-                    <div class="p-5 space-y-5">
-                        <div class="form-control">
-                            <label class="label" for="certifications">
-                                <span class="label-text font-medium">Certifications</span>
-                            </label>
-                            <textarea id="certifications" name="certifications" class="textarea textarea-bordered w-full" rows="3"
-                                      placeholder="RYT-200, ACE Certified, etc.">{{ old('certifications') }}</textarea>
-                            <label class="label"><span class="label-text-alt text-base-content/50">List certifications separated by commas</span></label>
+                    <div class="p-5 space-y-4">
+                        <div id="certs-container">
+                            @php $oldCerts = old('certs', []); @endphp
+                            @if(!empty($oldCerts))
+                                @foreach($oldCerts as $i => $oldCert)
+                                <div class="cert-entry border border-base-content/10 rounded-lg p-4 space-y-3 relative" data-index="{{ $i }}">
+                                    <button type="button" class="btn btn-ghost btn-xs btn-square text-error absolute top-2 right-2" onclick="removeCert(this)" title="Remove">
+                                        <span class="icon-[tabler--x] size-4"></span>
+                                    </button>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="icon-[tabler--certificate] size-4 text-success"></span>
+                                        <span class="text-sm font-medium text-base-content/70">Certification #<span class="cert-number">{{ $i + 1 }}</span></span>
+                                    </div>
+                                    <div>
+                                        <label class="label-text font-medium">Name <span class="text-error">*</span></label>
+                                        <input type="text" name="certs[{{ $i }}][name]" class="input input-bordered w-full" placeholder="e.g., First Aid, CPR" value="{{ $oldCert['name'] ?? '' }}" required />
+                                    </div>
+                                    <div>
+                                        <label class="label-text font-medium">Certification / Credential Name</label>
+                                        <input type="text" name="certs[{{ $i }}][certification_name]" class="input input-bordered w-full" placeholder="e.g., Red Cross Certified, License #12345" value="{{ $oldCert['certification_name'] ?? '' }}" />
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="label-text font-medium">Expiration Date</label>
+                                            <input type="date" name="certs[{{ $i }}][expire_date]" class="input input-bordered w-full" value="{{ $oldCert['expire_date'] ?? '' }}" />
+                                        </div>
+                                        <div>
+                                            <label class="label-text font-medium">Reminder</label>
+                                            <select name="certs[{{ $i }}][reminder_days]" class="select select-bordered w-full">
+                                                <option value="">No reminder</option>
+                                                <option value="7" {{ ($oldCert['reminder_days'] ?? '') == '7' ? 'selected' : '' }}>7 days before</option>
+                                                <option value="14" {{ ($oldCert['reminder_days'] ?? '') == '14' ? 'selected' : '' }}>14 days before</option>
+                                                <option value="30" {{ ($oldCert['reminder_days'] ?? '') == '30' ? 'selected' : '' }}>30 days before</option>
+                                                <option value="60" {{ ($oldCert['reminder_days'] ?? '') == '60' ? 'selected' : '' }}>60 days before</option>
+                                                <option value="90" {{ ($oldCert['reminder_days'] ?? '') == '90' ? 'selected' : '' }}>90 days before</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="label-text font-medium">Notes</label>
+                                        <textarea name="certs[{{ $i }}][notes]" class="textarea textarea-bordered w-full" rows="2" placeholder="Additional notes...">{{ $oldCert['notes'] ?? '' }}</textarea>
+                                    </div>
+                                </div>
+                                @endforeach
+                            @endif
                         </div>
+
+                        <button type="button" class="btn btn-soft btn-primary btn-sm w-full" onclick="addCert()">
+                            <span class="icon-[tabler--plus] size-4"></span> Add Certification
+                        </button>
                     </div>
                 </details>
 
@@ -890,10 +942,73 @@
                 // Set initial permissions based on role
                 updatePermissionsForRole();
 
+                // Accordion: only one section open at a time (first always stays open)
+                var allSections = document.querySelectorAll('.accordion-section');
+                var firstSection = allSections[0];
+                allSections.forEach(function(details) {
+                    details.addEventListener('toggle', function() {
+                        if (this.open) {
+                            allSections.forEach(function(other) {
+                                if (other !== details && other !== firstSection && other.open) {
+                                    other.removeAttribute('open');
+                                }
+                            });
+                        }
+                    });
+                });
+
                 // Restore mode on validation error
                 var initialMode = '{{ old('invite_mode', 'quick') }}';
                 setInviteMode(initialMode);
             });
+
+            // ========== Certifications ==========
+            var certIndex = document.querySelectorAll('.cert-entry').length;
+
+            function addCert() {
+                var container = document.getElementById('certs-container');
+                var i = certIndex++;
+                var html = '<div class="cert-entry border border-base-content/10 rounded-lg p-4 space-y-3 relative" data-index="' + i + '">' +
+                    '<button type="button" class="btn btn-ghost btn-xs btn-square text-error absolute top-2 right-2" onclick="removeCert(this)" title="Remove">' +
+                    '<span class="icon-[tabler--x] size-4"></span></button>' +
+                    '<div class="flex items-center gap-2 mb-1">' +
+                    '<span class="icon-[tabler--certificate] size-4 text-success"></span>' +
+                    '<span class="text-sm font-medium text-base-content/70">Certification #<span class="cert-number"></span></span></div>' +
+                    '<div><label class="label-text font-medium">Name <span class="text-error">*</span></label>' +
+                    '<input type="text" name="certs[' + i + '][name]" class="input input-bordered w-full" placeholder="e.g., First Aid, CPR" required /></div>' +
+                    '<div><label class="label-text font-medium">Certification / Credential Name</label>' +
+                    '<input type="text" name="certs[' + i + '][certification_name]" class="input input-bordered w-full" placeholder="e.g., Red Cross Certified, License #12345" /></div>' +
+                    '<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">' +
+                    '<div><label class="label-text font-medium">Expiration Date</label>' +
+                    '<input type="date" name="certs[' + i + '][expire_date]" class="input input-bordered w-full" /></div>' +
+                    '<div><label class="label-text font-medium">Reminder</label>' +
+                    '<select name="certs[' + i + '][reminder_days]" class="select select-bordered w-full">' +
+                    '<option value="">No reminder</option>' +
+                    '<option value="7">7 days before</option>' +
+                    '<option value="14">14 days before</option>' +
+                    '<option value="30">30 days before</option>' +
+                    '<option value="60">60 days before</option>' +
+                    '<option value="90">90 days before</option></select></div></div>' +
+                    '<div><label class="label-text font-medium">Notes</label>' +
+                    '<textarea name="certs[' + i + '][notes]" class="textarea textarea-bordered w-full" rows="2" placeholder="Additional notes..."></textarea></div>' +
+                    '</div>';
+                container.insertAdjacentHTML('beforeend', html);
+                renumberCerts();
+            }
+
+            function removeCert(btn) {
+                btn.closest('.cert-entry').remove();
+                renumberCerts();
+            }
+
+            function renumberCerts() {
+                document.querySelectorAll('.cert-entry .cert-number').forEach(function(el, idx) {
+                    el.textContent = idx + 1;
+                });
+            }
+
+            // Number existing certs on load
+            renumberCerts();
         </script>
     @endpush
 @endsection

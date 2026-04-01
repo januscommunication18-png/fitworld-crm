@@ -241,20 +241,32 @@
                                 '9' => '9 Months',
                                 '12' => '12 Months',
                             ];
+                            $basePrice = $classPlan->prices[$defaultCurrency] ?? 0;
+                            $symbol = $currencySymbols[$defaultCurrency] ?? $defaultCurrency;
                         @endphp
                         @foreach($billingPeriods as $months => $label)
                             @php
                                 $discount = $classPlan->billing_discounts[$months] ?? 0;
+                                $discountedPrice = $basePrice > 0 ? $basePrice * (1 - $discount / 100) : 0;
+                                $totalPrice = $discountedPrice * (int) $months;
                             @endphp
                             <div class="text-center p-3 rounded-lg {{ $discount > 0 ? 'bg-success/10' : 'bg-base-200/50' }}">
                                 <div class="text-sm text-base-content/60">{{ $label }}</div>
                                 <div class="text-xl font-bold {{ $discount > 0 ? 'text-success' : 'text-base-content/40' }}">
                                     {{ $discount }}%
                                 </div>
+                                @if($basePrice > 0)
+                                    <div class="text-sm font-semibold mt-1 {{ $discount > 0 ? 'text-success' : 'text-base-content/70' }}">
+                                        {{ $symbol }}{{ number_format($discountedPrice, 2) }}<span class="text-xs font-normal text-base-content/50">/mo</span>
+                                    </div>
+                                    @if((int) $months > 1)
+                                        <div class="text-xs text-base-content/50">{{ $symbol }}{{ number_format($totalPrice, 2) }} total</div>
+                                    @endif
+                                @endif
                                 @if($discount > 0)
-                                    <div class="text-xs text-success">Save {{ $discount }}%</div>
+                                    <div class="text-xs text-success mt-0.5">Save {{ $discount }}%</div>
                                 @else
-                                    <div class="text-xs text-base-content/40">Base price</div>
+                                    <div class="text-xs text-base-content/40 mt-0.5">Base price</div>
                                 @endif
                             </div>
                         @endforeach
@@ -450,7 +462,8 @@
 
         {{-- Schedule Tab --}}
         <div class="tab-content {{ $tab === 'schedule' ? 'active' : 'hidden' }}" data-content="schedule">
-            @if($locations->isEmpty())
+            @php $allSessions = $sessionsByLocation->flatten(); @endphp
+            @if($allSessions->isEmpty())
                 <div class="card bg-base-100">
                     <div class="card-body text-center py-12">
                         <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
@@ -463,12 +476,13 @@
                     </div>
                 </div>
             @else
+                @php $unassignedSessions = $sessionsByLocation->get('', collect())->merge($sessionsByLocation->get(null, collect())); @endphp
                 {{-- Location Filter Dropdown --}}
                 <div class="flex justify-end mb-6">
                     <div class="form-control w-64">
                         <select id="location-filter" class="select select-bordered select-sm">
                             <option value="all" selected>
-                                All Locations ({{ $sessionsByLocation->flatten()->count() }})
+                                All Sessions ({{ $allSessions->count() }})
                             </option>
                             @foreach($locations as $location)
                                 <option value="{{ $location->id }}">
@@ -478,6 +492,9 @@
                                     @endif
                                 </option>
                             @endforeach
+                            @if($unassignedSessions->isNotEmpty())
+                                <option value="unassigned">No Location ({{ $unassignedSessions->count() }})</option>
+                            @endif
                         </select>
                     </div>
                 </div>
@@ -613,6 +630,56 @@
                         </div>
                     </div>
                 @endforeach
+
+                {{-- Unassigned Sessions (no location) --}}
+                @if($unassignedSessions->isNotEmpty())
+                    <div class="location-content hidden" data-location-content="unassigned">
+                        <div class="card bg-base-100">
+                            <div class="card-body">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h2 class="card-title text-lg">
+                                        <span class="icon-[tabler--map-pin-off] size-5"></span>
+                                        No Location Assigned
+                                    </h2>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Date & Time</th>
+                                                <th>Instructor</th>
+                                                <th>Status</th>
+                                                <th class="text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($unassignedSessions->sortBy('start_time') as $session)
+                                                <tr>
+                                                    <td>
+                                                        <div class="font-medium">{{ $session->start_time->format('D, M d, Y') }}</div>
+                                                        <div class="text-sm text-base-content/60">{{ $session->start_time->format('g:i A') }} - {{ $session->end_time->format('g:i A') }}</div>
+                                                    </td>
+                                                    <td>{{ $session->primaryInstructor?->name ?? '-' }}</td>
+                                                    <td>
+                                                        <span class="badge badge-soft badge-sm {{ $session->getStatusBadgeClass() }}">{{ ucfirst($session->status) }}</span>
+                                                    </td>
+                                                    <td class="text-right">
+                                                        <a href="{{ route('class-sessions.show', $session) }}" class="btn btn-ghost btn-xs">
+                                                            <span class="icon-[tabler--eye] size-4"></span>
+                                                        </a>
+                                                        <a href="{{ route('class-sessions.edit', $session) }}" class="btn btn-ghost btn-xs">
+                                                            <span class="icon-[tabler--edit] size-4"></span>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             @endif
         </div>
     </div>
