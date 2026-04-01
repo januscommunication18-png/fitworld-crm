@@ -9,8 +9,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('hosts', function (Blueprint $table) {
+            if (!Schema::hasColumn('hosts', 'studio_categories')) {
+                $table->json('studio_categories')->nullable();
+            }
             if (!Schema::hasColumn('hosts', 'studio_structure')) {
-                $table->string('studio_structure')->nullable()->after('studio_categories');
+                $table->string('studio_structure')->nullable();
             }
         });
     }
@@ -18,7 +21,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('hosts', function (Blueprint $table) {
-            $table->dropColumn('studio_structure');
+            $table->dropColumn(['studio_structure', 'studio_categories']);
         });
     }
 };
