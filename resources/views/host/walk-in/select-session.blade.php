@@ -816,15 +816,12 @@
                             <div class="form-control mb-4" id="price-input-container">
                                 <label class="label" for="price-input">
                                     <span class="label-text font-medium">Amount to Charge</span>
-                                    <span class="label-text-alt {{ (!$canOverridePrice && !$canRequestOverride) ? 'text-success' : 'text-base-content/50' }}">
-                                        {{ (!$canOverridePrice && !$canRequestOverride) ? 'Editable' : 'Set by payment option' }}
-                                    </span>
                                 </label>
                                 <div class="relative">
                                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">$</span>
                                     <input type="number" id="price-input" name="price_paid" step="0.01" min="0"
-                                           class="input input-bordered w-full pl-8 {{ (!$canOverridePrice && !$canRequestOverride) ? '' : 'bg-base-200 cursor-not-allowed' }}"
-                                           value="0" {{ (!$canOverridePrice && !$canRequestOverride) ? '' : 'readonly' }}>
+                                           class="input input-bordered w-full pl-8"
+                                           value="0">
                                 </div>
                             </div>
 
@@ -938,9 +935,6 @@
                         </div>
                     </div>
                 </div>
-
-                {{-- Dummy element for client-payment-options (to prevent JS errors) --}}
-                <div id="client-payment-options" class="hidden"></div>
 
                 <div class="flex justify-between mt-6">
                     <button type="button" class="btn btn-ghost" id="step2-back">
@@ -1769,13 +1763,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selected-client').classList.add('hidden');
 
         // Clear payment options
-        var paymentOptsList = document.getElementById('client-payment-options-list');
-        if (paymentOptsList) paymentOptsList.innerHTML = '';
-        var classPassId = document.getElementById('class-pass-purchase-id');
-        if (classPassId) classPassId.value = '';
         document.getElementById('payment-method-hidden').value = 'manual';
-        document.getElementById('payment-method-container').classList.remove('hidden');
-        document.getElementById('price-input-container').classList.remove('hidden');
 
         // Show client type selection again
         document.getElementById('client-type-selection').classList.remove('hidden');
@@ -1797,201 +1785,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('new-phone').value = '';
 
         validateStep1();
-    };
-
-    // Load client's payment options (class passes, memberships)
-    async function loadClientPaymentOptions(clientId) {
-        const container = document.getElementById('client-payment-options');
-        const loading = document.getElementById('client-payment-options-loading');
-        const list = document.getElementById('client-payment-options-list');
-
-        // Reset
-        list.innerHTML = '';
-        document.getElementById('class-pass-purchase-id').value = '';
-        document.getElementById('payment-method-hidden').value = 'manual';
-
-        // Show loading
-        container.classList.remove('hidden');
-        loading.classList.remove('hidden');
-
-        try {
-            const classPlanId = selectedClassPlanId || '';
-            const response = await fetch(`/walk-in/payment-methods/${clientId}?class_plan_id=${classPlanId}`);
-            const data = await response.json();
-
-            let html = '';
-
-            // Membership option
-            if (data.membership) {
-                html += `
-                    <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-secondary has-[:checked]:bg-secondary/5 transition-all">
-                        <input type="radio" name="payment_option" value="membership" class="radio radio-secondary mt-0.5" onchange="selectPaymentOption('membership')">
-                        <div class="flex-1">
-                            <div class="font-medium flex items-center gap-2">
-                                <span class="icon-[tabler--id-badge-2] size-5 text-secondary"></span>
-                                Use Membership
-                                <span class="badge badge-secondary badge-sm">Recommended</span>
-                            </div>
-                            <div class="text-sm text-base-content/60 mt-1">${data.membership.name} - ${data.membership.credits_remaining} credits remaining</div>
-                        </div>
-                    </label>
-                `;
-            }
-
-            // Class passes
-            if (data.packs && data.packs.length > 0) {
-                data.packs.forEach(pack => {
-                    const expiryText = pack.expires_at ? `<span class="text-xs text-base-content/50">expires ${pack.expires_at}</span>` : '';
-                    const pendingBadge = pack.is_pending_activation ? '<span class="badge badge-warning badge-xs ml-2">Activates on booking</span>' : '';
-                    html += `
-                        <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-accent has-[:checked]:bg-accent/5 transition-all">
-                            <input type="radio" name="payment_option" value="pack_${pack.id}" class="radio radio-accent mt-0.5" onchange="selectPaymentOption('pack', ${pack.id})">
-                            <div class="flex-1">
-                                <div class="font-medium flex items-center gap-2">
-                                    <span class="icon-[tabler--ticket] size-5 text-accent"></span>
-                                    Use Class Pass ${pendingBadge}
-                                </div>
-                                <div class="text-sm text-base-content/60 mt-1">${pack.name} - ${pack.classes_remaining} credits remaining ${expiryText}</div>
-                            </div>
-                        </label>
-                    `;
-                });
-            }
-
-            // Billing credits
-            if (data.billing_credits && data.billing_credits.length > 0) {
-                data.billing_credits.forEach(credit => {
-                    html += `
-                        <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
-                            <input type="radio" name="payment_option" value="billing_credit_${credit.id}" class="radio radio-success mt-0.5" onchange="selectPaymentOption('billing_credit', ${credit.id})">
-                            <div class="flex-1">
-                                <div class="font-medium flex items-center gap-2">
-                                    <span class="icon-[tabler--calendar-dollar] size-5 text-success"></span>
-                                    Use Billing Credit
-                                    <span class="badge badge-success badge-sm">Prepaid</span>
-                                </div>
-                                <div class="text-sm text-base-content/60 mt-1">
-                                    ${credit.source_name} — $${credit.credit_remaining.toFixed(2)} remaining
-                                </div>
-                                <div class="text-xs text-base-content/50 mt-0.5">
-                                    ${credit.billing_period}mo prepaid (${credit.discount_percent}% off) · Valid until ${credit.end_date}
-                                </div>
-                            </div>
-                        </label>
-                    `;
-                });
-            }
-
-            // Add "Trial Class" option
-            html += `
-                <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
-                    <input type="radio" name="payment_option" value="trial" class="radio radio-success mt-0.5" onchange="selectPaymentOption('trial')">
-                    <div class="flex-1">
-                        <div class="font-medium flex items-center gap-2">
-                            <span class="icon-[tabler--gift] size-5 text-success"></span>
-                            Trial Class
-                        </div>
-                        <div class="text-sm text-base-content/60 mt-1">First-time client complimentary session</div>
-                    </div>
-                </label>
-            `;
-
-            // Add "Pay Now" option (default selected)
-            html += `
-                <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                    <input type="radio" name="payment_option" value="manual" class="radio radio-primary mt-0.5" onchange="selectPaymentOption('manual')" checked>
-                    <div class="flex-1">
-                        <div class="font-medium flex items-center gap-2">
-                            <span class="icon-[tabler--cash] size-5 text-primary"></span>
-                            Pay Now
-                        </div>
-                        <div class="text-sm text-base-content/60 mt-1">Cash, card, or other payment</div>
-                    </div>
-                </label>
-            `;
-
-            list.innerHTML = html;
-            container.classList.remove('hidden');
-            document.getElementById('payment-method-container').classList.remove('hidden');
-        } catch (error) {
-            console.error('Error loading payment options:', error);
-            container.classList.add('hidden');
-        } finally {
-            loading.classList.add('hidden');
-        }
-    }
-
-    window.selectPaymentOption = function(option, packId = null) {
-        const paymentMethodHidden = document.getElementById('payment-method-hidden');
-        const classPassPurchaseId = document.getElementById('class-pass-purchase-id');
-        const paymentMethodContainer = document.getElementById('payment-method-container');
-        const priceInputContainer = document.getElementById('price-input-container');
-        const trialAmountContainer = document.getElementById('trial-amount-container');
-        const trialCheckbox = document.getElementById('trial-class');
-
-        const displayPrice = document.getElementById('display-price');
-        const priceInput = document.getElementById('price-input');
-
-        // Reset trial checkbox and billing credit when switching options
-        if (trialCheckbox) trialCheckbox.checked = false;
-        if (trialAmountContainer) trialAmountContainer.classList.add('hidden');
-        document.getElementById('billing_credit_id_hidden').value = '';
-
-        if (option === 'membership') {
-            paymentMethodHidden.value = 'membership';
-            classPassPurchaseId.value = '';
-            paymentMethodContainer.classList.add('hidden');
-            priceInputContainer.classList.remove('hidden');
-            // Show $0 for membership (using credit)
-            displayPrice.textContent = '$0.00';
-            priceInput.value = '0';
-            document.querySelector('#price-input-container .label-text').textContent = 'Amount to Charge';
-            document.querySelector('#price-input-container .label-text-alt').textContent = 'Using membership credit';
-        } else if (option === 'pack') {
-            paymentMethodHidden.value = 'pack';
-            classPassPurchaseId.value = packId;
-            paymentMethodContainer.classList.add('hidden');
-            priceInputContainer.classList.remove('hidden');
-            // Show $0 for pack (using credit)
-            displayPrice.textContent = '$0.00';
-            priceInput.value = '0';
-            document.querySelector('#price-input-container .label-text').textContent = 'Amount to Charge';
-            document.querySelector('#price-input-container .label-text-alt').textContent = 'Using class pass credit';
-        } else if (option === 'billing_credit') {
-            paymentMethodHidden.value = 'billing_credit';
-            classPassPurchaseId.value = '';
-            document.getElementById('billing_credit_id_hidden').value = packId; // reusing packId param for credit id
-            paymentMethodContainer.classList.add('hidden');
-            priceInputContainer.classList.remove('hidden');
-            // Show $0 for billing credit (using prepaid credit)
-            displayPrice.textContent = '$0.00';
-            priceInput.value = '0';
-            document.querySelector('#price-input-container .label-text').textContent = 'Amount to Charge';
-            document.querySelector('#price-input-container .label-text-alt').textContent = 'Using prepaid billing credit';
-        } else if (option === 'trial') {
-            paymentMethodHidden.value = 'trial';
-            classPassPurchaseId.value = '';
-            // Mark as trial
-            if (trialCheckbox) trialCheckbox.checked = true;
-            // Show trial amount input, hide regular price input
-            priceInputContainer.classList.add('hidden');
-            if (trialAmountContainer) trialAmountContainer.classList.remove('hidden');
-            paymentMethodContainer.classList.remove('hidden');
-            // Show $0 for trial
-            displayPrice.textContent = '$0.00';
-            priceInput.value = '0';
-        } else {
-            // Pay Now (manual)
-            paymentMethodHidden.value = 'manual';
-            classPassPurchaseId.value = '';
-            paymentMethodContainer.classList.remove('hidden');
-            priceInputContainer.classList.remove('hidden');
-            // Restore original price and label
-            displayPrice.textContent = '$' + (originalClassPrice || 0).toFixed(2);
-            priceInput.value = (originalClassPrice || 0).toFixed(2);
-            document.querySelector('#price-input-container .label-text').textContent = 'Amount to Charge';
-            document.querySelector('#price-input-container .label-text-alt').textContent = 'Set by payment option';
-        }
     };
 
     function validateStep1() {
@@ -3078,7 +2871,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (priceInputEl) {
             priceInputEl.value = newPrice.toFixed(2);
         }
-        document.querySelector('#price-input-container .label-text-alt').textContent = 'Personal override applied';
+        // Personal override applied
 
         // Show the price input container if hidden
         document.getElementById('price-input-container').classList.remove('hidden');
@@ -3122,7 +2915,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (priceInputEl) {
             priceInputEl.value = appliedOverridePrice.toFixed(2);
         }
-        document.querySelector('#price-input-container .label-text-alt').textContent = 'Price override applied';
+        // Price override applied
 
         // Show the price input container if hidden
         document.getElementById('price-input-container').classList.remove('hidden');
