@@ -49,7 +49,7 @@ class ClassSessionRequest extends FormRequest
                 'exists:rooms,id',
             ],
             'location_notes' => 'nullable|string|max:2000',
-            'title' => 'nullable|string|max:255',
+            'title' => 'required|string|max:255|unique:class_sessions,title,' . $this->route('class_session')?->id,
             'session_date' => 'required|date',
             'session_time' => 'required|date_format:H:i',
             'duration_minutes' => 'required|integer|min:5|max:480',

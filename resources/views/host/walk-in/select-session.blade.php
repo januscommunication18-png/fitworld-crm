@@ -313,6 +313,14 @@
                         <input type="hidden" id="session-duration" value="60">
                     </div>
 
+                    {{-- Schedule Picker (shown for series class with multiple schedules) --}}
+                    <div class="form-control hidden mb-6" id="schedule-picker">
+                        <label class="label">
+                            <span class="label-text font-medium">Select Schedule</span>
+                        </label>
+                        <div id="schedule-picker-list" class="space-y-2"></div>
+                    </div>
+
                     {{-- Session Selection (shown after date selected) --}}
                     <div class="form-control hidden" id="session-selection">
                         <label class="label">
@@ -798,6 +806,25 @@
                             </div>
                         </div>
                         <div class="p-4">
+                            {{-- Series Class Price Breakdown (shown for series bookings) --}}
+                            <div id="series-price-breakdown" class="hidden mb-4">
+                                <div class="bg-base-200/30 rounded-lg p-4 space-y-2">
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-base-content/60">Base price per session</span>
+                                        <span class="font-medium" id="series-base-price">$0.00</span>
+                                    </div>
+                                    <div class="flex items-center justify-between text-sm">
+                                        <span class="text-base-content/60">Total sessions</span>
+                                        <span class="font-medium" id="series-session-count">0</span>
+                                    </div>
+                                    <div class="divider my-1"></div>
+                                    <div class="flex items-center justify-between font-semibold">
+                                        <span>Total (without discount)</span>
+                                        <span id="series-total-no-discount">$0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             {{-- Registration Fee (shown when billing period selected) --}}
                             <div id="reg-fee-container" class="hidden mb-4">
                                 <label class="flex items-center justify-between gap-3 p-3 border border-base-content/10 rounded-lg cursor-pointer hover:bg-base-200/30 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
@@ -809,6 +836,23 @@
                                         </div>
                                     </div>
                                     <span class="font-bold text-primary" id="reg-fee-amount">$0.00</span>
+                                </label>
+                            </div>
+
+                            {{-- Apply Discount Checkbox (shown for series bookings) --}}
+                            <div id="apply-discount-container" class="hidden mb-4">
+                                <label class="flex items-center justify-between gap-3 p-3 border border-success/20 rounded-lg cursor-pointer hover:bg-success/5 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" id="apply-discount-checkbox" class="checkbox checkbox-success checkbox-sm" onchange="toggleSeriesDiscount()">
+                                        <div>
+                                            <span class="font-medium text-sm">Apply Billing Period Discount</span>
+                                            <span class="text-xs text-base-content/60 block" id="apply-discount-desc">Apply discounted rate for this period</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="font-bold text-success" id="apply-discount-amount">$0.00</span>
+                                        <span class="text-xs text-success block" id="apply-discount-savings">Save $0.00</span>
+                                    </div>
                                 </label>
                             </div>
 
@@ -1239,9 +1283,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let availableQuestionnaires = [];
     let selectedBillingPeriod = null;
 
-    // ========== Billing Period Discount ==========
-    // ========== Billing Period Discount ==========
-    // ========== Booking Type Selection ==========
+    // ========== Booking Type & Schedule Selection ==========
     var selectedBookingType = 'single';
     var selectedPeriodMonths = null;
 
@@ -1251,6 +1293,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var durationSelection = document.getElementById('duration-selection');
         var sessionSelection = document.getElementById('session-selection');
         var periodSelection = document.getElementById('period-selection');
+        var schedulePicker = document.getElementById('schedule-picker');
 
         // Reset session
         selectedSessionId = null;
@@ -1258,7 +1301,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('session-id').value = '';
         document.getElementById('sessions-list').innerHTML = '';
         sessionSelection.classList.add('hidden');
+        schedulePicker.classList.add('hidden');
         selectedPeriodMonths = null;
+        _selectedScheduleParentIds = [];
 
         if (type === 'single' || type === 'trial') {
             periodSelection.classList.add('hidden');
@@ -1310,12 +1355,16 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = html;
     }
 
-    var _periodSessionsData = []; // Store for modal
+    var _allPeriodSessionsData = []; // All sessions for the period
+    var _periodSessionsData = []; // Filtered sessions (for modal and pricing)
+    var _scheduleOptions = [];
+    var _selectedScheduleParentIds = [];
+    var _periodMeta = {};
 
     window.selectPeriod = function(months) {
         selectedPeriodMonths = months;
 
-        // Highlight selected
+        // Highlight selected period
         document.querySelectorAll('.period-option-btn').forEach(function(btn) {
             if (parseInt(btn.dataset.months) === months) {
                 btn.classList.remove('border-base-content/10');
@@ -1326,70 +1375,151 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Reset
         var sessionSelection = document.getElementById('session-selection');
         var sessionsLoading = document.getElementById('sessions-loading');
         var sessionsEmpty = document.getElementById('sessions-empty');
         var sessionsList = document.getElementById('sessions-list');
+        var schedulePicker = document.getElementById('schedule-picker');
 
+        schedulePicker.classList.add('hidden');
         sessionSelection.classList.remove('hidden');
         sessionsLoading.classList.remove('hidden');
         sessionsEmpty.classList.add('hidden');
         sessionsList.innerHTML = '';
+        _selectedScheduleParentIds = [];
 
-        fetch('/walk-in/sessions-range?class_plan_id=' + selectedClassPlanId + '&months=' + months)
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                sessionsLoading.classList.add('hidden');
+        // Fetch both schedules and sessions in parallel
+        Promise.all([
+            fetch('/walk-in/class-schedules?class_plan_id=' + selectedClassPlanId + '&months=' + months).then(function(r) { return r.json(); }),
+            fetch('/walk-in/sessions-range?class_plan_id=' + selectedClassPlanId + '&months=' + months).then(function(r) { return r.json(); })
+        ]).then(function(results) {
+            var scheduleData = results[0];
+            var sessionData = results[1];
+            sessionsLoading.classList.add('hidden');
 
-                if (!data.sessions || data.sessions.length === 0) {
-                    sessionsEmpty.classList.remove('hidden');
-                    _periodSessionsData = [];
-                    selectedSessionId = null;
-                    selectedSessionData = null;
-                    validateStep1();
-                    return;
-                }
+            _scheduleOptions = scheduleData.schedules || [];
+            _allPeriodSessionsData = sessionData.sessions || [];
+            _periodMeta = { total: sessionData.total, period_start: sessionData.period_start, period_end: sessionData.period_end };
 
-                _periodSessionsData = data.sessions;
-
-                // Auto-select the first session to enable Next button
-                var first = data.sessions[0];
-                selectedSessionId = first.id;
-                document.getElementById('session-id').value = first.id;
-
-                var billingDiscounts = first.billing_discounts || {};
-                selectedSessionData = {
-                    title: selectedClassPlanName,
-                    time: first.time,
-                    price: parseFloat(first.price) || 0,
-                    startTime: first.start_time_iso,
-                    endTime: first.end_time_iso,
-                    billingDiscounts: billingDiscounts,
-                    registrationFee: parseFloat(first.registration_fee) || 0,
-                    cancellationFee: parseFloat(first.cancellation_fee) || 0,
-                    graceHours: parseInt(first.cancellation_grace_hours) || 48
-                };
-
-                // Show summary card with session count and view button
-                var durationVal = document.getElementById('session-duration').value || '60';
-                var html = '<div class="flex items-center justify-between p-4 bg-success/5 border border-success/20 rounded-lg">' +
-                    '<div class="flex items-center gap-3">' +
-                    '<div class="flex items-center justify-center size-10 rounded-full bg-success/10">' +
-                    '<span class="icon-[tabler--calendar-check] size-5 text-success"></span></div>' +
-                    '<div>' +
-                    '<div class="font-semibold">' + data.total + ' Available Sessions · ' + durationVal + ' min each</div>' +
-                    '<div class="text-sm text-base-content/60">' + data.period_start + ' to ' + data.period_end + '</div>' +
-                    '</div>' +
-                    '</div>' +
-                    '<button type="button" class="btn btn-ghost btn-sm gap-1" onclick="openPeriodSessionsModal()">' +
-                    '<span class="icon-[tabler--eye] size-4"></span> View All' +
-                    '</button>' +
-                    '</div>';
-
-                sessionsList.innerHTML = html;
+            if (_allPeriodSessionsData.length === 0) {
+                sessionsEmpty.classList.remove('hidden');
+                _periodSessionsData = [];
+                selectedSessionId = null;
+                selectedSessionData = null;
                 validateStep1();
-            })
-            .catch(function() { sessionsLoading.classList.add('hidden'); });
+                return;
+            }
+
+            // If only 1 schedule or no schedules — auto-select all, skip picker
+            if (_scheduleOptions.length <= 1) {
+                _selectedScheduleParentIds = _scheduleOptions.length === 1 ? [_scheduleOptions[0].parent_id] : [];
+                _periodSessionsData = _allPeriodSessionsData;
+                autoSelectFirstSession();
+                showSessionSummary();
+                validateStep1();
+                return;
+            }
+
+            // Multiple schedules — show picker
+            var pickerHtml = '';
+            _scheduleOptions.forEach(function(sched) {
+                var titleLine = sched.title ? '<div class="font-semibold">' + sched.title + '</div>' : '';
+                pickerHtml += '<label class="schedule-card flex items-center gap-3 p-4 rounded-lg border-2 border-base-content/10 cursor-pointer hover:border-primary transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5">' +
+                    '<input type="checkbox" class="checkbox checkbox-primary" data-parent-id="' + sched.parent_id + '" onchange="toggleSchedule(this)">' +
+                    '<div class="flex-1">' +
+                    titleLine +
+                    '<div class="' + (sched.title ? 'text-sm text-base-content/70' : 'font-semibold') + '">' + sched.label + ' · ' + sched.time + '</div>' +
+                    '<div class="text-xs text-base-content/50">' + sched.instructor + (sched.location ? ' · ' + sched.location : '') +
+                    (sched.last_session_date ? ' · Last session: ' + sched.last_session_date : '') + '</div>' +
+                    '</div>' +
+                    '<span class="badge badge-soft badge-primary shrink-0">' + sched.session_count + ' sessions</span>' +
+                    '</label>';
+            });
+
+            document.getElementById('schedule-picker-list').innerHTML = pickerHtml;
+            schedulePicker.classList.remove('hidden');
+            sessionSelection.classList.add('hidden');
+            validateStep1();
+        }).catch(function() { sessionsLoading.classList.add('hidden'); });
+    };
+
+    function autoSelectFirstSession() {
+        if (_periodSessionsData.length === 0) return;
+        var first = _periodSessionsData[0];
+        selectedSessionId = first.id;
+        document.getElementById('session-id').value = first.id;
+
+        var billingDiscounts = first.billing_discounts || {};
+        selectedSessionData = {
+            title: selectedClassPlanName,
+            time: first.time,
+            price: parseFloat(first.price) || 0,
+            startTime: first.start_time_iso,
+            endTime: first.end_time_iso,
+            billingDiscounts: billingDiscounts,
+            registrationFee: parseFloat(first.registration_fee) || 0,
+            cancellationFee: parseFloat(first.cancellation_fee) || 0,
+            graceHours: parseInt(first.cancellation_grace_hours) || 48
+        };
+    }
+
+    function showSessionSummary() {
+        var sessionsList = document.getElementById('sessions-list');
+        var durationVal = document.getElementById('session-duration').value || '60';
+        var html = '<div class="flex items-center justify-between p-4 bg-success/5 border border-success/20 rounded-lg">' +
+            '<div class="flex items-center gap-3">' +
+            '<div class="flex items-center justify-center size-10 rounded-full bg-success/10">' +
+            '<span class="icon-[tabler--calendar-check] size-5 text-success"></span></div>' +
+            '<div>' +
+            '<div class="font-semibold">' + _periodSessionsData.length + ' Available Sessions · ' + durationVal + ' min each</div>' +
+            '<div class="text-sm text-base-content/60">' + (_periodMeta.period_start || '') + ' to ' + (_periodMeta.period_end || '') + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<button type="button" class="btn btn-ghost btn-sm gap-1" onclick="openPeriodSessionsModal()">' +
+            '<span class="icon-[tabler--eye] size-4"></span> View All' +
+            '</button>' +
+            '</div>';
+        sessionsList.innerHTML = html;
+        document.getElementById('session-selection').classList.remove('hidden');
+    }
+
+    window.toggleSchedule = function(checkbox) {
+        var parentId = checkbox.dataset.parentId;
+        // Parse as number if numeric
+        var pid = isNaN(parentId) ? parentId : parseInt(parentId);
+
+        if (checkbox.checked) {
+            if (_selectedScheduleParentIds.indexOf(pid) === -1) _selectedScheduleParentIds.push(pid);
+        } else {
+            _selectedScheduleParentIds = _selectedScheduleParentIds.filter(function(id) { return id !== pid; });
+        }
+
+        applyScheduleFilter();
+    };
+
+    function applyScheduleFilter() {
+        if (_selectedScheduleParentIds.length === 0) {
+            _periodSessionsData = [];
+            selectedSessionId = null;
+            selectedSessionData = null;
+            document.getElementById('session-selection').classList.add('hidden');
+            validateStep1();
+            return;
+        }
+
+        // Filter sessions by selected schedule parent IDs
+        _periodSessionsData = _allPeriodSessionsData.filter(function(session) {
+            var pid = session.recurrence_parent_id;
+            if (pid === null || pid === undefined) {
+                return _selectedScheduleParentIds.indexOf('oneoff') !== -1;
+            }
+            return _selectedScheduleParentIds.indexOf(pid) !== -1;
+        });
+
+        autoSelectFirstSession();
+        showSessionSummary();
+        validateStep1();
     };
 
     window.openPeriodSessionsModal = function() {
@@ -1400,26 +1530,54 @@ document.addEventListener('DOMContentLoaded', function() {
         title.textContent = _periodSessionsData.length + ' Sessions — ' + selectedPeriodMonths + ' Month' + (selectedPeriodMonths > 1 ? 's' : '');
 
         var html = '';
-        _periodSessionsData.forEach(function(session, idx) {
-            html += '<div class="flex items-center justify-between p-3 ' + (idx % 2 === 0 ? 'bg-base-200/30' : '') + ' rounded-lg">' +
-                '<div class="flex items-center gap-3">' +
-                '<div class="text-center shrink-0 w-14">' +
-                '<div class="text-xs text-base-content/50">' + session.date.split(',')[0] + '</div>' +
-                '<div class="font-bold text-sm">' + session.date.split(', ')[1] + '</div>' +
-                '</div>' +
-                '<div>' +
-                '<div class="font-medium text-sm">' + session.time + '</div>' +
-                '<div class="text-xs text-base-content/60">' + session.instructor + (session.location ? ' · ' + session.location : '') + '</div>' +
-                '</div>' +
-                '</div>' +
-                '<span class="badge badge-sm ' + (session.spots_remaining > 0 ? 'badge-success' : 'badge-error') + ' badge-soft shrink-0">' + session.spots_remaining + ' spots</span>' +
-                '</div>';
-        });
+
+        // Group by schedule if multiple selected
+        if (_selectedScheduleParentIds.length > 1) {
+            _scheduleOptions.forEach(function(sched) {
+                var pid = sched.parent_id;
+                if (_selectedScheduleParentIds.indexOf(pid) === -1 && _selectedScheduleParentIds.indexOf(parseInt(pid)) === -1) return;
+
+                var groupSessions = _periodSessionsData.filter(function(s) {
+                    var spid = s.recurrence_parent_id;
+                    return spid == pid || (pid === 'oneoff' && !spid);
+                });
+                if (groupSessions.length === 0) return;
+
+                html += '<div class="font-semibold text-sm text-primary flex items-center gap-2 mt-3 mb-2">' +
+                    '<span class="icon-[tabler--calendar-repeat] size-4"></span>' +
+                    sched.label + ' · ' + sched.time +
+                    '<span class="badge badge-sm badge-soft badge-primary">' + groupSessions.length + '</span></div>';
+
+                groupSessions.forEach(function(session, idx) {
+                    html += renderSessionRow(session, idx);
+                });
+            });
+        } else {
+            _periodSessionsData.forEach(function(session, idx) {
+                html += renderSessionRow(session, idx);
+            });
+        }
 
         container.innerHTML = html;
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
     };
+
+    function renderSessionRow(session, idx) {
+        return '<div class="flex items-center justify-between p-3 ' + (idx % 2 === 0 ? 'bg-base-200/30' : '') + ' rounded-lg">' +
+            '<div class="flex items-center gap-3">' +
+            '<div class="text-center shrink-0 w-14">' +
+            '<div class="text-xs text-base-content/50">' + (session.date ? session.date.split(',')[0] : '') + '</div>' +
+            '<div class="font-bold text-sm">' + (session.date ? (session.date.split(', ')[1] || session.date) : '') + '</div>' +
+            '</div>' +
+            '<div>' +
+            '<div class="font-medium text-sm">' + session.time + '</div>' +
+            '<div class="text-xs text-base-content/60">' + session.instructor + (session.location ? ' · ' + session.location : '') + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<span class="badge badge-sm ' + (session.spots_remaining > 0 ? 'badge-success' : 'badge-error') + ' badge-soft shrink-0">' + session.spots_remaining + ' spots</span>' +
+            '</div>';
+    }
 
     window.closePeriodSessionsModal = function() {
         document.getElementById('period-sessions-modal').classList.add('hidden');
@@ -1550,13 +1708,50 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('discount-badge-text').textContent = months + 'mo prepaid';
     };
 
+    var _seriesDiscountedTotal = 0;
+    var _seriesTotalNoDiscount = 0;
+
     window.toggleRegFee = function() {
-        var checked = document.getElementById('reg-fee-checkbox').checked;
-        document.getElementById('include_reg_fee_hidden').value = checked ? '1' : '0';
-        var total = _billingCreditAmount + (checked ? _billingRegFee : 0);
-        document.getElementById('display-price').textContent = '$' + total.toFixed(2);
-        var priceInput = document.getElementById('price-input');
-        if (priceInput) priceInput.value = total.toFixed(2);
+        document.getElementById('include_reg_fee_hidden').value = document.getElementById('reg-fee-checkbox').checked ? '1' : '0';
+        recalcSeriesTotal();
+    };
+
+    window.toggleSeriesDiscount = function() {
+        var checked = document.getElementById('apply-discount-checkbox').checked;
+        if (checked && _seriesDiscountedTotal > 0) {
+            // Apply discount — set billing period hidden fields
+            document.getElementById('billing_period_hidden').value = selectedPeriodMonths;
+            document.getElementById('billing_discount_percent_hidden').value = _seriesDiscountedTotal;
+        } else {
+            // Remove discount
+            document.getElementById('billing_period_hidden').value = '';
+            document.getElementById('billing_discount_percent_hidden').value = '0';
+        }
+        recalcSeriesTotal();
+    };
+
+    function recalcSeriesTotal() {
+        if (selectedBookingType !== 'period') return;
+
+        var useDiscount = document.getElementById('apply-discount-checkbox').checked;
+        var includeRegFee = document.getElementById('reg-fee-checkbox').checked;
+        var baseTotal = useDiscount ? _seriesDiscountedTotal : _seriesTotalNoDiscount;
+        var regFee = includeRegFee ? _billingRegFee : 0;
+        var finalTotal = baseTotal + regFee;
+
+        document.getElementById('display-price').textContent = '$' + finalTotal.toFixed(2);
+        document.getElementById('price-input').value = finalTotal.toFixed(2);
+
+        // Show/hide original price strikethrough
+        if (useDiscount && _seriesTotalNoDiscount > _seriesDiscountedTotal) {
+            document.getElementById('original-price-display').textContent = '$' + _seriesTotalNoDiscount.toFixed(2);
+            document.getElementById('original-price-display').classList.remove('hidden');
+            document.getElementById('discount-badge').classList.remove('hidden');
+            document.getElementById('discount-badge-text').textContent = selectedPeriodMonths + 'mo discount applied';
+        } else {
+            document.getElementById('original-price-display').classList.add('hidden');
+            document.getElementById('discount-badge').classList.add('hidden');
+        }
     };
 
     window.removeBillingDiscount = function() {
@@ -3098,7 +3293,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update summary
         document.getElementById('summary-client').textContent = selectedClientName;
         document.getElementById('summary-class').textContent = selectedClassPlanName;
-        document.getElementById('summary-datetime').textContent = datePicker.altInput.value + ' at ' + selectedSessionData.time;
+        if (selectedBookingType === 'period' && selectedPeriodMonths) {
+            document.getElementById('summary-datetime').textContent = _periodSessionsData.length + ' sessions · ' + selectedPeriodMonths + ' month' + (selectedPeriodMonths > 1 ? 's' : '');
+        } else {
+            document.getElementById('summary-datetime').textContent = datePicker.altInput.value + ' at ' + selectedSessionData.time;
+        }
 
         // Set price and store original
         const price = selectedSessionData.price;
@@ -3108,6 +3307,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset billing discount when entering booking panel
         removeBillingDiscount();
+
+        // Reset series-specific UI
+        document.getElementById('series-price-breakdown').classList.add('hidden');
+        document.getElementById('apply-discount-container').classList.add('hidden');
+        document.getElementById('apply-discount-checkbox').checked = false;
 
         // Reset promo code when session changes
         if (appliedOfferId) {
@@ -3119,14 +3323,51 @@ document.addEventListener('DOMContentLoaded', function() {
 
         goToStep(2);
 
-        // If "Series Class" was selected, auto-apply the billing period silently (no accordion shown)
-        if (selectedBookingType === 'period' && selectedPeriodMonths && selectedSessionData && selectedSessionData.billingDiscounts) {
+        // If "Series Class" was selected — show breakdown, reg fee, discount checkbox
+        if (selectedBookingType === 'period' && selectedPeriodMonths && selectedSessionData) {
             document.getElementById('billing-discount-section').classList.add('hidden');
-            var discounts = selectedSessionData.billingDiscounts;
-            var totalAmount = parseFloat(discounts[selectedPeriodMonths]) || 0;
-            if (totalAmount > 0) {
-                setTimeout(function() { selectBillingPeriod(selectedPeriodMonths, totalAmount); }, 100);
+
+            var sessionCount = _periodSessionsData.length;
+            var basePerSession = selectedSessionData.price;
+            var totalNoDiscount = basePerSession * sessionCount;
+            var regFee = selectedSessionData.registrationFee || 0;
+            var discounts = selectedSessionData.billingDiscounts || {};
+            var discountedTotal = parseFloat(discounts[selectedPeriodMonths]) || 0;
+            var savings = totalNoDiscount - discountedTotal;
+
+            // Show price breakdown
+            document.getElementById('series-base-price').textContent = '$' + basePerSession.toFixed(2);
+            document.getElementById('series-session-count').textContent = sessionCount + ' sessions (' + selectedPeriodMonths + ' month' + (selectedPeriodMonths > 1 ? 's' : '') + ')';
+            document.getElementById('series-total-no-discount').textContent = '$' + totalNoDiscount.toFixed(2);
+            document.getElementById('series-price-breakdown').classList.remove('hidden');
+
+            // Set display price to total without discount
+            document.getElementById('display-price').textContent = '$' + totalNoDiscount.toFixed(2);
+            document.getElementById('price-input').value = totalNoDiscount.toFixed(2);
+
+            // Show registration fee
+            if (regFee > 0) {
+                document.getElementById('reg-fee-amount').textContent = '$' + regFee.toFixed(2);
+                document.getElementById('reg-fee-checkbox').checked = true;
+                document.getElementById('include_reg_fee_hidden').value = '1';
+                document.getElementById('reg-fee-container').classList.remove('hidden');
+                _billingRegFee = regFee;
             }
+
+            // Show apply discount checkbox (only if discount exists and is less than full price)
+            if (discountedTotal > 0) {
+                document.getElementById('apply-discount-amount').textContent = '$' + discountedTotal.toFixed(2);
+                document.getElementById('apply-discount-savings').textContent = 'Save $' + savings.toFixed(2);
+                document.getElementById('apply-discount-desc').textContent = selectedPeriodMonths + ' month' + (selectedPeriodMonths > 1 ? 's' : '') + ' discounted rate';
+                document.getElementById('apply-discount-container').classList.remove('hidden');
+            }
+
+            // Store for toggles
+            _billingCreditAmount = totalNoDiscount;
+            _seriesDiscountedTotal = discountedTotal;
+            _seriesTotalNoDiscount = totalNoDiscount;
+
+            recalcSeriesTotal();
         }
 
         // If "Trial Class" was selected, set price to $0 and hide billing discount

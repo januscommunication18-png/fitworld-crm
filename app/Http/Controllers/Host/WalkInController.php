@@ -198,7 +198,7 @@ class WalkInController extends Controller
             ->where('class_plan_id', $classPlanId)
             ->where('status', ClassSession::STATUS_PUBLISHED)
             ->whereBetween('start_time', [$startDate, $endDate])
-            ->select(['id', 'class_plan_id', 'primary_instructor_id', 'location_id', 'title', 'start_time', 'end_time', 'capacity', 'price'])
+            ->select(['id', 'class_plan_id', 'primary_instructor_id', 'location_id', 'title', 'start_time', 'end_time', 'capacity', 'price', 'recurrence_parent_id'])
             ->with([
                 'classPlan:id,name,color,default_price,billing_discounts,registration_fee,cancellation_fee,cancellation_grace_hours',
                 'primaryInstructor:id,name',
@@ -228,6 +228,7 @@ class WalkInController extends Controller
                     'registration_fee' => (float) ($session->classPlan?->registration_fee ?? 0),
                     'cancellation_fee' => (float) ($session->classPlan?->cancellation_fee ?? 0),
                     'cancellation_grace_hours' => $session->classPlan?->cancellation_grace_hours ?? 48,
+                    'recurrence_parent_id' => $session->recurrence_parent_id,
                 ];
             });
 
@@ -237,6 +238,87 @@ class WalkInController extends Controller
             'period_start' => $startDate->format('M d, Y'),
             'period_end' => $endDate->format('M d, Y'),
         ]);
+    }
+
+    /**
+     * Get schedule options for a class plan (for series booking schedule picker)
+     */
+    public function getClassSchedules(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $classPlanId = $request->get('class_plan_id');
+        $months = (int) $request->get('months', 1);
+
+        if (!$classPlanId) {
+            return response()->json(['schedules' => []]);
+        }
+
+        $startDate = now();
+        $endDate = now()->addMonths($months);
+
+        // Fetch all published sessions in range
+        $sessions = ClassSession::where('host_id', $host->id)
+            ->where('class_plan_id', $classPlanId)
+            ->where('status', ClassSession::STATUS_PUBLISHED)
+            ->whereBetween('start_time', [$startDate, $endDate])
+            ->select(['id', 'recurrence_parent_id', 'recurrence_rule', 'primary_instructor_id', 'location_id', 'title', 'start_time', 'end_time'])
+            ->with(['primaryInstructor:id,name', 'location:id,name'])
+            ->orderBy('start_time')
+            ->get();
+
+        // Group by recurrence_parent_id
+        $grouped = $sessions->groupBy(function ($session) {
+            return $session->recurrence_parent_id ?? ($session->recurrence_rule ? $session->id : 'oneoff');
+        });
+
+        // Load parent sessions for groups
+        $parentIds = $grouped->keys()->filter(fn($k) => is_numeric($k))->values()->toArray();
+        $parents = ClassSession::whereIn('id', $parentIds)
+            ->select(['id', 'recurrence_rule', 'primary_instructor_id', 'location_id', 'title', 'start_time', 'end_time'])
+            ->with(['primaryInstructor:id,name', 'location:id,name'])
+            ->get()
+            ->keyBy('id');
+
+        $dayNames = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
+
+        $schedules = [];
+        foreach ($grouped as $key => $groupSessions) {
+            if ($groupSessions->isEmpty()) continue;
+
+            $first = $groupSessions->first();
+            $parent = is_numeric($key) ? ($parents->get($key) ?? $first) : $first;
+
+            // Build day label from recurrence_rule
+            $label = 'One-off Sessions';
+            if ($key !== 'oneoff' && $parent->recurrence_rule) {
+                $recurrenceService = app(\App\Services\Schedule\RecurrenceService::class);
+                $parsed = $recurrenceService->parseRecurrenceRule($parent->recurrence_rule);
+                if (!empty($parsed['days_of_week'])) {
+                    $label = collect($parsed['days_of_week'])
+                        ->map(fn($d) => $dayNames[(int) $d] ?? $d)
+                        ->implode(', ');
+                }
+            } elseif ($key !== 'oneoff') {
+                // Parent session without rule — use day of week
+                $label = $parent->start_time->format('l');
+            }
+
+            $lastSession = $groupSessions->last();
+
+            $schedules[] = [
+                'parent_id' => $key,
+                'title' => $parent->title ?? null,
+                'label' => $label,
+                'time' => $parent->start_time->format('g:i A') . ' - ' . $parent->end_time->format('g:i A'),
+                'instructor' => $parent->primaryInstructor?->name ?? 'TBD',
+                'location' => $parent->location?->name ?? null,
+                'last_session_date' => $lastSession?->start_time->format('M d, Y') ?? null,
+                'session_count' => $groupSessions->count(),
+                'session_ids' => $groupSessions->pluck('id')->toArray(),
+            ];
+        }
+
+        return response()->json(['schedules' => $schedules]);
     }
 
     /**

@@ -101,11 +101,11 @@
                 </div>
 
                 <div>
-                    <label class="label-text" for="title">Custom Title (optional)</label>
+                    <label class="label-text" for="title">Custom Name <span class="text-error">*</span></label>
                     <input type="text" id="title" name="title"
                         value="{{ old('title', $classSession?->title) }}"
                         class="input w-full @error('title') input-error @enderror"
-                        placeholder="Leave empty to use class plan name">
+                        placeholder="Enter a unique session name" required>
                     @error('title')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror

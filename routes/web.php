@@ -504,6 +504,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');
     Route::get('/walk-in/sessions', [WalkInController::class, 'getSessionsByDate'])->name('walk-in.sessions');
     Route::get('/walk-in/sessions-range', [WalkInController::class, 'getSessionsByDateRange'])->name('walk-in.sessions-range');
+    Route::get('/walk-in/class-schedules', [WalkInController::class, 'getClassSchedules'])->name('walk-in.class-schedules');
     Route::get('/walk-in/class/{class_session}', [WalkInController::class, 'classSession'])->name('walk-in.class');
     Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
     Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');
