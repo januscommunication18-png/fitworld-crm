@@ -42,7 +42,10 @@ class ClassPlanRequest extends FormRequest
             'staff_member_ids' => ['nullable', 'array'],
             'staff_member_ids.*' => ['exists:users,id'],
             'billing_discounts' => ['nullable', 'array'],
-            'billing_discounts.*' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'billing_discounts.*' => ['nullable', 'numeric', 'min:0'],
+            'registration_fee' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'cancellation_fee' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'cancellation_grace_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
         ];
     }
 

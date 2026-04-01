@@ -503,11 +503,14 @@ Route::middleware('auth')->group(function () {
     // Walk-In Booking
     Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');
     Route::get('/walk-in/sessions', [WalkInController::class, 'getSessionsByDate'])->name('walk-in.sessions');
+    Route::get('/walk-in/sessions-range', [WalkInController::class, 'getSessionsByDateRange'])->name('walk-in.sessions-range');
     Route::get('/walk-in/class/{class_session}', [WalkInController::class, 'classSession'])->name('walk-in.class');
     Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
     Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');
     Route::post('/walk-in/service/{service_slot}', [WalkInController::class, 'bookService'])->name('walk-in.service.book');
     Route::get('/walk-in/payment-methods/{client_id}', [WalkInController::class, 'getPaymentMethods'])->name('walk-in.payment-methods');
+    Route::get('/billing-credits/{billingCredit}/cancel-preview', [\App\Http\Controllers\Host\BillingCreditController::class, 'cancelPreview'])->name('billing-credits.cancel-preview');
+    Route::post('/billing-credits/{billingCredit}/cancel', [\App\Http\Controllers\Host\BillingCreditController::class, 'cancel'])->name('billing-credits.cancel');
     Route::post('/walk-in/clients/quick-add', [WalkInController::class, 'quickAddClient'])->name('walk-in.clients.quick-add');
     Route::get('/walk-in/clients/search', [WalkInController::class, 'searchClients'])->name('walk-in.clients.search');
     Route::post('/walk-in/sessions/quick-create', [WalkInController::class, 'quickCreateSession'])->name('walk-in.sessions.quick-create');

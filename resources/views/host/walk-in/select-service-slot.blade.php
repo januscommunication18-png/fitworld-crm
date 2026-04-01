@@ -492,34 +492,77 @@
                 </div>
                 @endif
 
-                {{-- Price Input --}}
-                @php
-                    $priceEditable = ($canOverridePrice ?? false) || (!($canOverridePrice ?? false) && !($canRequestOverride ?? false));
-                @endphp
-                <div class="form-control mb-4" id="price-input-container">
-                    <label class="label" for="price-input">
-                        <span class="label-text font-medium">Amount to Charge</span>
-                        @if($priceEditable)
-                        <span class="label-text-alt text-success flex items-center gap-1">
-                            <span class="icon-[tabler--pencil] size-3"></span>
-                            Editable
-                        </span>
-                        @endif
-                    </label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">$</span>
-                        <input type="number"
-                               id="price-input"
-                               name="price_paid"
-                               step="0.01"
-                               min="0"
-                               class="input input-bordered w-full pl-8"
-                               value="0">
+                {{-- Service Price (read-only display) --}}
+                <div class="flex items-center justify-between p-3 bg-base-200/30 rounded-lg mb-4">
+                    <span class="text-sm text-base-content/60">Service Price</span>
+                    <span class="font-bold text-lg" id="svc-base-price-display">$0.00</span>
+                </div>
+
+                {{-- Payment Option (AJAX loaded) --}}
+                <div class="border border-base-200 rounded-lg mb-4">
+                    <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
+                        <div class="flex items-center gap-2 font-medium">
+                            <span class="icon-[tabler--credit-card] size-5 text-primary"></span>
+                            <span>Payment Option</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div id="svc-payment-options-loading" class="hidden py-4 text-center">
+                            <span class="loading loading-spinner loading-sm"></span>
+                            <span class="text-sm text-base-content/60 ml-2">Loading payment options...</span>
+                        </div>
+                        <div id="svc-payment-options-list" class="space-y-2">
+                            {{-- Loaded via AJAX --}}
+                        </div>
                     </div>
                 </div>
 
-                {{-- Payment Method --}}
-                <div class="form-control mb-6" id="payment-method-container">
+                {{-- Billing Period Discount (collapsible) --}}
+                <div id="svc-billing-discount-section" class="hidden mb-4">
+                    <details class="group border border-base-200 rounded-lg">
+                        <summary class="flex items-center justify-between px-4 py-3 bg-base-200/30 rounded-lg cursor-pointer hover:bg-base-200/50 transition-colors list-none">
+                            <div class="flex items-center gap-2 font-medium">
+                                <span class="icon-[tabler--calendar-dollar] size-5 text-success"></span>
+                                <span>Billing Period Discount</span>
+                                <span class="text-xs text-base-content/50 font-normal">(optional)</span>
+                            </div>
+                            <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform duration-200 group-open:rotate-180"></span>
+                        </summary>
+                        <div class="p-4 border-t border-base-200">
+                            <div id="svc-applied-billing-discount" class="hidden mb-3">
+                                <div class="alert bg-success/10 border-success/20">
+                                    <span class="icon-[tabler--calendar-check] size-5 text-success"></span>
+                                    <div class="flex-1">
+                                        <span class="font-semibold text-success" id="svc-applied-billing-label"></span>
+                                        <p class="text-sm text-success/80" id="svc-applied-billing-savings"></p>
+                                    </div>
+                                    <button type="button" onclick="removeSvcBillingDiscount()" class="btn btn-ghost btn-xs btn-circle">
+                                        <span class="icon-[tabler--x] size-4"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-sm text-base-content/60 mb-3">Client pays upfront for a billing period. Credit applies to future bookings.</p>
+                            <div id="svc-billing-discount-options" class="grid grid-cols-2 sm:grid-cols-5 gap-2"></div>
+                        </div>
+                    </details>
+                </div>
+
+                {{-- Registration Fee (shown when billing period selected) --}}
+                <div id="svc-reg-fee-container" class="hidden mb-4">
+                    <label class="flex items-center justify-between gap-3 p-3 border border-base-content/10 rounded-lg cursor-pointer hover:bg-base-200/30 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="svc-reg-fee-checkbox" class="checkbox checkbox-primary checkbox-sm" checked onchange="toggleSvcRegFee()">
+                            <div>
+                                <span class="font-medium text-sm">Include Registration Fee</span>
+                                <span class="text-xs text-base-content/60 block">One-time fee for billing period signup</span>
+                            </div>
+                        </div>
+                        <span class="font-bold text-primary" id="svc-reg-fee-amount">$0.00</span>
+                    </label>
+                </div>
+
+                {{-- Payment Method (shown for manual pay) --}}
+                <div class="form-control mb-4" id="payment-method-container">
                     <label class="label">
                         <span class="label-text font-medium">Payment Method</span>
                     </label>
@@ -547,6 +590,24 @@
                     </div>
                 </div>
 
+                {{-- Amount to Charge --}}
+                <div class="form-control mb-4" id="price-input-container">
+                    <label class="label" for="price-input">
+                        <span class="label-text font-medium">Amount to Charge</span>
+                        <span class="label-text-alt text-base-content/50" id="price-input-hint">Set by payment option</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50 font-medium">$</span>
+                        <input type="number"
+                               id="price-input"
+                               name="price_paid"
+                               step="0.01"
+                               min="0"
+                               class="input input-bordered w-full pl-8"
+                               value="0">
+                    </div>
+                </div>
+
                 {{-- Notes --}}
                 <div class="form-control mb-6">
                     <label class="label" for="notes">
@@ -566,7 +627,11 @@
                     </label>
                 </div>
 
-                <input type="hidden" name="payment_method" value="manual">
+                <input type="hidden" name="payment_method" id="svc-payment-method-hidden" value="manual">
+                <input type="hidden" name="billing_period" id="svc-billing-period" value="">
+                <input type="hidden" name="billing_discount_percent" id="svc-billing-discount-percent" value="0">
+                <input type="hidden" name="billing_credit_id" id="svc-billing-credit-id" value="">
+                <input type="hidden" name="include_registration_fee" id="svc-include-reg-fee" value="1">
 
                 <div class="flex justify-between mt-6">
                     <button type="button" class="btn btn-ghost" id="step2-back">
@@ -1051,6 +1116,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                data-price="${slot.price || 0}"
                                data-start="${slot.start_time_iso}"
                                data-end="${slot.end_time_iso}"
+                               data-billing-discounts='${JSON.stringify(slot.billing_discounts || {})}'
+                               data-service-plan-id="${slot.service_plan_id || ''}"
+                               data-registration-fee="${slot.registration_fee || 0}"
+                               data-cancellation-fee="${slot.cancellation_fee || 0}"
+                               data-grace-hours="${slot.cancellation_grace_hours || 48}"
                                onchange="selectSlot(this)">
                         <div class="flex-1">
                             <div class="font-semibold">${slot.time}</div>
@@ -1097,17 +1167,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.selectSlot = function(radio) {
         selectedSlotId = radio.value;
+        var billingDiscounts = {};
+        try { billingDiscounts = JSON.parse(radio.dataset.billingDiscounts || '{}'); } catch(e) {}
+
         selectedSlotData = {
             service: radio.dataset.service,
             time: radio.dataset.time,
             instructor: radio.dataset.instructor,
             price: parseFloat(radio.dataset.price) || 0,
             startTime: radio.dataset.start,
-            endTime: radio.dataset.end
+            endTime: radio.dataset.end,
+            billingDiscounts: billingDiscounts,
+            servicePlanId: radio.dataset.servicePlanId || '',
+            registrationFee: parseFloat(radio.dataset.registrationFee) || 0,
+            cancellationFee: parseFloat(radio.dataset.cancellationFee) || 0,
+            graceHours: parseInt(radio.dataset.graceHours) || 48
         };
         document.getElementById('slot-id').value = selectedSlotId;
 
         updateCheckInVisibility();
+        updateSvcBillingDiscountSection();
         validateStep1();
     };
 
@@ -1229,6 +1308,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const price = selectedSlotData.price;
         document.getElementById('display-price').textContent = '$' + price.toFixed(2);
         document.getElementById('price-input').value = price.toFixed(2);
+        document.getElementById('svc-base-price-display').textContent = '$' + price.toFixed(2);
+
+        // Reset billing discount and load payment options for this client
+        removeSvcBillingDiscount();
+        loadSvcPaymentOptions(clientIdValue);
 
         document.getElementById('booking-form').action = `/walk-in/service/${selectedSlotId}`;
         console.log('Form action set to:', document.getElementById('booking-form').action);
@@ -1913,6 +1997,229 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('override_code_input')?.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') { e.preventDefault(); verifyOverrideCode(); }
     });
+
+    // ========== Service Billing Period Discount ==========
+    let selectedSvcBillingPeriod = null;
+
+    window.updateSvcBillingDiscountSection = function() {
+        var section = document.getElementById('svc-billing-discount-section');
+        var optionsContainer = document.getElementById('svc-billing-discount-options');
+        removeSvcBillingDiscount();
+
+        if (!selectedSlotData || !selectedSlotData.billingDiscounts) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        var discounts = selectedSlotData.billingDiscounts;
+        var hasDiscounts = false;
+        var basePrice = selectedSlotData.price;
+        var periods = { '1': '1 Month', '3': '3 Months', '6': '6 Months', '9': '9 Months', '12': '12 Months' };
+        var html = '';
+
+        Object.keys(periods).forEach(function(months) {
+            var m = parseInt(months);
+            var totalAmount = parseFloat(discounts[months]) || 0;
+            var isDiscounted = totalAmount > 0;
+            if (isDiscounted) hasDiscounts = true;
+            var monthlyRate = m > 0 ? (totalAmount / m) : 0;
+            var totalWithout = basePrice * m;
+
+            html += '<button type="button" class="svc-billing-btn flex flex-col items-center p-3 rounded-lg border-2 transition-all ' +
+                (isDiscounted ? 'border-base-content/10 hover:border-success cursor-pointer' : 'border-base-content/5 opacity-50 cursor-default') + '" ' +
+                'data-months="' + months + '" data-total="' + totalAmount + '" ' +
+                (isDiscounted ? 'onclick="selectSvcBillingPeriod(' + months + ', ' + totalAmount + ')"' : '') + '>' +
+                '<div class="text-xs text-base-content/60 font-medium">' + periods[months] + '</div>' +
+                '<div class="text-lg font-bold ' + (isDiscounted ? 'text-success' : 'text-base-content/40') + '">$' + (isDiscounted ? totalAmount.toFixed(2) : totalWithout.toFixed(2)) + '</div>';
+            if (isDiscounted) {
+                html += '<div class="text-[10px] text-base-content/50">$' + monthlyRate.toFixed(2) + '/mo</div>';
+                if (totalWithout > totalAmount) {
+                    html += '<div class="text-xs text-success mt-0.5">Save $' + (totalWithout - totalAmount).toFixed(2) + '</div>';
+                }
+            }
+            html += '</button>';
+        });
+
+        optionsContainer.innerHTML = html;
+        section.classList.toggle('hidden', !hasDiscounts);
+    };
+
+    var _svcBillingCreditAmount = 0;
+    var _svcBillingRegFee = 0;
+
+    window.selectSvcBillingPeriod = function(months, totalAmount) {
+        selectedSvcBillingPeriod = months;
+        var basePrice = selectedSlotData.price;
+        var regFee = selectedSlotData.registrationFee || 0;
+        var cancelFee = selectedSlotData.cancellationFee || 0;
+        var graceHrs = selectedSlotData.graceHours || 48;
+        var monthlyRate = months > 0 ? (totalAmount / months) : 0;
+        _svcBillingCreditAmount = totalAmount;
+        _svcBillingRegFee = regFee;
+        var includeRegFee = regFee > 0;
+        var totalDueToday = totalAmount + (includeRegFee ? regFee : 0);
+        var totalWithout = basePrice * months;
+        var totalSavings = totalWithout - totalAmount;
+        var periods = { 1: '1 Month', 3: '3 Months', 6: '6 Months', 9: '9 Months', 12: '12 Months' };
+
+        document.getElementById('svc-billing-period').value = months;
+        document.getElementById('svc-billing-discount-percent').value = totalAmount;
+
+        document.querySelectorAll('.svc-billing-btn').forEach(function(btn) {
+            if (parseInt(btn.dataset.months) === months) {
+                btn.classList.remove('border-base-content/10');
+                btn.classList.add('border-success', 'bg-success/5');
+            } else {
+                btn.classList.remove('border-success', 'bg-success/5');
+                var t = parseFloat(btn.dataset.total) || 0;
+                if (t > 0) btn.classList.add('border-base-content/10');
+            }
+        });
+
+        // Show registration fee checkbox
+        var regFeeContainer = document.getElementById('svc-reg-fee-container');
+        if (regFee > 0) {
+            document.getElementById('svc-reg-fee-amount').textContent = '$' + regFee.toFixed(2);
+            document.getElementById('svc-reg-fee-checkbox').checked = true;
+            document.getElementById('svc-include-reg-fee').value = '1';
+            regFeeContainer.classList.remove('hidden');
+        } else {
+            regFeeContainer.classList.add('hidden');
+        }
+
+        var label = periods[months] + ' — $' + totalAmount.toFixed(2) + ' total ($' + monthlyRate.toFixed(2) + '/mo)';
+        var details = 'Prepaid credit: $' + totalAmount.toFixed(2) + ' for ' + months + ' month' + (months > 1 ? 's' : '') + '.';
+        if (totalSavings > 0) details += ' Save $' + totalSavings.toFixed(2) + ' vs regular $' + totalWithout.toFixed(2) + '.';
+
+        var policyNote = '';
+        if (cancelFee > 0) policyNote += 'Early cancellation fee: $' + cancelFee.toFixed(2) + '. ';
+        policyNote += graceHrs + 'hr grace period for full refund.';
+
+        document.getElementById('svc-applied-billing-label').textContent = label;
+        document.getElementById('svc-applied-billing-savings').innerHTML = details + '<br><span class="text-xs text-base-content/50">' + policyNote + '</span>';
+        document.getElementById('svc-applied-billing-discount').classList.remove('hidden');
+
+        document.getElementById('display-price').textContent = '$' + totalDueToday.toFixed(2);
+        document.getElementById('price-input').value = totalDueToday.toFixed(2);
+    };
+
+    window.toggleSvcRegFee = function() {
+        var checked = document.getElementById('svc-reg-fee-checkbox').checked;
+        document.getElementById('svc-include-reg-fee').value = checked ? '1' : '0';
+        var total = _svcBillingCreditAmount + (checked ? _svcBillingRegFee : 0);
+        document.getElementById('display-price').textContent = '$' + total.toFixed(2);
+        document.getElementById('price-input').value = total.toFixed(2);
+    };
+
+    window.removeSvcBillingDiscount = function() {
+        selectedSvcBillingPeriod = null;
+        _svcBillingCreditAmount = 0;
+        _svcBillingRegFee = 0;
+        document.getElementById('svc-billing-period').value = '';
+        document.getElementById('svc-billing-discount-percent').value = '0';
+        document.getElementById('svc-applied-billing-discount').classList.add('hidden');
+        document.getElementById('svc-reg-fee-container').classList.add('hidden');
+
+        document.querySelectorAll('.svc-billing-btn').forEach(function(btn) {
+            btn.classList.remove('border-success', 'bg-success/5');
+            var t = parseFloat(btn.dataset.total) || 0;
+            if (t > 0) btn.classList.add('border-base-content/10');
+        });
+
+        if (selectedSlotData) {
+            document.getElementById('display-price').textContent = '$' + selectedSlotData.price.toFixed(2);
+            document.getElementById('price-input').value = selectedSlotData.price.toFixed(2);
+        }
+    };
+
+    // ========== Payment Options for Services ==========
+    window.loadSvcPaymentOptions = function(clientId) {
+        var list = document.getElementById('svc-payment-options-list');
+        var loading = document.getElementById('svc-payment-options-loading');
+        list.innerHTML = '';
+        document.getElementById('svc-payment-method-hidden').value = 'manual';
+        document.getElementById('svc-billing-credit-id').value = '';
+
+        if (!clientId) return;
+
+        loading.classList.remove('hidden');
+
+        fetch('/walk-in/payment-methods/' + clientId + '?source_type=service_plan')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var html = '';
+
+                // Billing credits
+                if (data.billing_credits && data.billing_credits.length > 0) {
+                    data.billing_credits.forEach(function(credit) {
+                        html += '<label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">' +
+                            '<input type="radio" name="svc_payment_type" value="billing_credit_' + credit.id + '" class="radio radio-success mt-0.5" onchange="selectSvcPaymentOption(\'billing_credit\', ' + credit.id + ')">' +
+                            '<div class="flex-1">' +
+                            '<div class="font-medium flex items-center gap-2">' +
+                            '<span class="icon-[tabler--calendar-dollar] size-5 text-success"></span> Use Billing Credit' +
+                            '<span class="badge badge-success badge-sm">Prepaid</span></div>' +
+                            '<div class="text-sm text-base-content/60 mt-1">' + credit.source_name + ' — $' + credit.credit_remaining.toFixed(2) + ' remaining</div>' +
+                            '<div class="text-xs text-base-content/50 mt-0.5">' + credit.billing_period + 'mo prepaid · Valid until ' + credit.end_date + '</div>' +
+                            '</div></label>';
+                    });
+                }
+
+                // Pay Now (default)
+                html += '<label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">' +
+                    '<input type="radio" name="svc_payment_type" value="manual" class="radio radio-primary mt-0.5" onchange="selectSvcPaymentOption(\'manual\')" checked>' +
+                    '<div class="flex-1"><div class="font-medium flex items-center gap-2">' +
+                    '<span class="icon-[tabler--cash] size-5 text-primary"></span> Pay Now</div>' +
+                    '<div class="text-sm text-base-content/60 mt-1">Cash, card, or other payment</div></div></label>';
+
+                // Comp (if allowed)
+                if (data.comp) {
+                    html += '<label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-warning has-[:checked]:bg-warning/5 transition-all">' +
+                        '<input type="radio" name="svc_payment_type" value="comp" class="radio radio-warning mt-0.5" onchange="selectSvcPaymentOption(\'comp\')">' +
+                        '<div class="flex-1"><div class="font-medium flex items-center gap-2">' +
+                        '<span class="icon-[tabler--gift] size-5 text-warning"></span> Complimentary</div>' +
+                        '<div class="text-sm text-base-content/60 mt-1">No charge for this service</div></div></label>';
+                }
+
+                list.innerHTML = html;
+            })
+            .catch(function() {})
+            .finally(function() { loading.classList.add('hidden'); });
+    };
+
+    window.selectSvcPaymentOption = function(option, creditId) {
+        var paymentMethodHidden = document.getElementById('svc-payment-method-hidden');
+        var billingCreditId = document.getElementById('svc-billing-credit-id');
+        var paymentMethodContainer = document.getElementById('payment-method-container');
+        var priceInput = document.getElementById('price-input');
+        var displayPrice = document.getElementById('display-price');
+        var priceHint = document.getElementById('price-input-hint');
+
+        billingCreditId.value = '';
+
+        if (option === 'billing_credit') {
+            paymentMethodHidden.value = 'billing_credit';
+            billingCreditId.value = creditId;
+            paymentMethodContainer.classList.add('hidden');
+            displayPrice.textContent = '$0.00';
+            priceInput.value = '0';
+            if (priceHint) priceHint.textContent = 'Using prepaid billing credit';
+        } else if (option === 'comp') {
+            paymentMethodHidden.value = 'comp';
+            paymentMethodContainer.classList.add('hidden');
+            displayPrice.textContent = '$0.00';
+            priceInput.value = '0';
+            if (priceHint) priceHint.textContent = 'Complimentary — no charge';
+        } else {
+            // Manual pay
+            paymentMethodHidden.value = 'manual';
+            paymentMethodContainer.classList.remove('hidden');
+            if (selectedSlotData) {
+                displayPrice.textContent = '$' + selectedSlotData.price.toFixed(2);
+                priceInput.value = selectedSlotData.price.toFixed(2);
+            }
+            if (priceHint) priceHint.textContent = 'Set by payment option';
+        }
+    };
 });
 </script>
 @endpush

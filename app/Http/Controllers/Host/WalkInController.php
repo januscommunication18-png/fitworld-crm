@@ -121,7 +121,7 @@ class WalkInController extends Controller
         $sessions = $query
             ->select(['id', 'class_plan_id', 'primary_instructor_id', 'location_id', 'title', 'start_time', 'end_time', 'capacity', 'price'])
             ->with([
-                'classPlan:id,name,color,default_price',
+                'classPlan:id,name,color,default_price,billing_discounts,registration_fee,cancellation_fee,cancellation_grace_hours',
                 'primaryInstructor:id,name',
                 'location:id,name'
             ])
@@ -143,7 +143,11 @@ class WalkInController extends Controller
                     'booked' => $session->active_bookings_count,
                     'spots_remaining' => $session->capacity - $session->active_bookings_count,
                     'color' => $session->classPlan?->color ?? '#6366f1',
-                    'price' => $session->price ?? $session->classPlan?->default_price ?? 0,
+                    'price' => (float) $session->price > 0 ? $session->price : ($session->classPlan?->default_price ?? 0),
+                    'billing_discounts' => $session->classPlan?->billing_discounts ?? null,
+                    'registration_fee' => (float) ($session->classPlan?->registration_fee ?? 0),
+                    'cancellation_fee' => (float) ($session->classPlan?->cancellation_fee ?? 0),
+                    'cancellation_grace_hours' => $session->classPlan?->cancellation_grace_hours ?? 48,
                 ];
             });
 
@@ -171,6 +175,67 @@ class WalkInController extends Controller
         return response()->json([
             'sessions' => $sessions,
             'next_available' => $nextAvailable,
+        ]);
+    }
+
+    /**
+     * Get sessions for a date range (for billing period bookings)
+     */
+    public function getSessionsByDateRange(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $classPlanId = $request->get('class_plan_id');
+        $months = (int) $request->get('months', 1);
+
+        if (!$classPlanId) {
+            return response()->json(['sessions' => []]);
+        }
+
+        $startDate = now();
+        $endDate = now()->addMonths($months);
+
+        $sessions = ClassSession::where('host_id', $host->id)
+            ->where('class_plan_id', $classPlanId)
+            ->where('status', ClassSession::STATUS_PUBLISHED)
+            ->whereBetween('start_time', [$startDate, $endDate])
+            ->select(['id', 'class_plan_id', 'primary_instructor_id', 'location_id', 'title', 'start_time', 'end_time', 'capacity', 'price'])
+            ->with([
+                'classPlan:id,name,color,default_price,billing_discounts,registration_fee,cancellation_fee,cancellation_grace_hours',
+                'primaryInstructor:id,name',
+                'location:id,name'
+            ])
+            ->withCount(['bookings as active_bookings_count' => function ($q) {
+                $q->where('status', '!=', Booking::STATUS_CANCELLED);
+            }])
+            ->orderBy('start_time')
+            ->get()
+            ->map(function ($session) {
+                return [
+                    'id' => $session->id,
+                    'title' => $session->title ?: $session->classPlan?->name,
+                    'date' => $session->start_time->format('D, M d'),
+                    'time' => $session->start_time->format('g:i A') . ' - ' . $session->end_time->format('g:i A'),
+                    'start_time_iso' => $session->start_time->toIso8601String(),
+                    'end_time_iso' => $session->end_time->toIso8601String(),
+                    'instructor' => $session->primaryInstructor?->name ?? 'TBD',
+                    'location' => $session->location?->name ?? null,
+                    'capacity' => $session->capacity,
+                    'booked' => $session->active_bookings_count,
+                    'spots_remaining' => $session->capacity - $session->active_bookings_count,
+                    'color' => $session->classPlan?->color ?? '#6366f1',
+                    'price' => (float) $session->price > 0 ? $session->price : ($session->classPlan?->default_price ?? 0),
+                    'billing_discounts' => $session->classPlan?->billing_discounts ?? null,
+                    'registration_fee' => (float) ($session->classPlan?->registration_fee ?? 0),
+                    'cancellation_fee' => (float) ($session->classPlan?->cancellation_fee ?? 0),
+                    'cancellation_grace_hours' => $session->classPlan?->cancellation_grace_hours ?? 48,
+                ];
+            });
+
+        return response()->json([
+            'sessions' => $sessions,
+            'total' => $sessions->count(),
+            'period_start' => $startDate->format('M d, Y'),
+            'period_end' => $endDate->format('M d, Y'),
         ]);
     }
 
@@ -418,9 +483,35 @@ class WalkInController extends Controller
             }
         }
 
+        // Get active billing credits for this client, filtered by context
+        $sourceType = $classPlanId ? 'class_plan' : $request->get('source_type');
+        $billingCreditsQuery = \App\Models\BillingCredit::where('host_id', $host->id)
+            ->where('client_id', $client->id)
+            ->active();
+
+        if ($sourceType) {
+            $billingCreditsQuery->where('source_type', $sourceType);
+        }
+
+        $billingCredits = $billingCreditsQuery->get()
+            ->map(function ($credit) {
+                return [
+                    'id' => $credit->id,
+                    'source_type' => $credit->source_type,
+                    'source_name' => $credit->getSourceName(),
+                    'billing_period' => $credit->billing_period,
+                    'discount_percent' => $credit->discount_percent,
+                    'credit_remaining' => (float) $credit->credit_remaining,
+                    'monthly_rate' => (float) $credit->monthly_rate,
+                    'end_date' => $credit->end_date->format('M d, Y'),
+                    'days_left' => now()->diffInDays($credit->end_date, false),
+                ];
+            });
+
         $methods = [
             'membership' => $membership,
             'packs' => $this->classPassService->getEligiblePasses($client, $classPlanId),
+            'billing_credits' => $billingCredits,
             'manual' => true,
             'comp' => auth()->user()->hasPermission('bookings.comp'),
         ];
@@ -442,10 +533,11 @@ class WalkInController extends Controller
 
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'payment_method' => 'required|in:membership,pack,manual,comp',
+            'payment_method' => 'required|in:membership,pack,manual,comp,billing_credit',
             'manual_method' => 'required_if:payment_method,manual|in:cash,card,check,other',
             'price_paid' => 'nullable|numeric|min:0',
             'pack_id' => 'nullable|required_if:payment_method,pack|exists:class_pass_purchases,id',
+            'billing_credit_id' => 'nullable|integer|exists:billing_credits,id',
             'check_in_now' => 'boolean',
             'notes' => 'nullable|string|max:500',
             'send_intake_form' => 'boolean',
@@ -456,6 +548,9 @@ class WalkInController extends Controller
             'discount_amount' => 'nullable|numeric|min:0',
             'price_override_code' => 'nullable|string|max:20',
             'price_override_amount' => 'nullable|numeric|min:0',
+            'billing_period' => 'nullable|integer|in:1,3,6,9,12',
+            'billing_discount_percent' => 'nullable|numeric|min:0',
+            'include_registration_fee' => 'nullable|in:0,1',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
@@ -593,6 +688,51 @@ class WalkInController extends Controller
                 $priceOverrideRequest->update(['metadata' => $metadata]);
             }
 
+            // Create billing credit if a billing period was selected
+            if (!empty($validated['billing_period']) && !empty($validated['billing_discount_percent'])) {
+                $billingPeriod = (int) $validated['billing_period'];
+                $totalAmount = (float) $validated['billing_discount_percent']; // Total amount for the entire period
+                $classPlan = $classSession->classPlan;
+                $baseMonthly = (float) ($classPlan?->default_price ?? $originalPrice);
+                $monthlyRate = $billingPeriod > 0 ? $totalAmount / $billingPeriod : 0;
+                $totalWithout = $baseMonthly * $billingPeriod;
+                $discountPct = $totalWithout > 0 ? round((1 - $totalAmount / $totalWithout) * 100, 2) : 0;
+                $includeRegFee = ($validated['include_registration_fee'] ?? '1') === '1';
+                $registrationFee = $includeRegFee ? (float) ($classPlan?->registration_fee ?? 0) : 0;
+
+                \App\Models\BillingCredit::create([
+                    'host_id' => $host->id,
+                    'client_id' => $client->id,
+                    'source_type' => 'class_plan',
+                    'source_id' => $classPlan?->id ?? 0,
+                    'booking_id' => $booking->id,
+                    'billing_period' => $billingPeriod,
+                    'discount_percent' => $discountPct,
+                    'amount_paid' => $totalAmount,
+                    'monthly_rate' => $monthlyRate,
+                    'original_monthly_rate' => $baseMonthly,
+                    'credit_remaining' => $totalAmount,
+                    'registration_fee_paid' => $registrationFee,
+                    'start_date' => now()->toDateString(),
+                    'end_date' => now()->addMonths($billingPeriod)->toDateString(),
+                    'status' => \App\Models\BillingCredit::STATUS_ACTIVE,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            // Deduct from billing credit if used as payment method
+            if ($validated['payment_method'] === 'billing_credit' && !empty($validated['billing_credit_id'])) {
+                $billingCredit = \App\Models\BillingCredit::where('id', $validated['billing_credit_id'])
+                    ->where('host_id', $host->id)
+                    ->where('client_id', $client->id)
+                    ->first();
+
+                if ($billingCredit && $billingCredit->isUsable()) {
+                    $billingCredit->deduct($originalPrice);
+                    $booking->update(['billing_credit_id' => $billingCredit->id]);
+                }
+            }
+
             return redirect()
                 ->route('schedule.calendar')
                 ->with('success', "Walk-in booking confirmed for {$client->full_name}!");
@@ -618,7 +758,7 @@ class WalkInController extends Controller
 
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'payment_method' => 'required|in:membership,pack,manual,comp',
+            'payment_method' => 'required|in:membership,pack,manual,comp,billing_credit',
             'manual_method' => 'required_if:payment_method,manual|in:cash,card,check,other',
             'price_paid' => 'nullable|numeric|min:0',
             'check_in_now' => 'boolean',
@@ -628,6 +768,10 @@ class WalkInController extends Controller
             'discount_amount' => 'nullable|numeric|min:0',
             'price_override_code' => 'nullable|string|max:20',
             'price_override_amount' => 'nullable|numeric|min:0',
+            'billing_period' => 'nullable|integer|in:1,3,6,9,12',
+            'billing_discount_percent' => 'nullable|numeric|min:0',
+            'billing_credit_id' => 'nullable|integer|exists:billing_credits,id',
+            'include_registration_fee' => 'nullable|in:0,1',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
@@ -752,6 +896,51 @@ class WalkInController extends Controller
                 $metadata['booking_id'] = $booking->id;
                 $metadata['booking_type'] = get_class($booking);
                 $priceOverrideRequest->update(['metadata' => $metadata]);
+            }
+
+            // Create billing credit if a billing period was selected
+            if (!empty($validated['billing_period']) && !empty($validated['billing_discount_percent'])) {
+                $billingPeriod = (int) $validated['billing_period'];
+                $totalAmount = (float) $validated['billing_discount_percent']; // Total amount for entire period
+                $servicePlan = $serviceSlot->servicePlan;
+                $baseMonthly = (float) $originalPrice;
+                $monthlyRate = $billingPeriod > 0 ? $totalAmount / $billingPeriod : 0;
+                $totalWithout = $baseMonthly * $billingPeriod;
+                $discountPct = $totalWithout > 0 ? round((1 - $totalAmount / $totalWithout) * 100, 2) : 0;
+                $includeRegFee = ($validated['include_registration_fee'] ?? '1') === '1';
+                $registrationFee = $includeRegFee ? (float) ($servicePlan?->registration_fee ?? 0) : 0;
+
+                \App\Models\BillingCredit::create([
+                    'host_id' => $host->id,
+                    'client_id' => $client->id,
+                    'source_type' => 'service_plan',
+                    'source_id' => $servicePlan?->id ?? 0,
+                    'booking_id' => $booking->id,
+                    'billing_period' => $billingPeriod,
+                    'discount_percent' => $discountPct,
+                    'amount_paid' => $totalAmount,
+                    'monthly_rate' => $monthlyRate,
+                    'original_monthly_rate' => $baseMonthly,
+                    'credit_remaining' => $totalAmount,
+                    'registration_fee_paid' => $registrationFee,
+                    'start_date' => now()->toDateString(),
+                    'end_date' => now()->addMonths($billingPeriod)->toDateString(),
+                    'status' => \App\Models\BillingCredit::STATUS_ACTIVE,
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
+            // Deduct from billing credit if used as payment method
+            if ($validated['payment_method'] === 'billing_credit' && !empty($validated['billing_credit_id'])) {
+                $billingCredit = \App\Models\BillingCredit::where('id', $validated['billing_credit_id'])
+                    ->where('host_id', $host->id)
+                    ->where('client_id', $client->id)
+                    ->first();
+
+                if ($billingCredit && $billingCredit->isUsable()) {
+                    $billingCredit->deduct($originalPrice);
+                    $booking->update(['billing_credit_id' => $billingCredit->id]);
+                }
             }
 
             return redirect()
@@ -966,6 +1155,10 @@ class WalkInController extends Controller
             'duration_minutes' => $classPlan->default_duration_minutes ?? 60,
             'capacity' => $classPlan->default_capacity ?? 10,
             'price' => $classPlan->default_price ?? 0,
+            'billing_discounts' => $classPlan->billing_discounts ?? null,
+            'registration_fee' => (float) ($classPlan->registration_fee ?? 0),
+            'cancellation_fee' => (float) ($classPlan->cancellation_fee ?? 0),
+            'cancellation_grace_hours' => $classPlan->cancellation_grace_hours ?? 48,
         ]);
     }
 
@@ -1294,6 +1487,11 @@ class WalkInController extends Controller
                 'formatted_price' => $slot->formatted_price,
                 'start_time_iso' => $slot->start_time->toIso8601String(),
                 'end_time_iso' => $slot->end_time->toIso8601String(),
+                'billing_discounts' => $slot->servicePlan?->billing_discounts ?? null,
+                'service_plan_id' => $slot->service_plan_id,
+                'registration_fee' => (float) ($slot->servicePlan?->registration_fee ?? 0),
+                'cancellation_fee' => (float) ($slot->servicePlan?->cancellation_fee ?? 0),
+                'cancellation_grace_hours' => $slot->servicePlan?->cancellation_grace_hours ?? 48,
             ];
         });
 

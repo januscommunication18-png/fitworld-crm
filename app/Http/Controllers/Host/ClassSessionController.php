@@ -454,9 +454,35 @@ class ClassSessionController extends Controller
      */
     protected function getTeachingInstructors(Host $host)
     {
-        return $host->instructors()
-            ->active()
+        // Get all instructors (including those linked to team members)
+        $instructors = $host->instructors()
             ->orderBy('name')
             ->get();
+
+        // Get team members who don't have instructor records yet
+        $instructorUserIds = $instructors->pluck('user_id')->filter()->toArray();
+        $instructorEmails = $instructors->pluck('email')->map(fn($e) => strtolower($e))->filter()->toArray();
+
+        $teamMembersWithoutInstructor = $host->teamMembers()
+            ->whereNotIn('users.id', $instructorUserIds)
+            ->get()
+            ->filter(function ($user) use ($instructorEmails) {
+                return !in_array(strtolower($user->email), $instructorEmails);
+            });
+
+        // Auto-create instructor records for team members who don't have one
+        foreach ($teamMembersWithoutInstructor as $user) {
+            $instructor = \App\Models\Instructor::create([
+                'host_id' => $host->id,
+                'user_id' => $user->id,
+                'name' => $user->full_name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'is_active' => true,
+            ]);
+            $instructors->push($instructor);
+        }
+
+        return $instructors->sortBy('name')->values();
     }
 }

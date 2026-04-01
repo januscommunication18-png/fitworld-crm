@@ -249,7 +249,45 @@
                         @endif
                     </div>
 
-                    {{-- Date Selection (shown after class plan selected) --}}
+                    {{-- Booking Type Selection (shown after class plan selected) --}}
+                    <div class="form-control mb-6 hidden" id="booking-type-selection">
+                        <label class="label">
+                            <span class="label-text font-medium">Booking Type</span>
+                        </label>
+                        <div class="grid grid-cols-3 gap-3" id="booking-type-options">
+                            <label class="flex items-center gap-3 p-4 border-2 border-base-content/10 rounded-lg cursor-pointer hover:border-primary/30 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                <input type="radio" name="booking_type" value="single" class="radio radio-primary" checked onchange="selectBookingType('single')">
+                                <div>
+                                    <div class="font-medium">Single Class</div>
+                                    <div class="text-xs text-base-content/60">Book one session</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-4 border-2 border-base-content/10 rounded-lg cursor-pointer hover:border-success/30 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                                <input type="radio" name="booking_type" value="period" class="radio radio-success" onchange="selectBookingType('period')">
+                                <div>
+                                    <div class="font-medium">Series Class</div>
+                                    <div class="text-xs text-base-content/60">Prepay for a billing period</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-4 border-2 border-base-content/10 rounded-lg cursor-pointer hover:border-warning/30 has-[:checked]:border-warning has-[:checked]:bg-warning/5 transition-all">
+                                <input type="radio" name="booking_type" value="trial" class="radio radio-warning" onchange="selectBookingType('trial')">
+                                <div>
+                                    <div class="font-medium">Trial Class</div>
+                                    <div class="text-xs text-base-content/60">Free or discounted first session</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        {{-- Period Selection (shown when "Avail Discount" selected) --}}
+                        <div id="period-selection" class="hidden mt-4">
+                            <label class="label"><span class="label-text font-medium">Select Period</span></label>
+                            <div id="period-options" class="flex gap-2">
+                                {{-- Populated by JS --}}
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Date Selection (shown after class plan selected for single booking) --}}
                     <div class="form-control mb-6 hidden" id="date-selection">
                         <label class="label" for="booking-date">
                             <span class="label-text font-medium">Date</span>
@@ -262,25 +300,17 @@
                                placeholder="Select date...">
                     </div>
 
-                    {{-- Duration Selection (shown after date selected) --}}
+                    {{-- Duration (read-only, preloaded from class plan) --}}
                     <div class="form-control mb-6 hidden" id="duration-selection">
-                        <label class="label" for="session-duration">
-                            <span class="label-text font-medium">Duration (minutes)</span>
+                        <label class="label">
+                            <span class="label-text font-medium">Duration</span>
                         </label>
-                        <div class="join w-full">
-                            <button type="button" class="btn btn-outline join-item duration-preset" data-duration="30">30</button>
-                            <button type="button" class="btn btn-outline join-item duration-preset" data-duration="45">45</button>
-                            <button type="button" class="btn btn-primary join-item duration-preset active" data-duration="60">60</button>
-                            <button type="button" class="btn btn-outline join-item duration-preset" data-duration="90">90</button>
-                            <input type="number"
-                                   id="session-duration"
-                                   class="input input-bordered join-item w-24 text-center"
-                                   value="60"
-                                   min="5"
-                                   max="480"
-                                   placeholder="Custom">
-                            <span class="btn btn-ghost join-item pointer-events-none">min</span>
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--clock] size-5 text-base-content/50"></span>
+                            <span class="font-semibold text-lg" id="duration-display">60</span>
+                            <span class="text-base-content/60">minutes</span>
                         </div>
+                        <input type="hidden" id="session-duration" value="60">
                     </div>
 
                     {{-- Session Selection (shown after date selected) --}}
@@ -299,22 +329,14 @@
                                 <span class="icon-[tabler--calendar-off] size-8 text-base-content/30 mx-auto mb-2"></span>
                                 <p class="text-base-content/60 mb-4">No sessions for this class on selected date</p>
 
-                                {{-- Quick Actions --}}
-                                <div class="flex flex-col sm:flex-row justify-center gap-3 mb-4">
-                                    <button type="button" class="btn btn-primary" onclick="openQuickCreateModal()">
-                                        <span class="icon-[tabler--plus] size-5"></span>
-                                        Create Session
-                                    </button>
-                                </div>
-
                                 {{-- Next Available --}}
                                 <div id="next-available" class="hidden">
-                                    <div class="divider text-xs text-base-content/40">OR SELECT UPCOMING</div>
+                                    <div class="divider text-xs text-base-content/40">UPCOMING DATES</div>
                                     <div id="next-available-dates" class="flex flex-wrap justify-center gap-2"></div>
                                 </div>
                             </div>
                         </div>
-                        <div id="sessions-list" class="space-y-3 max-h-64 overflow-y-auto">
+                        <div id="sessions-list" class="space-y-3 max-h-96 overflow-y-auto">
                             {{-- Sessions loaded via AJAX --}}
                         </div>
                         <input type="hidden" name="session_id" id="session-id" value="">
@@ -325,6 +347,30 @@
                             Next: Payment
                             <span class="icon-[tabler--arrow-right] size-5"></span>
                         </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Period Sessions Modal --}}
+        <div id="period-sessions-modal" class="fixed inset-0 z-50 hidden">
+            <div class="fixed inset-0 bg-black/50" onclick="closePeriodSessionsModal()"></div>
+            <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+                <div class="bg-base-100 rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col pointer-events-auto relative">
+                    <div class="flex items-center justify-between p-4 border-b border-base-200">
+                        <h3 class="font-bold text-lg flex items-center gap-2">
+                            <span class="icon-[tabler--calendar-event] size-5 text-primary"></span>
+                            <span id="period-modal-title">Sessions</span>
+                        </h3>
+                        <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="closePeriodSessionsModal()">
+                            <span class="icon-[tabler--x] size-5"></span>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div id="period-modal-sessions" class="space-y-2"></div>
+                    </div>
+                    <div class="p-4 border-t border-base-200">
+                        <button type="button" class="btn btn-ghost w-full" onclick="closePeriodSessionsModal()">Close</button>
                     </div>
                 </div>
             </div>
@@ -371,30 +417,15 @@
                 <input type="hidden" name="discount_amount" id="discount_amount" value="0">
                 <input type="hidden" name="price_override_code" id="price_override_code" value="">
                 <input type="hidden" name="price_override_amount" id="price_override_amount" value="">
+                <input type="hidden" name="billing_period" id="billing_period_hidden" value="">
+                <input type="hidden" name="billing_discount_percent" id="billing_discount_percent_hidden" value="0">
+                <input type="hidden" name="billing_credit_id" id="billing_credit_id_hidden" value="">
+                <input type="hidden" name="include_registration_fee" id="include_reg_fee_hidden" value="1">
 
                 {{-- Sections Container --}}
                 <div class="space-y-6">
 
-                    {{-- Section 1: Payment Option --}}
-                    <div class="border border-base-200 rounded-lg">
-                        <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
-                            <div class="flex items-center gap-2 font-medium">
-                                <span class="icon-[tabler--credit-card] size-5 text-primary"></span>
-                                <span>Payment Option</span>
-                            </div>
-                        </div>
-                        <div class="p-4">
-                            <div id="client-payment-options-loading" class="hidden py-4 text-center">
-                                <span class="loading loading-spinner loading-sm"></span>
-                                <span class="text-sm text-base-content/60 ml-2">Loading payment options...</span>
-                            </div>
-                            <div id="client-payment-options-list" class="space-y-2">
-                                {{-- Payment options loaded via AJAX --}}
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Section 2: Promo Code (Collapsible) --}}
+                    {{-- Section 1: Promo Code (Collapsible) --}}
                     <div class="border border-base-200 rounded-lg" id="promo-section">
                         <button type="button" onclick="togglePromoSection()" class="w-full px-4 py-3 bg-base-200/30 rounded-lg flex items-center justify-between cursor-pointer hover:bg-base-200/50 transition-colors">
                             <div class="flex items-center gap-2 font-medium">
@@ -452,7 +483,41 @@
                         </div>
                     </div>
 
-                    {{-- Section 2.5: Price Override --}}
+                    {{-- Section 2.5: Billing Period Discount (collapsible) --}}
+                    <div class="hidden" id="billing-discount-section">
+                        <details class="group border border-base-200 rounded-lg">
+                            <summary class="flex items-center justify-between px-4 py-3 bg-base-200/30 rounded-lg cursor-pointer hover:bg-base-200/50 transition-colors list-none">
+                                <div class="flex items-center gap-2 font-medium">
+                                    <span class="icon-[tabler--calendar-dollar] size-5 text-success"></span>
+                                    <span>Billing Period Discount</span>
+                                    <span class="text-xs text-base-content/50 font-normal">(optional)</span>
+                                </div>
+                                <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform duration-200 group-open:rotate-180"></span>
+                            </summary>
+                            <div class="p-4 border-t border-base-200">
+                                {{-- Applied Discount Display --}}
+                                <div id="applied-billing-discount" class="hidden mb-3">
+                                    <div class="alert bg-success/10 border-success/20">
+                                        <span class="icon-[tabler--calendar-check] size-5 text-success"></span>
+                                        <div class="flex-1">
+                                            <span class="font-semibold text-success" id="applied-billing-label"></span>
+                                            <p class="text-sm text-success/80" id="applied-billing-savings"></p>
+                                        </div>
+                                        <button type="button" onclick="removeBillingDiscount()" class="btn btn-ghost btn-xs btn-circle">
+                                            <span class="icon-[tabler--x] size-4"></span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <p class="text-sm text-base-content/60 mb-3">Client pays upfront for a billing period. Credit applies to future bookings.</p>
+                                <div id="billing-discount-options" class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                    {{-- Options populated by JS --}}
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+
+                    {{-- Section 2.75: Price Override --}}
                     @if($canOverridePrice ?? false)
                     {{-- Direct price edit for managers/owners with override permission --}}
                     <div class="border border-base-200 rounded-lg" id="override-section">
@@ -733,6 +798,20 @@
                             </div>
                         </div>
                         <div class="p-4">
+                            {{-- Registration Fee (shown when billing period selected) --}}
+                            <div id="reg-fee-container" class="hidden mb-4">
+                                <label class="flex items-center justify-between gap-3 p-3 border border-base-content/10 rounded-lg cursor-pointer hover:bg-base-200/30 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" id="reg-fee-checkbox" class="checkbox checkbox-primary checkbox-sm" checked onchange="toggleRegFee()">
+                                        <div>
+                                            <span class="font-medium text-sm">Include Registration Fee</span>
+                                            <span class="text-xs text-base-content/60 block">One-time fee for billing period signup</span>
+                                        </div>
+                                    </div>
+                                    <span class="font-bold text-primary" id="reg-fee-amount">$0.00</span>
+                                </label>
+                            </div>
+
                             {{-- Price Input --}}
                             <div class="form-control mb-4" id="price-input-container">
                                 <label class="label" for="price-input">
@@ -1164,6 +1243,350 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedSessionData = null;
     let isNewClient = false;
     let availableQuestionnaires = [];
+    let selectedBillingPeriod = null;
+
+    // ========== Billing Period Discount ==========
+    // ========== Billing Period Discount ==========
+    // ========== Booking Type Selection ==========
+    var selectedBookingType = 'single';
+    var selectedPeriodMonths = null;
+
+    window.selectBookingType = function(type) {
+        selectedBookingType = type;
+        var dateSelection = document.getElementById('date-selection');
+        var durationSelection = document.getElementById('duration-selection');
+        var sessionSelection = document.getElementById('session-selection');
+        var periodSelection = document.getElementById('period-selection');
+
+        // Reset session
+        selectedSessionId = null;
+        selectedSessionData = null;
+        document.getElementById('session-id').value = '';
+        document.getElementById('sessions-list').innerHTML = '';
+        sessionSelection.classList.add('hidden');
+        selectedPeriodMonths = null;
+
+        if (type === 'single' || type === 'trial') {
+            periodSelection.classList.add('hidden');
+            dateSelection.classList.remove('hidden');
+            validateStep1();
+        } else if (type === 'period') {
+            dateSelection.classList.add('hidden');
+            durationSelection.classList.add('hidden');
+            sessionSelection.classList.add('hidden');
+            buildPeriodOptions();
+            periodSelection.classList.remove('hidden');
+            validateStep1();
+        }
+    };
+
+    function buildPeriodOptions() {
+        fetch('/walk-in/class-plan-defaults?class_plan_id=' + selectedClassPlanId)
+            .then(function(r) { return r.json(); })
+            .then(function(defaults) {
+                renderPeriodOptions(defaults.billing_discounts || {});
+            })
+            .catch(function() { renderPeriodOptions({}); });
+    }
+
+    function renderPeriodOptions(discounts) {
+        var container = document.getElementById('period-options');
+        var periods = { '1': '1 Month', '3': '3 Months', '6': '6 Months', '9': '9 Months', '12': '12 Months' };
+        var html = '';
+
+        Object.keys(periods).forEach(function(months) {
+            var totalAmount = parseFloat(discounts[months]) || 0;
+            if (totalAmount <= 0) return;
+
+            var m = parseInt(months);
+            var monthlyRate = m > 0 ? (totalAmount / m) : 0;
+
+            html += '<button type="button" class="period-option-btn flex-1 flex flex-col items-center p-3 rounded-lg border-2 border-base-content/10 hover:border-success cursor-pointer transition-all" ' +
+                'data-months="' + months + '" onclick="selectPeriod(' + months + ')">' +
+                '<div class="text-xs text-base-content/60 font-medium">' + periods[months] + '</div>' +
+                '<div class="text-lg font-bold text-success">$' + totalAmount.toFixed(2) + '</div>' +
+                '<div class="text-[10px] text-base-content/50">$' + monthlyRate.toFixed(2) + '/mo</div>' +
+                '</button>';
+        });
+
+        if (!html) {
+            html = '<div class="col-span-full text-center py-4 text-base-content/50 text-sm">No billing period discounts configured for this class.</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    var _periodSessionsData = []; // Store for modal
+
+    window.selectPeriod = function(months) {
+        selectedPeriodMonths = months;
+
+        // Highlight selected
+        document.querySelectorAll('.period-option-btn').forEach(function(btn) {
+            if (parseInt(btn.dataset.months) === months) {
+                btn.classList.remove('border-base-content/10');
+                btn.classList.add('border-success', 'bg-success/5');
+            } else {
+                btn.classList.remove('border-success', 'bg-success/5');
+                btn.classList.add('border-base-content/10');
+            }
+        });
+
+        var sessionSelection = document.getElementById('session-selection');
+        var sessionsLoading = document.getElementById('sessions-loading');
+        var sessionsEmpty = document.getElementById('sessions-empty');
+        var sessionsList = document.getElementById('sessions-list');
+
+        sessionSelection.classList.remove('hidden');
+        sessionsLoading.classList.remove('hidden');
+        sessionsEmpty.classList.add('hidden');
+        sessionsList.innerHTML = '';
+
+        fetch('/walk-in/sessions-range?class_plan_id=' + selectedClassPlanId + '&months=' + months)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                sessionsLoading.classList.add('hidden');
+
+                if (!data.sessions || data.sessions.length === 0) {
+                    sessionsEmpty.classList.remove('hidden');
+                    _periodSessionsData = [];
+                    selectedSessionId = null;
+                    selectedSessionData = null;
+                    validateStep1();
+                    return;
+                }
+
+                _periodSessionsData = data.sessions;
+
+                // Auto-select the first session to enable Next button
+                var first = data.sessions[0];
+                selectedSessionId = first.id;
+                document.getElementById('session-id').value = first.id;
+
+                var billingDiscounts = first.billing_discounts || {};
+                selectedSessionData = {
+                    title: selectedClassPlanName,
+                    time: first.time,
+                    price: parseFloat(first.price) || 0,
+                    startTime: first.start_time_iso,
+                    endTime: first.end_time_iso,
+                    billingDiscounts: billingDiscounts,
+                    registrationFee: parseFloat(first.registration_fee) || 0,
+                    cancellationFee: parseFloat(first.cancellation_fee) || 0,
+                    graceHours: parseInt(first.cancellation_grace_hours) || 48
+                };
+
+                // Show summary card with session count and view button
+                var durationVal = document.getElementById('session-duration').value || '60';
+                var html = '<div class="flex items-center justify-between p-4 bg-success/5 border border-success/20 rounded-lg">' +
+                    '<div class="flex items-center gap-3">' +
+                    '<div class="flex items-center justify-center size-10 rounded-full bg-success/10">' +
+                    '<span class="icon-[tabler--calendar-check] size-5 text-success"></span></div>' +
+                    '<div>' +
+                    '<div class="font-semibold">' + data.total + ' Available Sessions · ' + durationVal + ' min each</div>' +
+                    '<div class="text-sm text-base-content/60">' + data.period_start + ' to ' + data.period_end + '</div>' +
+                    '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-ghost btn-sm gap-1" onclick="openPeriodSessionsModal()">' +
+                    '<span class="icon-[tabler--eye] size-4"></span> View All' +
+                    '</button>' +
+                    '</div>';
+
+                sessionsList.innerHTML = html;
+                validateStep1();
+            })
+            .catch(function() { sessionsLoading.classList.add('hidden'); });
+    };
+
+    window.openPeriodSessionsModal = function() {
+        var modal = document.getElementById('period-sessions-modal');
+        var container = document.getElementById('period-modal-sessions');
+        var title = document.getElementById('period-modal-title');
+
+        title.textContent = _periodSessionsData.length + ' Sessions — ' + selectedPeriodMonths + ' Month' + (selectedPeriodMonths > 1 ? 's' : '');
+
+        var html = '';
+        _periodSessionsData.forEach(function(session, idx) {
+            html += '<div class="flex items-center justify-between p-3 ' + (idx % 2 === 0 ? 'bg-base-200/30' : '') + ' rounded-lg">' +
+                '<div class="flex items-center gap-3">' +
+                '<div class="text-center shrink-0 w-14">' +
+                '<div class="text-xs text-base-content/50">' + session.date.split(',')[0] + '</div>' +
+                '<div class="font-bold text-sm">' + session.date.split(', ')[1] + '</div>' +
+                '</div>' +
+                '<div>' +
+                '<div class="font-medium text-sm">' + session.time + '</div>' +
+                '<div class="text-xs text-base-content/60">' + session.instructor + (session.location ? ' · ' + session.location : '') + '</div>' +
+                '</div>' +
+                '</div>' +
+                '<span class="badge badge-sm ' + (session.spots_remaining > 0 ? 'badge-success' : 'badge-error') + ' badge-soft shrink-0">' + session.spots_remaining + ' spots</span>' +
+                '</div>';
+        });
+
+        container.innerHTML = html;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    };
+
+    window.closePeriodSessionsModal = function() {
+        document.getElementById('period-sessions-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    window.updateBillingDiscountSection = function() {
+        var section = document.getElementById('billing-discount-section');
+        var optionsContainer = document.getElementById('billing-discount-options');
+
+        window.removeBillingDiscount();
+
+        // Don't show billing discount accordion if period was already chosen in step 1
+        if (selectedBookingType === 'period') {
+            section.classList.add('hidden');
+            return;
+        }
+
+        if (!selectedSessionData || !selectedSessionData.billingDiscounts) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        var discounts = selectedSessionData.billingDiscounts;
+        var hasDiscounts = false;
+        var basePrice = selectedSessionData.price;
+        var periods = { '1': '1 Month', '3': '3 Months', '6': '6 Months', '9': '9 Months', '12': '12 Months' };
+        var html = '';
+
+        Object.keys(periods).forEach(function(months) {
+            var m = parseInt(months);
+            var totalAmount = parseFloat(discounts[months]) || 0;
+            var isDiscounted = totalAmount > 0;
+            if (isDiscounted) hasDiscounts = true;
+            var monthlyRate = m > 0 ? (totalAmount / m) : 0;
+            var totalWithout = basePrice * m;
+
+            html += '<button type="button" class="billing-period-btn flex flex-col items-center p-3 rounded-lg border-2 transition-all ' +
+                (isDiscounted ? 'border-base-content/10 hover:border-success cursor-pointer' : 'border-base-content/5 opacity-50 cursor-default') + '" ' +
+                'data-months="' + months + '" data-total="' + totalAmount + '" ' +
+                (isDiscounted ? 'onclick="selectBillingPeriod(' + months + ', ' + totalAmount + ')"' : '') + '>' +
+                '<div class="text-xs text-base-content/60 font-medium">' + periods[months] + '</div>' +
+                '<div class="text-lg font-bold ' + (isDiscounted ? 'text-success' : 'text-base-content/40') + '">$' + (isDiscounted ? totalAmount.toFixed(2) : (basePrice * m).toFixed(2)) + '</div>';
+
+            if (isDiscounted) {
+                html += '<div class="text-[10px] text-base-content/50">$' + monthlyRate.toFixed(2) + '/mo</div>';
+                if (totalWithout > totalAmount) {
+                    html += '<div class="text-xs text-success mt-0.5">Save $' + (totalWithout - totalAmount).toFixed(2) + '</div>';
+                }
+            }
+
+            html += '</button>';
+        });
+
+        optionsContainer.innerHTML = html;
+        section.classList.toggle('hidden', !hasDiscounts);
+    };
+
+    // Store selected billing credit amount for reg fee toggle
+    var _billingCreditAmount = 0;
+    var _billingRegFee = 0;
+
+    window.selectBillingPeriod = function(months, totalAmount) {
+        selectedBillingPeriod = months;
+        var basePrice = selectedSessionData.price;
+        var regFee = selectedSessionData.registrationFee || 0;
+        var cancelFee = selectedSessionData.cancellationFee || 0;
+        var graceHrs = selectedSessionData.graceHours || 48;
+        var monthlyRate = months > 0 ? (totalAmount / months) : 0;
+        _billingCreditAmount = totalAmount;
+        _billingRegFee = regFee;
+        var includeRegFee = regFee > 0;
+        var totalDueToday = totalAmount + (includeRegFee ? regFee : 0);
+        var totalWithout = basePrice * months;
+        var totalSavings = totalWithout - totalAmount;
+        var periods = { 1: '1 Month', 3: '3 Months', 6: '6 Months', 9: '9 Months', 12: '12 Months' };
+
+        document.getElementById('billing_period_hidden').value = months;
+        document.getElementById('billing_discount_percent_hidden').value = totalAmount;
+
+        // Highlight selected
+        document.querySelectorAll('.billing-period-btn').forEach(function(btn) {
+            if (parseInt(btn.dataset.months) === months) {
+                btn.classList.remove('border-base-content/10');
+                btn.classList.add('border-success', 'bg-success/5');
+            } else {
+                btn.classList.remove('border-success', 'bg-success/5');
+                var t = parseFloat(btn.dataset.total) || 0;
+                if (t > 0) btn.classList.add('border-base-content/10');
+            }
+        });
+
+        // Show registration fee checkbox
+        var regFeeContainer = document.getElementById('reg-fee-container');
+        if (regFee > 0) {
+            document.getElementById('reg-fee-amount').textContent = '$' + regFee.toFixed(2);
+            document.getElementById('reg-fee-checkbox').checked = true;
+            document.getElementById('include_reg_fee_hidden').value = '1';
+            regFeeContainer.classList.remove('hidden');
+        } else {
+            regFeeContainer.classList.add('hidden');
+        }
+
+        // Build applied info text
+        var label = periods[months] + ' — $' + totalAmount.toFixed(2) + ' total ($' + monthlyRate.toFixed(2) + '/mo)';
+        var details = 'Prepaid credit: $' + totalAmount.toFixed(2) + ' for ' + months + ' month' + (months > 1 ? 's' : '') + '.';
+        if (totalSavings > 0) details += ' Save $' + totalSavings.toFixed(2) + ' vs regular $' + totalWithout.toFixed(2) + '.';
+
+        var policyNote = '';
+        if (cancelFee > 0) policyNote += 'Early cancellation fee: $' + cancelFee.toFixed(2) + '. ';
+        policyNote += graceHrs + 'hr grace period for full refund.';
+
+        document.getElementById('applied-billing-label').textContent = label;
+        document.getElementById('applied-billing-savings').innerHTML = details + '<br><span class="text-xs text-base-content/50">' + policyNote + '</span>';
+        document.getElementById('applied-billing-discount').classList.remove('hidden');
+
+        // Update price
+        document.getElementById('display-price').textContent = '$' + totalDueToday.toFixed(2);
+        var priceInput = document.getElementById('price-input');
+        if (priceInput) priceInput.value = totalDueToday.toFixed(2);
+
+        // Show original price crossed out
+        if (totalSavings > 0) {
+            document.getElementById('original-price-display').textContent = '$' + totalWithout.toFixed(2);
+            document.getElementById('original-price-display').classList.remove('hidden');
+        }
+        document.getElementById('discount-badge').classList.remove('hidden');
+        document.getElementById('discount-badge-text').textContent = months + 'mo prepaid';
+    };
+
+    window.toggleRegFee = function() {
+        var checked = document.getElementById('reg-fee-checkbox').checked;
+        document.getElementById('include_reg_fee_hidden').value = checked ? '1' : '0';
+        var total = _billingCreditAmount + (checked ? _billingRegFee : 0);
+        document.getElementById('display-price').textContent = '$' + total.toFixed(2);
+        var priceInput = document.getElementById('price-input');
+        if (priceInput) priceInput.value = total.toFixed(2);
+    };
+
+    window.removeBillingDiscount = function() {
+        selectedBillingPeriod = null;
+        _billingCreditAmount = 0;
+        _billingRegFee = 0;
+        document.getElementById('billing_period_hidden').value = '';
+        document.getElementById('billing_discount_percent_hidden').value = '0';
+        document.getElementById('applied-billing-discount').classList.add('hidden');
+        document.getElementById('reg-fee-container').classList.add('hidden');
+
+        document.querySelectorAll('.billing-period-btn').forEach(function(btn) {
+            btn.classList.remove('border-success', 'bg-success/5');
+            if (parseFloat(btn.dataset.discount) > 0) btn.classList.add('border-base-content/10');
+        });
+
+        if (selectedSessionData) {
+            document.getElementById('display-price').textContent = '$' + selectedSessionData.price.toFixed(2);
+            var priceInput = document.getElementById('price-input');
+            if (priceInput) priceInput.value = selectedSessionData.price.toFixed(2);
+            document.getElementById('original-price-display').classList.add('hidden');
+            document.getElementById('discount-badge').classList.add('hidden');
+        }
+    };
 
     // Elements
     const step1 = document.getElementById('step-1');
@@ -1334,9 +1757,6 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selected-client').classList.remove('hidden');
         document.getElementById('search-results').classList.add('hidden');
 
-        // Load client's payment options (class passes, memberships)
-        loadClientPaymentOptions(id);
-
         validateStep1();
     };
 
@@ -1349,9 +1769,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selected-client').classList.add('hidden');
 
         // Clear payment options
-        document.getElementById('client-payment-options').classList.add('hidden');
-        document.getElementById('client-payment-options-list').innerHTML = '';
-        document.getElementById('class-pass-purchase-id').value = '';
+        var paymentOptsList = document.getElementById('client-payment-options-list');
+        if (paymentOptsList) paymentOptsList.innerHTML = '';
+        var classPassId = document.getElementById('class-pass-purchase-id');
+        if (classPassId) classPassId.value = '';
         document.getElementById('payment-method-hidden').value = 'manual';
         document.getElementById('payment-method-container').classList.remove('hidden');
         document.getElementById('price-input-container').classList.remove('hidden');
@@ -1437,6 +1858,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
+            // Billing credits
+            if (data.billing_credits && data.billing_credits.length > 0) {
+                data.billing_credits.forEach(credit => {
+                    html += `
+                        <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                            <input type="radio" name="payment_option" value="billing_credit_${credit.id}" class="radio radio-success mt-0.5" onchange="selectPaymentOption('billing_credit', ${credit.id})">
+                            <div class="flex-1">
+                                <div class="font-medium flex items-center gap-2">
+                                    <span class="icon-[tabler--calendar-dollar] size-5 text-success"></span>
+                                    Use Billing Credit
+                                    <span class="badge badge-success badge-sm">Prepaid</span>
+                                </div>
+                                <div class="text-sm text-base-content/60 mt-1">
+                                    ${credit.source_name} — $${credit.credit_remaining.toFixed(2)} remaining
+                                </div>
+                                <div class="text-xs text-base-content/50 mt-0.5">
+                                    ${credit.billing_period}mo prepaid (${credit.discount_percent}% off) · Valid until ${credit.end_date}
+                                </div>
+                            </div>
+                        </label>
+                    `;
+                });
+            }
+
             // Add "Trial Class" option
             html += `
                 <label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
@@ -1487,9 +1932,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const displayPrice = document.getElementById('display-price');
         const priceInput = document.getElementById('price-input');
 
-        // Reset trial checkbox when switching options
+        // Reset trial checkbox and billing credit when switching options
         if (trialCheckbox) trialCheckbox.checked = false;
         if (trialAmountContainer) trialAmountContainer.classList.add('hidden');
+        document.getElementById('billing_credit_id_hidden').value = '';
 
         if (option === 'membership') {
             paymentMethodHidden.value = 'membership';
@@ -1511,6 +1957,17 @@ document.addEventListener('DOMContentLoaded', function() {
             priceInput.value = '0';
             document.querySelector('#price-input-container .label-text').textContent = 'Amount to Charge';
             document.querySelector('#price-input-container .label-text-alt').textContent = 'Using class pass credit';
+        } else if (option === 'billing_credit') {
+            paymentMethodHidden.value = 'billing_credit';
+            classPassPurchaseId.value = '';
+            document.getElementById('billing_credit_id_hidden').value = packId; // reusing packId param for credit id
+            paymentMethodContainer.classList.add('hidden');
+            priceInputContainer.classList.remove('hidden');
+            // Show $0 for billing credit (using prepaid credit)
+            displayPrice.textContent = '$0.00';
+            priceInput.value = '0';
+            document.querySelector('#price-input-container .label-text').textContent = 'Amount to Charge';
+            document.querySelector('#price-input-container .label-text-alt').textContent = 'Using prepaid billing credit';
         } else if (option === 'trial') {
             paymentMethodHidden.value = 'trial';
             classPassPurchaseId.value = '';
@@ -1568,6 +2025,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!classPlanSelect.value) {
             selectedClassPlanId = null;
             selectedClassPlanName = '';
+            document.getElementById('booking-type-selection').classList.add('hidden');
             document.getElementById('date-selection').classList.add('hidden');
             document.getElementById('duration-selection').classList.add('hidden');
             document.getElementById('session-selection').classList.add('hidden');
@@ -1578,7 +2036,13 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedClassPlanId = classPlanSelect.value;
         selectedClassPlanName = selectedOption.dataset.name || selectedOption.text.split(' - ')[0];
 
-        // Show date selection
+        // Show booking type selection
+        document.getElementById('booking-type-selection').classList.remove('hidden');
+        // Reset to single by default
+        document.querySelector('input[name="booking_type"][value="single"]').checked = true;
+        selectBookingType('single');
+
+        // Show date selection (for single class)
         document.getElementById('date-selection').classList.remove('hidden');
 
         // Fetch questionnaires for this class plan
@@ -1592,13 +2056,14 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('sessions-list').innerHTML = '';
         validateStep1();
 
-        // Fetch default duration for this class plan
+        // Fetch default duration for this class plan and show it
         fetch(`/walk-in/class-plan-defaults?class_plan_id=${selectedClassPlanId}`)
             .then(res => res.json())
             .then(data => {
                 const defaultDuration = data.duration_minutes || 60;
                 document.getElementById('session-duration').value = defaultDuration;
-                updateDurationPresets(defaultDuration);
+                document.getElementById('duration-display').textContent = defaultDuration;
+                document.getElementById('duration-selection').classList.remove('hidden');
             });
 
         // Initialize date picker if not already
@@ -1712,33 +2177,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Duration preset buttons
-    document.querySelectorAll('.duration-preset').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const duration = parseInt(this.dataset.duration);
-            document.getElementById('session-duration').value = duration;
-            updateDurationPresets(duration);
-        });
-    });
-
-    // Duration input change
-    document.getElementById('session-duration').addEventListener('input', function() {
-        updateDurationPresets(parseInt(this.value) || 0);
-    });
-
-    function updateDurationPresets(duration) {
-        document.querySelectorAll('.duration-preset').forEach(btn => {
-            const presetVal = parseInt(btn.dataset.duration);
-            if (presetVal === duration) {
-                btn.classList.remove('btn-outline');
-                btn.classList.add('btn-primary', 'active');
-            } else {
-                btn.classList.add('btn-outline');
-                btn.classList.remove('btn-primary', 'active');
-            }
-        });
-    }
-
     function loadSessions(date) {
         if (!selectedClassPlanId) return;
 
@@ -1787,6 +2225,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                data-price="${session.price || 0}"
                                data-start="${session.start_time_iso}"
                                data-end="${session.end_time_iso}"
+                               data-billing-discounts='${JSON.stringify(session.billing_discounts || {})}'
+                               data-registration-fee="${session.registration_fee || 0}"
+                               data-cancellation-fee="${session.cancellation_fee || 0}"
+                               data-grace-hours="${session.cancellation_grace_hours || 48}"
                                onchange="selectSession(this)">
                         <div class="flex-1">
                             <div class="font-semibold">${session.time}</div>
@@ -1833,17 +2275,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.selectSession = function(radio) {
         selectedSessionId = radio.value;
+        var billingDiscounts = {};
+        try { billingDiscounts = JSON.parse(radio.dataset.billingDiscounts || '{}'); } catch(e) {}
+
         selectedSessionData = {
             title: selectedClassPlanName,
             time: radio.dataset.time,
             price: parseFloat(radio.dataset.price) || 0,
             startTime: radio.dataset.start,
-            endTime: radio.dataset.end
+            endTime: radio.dataset.end,
+            billingDiscounts: billingDiscounts,
+            registrationFee: parseFloat(radio.dataset.registrationFee) || 0,
+            cancellationFee: parseFloat(radio.dataset.cancellationFee) || 0,
+            graceHours: parseInt(radio.dataset.graceHours) || 48
         };
         document.getElementById('session-id').value = selectedSessionId;
 
         // Check if session is happening now (30 min before start to end time)
         updateCheckInVisibility();
+
+        // Show/hide billing discount section
+        updateBillingDiscountSection();
 
         validateStep1();
     };
@@ -2861,6 +3313,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('display-price').textContent = '$' + price.toFixed(2);
         document.getElementById('price-input').value = price.toFixed(2);
 
+        // Reset billing discount when entering booking panel
+        removeBillingDiscount();
+
         // Reset promo code when session changes
         if (appliedOfferId) {
             removePromoCode();
@@ -2871,9 +3326,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
         goToStep(2);
 
-        // Reload payment options now that class is selected
-        if (selectedClientId) {
-            loadClientPaymentOptions(selectedClientId);
+        // If "Series Class" was selected, auto-apply the billing period silently (no accordion shown)
+        if (selectedBookingType === 'period' && selectedPeriodMonths && selectedSessionData && selectedSessionData.billingDiscounts) {
+            document.getElementById('billing-discount-section').classList.add('hidden');
+            var discounts = selectedSessionData.billingDiscounts;
+            var totalAmount = parseFloat(discounts[selectedPeriodMonths]) || 0;
+            if (totalAmount > 0) {
+                setTimeout(function() { selectBillingPeriod(selectedPeriodMonths, totalAmount); }, 100);
+            }
+        }
+
+        // If "Trial Class" was selected, set price to $0 and hide billing discount
+        if (selectedBookingType === 'trial') {
+            document.getElementById('billing-discount-section').classList.add('hidden');
+            document.getElementById('display-price').textContent = '$0.00';
+            document.getElementById('price-input').value = '0';
+            document.getElementById('payment-method-hidden').value = 'comp';
         }
 
         // Fetch available offers for step 2
@@ -3324,6 +3792,10 @@ document.addEventListener('DOMContentLoaded', function() {
                                data-price="${session.price || 0}"
                                data-start="${session.start_time_iso}"
                                data-end="${session.end_time_iso}"
+                               data-billing-discounts='${JSON.stringify(session.billing_discounts || {})}'
+                               data-registration-fee="${session.registration_fee || 0}"
+                               data-cancellation-fee="${session.cancellation_fee || 0}"
+                               data-grace-hours="${session.cancellation_grace_hours || 48}"
                                onchange="selectSession(this)">
                         <div class="flex-1">
                             <div class="font-semibold">${session.time}</div>

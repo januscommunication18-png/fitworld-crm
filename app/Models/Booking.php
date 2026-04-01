@@ -66,6 +66,7 @@ class Booking extends Model
         'capacity_override_reason',
         'created_by_user_id',
         'payment_method',
+        'billing_credit_id',
         'membership_id',
         'customer_membership_id',
         'class_pass_purchase_id',
@@ -120,6 +121,11 @@ class Booking extends Model
     public function classPassPurchase(): BelongsTo
     {
         return $this->belongsTo(ClassPassPurchase::class);
+    }
+
+    public function billingCredit(): BelongsTo
+    {
+        return $this->belongsTo(BillingCredit::class);
     }
 
     /**
