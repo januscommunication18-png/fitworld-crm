@@ -322,6 +322,48 @@ class WalkInController extends Controller
     }
 
     /**
+     * Check if a client already has bookings for sessions in a series
+     */
+    public function checkSeriesConflict(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $clientId = $request->get('client_id');
+        $sessionIds = array_filter(explode(',', $request->get('session_ids', '')));
+
+        if (!$clientId || empty($sessionIds)) {
+            return response()->json(['has_conflict' => false]);
+        }
+
+        $client = Client::where('id', $clientId)->where('host_id', $host->id)->first();
+        if (!$client) {
+            return response()->json(['has_conflict' => false]);
+        }
+
+        $existingCount = Booking::where('client_id', $client->id)
+            ->where('bookable_type', ClassSession::class)
+            ->whereIn('bookable_id', $sessionIds)
+            ->where('status', '!=', Booking::STATUS_CANCELLED)
+            ->count();
+
+        if ($existingCount > 0) {
+            $totalSessions = count($sessionIds);
+            $newSessions = $totalSessions - $existingCount;
+            return response()->json([
+                'has_conflict' => true,
+                'existing_count' => $existingCount,
+                'total_sessions' => $totalSessions,
+                'new_sessions' => $newSessions,
+                'client_name' => $client->full_name,
+                'message' => $newSessions <= 0
+                    ? "{$client->full_name} is already booked into all {$existingCount} session(s) in this schedule."
+                    : "{$client->full_name} is already booked into {$existingCount} of {$totalSessions} session(s).",
+            ]);
+        }
+
+        return response()->json(['has_conflict' => false]);
+    }
+
+    /**
      * Show walk-in booking page for a class session
      */
     public function classSession(ClassSession $classSession)
@@ -633,6 +675,8 @@ class WalkInController extends Controller
             'billing_period' => 'nullable|integer|in:1,3,6,9,12',
             'billing_discount_percent' => 'nullable|numeric|min:0',
             'include_registration_fee' => 'nullable|in:0,1',
+            'booking_type' => 'nullable|in:single,period,trial',
+            'series_session_ids' => 'nullable|string',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
@@ -727,6 +771,23 @@ class WalkInController extends Controller
             }
         }
 
+        // For series bookings, check if ALL sessions are already booked (block only if nothing new to add)
+        $bookingType = $validated['booking_type'] ?? 'single';
+        if ($bookingType === 'period' && !empty($validated['series_session_ids'])) {
+            $sessionIds = array_filter(explode(',', $validated['series_session_ids']));
+            $existingCount = Booking::where('client_id', $client->id)
+                ->where('bookable_type', ClassSession::class)
+                ->whereIn('bookable_id', $sessionIds)
+                ->where('status', '!=', Booking::STATUS_CANCELLED)
+                ->count();
+
+            if ($existingCount >= count($sessionIds)) {
+                return back()
+                    ->withInput()
+                    ->with('error', "{$client->full_name} is already booked into all sessions in this schedule.");
+            }
+        }
+
         try {
             $booking = $this->bookingService->createWalkInClassBooking(
                 host: $host,
@@ -815,9 +876,54 @@ class WalkInController extends Controller
                 }
             }
 
+            // For series bookings, book client into all other sessions in the series
+            $seriesBookedCount = 0;
+            $bookingType = $validated['booking_type'] ?? 'single';
+            if ($bookingType === 'period' && !empty($validated['series_session_ids'])) {
+                $sessionIds = array_filter(explode(',', $validated['series_session_ids']));
+                // Remove the primary session (already booked above)
+                $sessionIds = array_diff($sessionIds, [$classSession->id]);
+
+                $otherSessions = ClassSession::where('host_id', $host->id)
+                    ->whereIn('id', $sessionIds)
+                    ->where('status', ClassSession::STATUS_PUBLISHED)
+                    ->get();
+
+                foreach ($otherSessions as $otherSession) {
+                    // Skip if client already has a booking for this session
+                    $existingBooking = Booking::where('client_id', $client->id)
+                        ->where('bookable_type', ClassSession::class)
+                        ->where('bookable_id', $otherSession->id)
+                        ->where('status', '!=', Booking::STATUS_CANCELLED)
+                        ->exists();
+
+                    if ($existingBooking) continue;
+
+                    Booking::create([
+                        'host_id' => $host->id,
+                        'client_id' => $client->id,
+                        'bookable_type' => ClassSession::class,
+                        'bookable_id' => $otherSession->id,
+                        'status' => Booking::STATUS_CONFIRMED,
+                        'booking_source' => Booking::SOURCE_INTERNAL_WALKIN,
+                        'capacity_override' => true,
+                        'created_by_user_id' => auth()->id(),
+                        'payment_method' => $bookingType === 'period' ? 'series' : ($validated['payment_method'] ?? 'manual'),
+                        'price_paid' => 0, // Covered by series payment
+                        'booked_at' => now(),
+                    ]);
+                    $seriesBookedCount++;
+                }
+            }
+
+            $successMsg = "Walk-in booking confirmed for {$client->full_name}!";
+            if ($seriesBookedCount > 0) {
+                $successMsg = "Series booking confirmed for {$client->full_name}! Booked into " . ($seriesBookedCount + 1) . " sessions.";
+            }
+
             return redirect()
                 ->route('schedule.calendar')
-                ->with('success', "Walk-in booking confirmed for {$client->full_name}!");
+                ->with('success', $successMsg);
 
         } catch (\Exception $e) {
             return back()

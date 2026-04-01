@@ -102,7 +102,7 @@
                 $userInstructor = \App\Models\Instructor::where('host_id', $host->id)->where('user_id', $user->id)->with('bookingProfile')->first();
                 $hasOneOnOneAccess = $userInstructor && $userInstructor->bookingProfile && $userInstructor->bookingProfile->is_enabled;
                 $showOneOnOneMenu = $isStudioOwner || $hasOneOnOneAccess;
-                $scheduleActive = request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') || request()->is('one-on-one*') || request()->is('one-on-one-setup*');
+                $scheduleActive = request()->is('schedule*') || request()->is('service-slots*') || request()->is('class-sessions*') || request()->is('membership-schedules*') || request()->is('scheduled-membership*') || request()->is('space-rentals*') || request()->is('one-on-one*') || request()->is('one-on-one-setup*') || request()->is('schedule-planner*');
             @endphp
             @if($canViewSchedule || $showOneOnOneMenu)
             <li class="nav-item {{ $scheduleActive ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="schedule">
@@ -128,6 +128,9 @@
                     </a></li>
                     <li><a href="{{ url('/space-rentals') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('space-rentals*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--building] size-4 mr-2"></span>{{ $trans['nav.schedule.space_rentals'] ?? 'Space Rentals' }}
+                    </a></li>
+                    <li><a href="{{ url('/schedule-planner') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule-planner*') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--calendar-repeat] size-4 mr-2"></span>Schedule Planner
                     </a></li>
                     @endif
                     @endif

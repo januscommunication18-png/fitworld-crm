@@ -483,6 +483,7 @@ Route::middleware('auth')->group(function () {
 
     // Class Sessions
     Route::resource('class-sessions', ClassSessionController::class)->names('class-sessions');
+    Route::get('/schedule-planner', [\App\Http\Controllers\Host\SchedulePlannerController::class, 'index'])->name('schedule-planner.index');
     Route::patch('/class-sessions/{class_session}/publish', [ClassSessionController::class, 'publish'])->name('class-sessions.publish');
     Route::patch('/class-sessions/{class_session}/unpublish', [ClassSessionController::class, 'unpublish'])->name('class-sessions.unpublish');
     Route::patch('/class-sessions/{class_session}/cancel', [ClassSessionController::class, 'cancel'])->name('class-sessions.cancel');
@@ -505,6 +506,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in/sessions', [WalkInController::class, 'getSessionsByDate'])->name('walk-in.sessions');
     Route::get('/walk-in/sessions-range', [WalkInController::class, 'getSessionsByDateRange'])->name('walk-in.sessions-range');
     Route::get('/walk-in/class-schedules', [WalkInController::class, 'getClassSchedules'])->name('walk-in.class-schedules');
+    Route::get('/walk-in/check-series-conflict', [WalkInController::class, 'checkSeriesConflict'])->name('walk-in.check-series-conflict');
     Route::get('/walk-in/class/{class_session}', [WalkInController::class, 'classSession'])->name('walk-in.class');
     Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
     Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');

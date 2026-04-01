@@ -418,6 +418,8 @@
                 </div>
 
                 {{-- Hidden fields for form submission --}}
+                <input type="hidden" name="booking_type" id="booking-type-hidden" value="single">
+                <input type="hidden" name="series_session_ids" id="series-session-ids-hidden" value="">
                 <input type="hidden" name="payment_method" id="payment-method-hidden" value="manual">
                 <input type="hidden" name="pack_id" id="class-pass-purchase-id" value="">
                 <input type="hidden" name="offer_id" id="offer_id" value="">
@@ -3299,6 +3301,26 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('summary-datetime').textContent = datePicker.altInput.value + ' at ' + selectedSessionData.time;
         }
 
+        // For series bookings, check if client already has bookings for some sessions (warning, not blocking)
+        if (selectedBookingType === 'period' && _periodSessionsData.length > 0 && selectedClientId && selectedClientId !== 'new') {
+            try {
+                var checkIds = _periodSessionsData.map(function(s) { return s.id; }).join(',');
+                var checkRes = await fetch('/walk-in/check-series-conflict?client_id=' + selectedClientId + '&session_ids=' + checkIds);
+                var checkData = await checkRes.json();
+                if (checkData.has_conflict) {
+                    var newSessions = _periodSessionsData.length - checkData.existing_count;
+                    if (newSessions <= 0) {
+                        showFormError(checkData.message);
+                        return;
+                    }
+                    // Show warning but allow to proceed — only new sessions will be booked
+                    if (!confirm(checkData.client_name + ' is already booked into ' + checkData.existing_count + ' session(s). Only ' + newSessions + ' new session(s) will be added. Continue?')) {
+                        return;
+                    }
+                }
+            } catch(e) {}
+        }
+
         // Set price and store original
         const price = selectedSessionData.price;
         originalClassPrice = price;
@@ -3320,6 +3342,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Update form action
         document.getElementById('booking-form').action = `/walk-in/class/${selectedSessionId}`;
+
+        // Set booking type and series session IDs
+        document.getElementById('booking-type-hidden').value = selectedBookingType;
+        if (selectedBookingType === 'period' && _periodSessionsData.length > 0) {
+            document.getElementById('series-session-ids-hidden').value = _periodSessionsData.map(function(s) { return s.id; }).join(',');
+        } else {
+            document.getElementById('series-session-ids-hidden').value = '';
+        }
 
         goToStep(2);
 
