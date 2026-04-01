@@ -48,44 +48,8 @@
             @csrf
             @method('PUT')
 
-            {{-- Step Tab Navigation --}}
-            <div class="card bg-base-100 shadow-sm">
-                <div class="card-body p-0">
-                    <nav class="flex overflow-x-auto border-b border-base-content/10" id="step-tabs">
-                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-primary text-primary" data-step="1" onclick="goToStep(1)">
-                            <span class="icon-[tabler--user] size-5 mr-2 inline-block align-middle"></span>
-                            <span class="hidden sm:inline">1.</span> Profile
-                        </button>
-                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="2" onclick="goToStep(2)">
-                            <span class="icon-[tabler--briefcase] size-5 mr-2 inline-block align-middle"></span>
-                            <span class="hidden sm:inline">2.</span> Employment
-                        </button>
-                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="3" onclick="goToStep(3)">
-                            <span class="icon-[tabler--chart-bar] size-5 mr-2 inline-block align-middle"></span>
-                            <span class="hidden sm:inline">3.</span> Workload
-                        </button>
-                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="4" onclick="goToStep(4)">
-                            <span class="icon-[tabler--calendar-week] size-5 mr-2 inline-block align-middle"></span>
-                            <span class="hidden sm:inline">4.</span> Days
-                        </button>
-                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="5" onclick="goToStep(5)">
-                            <span class="icon-[tabler--clock] size-5 mr-2 inline-block align-middle"></span>
-                            <span class="hidden sm:inline">5.</span> Hours
-                        </button>
-                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="6" onclick="goToStep(6)">
-                            <span class="icon-[tabler--shield-cog] size-5 mr-2 inline-block align-middle"></span>
-                            <span class="hidden sm:inline">6.</span> Permissions
-                        </button>
-                        <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="7" onclick="goToStep(7)">
-                            <span class="icon-[tabler--certificate] size-5 mr-2 inline-block align-middle"></span>
-                            <span class="hidden sm:inline">7.</span> Certifications
-                        </button>
-                    </nav>
-                </div>
-            </div>
-
-            {{-- Step 1: Profile --}}
-            <div id="step-1" class="step-content mt-6">
+            <div class="space-y-6">
+                {{-- Section 1: Profile Information --}}
                 <div class="card bg-base-100 shadow-sm">
                     <div class="card-header border-b border-base-200">
                         <div class="flex items-center gap-3">
@@ -103,7 +67,7 @@
                         <div class="flex items-center gap-4 p-4 bg-base-200/50 rounded-lg">
                             <div class="avatar placeholder">
                                 @php
-                                    $bgColor = match($user->role) {
+                                    $bgColor = match($pivotRole) {
                                         'owner' => 'bg-primary text-primary-content',
                                         'admin' => 'bg-secondary text-secondary-content',
                                         'staff' => 'bg-info text-info-content',
@@ -142,7 +106,7 @@
                             <div class="flex flex-col gap-3">
                                 {{-- Admin --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-secondary has-[:checked]:bg-secondary/5 hover:border-secondary/30 transition-all">
-                                    <input type="radio" name="role" value="admin" class="radio radio-secondary mt-1" {{ old('role', $user->role) == 'admin' ? 'checked' : '' }} />
+                                    <input type="radio" name="role" value="admin" class="radio radio-secondary mt-1" {{ old('role', $pivotRole) == 'admin' ? 'checked' : '' }} />
                                     <div class="flex-1">
                                         <div class="flex items-center gap-2">
                                             <span class="icon-[tabler--shield] size-5 text-secondary"></span>
@@ -152,9 +116,21 @@
                                     </div>
                                 </label>
 
+                                {{-- Manager --}}
+                                <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-warning has-[:checked]:bg-warning/5 hover:border-warning/30 transition-all">
+                                    <input type="radio" name="role" value="manager" class="radio radio-warning mt-1" {{ old('role', $pivotRole) == 'manager' ? 'checked' : '' }} />
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="icon-[tabler--briefcase] size-5 text-warning"></span>
+                                            <span class="font-semibold">Manager</span>
+                                        </div>
+                                        <p class="text-sm text-base-content/60 mt-1">Can manage schedule, bookings, students, and view insights.</p>
+                                    </div>
+                                </label>
+
                                 {{-- Staff --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-info has-[:checked]:bg-info/5 hover:border-info/30 transition-all">
-                                    <input type="radio" name="role" value="staff" class="radio radio-info mt-1" {{ old('role', $user->role) == 'staff' ? 'checked' : '' }} />
+                                    <input type="radio" name="role" value="staff" class="radio radio-info mt-1" {{ old('role', $pivotRole) == 'staff' ? 'checked' : '' }} />
                                     <div class="flex-1">
                                         <div class="flex items-center gap-2">
                                             <span class="icon-[tabler--user] size-5 text-info"></span>
@@ -166,7 +142,7 @@
 
                                 {{-- Instructor --}}
                                 <label class="cursor-pointer flex items-start gap-4 p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-accent has-[:checked]:bg-accent/5 hover:border-accent/30 transition-all">
-                                    <input type="radio" name="role" value="instructor" class="radio radio-accent mt-1" {{ old('role', $user->role) == 'instructor' ? 'checked' : '' }} />
+                                    <input type="radio" name="role" value="instructor" class="radio radio-accent mt-1" {{ old('role', $pivotRole) == 'instructor' ? 'checked' : '' }} />
                                     <div class="flex-1">
                                         <div class="flex items-center gap-2">
                                             <span class="icon-[tabler--yoga] size-5 text-accent"></span>
@@ -217,10 +193,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Step 2: Employment --}}
-            <div id="step-2" class="step-content hidden mt-6">
+                {{-- Section 2: Employment Details --}}
                 <div class="card bg-base-100 shadow-sm">
                     <div class="card-header border-b border-base-200">
                         <div class="flex items-center gap-3">
@@ -300,156 +274,136 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Step 3: Workload --}}
-            <div id="step-3" class="step-content hidden mt-6">
+                {{-- Section 3: Schedule & Availability --}}
                 <div class="card bg-base-100 shadow-sm">
                     <div class="card-header border-b border-base-200">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                                <span class="icon-[tabler--chart-bar] size-5 text-accent"></span>
+                                <span class="icon-[tabler--calendar-clock] size-5 text-accent"></span>
                             </div>
                             <div>
-                                <h3 class="card-title text-lg">Workload Limits</h3>
-                                <p class="text-base-content/60 text-sm">Prevent over-scheduling</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body space-y-5">
-                        <div class="form-control">
-                            <label class="label" for="hours_per_week">
-                                <span class="label-text font-medium">Hours per Week</span>
-                            </label>
-                            <div class="relative">
-                                <span class="icon-[tabler--clock-hour-4] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
-                                <input type="number" id="hours_per_week" name="hours_per_week" class="input input-bordered w-full pl-10"
-                                       step="0.5" min="0" max="168" placeholder="e.g., 20" value="{{ old('hours_per_week', $instructor?->hours_per_week) }}" />
-                            </div>
-                            <label class="label"><span class="label-text-alt text-base-content/50">Used for scheduling warnings</span></label>
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label" for="max_classes_per_week">
-                                <span class="label-text font-medium">Max Classes per Week</span>
-                            </label>
-                            <div class="relative">
-                                <span class="icon-[tabler--calendar-event] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
-                                <input type="number" id="max_classes_per_week" name="max_classes_per_week" class="input input-bordered w-full pl-10"
-                                       min="0" max="100" placeholder="e.g., 15" value="{{ old('max_classes_per_week', $instructor?->max_classes_per_week) }}" />
-                            </div>
-                            <label class="label"><span class="label-text-alt text-base-content/50">Soft limit for scheduling</span></label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Step 4: Working Days --}}
-            <div id="step-4" class="step-content hidden mt-6">
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-header border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center">
-                                <span class="icon-[tabler--calendar-week] size-5 text-warning"></span>
-                            </div>
-                            <div>
-                                <h3 class="card-title text-lg">Working Days</h3>
-                                <p class="text-base-content/60 text-sm">Select which days this team member is available</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        @php
-                            $selectedDays = old('working_days', $instructor?->working_days ?? []);
-                        @endphp
-                        <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
-                            @foreach($dayOptions as $value => $label)
-                                <label class="cursor-pointer flex flex-col items-center p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/10 hover:border-primary/30 transition-all">
-                                    <input type="checkbox" name="working_days[]" value="{{ $value }}" class="hidden"
-                                        {{ in_array($value, $selectedDays ?? []) ? 'checked' : '' }} />
-                                    <span class="text-2xl mb-1">{{ ['Sun' => '☀️', 'Mon' => '🌙', 'Tue' => '🔥', 'Wed' => '💧', 'Thu' => '⚡', 'Fri' => '🐟', 'Sat' => '⭐'][substr($label, 0, 3)] }}</span>
-                                    <span class="font-medium text-sm">{{ substr($label, 0, 3) }}</span>
-                                </label>
-                            @endforeach
-                        </div>
-                        <p class="text-sm text-base-content/50 mt-4 text-center">
-                            <span class="icon-[tabler--info-circle] size-4 inline-block align-text-bottom mr-1"></span>
-                            Select the days this team member typically works
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Step 5: Availability Hours --}}
-            <div id="step-5" class="step-content hidden mt-6">
-                <div class="card bg-base-100 shadow-sm">
-                    <div class="card-header border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center">
-                                <span class="icon-[tabler--clock] size-5 text-success"></span>
-                            </div>
-                            <div>
-                                <h3 class="card-title text-lg">Availability Hours</h3>
-                                <p class="text-base-content/60 text-sm">Set working hours for scheduling</p>
+                                <h3 class="card-title text-lg">Schedule & Availability</h3>
+                                <p class="text-base-content/60 text-sm">Workload limits, working days, and hours</p>
                             </div>
                         </div>
                     </div>
                     <div class="card-body space-y-6">
-                        <div class="form-control">
-                            <label class="label" for="availability_default_from">
-                                <span class="label-text font-medium">Start Time</span>
-                            </label>
-                            <input type="text" id="availability_default_from" name="availability_default_from"
-                                   class="input input-bordered w-full flatpickr-time" placeholder="Select start time..."
-                                   value="{{ old('availability_default_from', $instructor?->availability_default_from) }}" />
-                        </div>
-
-                        <div class="form-control">
-                            <label class="label" for="availability_default_to">
-                                <span class="label-text font-medium">End Time</span>
-                            </label>
-                            <input type="text" id="availability_default_to" name="availability_default_to"
-                                   class="input input-bordered w-full flatpickr-time" placeholder="Select end time..."
-                                   value="{{ old('availability_default_to', $instructor?->availability_default_to) }}" />
-                        </div>
-
-                        @php
-                            $hasOverrides = !empty(old('availability_by_day', $instructor?->availability_by_day));
-                        @endphp
-                        <label class="cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all hover:border-primary/30">
-                            <input type="checkbox" id="enable-day-overrides" class="checkbox checkbox-sm checkbox-primary" {{ $hasOverrides ? 'checked' : '' }} />
-                            <div class="flex-1">
-                                <span class="font-medium">Day-Specific Overrides</span>
-                                <span class="text-xs text-base-content/60 block">Set different hours for specific days</span>
-                            </div>
-                            <span class="icon-[tabler--adjustments-horizontal] size-5 text-base-content/40"></span>
-                        </label>
-
-                        <div id="day-overrides-container" class="space-y-3 {{ $hasOverrides ? '' : 'hidden' }}">
-                            @php
-                                $overrides = old('availability_by_day', $instructor?->availability_by_day ?? []);
-                            @endphp
-                            @foreach($dayOptions as $value => $label)
-                                <div class="flex flex-col gap-2 p-4 bg-base-200/30 rounded-lg">
-                                    <span class="font-medium text-sm">{{ $label }}</span>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <input type="text" name="availability_by_day[{{ $value }}][from]"
-                                               class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="Start time"
-                                               value="{{ $overrides[$value]['from'] ?? '' }}" />
-                                        <input type="text" name="availability_by_day[{{ $value }}][to]"
-                                               class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="End time"
-                                               value="{{ $overrides[$value]['to'] ?? '' }}" />
+                        {{-- Workload Limits --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-4">Workload Limits</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="form-control">
+                                    <label class="label" for="hours_per_week">
+                                        <span class="label-text font-medium">Hours per Week</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="icon-[tabler--clock-hour-4] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
+                                        <input type="number" id="hours_per_week" name="hours_per_week" class="input input-bordered w-full pl-10"
+                                               step="0.5" min="0" max="168" placeholder="e.g., 20" value="{{ old('hours_per_week', $instructor?->hours_per_week) }}" />
                                     </div>
+                                    <label class="label"><span class="label-text-alt text-base-content/50">Used for scheduling warnings</span></label>
                                 </div>
-                            @endforeach
-                            <p class="text-xs text-base-content/50">Leave blank to use default hours for that day.</p>
+
+                                <div class="form-control">
+                                    <label class="label" for="max_classes_per_week">
+                                        <span class="label-text font-medium">Max Classes per Week</span>
+                                    </label>
+                                    <div class="relative">
+                                        <span class="icon-[tabler--calendar-event] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
+                                        <input type="number" id="max_classes_per_week" name="max_classes_per_week" class="input input-bordered w-full pl-10"
+                                               min="0" max="100" placeholder="e.g., 15" value="{{ old('max_classes_per_week', $instructor?->max_classes_per_week) }}" />
+                                    </div>
+                                    <label class="label"><span class="label-text-alt text-base-content/50">Soft limit for scheduling</span></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="divider my-0"></div>
+
+                        {{-- Working Days --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-4">Working Days</h4>
+                            @php
+                                $selectedDays = old('working_days', $instructor?->working_days ?? []);
+                            @endphp
+                            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                                @foreach($dayOptions as $value => $label)
+                                    <label class="cursor-pointer flex flex-col items-center p-4 rounded-xl border-2 border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/10 hover:border-primary/30 transition-all">
+                                        <input type="checkbox" name="working_days[]" value="{{ $value }}" class="hidden"
+                                            {{ in_array($value, $selectedDays ?? []) ? 'checked' : '' }} />
+                                        <span class="text-2xl mb-1">{{ ['Sun' => "\u{2600}\u{FE0F}", 'Mon' => "\u{1F319}", 'Tue' => "\u{1F525}", 'Wed' => "\u{1F4A7}", 'Thu' => "\u{26A1}", 'Fri' => "\u{1F41F}", 'Sat' => "\u{2B50}"][substr($label, 0, 3)] }}</span>
+                                        <span class="font-medium text-sm">{{ substr($label, 0, 3) }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            <p class="text-sm text-base-content/50 mt-3 text-center">
+                                <span class="icon-[tabler--info-circle] size-4 inline-block align-text-bottom mr-1"></span>
+                                Select the days this team member typically works
+                            </p>
+                        </div>
+
+                        <div class="divider my-0"></div>
+
+                        {{-- Availability Hours --}}
+                        <div>
+                            <h4 class="text-sm font-semibold text-base-content/70 uppercase tracking-wider mb-4">Availability Hours</h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="form-control">
+                                    <label class="label" for="availability_default_from">
+                                        <span class="label-text font-medium">Start Time</span>
+                                    </label>
+                                    <input type="text" id="availability_default_from" name="availability_default_from"
+                                           class="input input-bordered w-full flatpickr-time" placeholder="Select start time..."
+                                           value="{{ old('availability_default_from', $instructor?->availability_default_from) }}" />
+                                </div>
+
+                                <div class="form-control">
+                                    <label class="label" for="availability_default_to">
+                                        <span class="label-text font-medium">End Time</span>
+                                    </label>
+                                    <input type="text" id="availability_default_to" name="availability_default_to"
+                                           class="input input-bordered w-full flatpickr-time" placeholder="Select end time..."
+                                           value="{{ old('availability_default_to', $instructor?->availability_default_to) }}" />
+                                </div>
+                            </div>
+
+                            @php
+                                $hasOverrides = !empty(old('availability_by_day', $instructor?->availability_by_day));
+                            @endphp
+                            <label class="cursor-pointer flex items-center gap-3 px-4 py-3 mt-4 rounded-lg border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all hover:border-primary/30">
+                                <input type="checkbox" id="enable-day-overrides" class="checkbox checkbox-sm checkbox-primary" {{ $hasOverrides ? 'checked' : '' }} />
+                                <div class="flex-1">
+                                    <span class="font-medium">Day-Specific Overrides</span>
+                                    <span class="text-xs text-base-content/60 block">Set different hours for specific days</span>
+                                </div>
+                                <span class="icon-[tabler--adjustments-horizontal] size-5 text-base-content/40"></span>
+                            </label>
+
+                            <div id="day-overrides-container" class="space-y-3 mt-4 {{ $hasOverrides ? '' : 'hidden' }}">
+                                @php
+                                    $overrides = old('availability_by_day', $instructor?->availability_by_day ?? []);
+                                @endphp
+                                @foreach($dayOptions as $value => $label)
+                                    <div class="flex flex-col gap-2 p-4 bg-base-200/30 rounded-lg">
+                                        <span class="font-medium text-sm">{{ $label }}</span>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <input type="text" name="availability_by_day[{{ $value }}][from]"
+                                                   class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="Start time"
+                                                   value="{{ $overrides[$value]['from'] ?? '' }}" />
+                                            <input type="text" name="availability_by_day[{{ $value }}][to]"
+                                                   class="input input-sm input-bordered w-full flatpickr-time-override" placeholder="End time"
+                                                   value="{{ $overrides[$value]['to'] ?? '' }}" />
+                                        </div>
+                                    </div>
+                                @endforeach
+                                <p class="text-xs text-base-content/50">Leave blank to use default hours for that day.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Step 6: Permissions --}}
-            <div id="step-6" class="step-content hidden mt-6">
+                {{-- Section 4: Permissions --}}
                 <div class="card bg-base-100 shadow-sm">
                     <div class="card-header border-b border-base-200">
                         <div class="flex items-center gap-3">
@@ -474,6 +428,7 @@
                                 'studio' => 'icon-[tabler--building-store]',
                                 'team' => 'icon-[tabler--users-group]',
                                 'billing' => 'icon-[tabler--receipt]',
+                                'pricing' => 'icon-[tabler--currency-dollar]',
                             ];
                             $categoryColors = [
                                 'schedule' => 'text-primary bg-primary/10',
@@ -485,8 +440,9 @@
                                 'studio' => 'text-primary bg-primary/10',
                                 'team' => 'text-secondary bg-secondary/10',
                                 'billing' => 'text-info bg-info/10',
+                                'pricing' => 'text-success bg-success/10',
                             ];
-                            $userPermissions = old('permissions', $user->permissions ?? []);
+                            $userPermissions = old('permissions', $pivotPermissions ?? []);
                         @endphp
 
                         <div class="space-y-2">
@@ -534,10 +490,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Step 7: Certifications --}}
-            <div id="step-7" class="step-content hidden mt-6">
+                {{-- Section 5: Certifications --}}
                 <div class="card bg-base-100 shadow-sm">
                     <div class="card-header border-b border-base-200">
                         <div class="flex items-center justify-between w-full">
@@ -613,23 +567,13 @@
                 </div>
             </div>
 
-            {{-- Navigation --}}
-            <div class="flex items-center justify-between pt-6">
-                <button type="button" id="prev-step-btn" class="btn btn-ghost gap-2 hidden" onclick="prevStep()">
-                    <span class="icon-[tabler--chevron-left] size-5"></span>
-                    Previous
+            {{-- Submit --}}
+            <div class="flex items-center justify-end gap-3 pt-6">
+                <a href="{{ route('settings.team.users') }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary gap-2">
+                    <span class="icon-[tabler--check] size-5"></span>
+                    Save Changes
                 </button>
-                <div class="flex gap-3 ml-auto">
-                    <a href="{{ route('settings.team.users') }}" class="btn btn-ghost">Cancel</a>
-                    <button type="button" id="next-step-btn" class="btn btn-primary gap-2" onclick="nextStep()">
-                        Next Step
-                        <span class="icon-[tabler--chevron-right] size-5"></span>
-                    </button>
-                    <button type="submit" id="save-btn" class="btn btn-primary gap-2 hidden">
-                        <span class="icon-[tabler--check] size-5"></span>
-                        Save Changes
-                    </button>
-                </div>
             </div>
         </form>
     </div>
@@ -651,18 +595,15 @@
                     <label class="label-text font-medium" for="user_cert_name">Name <span class="text-error">*</span></label>
                     <input type="text" id="user_cert_name" name="name" class="input w-full" placeholder="e.g., First Aid, CPR, Management Training" required />
                 </div>
-
                 <div>
                     <label class="label-text font-medium" for="user_cert_certification_name">Certification / Credential Name</label>
                     <input type="text" id="user_cert_certification_name" name="certification_name" class="input w-full" placeholder="e.g., Red Cross Certified, License #12345" />
                 </div>
-
                 <div>
                     <label class="label-text font-medium" for="user_cert_expire_date">Expiration Date</label>
                     <input type="date" id="user_cert_expire_date" name="expire_date" class="input w-full" />
                     <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
                 </div>
-
                 <div>
                     <label class="label-text font-medium" for="user_cert_reminder_days">Reminder</label>
                     <select id="user_cert_reminder_days" name="reminder_days" class="select w-full">
@@ -674,7 +615,6 @@
                         <option value="90">90 days before expiry</option>
                     </select>
                 </div>
-
                 <div>
                     <label class="label-text font-medium">Upload Document</label>
                     <div class="flex flex-col items-center justify-center border-2 border-dashed border-base-content/20 rounded-lg p-6 hover:border-primary transition-colors cursor-pointer" id="user-cert-drop-zone">
@@ -701,7 +641,6 @@
                     </div>
                     <p class="text-xs text-base-content/50 text-center mt-2">PDF, JPG, PNG, WebP. Max 10MB</p>
                 </div>
-
                 <div>
                     <label class="label-text font-medium" for="user_cert_notes">Notes</label>
                     <textarea id="user_cert_notes" name="notes" class="textarea w-full" rows="2" placeholder="Additional notes..."></textarea>
@@ -737,64 +676,13 @@
 @push('scripts')
     <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
     <script>
-        const totalSteps = 7;
-        let currentStep = 1;
-
         // Role default permissions
         const roleDefaults = {
             admin: @json(\App\Models\User::getDefaultPermissionsForRole('admin')),
+            manager: @json(\App\Models\User::getDefaultPermissionsForRole('manager')),
             staff: @json(\App\Models\User::getDefaultPermissionsForRole('staff')),
             instructor: @json(\App\Models\User::getDefaultPermissionsForRole('instructor'))
         };
-
-        function showStep(step) {
-            // Hide all steps
-            for (let i = 1; i <= totalSteps; i++) {
-                const stepEl = document.getElementById('step-' + i);
-                if (stepEl) stepEl.classList.add('hidden');
-            }
-            // Show current step
-            const currentStepEl = document.getElementById('step-' + step);
-            if (currentStepEl) currentStepEl.classList.remove('hidden');
-
-            // Update tab indicators
-            document.querySelectorAll('.step-tab').forEach((tab) => {
-                const tabStep = parseInt(tab.dataset.step);
-                if (tabStep === step) {
-                    tab.classList.add('border-primary', 'text-primary');
-                    tab.classList.remove('border-transparent', 'text-base-content/60');
-                } else {
-                    tab.classList.remove('border-primary', 'text-primary');
-                    tab.classList.add('border-transparent', 'text-base-content/60');
-                }
-            });
-
-            // Update navigation buttons
-            document.getElementById('prev-step-btn').classList.toggle('hidden', step === 1);
-            document.getElementById('next-step-btn').classList.toggle('hidden', step === totalSteps);
-            document.getElementById('save-btn').classList.toggle('hidden', step !== totalSteps);
-
-            currentStep = step;
-        }
-
-        function nextStep() {
-            if (currentStep < totalSteps) {
-                showStep(currentStep + 1);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        function prevStep() {
-            if (currentStep > 1) {
-                showStep(currentStep - 1);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        function goToStep(step) {
-            showStep(step);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
 
         function resetToRoleDefaults() {
             var role = document.querySelector('input[name="role"]:checked')?.value || 'staff';
@@ -893,7 +781,7 @@
         // ============================================
         // User Certifications Management
         // ============================================
-        var editingUserCertId = null;
+
         var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
         function showToast(message, type) {
@@ -908,6 +796,9 @@
                 setTimeout(function() { toast.remove(); }, 300);
             }, 3000);
         }
+
+        // ========== Certification Drawer ==========
+        var editingUserCertId = null;
 
         function openUserCertDrawer() {
             resetUserCertForm();
@@ -945,7 +836,6 @@
             document.getElementById('user_cert_notes').value = '';
             document.getElementById('user_cert_file').value = '';
             document.getElementById('user-cert-remove-file').value = '';
-
             var placeholder = document.getElementById('user-cert-upload-placeholder');
             var preview = document.getElementById('user-cert-upload-preview');
             var existingFile = document.getElementById('user-cert-existing-file');
@@ -957,7 +847,6 @@
         function editUserCert(id) {
             editingUserCertId = id;
             document.getElementById('user-cert-drawer-title').textContent = 'Edit Certification';
-
             var spinner = document.getElementById('user-cert-spinner');
             spinner.classList.remove('hidden');
 
@@ -992,7 +881,6 @@
                         if (placeholder) placeholder.classList.remove('hidden');
                     }
                     if (preview) preview.classList.add('hidden');
-
                     openUserCertDrawer();
                 } else {
                     showToast(result.message || 'Failed to load certification', 'error');
@@ -1007,11 +895,9 @@
             document.getElementById('delete-user-cert-modal').showModal();
         }
 
-        // Confirm delete
         document.getElementById('confirm-delete-user-cert-btn').addEventListener('click', function() {
             var btn = this;
             var id = document.getElementById('delete-user-cert-id').value;
-
             btn.disabled = true;
             btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Deleting...';
 
@@ -1024,7 +910,6 @@
                 if (result.success) {
                     var item = document.querySelector('[data-cert-id="' + id + '"]');
                     if (item) item.remove();
-
                     var container = document.getElementById('user-certs-container');
                     if (container && container.querySelectorAll('[data-cert-id]').length === 0) {
                         document.getElementById('user-certifications-list').innerHTML =
@@ -1034,7 +919,6 @@
                             '<button type="button" class="btn btn-primary btn-sm mt-4" onclick="openUserCertDrawer()">' +
                             '<span class="icon-[tabler--plus] size-4"></span> Add Certification</button></div>';
                     }
-
                     document.getElementById('delete-user-cert-modal').close();
                     showToast('Certification deleted!');
                 } else {
@@ -1042,10 +926,7 @@
                 }
             })
             .catch(function() { showToast('An error occurred', 'error'); })
-            .finally(function() {
-                btn.disabled = false;
-                btn.innerHTML = 'Delete';
-            });
+            .finally(function() { btn.disabled = false; btn.innerHTML = 'Delete'; });
         });
 
         // File input handling
@@ -1060,50 +941,23 @@
             var existingFile = document.getElementById('user-cert-existing-file');
 
             if (!fileInput) return;
-
-            if (browseBtn) {
-                browseBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
-            }
-
+            if (browseBtn) browseBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fileInput.click(); });
             if (dropZone) {
                 dropZone.addEventListener('click', function(e) { if (!e.target.closest('button')) fileInput.click(); });
                 dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('border-primary', 'bg-primary/5'); });
                 dropZone.addEventListener('dragleave', function(e) { e.preventDefault(); dropZone.classList.remove('border-primary', 'bg-primary/5'); });
                 dropZone.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    dropZone.classList.remove('border-primary', 'bg-primary/5');
-                    if (e.dataTransfer.files.length > 0) {
-                        fileInput.files = e.dataTransfer.files;
-                        handleUserCertFile(e.dataTransfer.files[0]);
-                    }
+                    e.preventDefault(); dropZone.classList.remove('border-primary', 'bg-primary/5');
+                    if (e.dataTransfer.files.length > 0) { fileInput.files = e.dataTransfer.files; handleUserCertFile(e.dataTransfer.files[0]); }
                 });
             }
-
-            fileInput.addEventListener('change', function() {
-                if (this.files.length > 0) handleUserCertFile(this.files[0]);
-            });
-
-            if (removeBtn) {
-                removeBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    fileInput.value = '';
-                    if (preview) preview.classList.add('hidden');
-                    if (placeholder) placeholder.classList.remove('hidden');
-                });
-            }
+            fileInput.addEventListener('change', function() { if (this.files.length > 0) handleUserCertFile(this.files[0]); });
+            if (removeBtn) removeBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); fileInput.value = ''; if (preview) preview.classList.add('hidden'); if (placeholder) placeholder.classList.remove('hidden'); });
 
             function handleUserCertFile(file) {
                 var validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
-                if (!validTypes.includes(file.type)) {
-                    showToast('Please upload PDF, JPG, PNG, or WebP', 'error');
-                    return;
-                }
-                if (file.size > 10 * 1024 * 1024) {
-                    showToast('File must be under 10MB', 'error');
-                    return;
-                }
-
+                if (!validTypes.includes(file.type)) { showToast('Please upload PDF, JPG, PNG, or WebP', 'error'); return; }
+                if (file.size > 10 * 1024 * 1024) { showToast('File must be under 10MB', 'error'); return; }
                 if (previewName) previewName.textContent = file.name;
                 if (placeholder) placeholder.classList.add('hidden');
                 if (existingFile) existingFile.classList.add('hidden');
@@ -1111,15 +965,7 @@
             }
 
             var removeExistingBtn = document.getElementById('user-cert-remove-existing-btn');
-            if (removeExistingBtn) {
-                removeExistingBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (existingFile) existingFile.classList.add('hidden');
-                    if (placeholder) placeholder.classList.remove('hidden');
-                    document.getElementById('user-cert-remove-file').value = '1';
-                });
-            }
+            if (removeExistingBtn) removeExistingBtn.addEventListener('click', function(e) { e.preventDefault(); e.stopPropagation(); if (existingFile) existingFile.classList.add('hidden'); if (placeholder) placeholder.classList.remove('hidden'); document.getElementById('user-cert-remove-file').value = '1'; });
         })();
 
         // Form submit
@@ -1138,23 +984,14 @@
             formData.append('notes', document.getElementById('user_cert_notes').value);
 
             var fileInput = document.getElementById('user_cert_file');
-            if (fileInput.files.length > 0) {
-                formData.append('file', fileInput.files[0]);
-            }
-
+            if (fileInput.files.length > 0) formData.append('file', fileInput.files[0]);
             var removeFile = document.getElementById('user-cert-remove-file').value;
-            if (removeFile === '1') {
-                formData.append('remove_file', '1');
-            }
-
+            if (removeFile === '1') formData.append('remove_file', '1');
             var certId = document.getElementById('user-cert-id').value;
             var isEdit = certId && certId !== '';
-            if (isEdit) {
-                formData.append('id', certId);
-            }
-            var url = '{{ url("settings/team/users") }}/{{ $user->id }}/certifications';
+            if (isEdit) formData.append('id', certId);
 
-            fetch(url, {
+            fetch('{{ url("settings/team/users") }}/{{ $user->id }}/certifications', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
                 body: formData
@@ -1164,53 +1001,29 @@
                 if (result.success) {
                     var cert = result.certification;
                     var list = document.getElementById('user-certifications-list');
-
                     var itemHtml = '<div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="' + cert.id + '">' +
-                        '<div class="flex items-center gap-3">' +
-                        '<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">' +
-                        '<span class="icon-[tabler--certificate] size-5 text-primary"></span></div>' +
+                        '<div class="flex items-center gap-3"><div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center"><span class="icon-[tabler--certificate] size-5 text-primary"></span></div>' +
                         '<div><div class="font-medium">' + escapeHtml(cert.name) + '</div>';
-
-                    if (cert.certification_name) {
-                        itemHtml += '<div class="text-xs text-base-content/60">' + escapeHtml(cert.certification_name) + '</div>';
-                    }
-
-                    if (cert.expire_date_formatted) {
-                        itemHtml += '<div class="text-xs mt-1"><span class="badge ' + cert.status_badge_class + ' badge-xs">' +
-                            (cert.days_until_expiry < 0 ? 'Expired ' : 'Expires ') + cert.expire_date_formatted + '</span></div>';
-                    }
-
+                    if (cert.certification_name) itemHtml += '<div class="text-xs text-base-content/60">' + escapeHtml(cert.certification_name) + '</div>';
+                    if (cert.expire_date_formatted) itemHtml += '<div class="text-xs mt-1"><span class="badge ' + cert.status_badge_class + ' badge-xs">' + (cert.days_until_expiry < 0 ? 'Expired ' : 'Expires ') + cert.expire_date_formatted + '</span></div>';
                     itemHtml += '</div></div><div class="flex items-center gap-1">';
-
-                    if (cert.file_url) {
-                        itemHtml += '<a href="' + cert.file_url + '" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File">' +
-                            '<span class="icon-[tabler--file-download] size-4"></span></a>';
-                    }
-
-                    itemHtml += '<button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editUserCert(' + cert.id + ')" title="Edit">' +
-                        '<span class="icon-[tabler--pencil] size-4"></span></button>' +
-                        '<button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteUserCert(' + cert.id + ')" title="Delete">' +
-                        '<span class="icon-[tabler--trash] size-4"></span></button></div></div>';
+                    if (cert.file_url) itemHtml += '<a href="' + cert.file_url + '" target="_blank" class="btn btn-ghost btn-sm btn-square" title="View File"><span class="icon-[tabler--file-download] size-4"></span></a>';
+                    itemHtml += '<button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editUserCert(' + cert.id + ')" title="Edit"><span class="icon-[tabler--pencil] size-4"></span></button>' +
+                        '<button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteUserCert(' + cert.id + ')" title="Delete"><span class="icon-[tabler--trash] size-4"></span></button></div></div>';
 
                     if (isEdit) {
                         var existingItem = document.querySelector('[data-cert-id="' + cert.id + '"]');
-                        if (existingItem) {
-                            existingItem.outerHTML = itemHtml;
-                        }
+                        if (existingItem) existingItem.outerHTML = itemHtml;
                     } else {
                         var emptyState = document.getElementById('no-user-certs-message');
                         if (emptyState) {
                             list.innerHTML = '<div class="space-y-3" id="user-certs-container">' + itemHtml + '</div>';
                         } else {
                             var container = document.getElementById('user-certs-container');
-                            if (container) {
-                                container.insertAdjacentHTML('beforeend', itemHtml);
-                            } else {
-                                list.innerHTML = '<div class="space-y-3" id="user-certs-container">' + itemHtml + '</div>';
-                            }
+                            if (container) container.insertAdjacentHTML('beforeend', itemHtml);
+                            else list.innerHTML = '<div class="space-y-3" id="user-certs-container">' + itemHtml + '</div>';
                         }
                     }
-
                     resetUserCertForm();
                     closeUserCertDrawer();
                     setTimeout(function() { showToast(isEdit ? 'Certification updated!' : 'Certification added!'); }, 350);
@@ -1219,10 +1032,7 @@
                 }
             })
             .catch(function() { showToast('An error occurred', 'error'); })
-            .finally(function() {
-                btn.disabled = false;
-                spinner.classList.add('hidden');
-            });
+            .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
         });
 
         function escapeHtml(text) {
@@ -1231,6 +1041,7 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
     </script>
 @endpush
 @endsection

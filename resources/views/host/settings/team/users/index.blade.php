@@ -51,9 +51,6 @@
                         </a>
                         @endif
                     </div>
-                    <button type="button" class="btn btn-soft btn-primary btn-sm" onclick="openQuickInviteModal()">
-                        <span class="icon-[tabler--bolt] size-4"></span> Quick Invite
-                    </button>
                     <a href="{{ route('settings.team.users.invite') }}" class="btn btn-primary btn-sm">
                         <span class="icon-[tabler--plus] size-4"></span> Add Team Member
                     </a>
@@ -69,7 +66,7 @@
                             <th>Status</th>
                             <th>Access Level</th>
                             <th>Last Active</th>
-                            <th class="w-20"></th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -159,6 +156,14 @@
                                     <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
                                         <span class="icon-[tabler--eye] size-4"></span>
                                     </a>
+                                    <a href="{{ route('settings.team.users.edit', $user) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                        <span class="icon-[tabler--edit] size-4"></span>
+                                    </a>
+                                    @if($userRole !== 'owner' && $user->id !== auth()->id())
+                                    <button type="button" class="btn btn-ghost btn-xs btn-square text-error" title="Remove" onclick="openDeleteUserModal({{ $user->id }}, '{{ addslashes($user->full_name) }}')">
+                                        <span class="icon-[tabler--trash] size-4"></span>
+                                    </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -588,11 +593,32 @@ function updateQuickInviteButton(isInvite) {
     }
 }
 
+// Delete User Modal Functions
+function openDeleteUserModal(userId, userName) {
+    document.getElementById('delete-user-name').textContent = userName;
+    document.getElementById('delete-user-form').action = '/settings/team/users/' + userId;
+    document.getElementById('delete-reason').value = '';
+    document.getElementById('delete-user-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    setTimeout(function() {
+        document.getElementById('delete-reason').focus();
+    }, 100);
+}
+
+function closeDeleteUserModal() {
+    document.getElementById('delete-user-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
 // Close modal on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
+        var deleteUserModal = document.getElementById('delete-user-modal');
         var quickInviteModal = document.getElementById('quick-invite-modal');
         var invitationModal = document.getElementById('invitation-details-modal');
+        if (!deleteUserModal.classList.contains('hidden')) {
+            closeDeleteUserModal();
+        }
         if (!quickInviteModal.classList.contains('hidden')) {
             closeQuickInviteModal();
         }
@@ -671,6 +697,47 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
+
+{{-- Delete User Confirmation Modal --}}
+<div id="delete-user-modal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeDeleteUserModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div class="bg-base-100 rounded-xl shadow-xl max-w-md w-full p-6 pointer-events-auto relative">
+            <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" onclick="closeDeleteUserModal()">
+                <span class="icon-[tabler--x] size-5"></span>
+            </button>
+
+            <div class="flex items-start gap-4">
+                <div class="flex items-center justify-center size-12 rounded-full bg-error/20 shrink-0">
+                    <span class="icon-[tabler--trash] size-6 text-error"></span>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold">Remove Team Member</h3>
+                    <p class="text-sm text-base-content/70 mt-1">Are you sure you want to remove <strong id="delete-user-name"></strong> from the team?</p>
+                </div>
+            </div>
+
+            <form id="delete-user-form" method="POST" class="mt-5">
+                @csrf
+                @method('DELETE')
+
+                <div class="form-control">
+                    <label class="label" for="delete-reason">
+                        <span class="label-text font-medium">Reason for removal <span class="text-error">*</span></span>
+                    </label>
+                    <textarea id="delete-reason" name="reason" class="textarea textarea-bordered w-full" rows="3" required placeholder="Please provide a reason for removing this team member..."></textarea>
+                </div>
+
+                <div class="flex justify-start gap-2 mt-6">
+                    <button type="submit" class="btn btn-error">
+                        <span class="icon-[tabler--trash] size-4"></span> Remove Member
+                    </button>
+                    <button type="button" class="btn btn-ghost" onclick="closeDeleteUserModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 {{-- Invitation Details Modal --}}
 <div id="invitation-details-modal" class="fixed inset-0 z-50 hidden">

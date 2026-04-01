@@ -17,7 +17,11 @@ class LocationController extends Controller
         $host = auth()->user()->host;
         $locations = $host->locations()->withCount('rooms')->orderBy('is_default', 'desc')->orderBy('name')->get();
 
-        return view('host.settings.locations.index', compact('host', 'locations'));
+        // Pre-load managers for all locations
+        $allManagerIds = $locations->pluck('manager_ids')->flatten()->filter()->unique()->values()->toArray();
+        $managers = $allManagerIds ? \App\Models\User::whereIn('id', $allManagerIds)->get()->keyBy('id') : collect();
+
+        return view('host.settings.locations.index', compact('host', 'locations', 'managers'));
     }
 
     /**

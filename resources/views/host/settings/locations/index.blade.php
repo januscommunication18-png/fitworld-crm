@@ -102,6 +102,36 @@
                                 @endif
                             </div>
                             @endif
+
+                            {{-- Virtual Platform --}}
+                            @if($location->location_types && in_array('virtual', $location->location_types) && $location->virtual_platform)
+                            <div class="flex items-center gap-1 mt-2 text-sm text-base-content/60">
+                                <span class="icon-[tabler--video] size-4"></span>
+                                {{ \App\Models\Location::getPlatformLabels()[$location->virtual_platform] ?? $location->virtual_platform }}
+                            </div>
+                            @endif
+
+                            {{-- Mobile Service Area --}}
+                            @if($location->location_types && in_array('mobile', $location->location_types) && $location->mobile_service_area)
+                            <div class="flex items-center gap-1 mt-2 text-sm text-base-content/60">
+                                <span class="icon-[tabler--map-pin-bolt] size-4"></span>
+                                Service area: {{ $location->mobile_service_area }}
+                            </div>
+                            @endif
+
+                            {{-- Managers --}}
+                            @if($location->manager_ids && count($location->manager_ids) > 0)
+                            <div class="flex items-center gap-2 mt-2 text-sm text-base-content/60">
+                                <span class="icon-[tabler--user-shield] size-4 shrink-0"></span>
+                                <span>
+                                    @foreach($location->manager_ids as $managerId)
+                                        @if(isset($managers[$managerId]))
+                                            {{ $managers[$managerId]->first_name }} {{ $managers[$managerId]->last_name }}@if(!$loop->last), @endif
+                                        @endif
+                                    @endforeach
+                                </span>
+                            </div>
+                            @endif
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -247,6 +277,27 @@
                         <div class="p-3 bg-base-200 rounded-lg text-sm" id="drawer-public-notes"></div>
                     </div>
 
+                    {{-- Mobile/Travel Info --}}
+                    <div id="drawer-mobile-section" class="hidden">
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-2">Mobile/Travel Details</h5>
+                        <div class="space-y-2">
+                            <div id="drawer-mobile-area-row" class="flex items-center gap-2">
+                                <span class="icon-[tabler--map-pin-bolt] size-4 text-base-content/60"></span>
+                                <span id="drawer-mobile-area" class="text-sm"></span>
+                            </div>
+                            <div id="drawer-mobile-notes-row" class="flex items-start gap-2">
+                                <span class="icon-[tabler--note] size-4 text-base-content/60 mt-0.5"></span>
+                                <span id="drawer-mobile-notes" class="text-sm"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Managers --}}
+                    <div id="drawer-managers-section" class="hidden">
+                        <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-2">Location Managers</h5>
+                        <div id="drawer-managers-list" class="space-y-2"></div>
+                    </div>
+
                     {{-- Rooms (only for in-person) --}}
                     <div id="drawer-rooms-section">
                         <h5 class="font-medium text-sm text-base-content/60 uppercase tracking-wider mb-3">Rooms</h5>
@@ -304,6 +355,7 @@ var deleteLocationId = null;
 
 // Location data for drawer
 var locationsData = @json($locations->load('rooms'));
+var managersData = @json($managers);
 
 // View location drawer
 function viewLocation(id) {
@@ -387,6 +439,8 @@ function viewLocation(id) {
     publicSection.classList.add('hidden');
     roomsSection.classList.add('hidden');
     roomsList.innerHTML = '';
+    document.getElementById('drawer-mobile-section').classList.add('hidden');
+    document.getElementById('drawer-managers-section').classList.add('hidden');
 
     // Check which types are selected
     var types = location.location_types || [location.location_type];
@@ -412,6 +466,49 @@ function viewLocation(id) {
     if (hasPublic) {
         publicSection.classList.remove('hidden');
         document.getElementById('drawer-public-notes').textContent = location.public_location_notes || 'No instructions provided.';
+    }
+
+    // Show mobile info if mobile type is selected
+    var mobileSection = document.getElementById('drawer-mobile-section');
+    var hasMobile = types.includes('mobile');
+    if (hasMobile && (location.mobile_service_area || location.mobile_travel_notes)) {
+        mobileSection.classList.remove('hidden');
+        if (location.mobile_service_area) {
+            document.getElementById('drawer-mobile-area-row').classList.remove('hidden');
+            document.getElementById('drawer-mobile-area').textContent = location.mobile_service_area;
+        } else {
+            document.getElementById('drawer-mobile-area-row').classList.add('hidden');
+        }
+        if (location.mobile_travel_notes) {
+            document.getElementById('drawer-mobile-notes-row').classList.remove('hidden');
+            document.getElementById('drawer-mobile-notes').textContent = location.mobile_travel_notes;
+        } else {
+            document.getElementById('drawer-mobile-notes-row').classList.add('hidden');
+        }
+    } else {
+        mobileSection.classList.add('hidden');
+    }
+
+    // Show managers
+    var managersSection = document.getElementById('drawer-managers-section');
+    var managersList = document.getElementById('drawer-managers-list');
+    managersList.innerHTML = '';
+    if (location.manager_ids && location.manager_ids.length > 0) {
+        managersSection.classList.remove('hidden');
+        location.manager_ids.forEach(function(id) {
+            var manager = managersData[id];
+            if (manager) {
+                var managerHtml = '<div class="flex items-center gap-3 p-2 bg-base-200 rounded-lg">' +
+                    '<div class="flex items-center justify-center size-8 rounded-full bg-primary/10">' +
+                    '<span class="icon-[tabler--user] size-4 text-primary"></span>' +
+                    '</div>' +
+                    '<span class="text-sm font-medium">' + manager.first_name + ' ' + manager.last_name + '</span>' +
+                    '</div>';
+                managersList.insertAdjacentHTML('beforeend', managerHtml);
+            }
+        });
+    } else {
+        managersSection.classList.add('hidden');
     }
 
     // Show rooms for in-person type

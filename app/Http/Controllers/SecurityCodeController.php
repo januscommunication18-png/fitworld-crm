@@ -34,8 +34,8 @@ class SecurityCodeController extends Controller
             // Mark as verified in session
             session(['security_code_verified' => true]);
 
-            // Redirect to intended URL or home
-            return redirect(session()->pull('url.intended', '/'));
+            // Redirect to login page
+            return redirect()->route('login');
         }
 
         return back()->withErrors([

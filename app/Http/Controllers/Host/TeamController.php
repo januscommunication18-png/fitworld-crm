@@ -279,33 +279,36 @@ class TeamController extends Controller
     {
         $this->authorizeUser($user);
 
-        if ($user->isOwner()) {
+        if ($user->isOwner() && $user->id !== auth()->id()) {
             return redirect()->route('settings.team.users')
                 ->with('error', 'Cannot edit the owner.');
         }
 
         $host = auth()->user()->currentHost();
 
-        // Get the instructor record if this user is an instructor
-        $instructor = null;
-        if ($user->role === User::ROLE_INSTRUCTOR || $user->is_instructor) {
-            $instructor = Instructor::where('host_id', $host->id)
-                ->where(function($q) use ($user) {
-                    $q->where('user_id', $user->id)
-                      ->orWhere('email', $user->email);
-                })
-                ->first();
-        }
+        // Try to load instructor record (may exist for any role if user has schedule/employment data)
+        $instructor = Instructor::where('host_id', $host->id)
+            ->where(function($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('email', $user->email);
+            })
+            ->first();
 
         // Load certifications
         $certifications = \App\Models\StudioCertification::where('host_id', $host->id)
             ->where('user_id', $user->id)
             ->get();
 
+        // Get role and permissions from the host_user pivot
+        $pivotRole = $user->getRoleForHost($host) ?? $user->role;
+        $pivotPermissions = $user->getPermissionsForHost($host) ?? [];
+
         return view('host.settings.team.users.edit', [
             'user' => $user,
             'instructor' => $instructor,
             'certifications' => $certifications,
+            'pivotRole' => $pivotRole,
+            'pivotPermissions' => $pivotPermissions,
             'roles' => User::getRoles(),
             'groupedPermissions' => User::getAllPermissions(),
             'specialties' => Instructor::getCommonSpecialties(),
@@ -322,7 +325,7 @@ class TeamController extends Controller
     {
         $this->authorizeUser($user);
 
-        if ($user->isOwner()) {
+        if ($user->isOwner() && $user->id !== auth()->id()) {
             return back()->with('error', 'Cannot modify the owner.');
         }
 
@@ -446,44 +449,55 @@ class TeamController extends Controller
     public function invite(Request $request)
     {
         $host = auth()->user()->currentHost();
+        $isQuickInvite = $request->input('invite_mode') === 'quick';
+
+        // For quick invite mode, map quick_ fields to standard fields and force send_invite
+        if ($isQuickInvite) {
+            $request->merge([
+                'first_name' => $request->input('quick_first_name'),
+                'last_name' => $request->input('quick_last_name'),
+                'email' => $request->input('quick_email'),
+                'role' => $request->input('quick_role'),
+                'send_invite' => true,
+            ]);
+        }
+
         $sendInvite = $request->boolean('send_invite');
-        $isQuickInvite = $request->boolean('quick_invite');
 
         // Build validation rules based on whether we're sending invite or not
         $rules = [
-            'role' => 'required|in:admin,staff,instructor',
+            'first_name' => ['required', 'string', 'max:50', new ValidName],
+            'last_name' => ['required', 'string', 'max:50', new ValidName],
+            'role' => 'required|in:admin,manager,staff,instructor',
             'permissions' => 'nullable|array',
             'send_invite' => 'boolean',
-            'quick_invite' => 'boolean',
-            // Profile fields
-            'phone' => 'nullable|string|max:50',
-            'bio' => 'nullable|string|max:2000',
-            'specialties' => 'nullable|array',
-            'certifications' => 'nullable|string|max:1000',
-            // Employment Details
-            'employment_type' => ['nullable', Rule::in(array_keys(Instructor::getEmploymentTypes()))],
-            'rate_type' => ['nullable', Rule::in(array_keys(Instructor::getRateTypes()))],
-            'rate_amount' => 'nullable|numeric|min:0|max:99999.99',
-            'compensation_notes' => 'nullable|string|max:1000',
-            // Workload
-            'hours_per_week' => 'nullable|numeric|min:0|max:168',
-            'max_classes_per_week' => 'nullable|integer|min:0|max:100',
-            // Working Days
-            'working_days' => 'nullable|array',
-            'working_days.*' => 'integer|between:0,6',
-            // Availability
-            'availability_default_from' => 'nullable|date_format:H:i',
-            'availability_default_to' => 'nullable|date_format:H:i',
-            'availability_by_day' => 'nullable|array',
+            'invite_mode' => 'nullable|in:quick,full',
         ];
 
-        // For quick invites, first_name and last_name are optional (derived from email)
-        if ($isQuickInvite) {
-            $rules['first_name'] = ['nullable', 'string', 'max:50', new ValidName];
-            $rules['last_name'] = ['nullable', 'string', 'max:50', new ValidName];
-        } else {
-            $rules['first_name'] = ['required', 'string', 'max:50', new ValidName];
-            $rules['last_name'] = ['required', 'string', 'max:50', new ValidName];
+        // Full setup mode includes all additional fields
+        if (!$isQuickInvite) {
+            $rules = array_merge($rules, [
+                // Profile fields
+                'phone' => 'nullable|string|max:50',
+                'bio' => 'nullable|string|max:2000',
+                'specialties' => 'nullable|array',
+                'certifications' => 'nullable|string|max:1000',
+                // Employment Details
+                'employment_type' => ['nullable', Rule::in(array_keys(Instructor::getEmploymentTypes()))],
+                'rate_type' => ['nullable', Rule::in(array_keys(Instructor::getRateTypes()))],
+                'rate_amount' => 'nullable|numeric|min:0|max:99999.99',
+                'compensation_notes' => 'nullable|string|max:1000',
+                // Workload
+                'hours_per_week' => 'nullable|numeric|min:0|max:168',
+                'max_classes_per_week' => 'nullable|integer|min:0|max:100',
+                // Working Days
+                'working_days' => 'nullable|array',
+                'working_days.*' => 'integer|between:0,6',
+                // Availability
+                'availability_default_from' => 'nullable|date_format:H:i',
+                'availability_default_to' => 'nullable|date_format:H:i',
+                'availability_by_day' => 'nullable|array',
+            ]);
         }
 
         if ($sendInvite) {
@@ -502,17 +516,6 @@ class TeamController extends Controller
         $validated = $request->validate($rules, [
             'email.unique' => 'This email is already registered or has a pending invitation.',
         ]);
-
-        // For quick invites, derive name from email if not provided
-        if ($isQuickInvite && empty($validated['first_name'])) {
-            $emailParts = explode('@', $validated['email']);
-            $namePart = $emailParts[0];
-            // Convert email prefix to name (e.g., "john.doe" -> "John Doe")
-            $namePart = str_replace(['.', '_', '-'], ' ', $namePart);
-            $nameParts = explode(' ', ucwords($namePart));
-            $validated['first_name'] = $nameParts[0] ?? 'Team';
-            $validated['last_name'] = $nameParts[1] ?? 'Member';
-        }
 
         $fullName = trim($validated['first_name'] . ' ' . $validated['last_name']);
         $email = $validated['email'] ?? null;
@@ -538,7 +541,7 @@ class TeamController extends Controller
         ]);
 
         // Attach user to host with role and permissions
-        $host->users()->attach($user->id, [
+        $host->teamMembers()->attach($user->id, [
             'role' => $validated['role'],
             'permissions' => json_encode($validated['permissions'] ?? User::getDefaultPermissionsForRole($validated['role'])),
         ]);
@@ -850,7 +853,7 @@ class TeamController extends Controller
     /**
      * Remove user (soft delete)
      */
-    public function remove(User $user)
+    public function remove(Request $request, User $user)
     {
         $this->authorizeUser($user);
 
@@ -861,6 +864,20 @@ class TeamController extends Controller
         if ($user->id === auth()->id()) {
             return back()->with('error', 'Cannot remove yourself.');
         }
+
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        // Store removal reason as a note before deleting
+        $host = auth()->user()->currentHost();
+        UserNote::create([
+            'user_id' => $user->id,
+            'host_id' => $host->id,
+            'author_id' => auth()->id(),
+            'note' => 'Removed from team. Reason: ' . $request->input('reason'),
+            'type' => 'system',
+        ]);
 
         $user->delete();
 
