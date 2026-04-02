@@ -26,8 +26,10 @@ class ClassPass extends Model
 
     // Eligibility type constants
     const ELIGIBILITY_ALL = 'all';
+    const ELIGIBILITY_ALL_CLASSES_AND_SERVICES = 'all_classes_and_services';
     const ELIGIBILITY_CATEGORIES = 'categories';
     const ELIGIBILITY_CLASS_PLANS = 'class_plans';
+    const ELIGIBILITY_SERVICE_PLANS = 'service_plans';
     const ELIGIBILITY_INSTRUCTORS = 'instructors';
     const ELIGIBILITY_LOCATIONS = 'locations';
 
@@ -63,6 +65,7 @@ class ClassPass extends Model
         'eligible_categories',
         'eligible_instructor_ids',
         'eligible_location_ids',
+        'eligible_service_plan_ids',
         'excluded_class_types',
         'default_credits_per_class',
         'credit_rules',
@@ -108,6 +111,7 @@ class ClassPass extends Model
             'eligible_categories' => 'array',
             'eligible_instructor_ids' => 'array',
             'eligible_location_ids' => 'array',
+            'eligible_service_plan_ids' => 'array',
             'excluded_class_types' => 'array',
             'default_credits_per_class' => 'integer',
             'credit_rules' => 'array',
@@ -285,7 +289,7 @@ class ClassPass extends Model
 
     public function getCoversAllClassesAttribute(): bool
     {
-        return $this->eligibility_type === self::ELIGIBILITY_ALL;
+        return $this->eligibility_type === self::ELIGIBILITY_ALL || $this->eligibility_type === self::ELIGIBILITY_ALL_CLASSES_AND_SERVICES;
     }
 
     public function getStatusBadgeClassAttribute(): string
@@ -396,7 +400,7 @@ class ClassPass extends Model
             return false;
         }
 
-        if ($this->eligibility_type === self::ELIGIBILITY_ALL) {
+        if ($this->eligibility_type === self::ELIGIBILITY_ALL || $this->eligibility_type === self::ELIGIBILITY_ALL_CLASSES_AND_SERVICES) {
             return true;
         }
 
@@ -406,6 +410,26 @@ class ClassPass extends Model
 
         if ($this->eligibility_type === self::ELIGIBILITY_CATEGORIES) {
             return $this->coversCategory($classPlan->category);
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if pass covers a specific service plan
+     */
+    public function coversServicePlan(?\App\Models\ServicePlan $servicePlan): bool
+    {
+        if (!$servicePlan) {
+            return false;
+        }
+
+        if ($this->eligibility_type === self::ELIGIBILITY_ALL_CLASSES_AND_SERVICES) {
+            return true;
+        }
+
+        if ($this->eligibility_type === self::ELIGIBILITY_SERVICE_PLANS) {
+            return !empty($this->eligible_service_plan_ids) && in_array($servicePlan->id, $this->eligible_service_plan_ids);
         }
 
         return false;
@@ -650,8 +674,10 @@ class ClassPass extends Model
     {
         return [
             self::ELIGIBILITY_ALL => 'All Classes',
+            self::ELIGIBILITY_ALL_CLASSES_AND_SERVICES => 'All Classes & Services',
             self::ELIGIBILITY_CATEGORIES => 'Selected Categories',
             self::ELIGIBILITY_CLASS_PLANS => 'Selected Classes',
+            self::ELIGIBILITY_SERVICE_PLANS => 'Selected Services',
             self::ELIGIBILITY_INSTRUCTORS => 'Selected Instructors',
             self::ELIGIBILITY_LOCATIONS => 'Selected Locations',
         ];

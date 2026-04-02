@@ -22,6 +22,7 @@ class ServiceSlot extends Model
     protected $fillable = [
         'host_id',
         'service_plan_id',
+        'title',
         'instructor_id',
         'location_id',
         'room_id',

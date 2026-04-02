@@ -70,6 +70,12 @@ class ClassPassRequest extends FormRequest
                 Rule::requiredIf(fn() => $this->eligibility_type === 'locations'),
             ],
             'eligible_location_ids.*' => ['integer', 'exists:locations,id'],
+            'eligible_service_plan_ids' => [
+                'nullable',
+                'array',
+                Rule::requiredIf(fn() => $this->eligibility_type === 'service_plans'),
+            ],
+            'eligible_service_plan_ids.*' => ['integer', 'exists:service_plans,id'],
             'excluded_class_types' => ['nullable', 'array'],
             'excluded_class_types.*' => ['string', Rule::in(array_keys(ClassPass::getClassTypes()))],
 

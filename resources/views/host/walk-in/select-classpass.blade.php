@@ -16,7 +16,7 @@
 <div class="max-w-4xl mx-auto">
     {{-- Header --}}
     <div class="flex items-center gap-4 mb-6">
-        <a href="{{ route('catalog.index', ['tab' => 'class-passes']) }}" class="btn btn-ghost btn-circle">
+        <a href="{{ route('schedule.calendar') }}" class="btn btn-ghost btn-circle">
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
@@ -47,7 +47,7 @@
     </div>
     @endif
 
-    <form id="sell-form" action="{{ route('class-passes.sell', $classPass) }}" method="POST">
+    <form id="classpass-form" action="{{ route('walk-in.classpass.sell') }}" method="POST">
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -86,9 +86,7 @@
                             <div class="form-control mb-4">
                                 <div class="relative">
                                     <span class="icon-[tabler--search] size-5 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2"></span>
-                                    <input type="text"
-                                           id="client-search"
-                                           class="input input-bordered w-full pl-10"
+                                    <input type="text" id="client-search" class="input input-bordered w-full pl-10"
                                            placeholder="Search by name, email or phone...">
                                 </div>
                             </div>
@@ -116,8 +114,7 @@
                                 <input type="tel" id="new_phone" class="input input-bordered" placeholder="+1 234 567 8900">
                             </div>
                             <button type="button" id="create-client-btn" class="btn btn-success btn-sm">
-                                <span class="icon-[tabler--plus] size-4"></span>
-                                Create Client
+                                <span class="icon-[tabler--plus] size-4"></span> Create Client
                             </button>
                         </div>
 
@@ -125,7 +122,7 @@
                         <div id="selected-client" class="hidden mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
-                                    <div id="selected-client-avatar" class="avatar placeholder">
+                                    <div class="avatar placeholder">
                                         <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold">
                                             <span id="selected-client-initials">JD</span>
                                         </div>
@@ -144,30 +141,49 @@
                     </div>
                 </div>
 
-                {{-- Class Pass Display --}}
-                <div class="card bg-base-100 border border-primary/30 bg-primary/5">
+                {{-- Class Pass Selection --}}
+                <div class="card bg-base-100 border border-base-200">
                     <div class="card-body">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: {{ $classPass->color ?? '#6366f1' }}20;">
-                                <span class="icon-[tabler--ticket] size-6" style="color: {{ $classPass->color ?? '#6366f1' }};"></span>
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-bold">{{ $classPass->name }}</h2>
-                                <p class="text-sm text-base-content/60">Class Pass</p>
-                            </div>
-                            <div class="ml-auto text-right">
-                                <div class="text-2xl font-bold text-primary">{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</div>
-                                <div class="text-sm text-base-content/60">{{ $classPass->class_count }} credits</div>
-                            </div>
-                        </div>
+                        <h2 class="card-title mb-4">
+                            <span class="icon-[tabler--ticket] size-5"></span>
+                            Select Class Pass
+                        </h2>
 
-                        <div class="flex flex-wrap gap-2">
-                            <span class="badge badge-soft badge-info">{{ $classPass->class_count }} classes</span>
-                            <span class="badge badge-soft badge-neutral">{{ $classPass->formatted_validity }}</span>
-                        </div>
-
-                        @if($classPass->description)
-                            <p class="text-sm text-base-content/70 mt-3">{{ $classPass->description }}</p>
+                        @if($classPasses->isEmpty())
+                            <div class="text-center py-8">
+                                <span class="icon-[tabler--ticket-off] size-12 text-base-content/20"></span>
+                                <p class="text-base-content/60 mt-2">No active class passes available.</p>
+                                <a href="{{ route('class-passes.create') }}" class="btn btn-primary btn-sm mt-4">
+                                    Create Class Pass
+                                </a>
+                            </div>
+                        @else
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                @foreach($classPasses as $pass)
+                                    <label class="classpass-option flex flex-col p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                        <div class="flex items-start justify-between mb-2">
+                                            <div class="flex items-center gap-2">
+                                                <input type="radio" name="class_pass_id" value="{{ $pass->id }}"
+                                                       data-price="{{ $pass->getPriceForCurrency($defaultCurrency) }}"
+                                                       data-name="{{ $pass->name }}"
+                                                       data-credits="{{ $pass->class_count }}"
+                                                       data-validity="{{ $pass->formatted_validity }}"
+                                                       class="radio radio-primary">
+                                                <div class="w-3 h-3 rounded-full" style="background-color: {{ $pass->color ?? '#6366f1' }}"></div>
+                                                <span class="font-semibold">{{ $pass->name }}</span>
+                                            </div>
+                                            <span class="badge badge-soft badge-info">{{ $pass->class_count }} credits</span>
+                                        </div>
+                                        <div class="ml-7">
+                                            <div class="text-lg font-bold text-primary">{{ $pass->getFormattedPriceForCurrency($defaultCurrency) }}</div>
+                                            <div class="text-xs text-base-content/60 mt-1">Valid for {{ $pass->formatted_validity }}</div>
+                                            @if($pass->description)
+                                                <p class="text-xs text-base-content/60 mt-1 line-clamp-2">{{ $pass->description }}</p>
+                                            @endif
+                                        </div>
+                                    </label>
+                                @endforeach
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -218,8 +234,7 @@
                                 <label class="input input-bordered flex items-center gap-2">
                                     <span class="text-base-content/60">{{ $currencySymbols[$defaultCurrency] ?? '$' }}</span>
                                     <input type="number" name="amount_paid" id="amount_paid" step="0.01" min="0"
-                                           class="grow w-full" placeholder="0.00"
-                                           value="{{ old('amount_paid', $classPass->getPriceForCurrency($defaultCurrency)) }}">
+                                           class="grow w-full" placeholder="0.00" value="0">
                                 </label>
                             </div>
                         </div>
@@ -243,20 +258,20 @@
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between">
                                 <span class="text-base-content/60">Class Pass</span>
-                                <span class="font-medium">{{ $classPass->name }}</span>
+                                <span class="font-medium" id="summary-pass">--</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-base-content/60">Credits</span>
-                                <span class="font-medium">{{ $classPass->class_count }}</span>
+                                <span class="font-medium" id="summary-credits">--</span>
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-base-content/60">Validity</span>
-                                <span class="font-medium">{{ $classPass->formatted_validity }}</span>
+                                <span class="font-medium" id="summary-validity">--</span>
                             </div>
                             <div class="divider my-1"></div>
                             <div class="flex justify-between text-base font-bold">
                                 <span>Total</span>
-                                <span class="text-primary" id="summary-total">{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</span>
+                                <span class="text-primary" id="summary-total">$0.00</span>
                             </div>
                         </div>
 
@@ -275,7 +290,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var selectedClientId = null;
-    var passPrice = {{ $classPass->getPriceForCurrency($defaultCurrency) }};
+    var selectedPassPrice = 0;
 
     // Client type toggle
     document.querySelectorAll('input[name="client_type"]').forEach(function(radio) {
@@ -305,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     } else {
                         data.clients.forEach(function(c) {
                             var initials = (c.first_name[0] + c.last_name[0]).toUpperCase();
-                            html += '<div class="flex items-center justify-between p-3 border border-base-300 rounded-lg hover:bg-base-200/50 cursor-pointer transition-colors" onclick="selectClient(' + c.id + ', \'' + c.first_name + '\', \'' + c.last_name + '\', \'' + (c.email || '') + '\')">' +
+                            html += '<div class="flex items-center justify-between p-3 border border-base-300 rounded-lg hover:bg-base-200/50 cursor-pointer transition-colors" onclick="selectClient(' + c.id + ', \'' + c.first_name.replace(/'/g, "\\'") + '\', \'' + c.last_name.replace(/'/g, "\\'") + '\', \'' + (c.email || '').replace(/'/g, "\\'") + '\')">' +
                                 '<div class="flex items-center gap-3">' +
                                 '<div class="avatar placeholder"><div class="bg-primary text-primary-content w-10 h-10 rounded-full"><span>' + initials + '</span></div></div>' +
                                 '<div><div class="font-medium">' + c.first_name + ' ' + c.last_name + '</div>' +
@@ -318,7 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 300);
     });
 
-    // Select client
     window.selectClient = function(id, firstName, lastName, email) {
         selectedClientId = id;
         document.getElementById('client_id').value = id;
@@ -332,7 +346,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSubmitBtn();
     };
 
-    // Clear client
     window.clearSelectedClient = function() {
         selectedClientId = null;
         document.getElementById('client_id').value = '';
@@ -352,10 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var email = document.getElementById('new_email').value.trim();
         var phone = document.getElementById('new_phone').value.trim();
 
-        if (!firstName || !lastName) {
-            alert('First and last name are required.');
-            return;
-        }
+        if (!firstName || !lastName) { alert('First and last name are required.'); return; }
 
         var btn = this;
         btn.disabled = true;
@@ -372,36 +382,43 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.innerHTML = '<span class="icon-[tabler--plus] size-4"></span> Create Client';
             if (data.success) {
                 selectClient(data.client.id, data.client.first_name, data.client.last_name, data.client.email || '');
-            } else {
-                alert(data.message || 'Failed to create client.');
-            }
+            } else { alert(data.message || 'Failed to create client.'); }
         })
-        .catch(function() {
-            btn.disabled = false;
-            btn.innerHTML = '<span class="icon-[tabler--plus] size-4"></span> Create Client';
+        .catch(function() { btn.disabled = false; btn.innerHTML = '<span class="icon-[tabler--plus] size-4"></span> Create Client'; });
+    });
+
+    // Class pass selection
+    document.querySelectorAll('input[name="class_pass_id"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            selectedPassPrice = parseFloat(this.dataset.price) || 0;
+            document.getElementById('summary-pass').textContent = this.dataset.name;
+            document.getElementById('summary-credits').textContent = this.dataset.credits;
+            document.getElementById('summary-validity').textContent = this.dataset.validity;
+            document.getElementById('summary-total').textContent = '$' + selectedPassPrice.toFixed(2);
+            document.getElementById('amount_paid').value = selectedPassPrice.toFixed(2);
+            updateSubmitBtn();
         });
     });
 
     // Payment method toggle
     document.querySelectorAll('input[name="payment_method"]').forEach(function(radio) {
         radio.addEventListener('change', function() {
-            var amountSection = document.getElementById('amount-section');
-            var amountInput = document.getElementById('amount_paid');
-            var summaryTotal = document.getElementById('summary-total');
             if (this.value === 'comp') {
-                amountSection.classList.add('hidden');
-                amountInput.value = '0';
-                summaryTotal.textContent = '$0.00';
+                document.getElementById('amount-section').classList.add('hidden');
+                document.getElementById('amount_paid').value = '0';
+                document.getElementById('summary-total').textContent = '$0.00';
             } else {
-                amountSection.classList.remove('hidden');
-                amountInput.value = passPrice.toFixed(2);
-                summaryTotal.textContent = '$' + passPrice.toFixed(2);
+                document.getElementById('amount-section').classList.remove('hidden');
+                document.getElementById('amount_paid').value = selectedPassPrice.toFixed(2);
+                document.getElementById('summary-total').textContent = '$' + selectedPassPrice.toFixed(2);
             }
         });
     });
 
     function updateSubmitBtn() {
-        document.getElementById('submit-btn').disabled = !selectedClientId;
+        var hasClient = !!selectedClientId;
+        var hasPass = !!document.querySelector('input[name="class_pass_id"]:checked');
+        document.getElementById('submit-btn').disabled = !(hasClient && hasPass);
     }
 });
 </script>

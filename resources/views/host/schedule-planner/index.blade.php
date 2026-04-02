@@ -18,26 +18,66 @@
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold">Schedule Planner</h1>
-            <p class="text-base-content/60 mt-1">View and manage recurring class schedules</p>
+            <p class="text-base-content/60 mt-1">View and manage recurring schedules</p>
         </div>
-        <a href="{{ route('class-sessions.create') }}" class="btn btn-primary btn-sm">
-            <span class="icon-[tabler--plus] size-4"></span> Create Session
-        </a>
+        @if($type === 'service')
+            <a href="{{ route('service-slots.create') }}" class="btn btn-primary btn-sm">
+                <span class="icon-[tabler--plus] size-4"></span> Create Service Slot
+            </a>
+        @else
+            <a href="{{ route('class-sessions.create') }}" class="btn btn-primary btn-sm">
+                <span class="icon-[tabler--plus] size-4"></span> Create Session
+            </a>
+        @endif
     </div>
 
-    {{-- Filters --}}
+    {{-- Type Toggle & Filters --}}
     <div class="card bg-base-100">
         <div class="card-body py-3">
-            <div class="flex items-center gap-4">
-                <div class="form-control w-64">
-                    <select id="class-plan-filter" class="select select-bordered select-sm" onchange="window.location.href='/schedule-planner?class_plan_id=' + this.value">
-                        @foreach($classPlans as $plan)
-                            <option value="{{ $plan->id }}" {{ $selectedPlanId == $plan->id ? 'selected' : '' }}>
-                                {{ $plan->name }}
-                            </option>
-                        @endforeach
-                    </select>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                {{-- Type Toggle --}}
+                <div class="flex rounded-lg border border-base-300 overflow-hidden">
+                    <a href="{{ route('schedule-planner.index', ['type' => 'class', 'class_plan_id' => $type === 'class' ? $selectedPlanId : null]) }}"
+                       class="px-4 py-1.5 text-sm font-medium flex items-center gap-2 transition-colors {{ $type === 'class' ? 'bg-primary text-primary-content' : 'hover:bg-base-200' }}">
+                        <span class="icon-[tabler--yoga] size-4"></span>
+                        Classes
+                    </a>
+                    <a href="{{ route('schedule-planner.index', ['type' => 'service', 'service_plan_id' => $type === 'service' ? $selectedPlanId : null]) }}"
+                       class="px-4 py-1.5 text-sm font-medium flex items-center gap-2 transition-colors {{ $type === 'service' ? 'bg-primary text-primary-content' : 'hover:bg-base-200' }}">
+                        <span class="icon-[tabler--massage] size-4"></span>
+                        Services
+                    </a>
                 </div>
+
+                {{-- Plan Filter --}}
+                <div class="form-control w-64">
+                    @if($type === 'service')
+                        <select id="plan-filter" class="select select-bordered select-sm"
+                                onchange="window.location.href='/schedule-planner?type=service&service_plan_id=' + this.value">
+                            @foreach($servicePlans as $plan)
+                                <option value="{{ $plan->id }}" {{ $selectedPlanId == $plan->id ? 'selected' : '' }}>
+                                    {{ $plan->name }}
+                                </option>
+                            @endforeach
+                            @if($servicePlans->isEmpty())
+                                <option value="" disabled selected>No active service plans</option>
+                            @endif
+                        </select>
+                    @else
+                        <select id="plan-filter" class="select select-bordered select-sm"
+                                onchange="window.location.href='/schedule-planner?type=class&class_plan_id=' + this.value">
+                            @foreach($classPlans as $plan)
+                                <option value="{{ $plan->id }}" {{ $selectedPlanId == $plan->id ? 'selected' : '' }}>
+                                    {{ $plan->name }}
+                                </option>
+                            @endforeach
+                            @if($classPlans->isEmpty())
+                                <option value="" disabled selected>No active class plans</option>
+                            @endif
+                        </select>
+                    @endif
+                </div>
+
                 @if($selectedPlanId)
                     <span class="text-sm text-base-content/60">{{ $schedules->count() }} {{ Str::plural('schedule', $schedules->count()) }}</span>
                 @endif
@@ -51,10 +91,17 @@
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--calendar-off] size-12 text-base-content/20 mx-auto mb-4"></span>
                 <h3 class="text-lg font-semibold mb-2">No Schedules Found</h3>
-                <p class="text-base-content/60 mb-4">No recurring or upcoming sessions found for this class plan.</p>
-                <a href="{{ route('class-sessions.create', ['class_plan_id' => $selectedPlanId]) }}" class="btn btn-primary btn-sm">
-                    <span class="icon-[tabler--plus] size-4"></span> Create First Session
-                </a>
+                @if($type === 'service')
+                    <p class="text-base-content/60 mb-4">No recurring or upcoming service slots found for this service plan.</p>
+                    <a href="{{ route('service-slots.create', ['service_plan_id' => $selectedPlanId]) }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--plus] size-4"></span> Create First Slot
+                    </a>
+                @else
+                    <p class="text-base-content/60 mb-4">No recurring or upcoming sessions found for this class plan.</p>
+                    <a href="{{ route('class-sessions.create', ['class_plan_id' => $selectedPlanId]) }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--plus] size-4"></span> Create First Session
+                    </a>
+                @endif
             </div>
         </div>
     @else
@@ -68,7 +115,7 @@
                             <th>Time</th>
                             <th>Instructor</th>
                             <th>Location</th>
-                            <th class="text-center">Sessions</th>
+                            <th class="text-center">{{ $type === 'service' ? 'Slots' : 'Sessions' }}</th>
                             <th class="w-20">Actions</th>
                         </tr>
                     </thead>
@@ -111,9 +158,15 @@
                                 </span>
                             </td>
                             <td>
-                                <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
-                                    <span class="icon-[tabler--eye] size-4"></span>
-                                </a>
+                                @if($type === 'service')
+                                    <a href="{{ route('service-slots.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                @else
+                                    <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                        <span class="icon-[tabler--eye] size-4"></span>
+                                    </a>
+                                @endif
                             </td>
                         </tr>
                         @endforeach

@@ -24,6 +24,27 @@
         </div>
     </div>
 
+    @if ($errors->any())
+    <div class="alert alert-error mb-4">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <div>
+            <div class="font-medium">Please fix the following errors:</div>
+            <ul class="mt-1 text-sm list-disc list-inside">
+                @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
+    @if (session('error'))
+    <div class="alert alert-error mb-4">
+        <span class="icon-[tabler--alert-circle] size-5"></span>
+        <span>{{ session('error') }}</span>
+    </div>
+    @endif
+
     <form action="{{ route('service-slots.store') }}" method="POST">
         @csrf
         @include('host.service-slots._form')

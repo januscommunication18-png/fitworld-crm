@@ -98,6 +98,20 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Custom Title --}}
+                <div>
+                    <label class="label-text" for="title">Custom Title</label>
+                    <input type="text" id="title" name="title"
+                        value="{{ old('title', $serviceSlot?->title) }}"
+                        class="input w-full @error('title') input-error @enderror"
+                        placeholder="Optional — override the default service name"
+                        maxlength="100">
+                    <p class="text-xs text-base-content/60 mt-1">Leave empty to use the service plan name.</p>
+                    @error('title')
+                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
         </div>
 
@@ -388,10 +402,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     observer.observe(servicePlanSelect, { attributes: true, childList: true, subtree: true });
 
-    dateInput.addEventListener('change', updateStartTime);
-    timeInput.addEventListener('change', updateStartTime);
-
-    // Initialize flatpickr
+    // Initialize flatpickr with onChange hooks to update start_time
     flatpickr('.flatpickr-date', {
         altInput: true,
         altFormat: 'F j, Y',
@@ -399,7 +410,8 @@ document.addEventListener('DOMContentLoaded', function() {
         minDate: 'today',
         altInputClass: 'input w-full',
         appendTo: document.body,
-        static: false
+        static: false,
+        onChange: function() { updateStartTime(); }
     });
 
     flatpickr('.flatpickr-time', {
@@ -412,8 +424,12 @@ document.addEventListener('DOMContentLoaded', function() {
         altFormat: 'h:i K',
         altInputClass: 'input w-full',
         appendTo: document.body,
-        static: false
+        static: false,
+        onChange: function() { updateStartTime(); }
     });
+
+    dateInput.addEventListener('change', updateStartTime);
+    timeInput.addEventListener('change', updateStartTime);
 
     // Recurring toggle
     var recurringCheckbox = document.getElementById('is_recurring');
@@ -421,6 +437,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (recurringCheckbox && recurringOptions) {
         recurringCheckbox.addEventListener('change', function() {
             recurringOptions.classList.toggle('hidden', !this.checked);
+        });
+    }
+
+    // Ensure start_time is set before form submission
+    var form = startTimeInput.closest('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            updateStartTime();
         });
     }
 

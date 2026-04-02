@@ -9,6 +9,7 @@ use App\Models\Client;
 use App\Models\Booking;
 use App\Models\ClassPlan;
 use App\Models\ServicePlan;
+use App\Models\ClassPass;
 use App\Models\MembershipPlan;
 use App\Models\CustomerMembership;
 use App\Models\Event;
@@ -632,9 +633,36 @@ class WalkInController extends Controller
                 ];
             });
 
+        // Get eligible packs and calculate credits required
+        $packs = $this->classPassService->getEligiblePasses($client, $classPlanId);
+
+        // If a specific session is provided, calculate credits required per pack
+        $sessionId = $request->get('session_id');
+        if ($sessionId) {
+            $session = ClassSession::where('host_id', $host->id)->find($sessionId);
+            if ($session) {
+                foreach ($packs as &$pack) {
+                    $purchase = \App\Models\ClassPassPurchase::with('classPass')->find($pack['id']);
+                    if ($purchase && $purchase->classPass) {
+                        $pack['credits_required'] = $purchase->classPass->calculateCreditsForSession($session);
+                    } else {
+                        $pack['credits_required'] = 1;
+                    }
+                }
+                unset($pack);
+            }
+        } else {
+            // Default: use default_credits_per_class from each pack's class pass
+            foreach ($packs as &$pack) {
+                $purchase = \App\Models\ClassPassPurchase::with('classPass')->find($pack['id']);
+                $pack['credits_required'] = $purchase?->classPass?->default_credits_per_class ?? 1;
+            }
+            unset($pack);
+        }
+
         $methods = [
             'membership' => $membership,
-            'packs' => $this->classPassService->getEligiblePasses($client, $classPlanId),
+            'packs' => $packs,
             'billing_credits' => $billingCredits,
             'manual' => true,
             'comp' => auth()->user()->hasPermission('bookings.comp'),
@@ -677,6 +705,7 @@ class WalkInController extends Controller
             'include_registration_fee' => 'nullable|in:0,1',
             'booking_type' => 'nullable|in:single,period,trial',
             'series_session_ids' => 'nullable|string',
+            'credits_to_deduct' => 'nullable|integer|min:1|max:99',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
@@ -798,6 +827,7 @@ class WalkInController extends Controller
                     'manual_method' => $validated['manual_method'] ?? null,
                     'price_paid' => $validated['price_paid'] ?? null,
                     'class_pass_purchase_id' => $validated['pack_id'] ?? null,
+                    'credits_to_deduct' => $validated['credits_to_deduct'] ?? null,
                     'check_in_now' => $validated['check_in_now'] ?? false,
                     'payment_notes' => $validated['notes'] ?? null,
                     'capacity_override' => true, // Walk-ins can override capacity
@@ -960,6 +990,8 @@ class WalkInController extends Controller
             'billing_discount_percent' => 'nullable|numeric|min:0',
             'billing_credit_id' => 'nullable|integer|exists:billing_credits,id',
             'include_registration_fee' => 'nullable|in:0,1',
+            'booking_type' => 'nullable|in:single,period,trial',
+            'series_slot_ids' => 'nullable|string',
         ]);
 
         $client = Client::findOrFail($validated['client_id']);
@@ -1048,6 +1080,23 @@ class WalkInController extends Controller
             }
         }
 
+        // For series bookings, check if ALL slots are already booked (block only if nothing new to add)
+        $bookingType = $validated['booking_type'] ?? 'single';
+        if ($bookingType === 'period' && !empty($validated['series_slot_ids'])) {
+            $slotIds = array_filter(explode(',', $validated['series_slot_ids']));
+            $existingCount = Booking::where('client_id', $client->id)
+                ->where('bookable_type', ServiceSlot::class)
+                ->whereIn('bookable_id', $slotIds)
+                ->where('status', '!=', Booking::STATUS_CANCELLED)
+                ->count();
+
+            if ($existingCount >= count($slotIds)) {
+                return back()
+                    ->withInput()
+                    ->with('error', "{$client->full_name} is already booked into all slots in this schedule.");
+            }
+        }
+
         try {
             $booking = $this->bookingService->createWalkInServiceBooking(
                 host: $host,
@@ -1131,9 +1180,58 @@ class WalkInController extends Controller
                 }
             }
 
+            // For series bookings, book client into all other slots in the series
+            $seriesBookedCount = 0;
+            if ($bookingType === 'period' && !empty($validated['series_slot_ids'])) {
+                $slotIds = array_map('intval', array_filter(explode(',', $validated['series_slot_ids'])));
+                // Remove the primary slot (already booked above)
+                $slotIds = array_values(array_diff($slotIds, [(int) $serviceSlot->id]));
+
+                if (!empty($slotIds)) {
+                    $otherSlots = ServiceSlot::where('host_id', $host->id)
+                        ->whereIn('id', $slotIds)
+                        ->where('status', ServiceSlot::STATUS_AVAILABLE)
+                        ->get();
+
+                    foreach ($otherSlots as $otherSlot) {
+                        // Skip if client already has a booking for this slot
+                        $existingBooking = Booking::where('client_id', $client->id)
+                            ->where('bookable_type', ServiceSlot::class)
+                            ->where('bookable_id', $otherSlot->id)
+                            ->where('status', '!=', Booking::STATUS_CANCELLED)
+                            ->exists();
+
+                        if ($existingBooking) continue;
+
+                        Booking::create([
+                            'host_id' => $host->id,
+                            'client_id' => $client->id,
+                            'bookable_type' => ServiceSlot::class,
+                            'bookable_id' => $otherSlot->id,
+                            'status' => Booking::STATUS_CONFIRMED,
+                            'booking_source' => Booking::SOURCE_INTERNAL_WALKIN,
+                            'capacity_override' => true,
+                            'created_by_user_id' => auth()->id(),
+                            'payment_method' => 'series',
+                            'price_paid' => 0, // Covered by series payment
+                            'booked_at' => now(),
+                        ]);
+
+                        // Mark slot as booked
+                        $otherSlot->update(['status' => ServiceSlot::STATUS_BOOKED]);
+                        $seriesBookedCount++;
+                    }
+                }
+            }
+
+            $successMsg = "Slot Booked for {$client->full_name}!";
+            if ($seriesBookedCount > 0) {
+                $successMsg = "Series booking confirmed for {$client->full_name}! Booked into " . ($seriesBookedCount + 1) . " slots.";
+            }
+
             return redirect()
                 ->route('service-slots.index')
-                ->with('success', "Slot Booked for {$client->full_name}!");
+                ->with('success', $successMsg);
 
         } catch (\Exception $e) {
             return back()
@@ -1732,6 +1830,10 @@ class WalkInController extends Controller
         return response()->json([
             'duration_minutes' => $servicePlan->duration_minutes,
             'price' => $servicePlan->price,
+            'billing_discounts' => $servicePlan->billing_discounts ?? null,
+            'registration_fee' => (float) ($servicePlan->registration_fee ?? 0),
+            'cancellation_fee' => (float) ($servicePlan->cancellation_fee ?? 0),
+            'cancellation_grace_hours' => $servicePlan->cancellation_grace_hours ?? 48,
         ]);
     }
 
@@ -1854,6 +1956,95 @@ class WalkInController extends Controller
             'canOverridePrice',
             'canRequestOverride'
         ));
+    }
+
+    /**
+     * Show walk-in class pass sell page (lists all active passes)
+     */
+    public function selectClassPass(Request $request)
+    {
+        $user = auth()->user();
+        $host = $user->currentHost();
+
+        $classPasses = ClassPass::where('host_id', $host->id)
+            ->active()
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
+        return view('host.walk-in.select-classpass', compact(
+            'classPasses',
+            'hostCurrencies',
+            'defaultCurrency',
+            'currencySymbols'
+        ));
+    }
+
+    /**
+     * Process walk-in class pass sale
+     */
+    public function sellClassPass(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+
+        $validated = $request->validate([
+            'client_id' => 'required|exists:clients,id',
+            'class_pass_id' => 'required|exists:class_passes,id',
+            'payment_method' => 'required|in:cash,card,check,other,comp',
+            'amount_paid' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $client = Client::where('id', $validated['client_id'])
+            ->where('host_id', $host->id)
+            ->firstOrFail();
+
+        $classPass = ClassPass::where('id', $validated['class_pass_id'])
+            ->where('host_id', $host->id)
+            ->firstOrFail();
+
+        $classPassService = app(\App\Services\ClassPassService::class);
+
+        $paymentMethod = $validated['payment_method'];
+        $amountPaid = $validated['amount_paid'] ?? $classPass->price;
+
+        $purchase = $classPassService->purchasePass($host, $client, $classPass, [
+            'manual_method' => $paymentMethod !== 'comp' ? $paymentMethod : null,
+            'payment_method' => $paymentMethod,
+            'amount_paid' => $amountPaid,
+            'payment_notes' => $validated['notes'],
+        ]);
+
+        // Create transaction for class pass purchase
+        \App\Models\Transaction::create([
+            'host_id' => $host->id,
+            'client_id' => $client->id,
+            'type' => \App\Models\Transaction::TYPE_CLASS_PACK_PURCHASE,
+            'purchasable_type' => \App\Models\ClassPass::class,
+            'purchasable_id' => $classPass->id,
+            'subtotal' => (float) $amountPaid,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => (float) $amountPaid,
+            'currency' => $host->default_currency ?? 'USD',
+            'status' => \App\Models\Transaction::STATUS_PAID,
+            'payment_method' => $paymentMethod === 'comp' ? \App\Models\Transaction::METHOD_COMP : \App\Models\Transaction::METHOD_MANUAL,
+            'manual_method' => $paymentMethod !== 'comp' ? $paymentMethod : null,
+            'paid_at' => now(),
+            'metadata' => [
+                'item_name' => $classPass->name,
+                'credits' => $classPass->class_count,
+                'source' => 'walk_in',
+            ],
+            'notes' => $validated['notes'],
+        ]);
+
+        return redirect()->route('schedule.calendar')
+            ->with('success', "Class pass \"{$classPass->name}\" sold to {$client->full_name}. They now have {$purchase->classes_remaining} credits.");
     }
 
     /**
@@ -2097,6 +2288,30 @@ class WalkInController extends Controller
                 }
             }
 
+            // Create transaction for membership purchase
+            \App\Models\Transaction::create([
+                'host_id' => $host->id,
+                'client_id' => $client->id,
+                'type' => \App\Models\Transaction::TYPE_MEMBERSHIP_PURCHASE,
+                'purchasable_type' => MembershipPlan::class,
+                'purchasable_id' => $membershipPlan->id,
+                'subtotal' => (float) $pricePaid,
+                'tax_amount' => 0,
+                'discount_amount' => (float) $discountAmount,
+                'total_amount' => (float) $pricePaid,
+                'currency' => $defaultCurrency,
+                'status' => \App\Models\Transaction::STATUS_PAID,
+                'payment_method' => $validated['payment_method'] === 'comp' ? \App\Models\Transaction::METHOD_COMP : \App\Models\Transaction::METHOD_MANUAL,
+                'manual_method' => $validated['payment_method'] !== 'comp' ? ($validated['manual_method'] ?? null) : null,
+                'paid_at' => now(),
+                'metadata' => [
+                    'item_name' => $membershipPlan->name,
+                    'membership_id' => $customerMembership->id,
+                    'source' => 'walk_in',
+                ],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
             // Determine redirect based on where we came from
             $redirectRoute = !empty($validated['class_session_id']) ? 'membership-schedules.index' : 'schedule.calendar';
 
@@ -2232,5 +2447,178 @@ class WalkInController extends Controller
                 ->withInput()
                 ->with('error', 'Failed to register attendee: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get service slots by date range (for series booking)
+     */
+    public function getServiceSlotsByDateRange(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $servicePlanId = $request->get('service_plan_id');
+        $months = (int) $request->get('months', 1);
+
+        if (!$servicePlanId) {
+            return response()->json(['slots' => []]);
+        }
+
+        $startDate = now();
+        $endDate = now()->addMonths($months);
+
+        $slots = ServiceSlot::where('host_id', $host->id)
+            ->where('service_plan_id', $servicePlanId)
+            ->where('status', ServiceSlot::STATUS_AVAILABLE)
+            ->whereBetween('start_time', [$startDate, $endDate])
+            ->select(['id', 'service_plan_id', 'instructor_id', 'location_id', 'start_time', 'end_time', 'price', 'recurrence_parent_id'])
+            ->with([
+                'servicePlan:id,name,price,billing_discounts,registration_fee,cancellation_fee,cancellation_grace_hours',
+                'instructor:id,name',
+                'location:id,name'
+            ])
+            ->orderBy('start_time')
+            ->get()
+            ->map(function ($slot) {
+                return [
+                    'id' => $slot->id,
+                    'title' => $slot->servicePlan?->name,
+                    'date' => $slot->start_time->format('D, M d'),
+                    'time' => $slot->start_time->format('g:i A') . ' - ' . $slot->end_time->format('g:i A'),
+                    'start_time_iso' => $slot->start_time->toIso8601String(),
+                    'end_time_iso' => $slot->end_time->toIso8601String(),
+                    'instructor' => $slot->instructor?->name ?? 'TBD',
+                    'location' => $slot->location?->name ?? null,
+                    'price' => (float) $slot->price > 0 ? $slot->price : ($slot->servicePlan?->price ?? 0),
+                    'billing_discounts' => $slot->servicePlan?->billing_discounts ?? null,
+                    'registration_fee' => (float) ($slot->servicePlan?->registration_fee ?? 0),
+                    'cancellation_fee' => (float) ($slot->servicePlan?->cancellation_fee ?? 0),
+                    'cancellation_grace_hours' => $slot->servicePlan?->cancellation_grace_hours ?? 48,
+                    'recurrence_parent_id' => $slot->recurrence_parent_id,
+                ];
+            });
+
+        return response()->json([
+            'slots' => $slots,
+            'total' => $slots->count(),
+            'period_start' => $startDate->format('M d, Y'),
+            'period_end' => $endDate->format('M d, Y'),
+        ]);
+    }
+
+    /**
+     * Get schedule options for a service plan (for series booking schedule picker)
+     */
+    public function getServiceSchedules(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $servicePlanId = $request->get('service_plan_id');
+        $months = (int) $request->get('months', 1);
+
+        if (!$servicePlanId) {
+            return response()->json(['schedules' => []]);
+        }
+
+        $startDate = now();
+        $endDate = now()->addMonths($months);
+
+        $slots = ServiceSlot::where('host_id', $host->id)
+            ->where('service_plan_id', $servicePlanId)
+            ->where('status', ServiceSlot::STATUS_AVAILABLE)
+            ->whereBetween('start_time', [$startDate, $endDate])
+            ->select(['id', 'title', 'recurrence_parent_id', 'recurrence_rule', 'instructor_id', 'location_id', 'start_time', 'end_time'])
+            ->with(['instructor:id,name', 'location:id,name'])
+            ->orderBy('start_time')
+            ->get();
+
+        $grouped = $slots->groupBy(function ($slot) {
+            return $slot->recurrence_parent_id ?? ($slot->recurrence_rule ? $slot->id : 'oneoff');
+        });
+
+        $parentIds = $grouped->keys()->filter(fn($k) => is_numeric($k))->values()->toArray();
+        $parents = ServiceSlot::whereIn('id', $parentIds)
+            ->select(['id', 'title', 'recurrence_rule', 'instructor_id', 'location_id', 'start_time', 'end_time'])
+            ->with(['instructor:id,name', 'location:id,name'])
+            ->get()
+            ->keyBy('id');
+
+        $dayNames = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
+
+        $schedules = [];
+        foreach ($grouped as $key => $groupSlots) {
+            if ($groupSlots->isEmpty()) continue;
+
+            $first = $groupSlots->first();
+            $parent = is_numeric($key) ? ($parents->get($key) ?? $first) : $first;
+
+            $label = 'One-off Slots';
+            if ($key !== 'oneoff' && $parent->recurrence_rule) {
+                $recurrenceService = app(\App\Services\Schedule\RecurrenceService::class);
+                $parsed = $recurrenceService->parseRecurrenceRule($parent->recurrence_rule);
+                if (!empty($parsed['days_of_week'])) {
+                    $label = collect($parsed['days_of_week'])
+                        ->map(fn($d) => $dayNames[(int) $d] ?? $d)
+                        ->implode(', ');
+                }
+            } elseif ($key !== 'oneoff') {
+                $label = $parent->start_time->format('l');
+            }
+
+            $lastSlot = $groupSlots->last();
+
+            $schedules[] = [
+                'parent_id' => $key,
+                'title' => $parent->title ?? null,
+                'label' => $label,
+                'time' => $parent->start_time->format('g:i A') . ' - ' . $parent->end_time->format('g:i A'),
+                'instructor' => $parent->instructor?->name ?? 'TBD',
+                'location' => $parent->location?->name ?? null,
+                'last_slot_date' => $lastSlot?->start_time->format('M d, Y') ?? null,
+                'slot_count' => $groupSlots->count(),
+                'slot_ids' => $groupSlots->pluck('id')->toArray(),
+            ];
+        }
+
+        return response()->json(['schedules' => $schedules]);
+    }
+
+    /**
+     * Check if a client already has bookings for service slots in a series
+     */
+    public function checkServiceSeriesConflict(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $clientId = $request->get('client_id');
+        $slotIds = array_filter(explode(',', $request->get('slot_ids', '')));
+
+        if (!$clientId || empty($slotIds)) {
+            return response()->json(['has_conflict' => false]);
+        }
+
+        $client = Client::where('id', $clientId)->where('host_id', $host->id)->first();
+        if (!$client) {
+            return response()->json(['has_conflict' => false]);
+        }
+
+        $existingCount = Booking::where('client_id', $client->id)
+            ->where('bookable_type', ServiceSlot::class)
+            ->whereIn('bookable_id', $slotIds)
+            ->where('status', '!=', Booking::STATUS_CANCELLED)
+            ->count();
+
+        if ($existingCount > 0) {
+            $totalSlots = count($slotIds);
+            $newSlots = $totalSlots - $existingCount;
+            return response()->json([
+                'has_conflict' => true,
+                'existing_count' => $existingCount,
+                'total_slots' => $totalSlots,
+                'new_slots' => $newSlots,
+                'client_name' => $client->full_name,
+                'message' => $newSlots <= 0
+                    ? "{$client->full_name} is already booked into all {$existingCount} slot(s) in this schedule."
+                    : "{$client->full_name} is already booked into {$existingCount} of {$totalSlots} slot(s).",
+            ]);
+        }
+
+        return response()->json(['has_conflict' => false]);
     }
 }

@@ -210,6 +210,72 @@
                         @endif
                     </div>
 
+                    {{-- Booking Type Selection (shown after service plan selected) --}}
+                    <div class="form-control mb-6 hidden" id="booking-type-selection">
+                        <label class="label">
+                            <span class="label-text font-medium">Booking Type</span>
+                        </label>
+                        <div class="grid grid-cols-3 gap-3" id="booking-type-options">
+                            <label class="flex items-center gap-3 p-4 border-2 border-base-content/10 rounded-lg cursor-pointer hover:border-primary/30 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                <input type="radio" name="booking_type" value="single" class="radio radio-primary" checked onchange="selectServiceBookingType('single')">
+                                <div>
+                                    <div class="font-medium">Single Service</div>
+                                    <div class="text-xs text-base-content/60">Book one slot</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-4 border-2 border-base-content/10 rounded-lg cursor-pointer hover:border-success/30 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                                <input type="radio" name="booking_type" value="period" class="radio radio-success" onchange="selectServiceBookingType('period')">
+                                <div>
+                                    <div class="font-medium">Series Service</div>
+                                    <div class="text-xs text-base-content/60">Prepay for a billing period</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-4 border-2 border-base-content/10 rounded-lg cursor-pointer hover:border-warning/30 has-[:checked]:border-warning has-[:checked]:bg-warning/5 transition-all">
+                                <input type="radio" name="booking_type" value="trial" class="radio radio-warning" onchange="selectServiceBookingType('trial')">
+                                <div>
+                                    <div class="font-medium">Trial Service</div>
+                                    <div class="text-xs text-base-content/60">Free or discounted first session</div>
+                                </div>
+                            </label>
+                        </div>
+
+                        {{-- Period Selection (shown when "Series Service" selected) --}}
+                        <div id="svc-period-selection" class="hidden mt-4">
+                            <label class="label"><span class="label-text font-medium">Select Period</span></label>
+                            <div id="svc-period-options" class="flex gap-2">
+                                {{-- Populated by JS --}}
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Schedule Picker (shown for series service with multiple schedules) --}}
+                    <div class="form-control hidden mb-6" id="svc-schedule-picker">
+                        <label class="label">
+                            <span class="label-text font-medium">Select Schedule</span>
+                        </label>
+                        <div id="svc-schedule-picker-list" class="space-y-2"></div>
+                    </div>
+
+                    {{-- Series Slot Summary (shown for series service after schedule selected) --}}
+                    <div class="form-control hidden" id="svc-series-slot-summary">
+                        <label class="label">
+                            <span class="label-text font-medium">Available Slots</span>
+                        </label>
+                        <div id="svc-series-slots-loading" class="hidden">
+                            <div class="flex items-center justify-center py-8">
+                                <span class="loading loading-spinner loading-md"></span>
+                                <span class="ml-2 text-base-content/60">Loading slots...</span>
+                            </div>
+                        </div>
+                        <div id="svc-series-slots-empty" class="hidden">
+                            <div class="text-center py-6 border-2 border-dashed border-base-300 rounded-lg">
+                                <span class="icon-[tabler--calendar-off] size-8 text-base-content/30 mx-auto mb-2"></span>
+                                <p class="text-base-content/60">No available slots for this service in the selected period</p>
+                            </div>
+                        </div>
+                        <div id="svc-series-slots-list" class="space-y-3"></div>
+                    </div>
+
                     {{-- Date Selection --}}
                     <div class="form-control mb-6 hidden" id="date-selection">
                         <label class="label" for="booking-date">
@@ -270,6 +336,30 @@
             </div>
         </div>
 
+        {{-- Period Slots Modal --}}
+        <div id="svc-period-slots-modal" class="fixed inset-0 z-50 hidden">
+            <div class="fixed inset-0 bg-black/50" onclick="closeSvcPeriodSlotsModal()"></div>
+            <div class="fixed inset-0 flex items-center justify-center p-4 pointer-events-none">
+                <div class="bg-base-100 rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col pointer-events-auto relative">
+                    <div class="flex items-center justify-between p-4 border-b border-base-200">
+                        <h3 class="font-bold text-lg flex items-center gap-2">
+                            <span class="icon-[tabler--calendar-event] size-5 text-primary"></span>
+                            <span id="svc-period-modal-title">Slots</span>
+                        </h3>
+                        <button type="button" class="btn btn-sm btn-circle btn-ghost" onclick="closeSvcPeriodSlotsModal()">
+                            <span class="icon-[tabler--x] size-5"></span>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div id="svc-period-modal-slots" class="space-y-2"></div>
+                    </div>
+                    <div class="p-4 border-t border-base-200">
+                        <button type="button" class="btn btn-ghost w-full" onclick="closeSvcPeriodSlotsModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Step 2: Pricing & Payment --}}
         <div id="step-2" class="card bg-base-100 border border-base-200 hidden">
             <div class="card-body">
@@ -279,34 +369,37 @@
                 </h2>
 
                 {{-- Booking Summary --}}
-                <div class="bg-base-200/50 rounded-lg p-4 mb-6">
-                    <div class="text-sm font-medium text-base-content/60 mb-2">Booking Summary</div>
-                    <div class="space-y-2">
-                        <div class="flex justify-between">
-                            <span class="text-base-content/70">Client</span>
-                            <span class="font-medium" id="summary-client">--</span>
+                <div class="bg-base-200/50 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--user] size-4 text-base-content/50"></span>
+                                <span class="font-medium" id="summary-client">--</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--massage] size-4 text-base-content/50"></span>
+                                <span id="summary-service">--</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--calendar] size-4 text-base-content/50"></span>
+                                <span class="text-sm text-base-content/70" id="summary-datetime">--</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="icon-[tabler--user-check] size-4 text-base-content/50"></span>
+                                <span class="text-sm text-base-content/70" id="summary-instructor">--</span>
+                            </div>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-base-content/70">Service</span>
-                            <span class="font-medium" id="summary-service">--</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-base-content/70">Date & Time</span>
-                            <span class="font-medium" id="summary-datetime">--</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-base-content/70">Instructor</span>
-                            <span class="font-medium" id="summary-instructor">--</span>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-primary" id="display-price">$0.00</div>
+                            <span id="svc-original-price-display" class="text-sm text-base-content/50 line-through hidden">$0.00</span>
+                            <div id="svc-discount-badge" class="hidden mt-1">
+                                <span class="badge badge-success badge-sm gap-1">
+                                    <span class="icon-[tabler--discount-check] size-3"></span>
+                                    <span id="svc-discount-badge-text">Discount</span>
+                                </span>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                {{-- Price Display --}}
-                <div class="form-control mb-4">
-                    <label class="label">
-                        <span class="label-text font-medium">Service Price</span>
-                    </label>
-                    <div class="text-3xl font-bold text-primary" id="display-price">$0.00</div>
                 </div>
 
                 {{-- Price Override Hidden Fields --}}
@@ -492,29 +585,63 @@
                 </div>
                 @endif
 
-                {{-- Service Price (read-only display) --}}
-                <div class="flex items-center justify-between p-3 bg-base-200/30 rounded-lg mb-4">
-                    <span class="text-sm text-base-content/60">Service Price</span>
-                    <span class="font-bold text-lg" id="svc-base-price-display">$0.00</span>
+                {{-- Series Price Breakdown (shown for series bookings) --}}
+                <div id="svc-series-price-breakdown" class="hidden mb-4">
+                    <div class="bg-base-200/30 rounded-lg p-4 space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-base-content/60">Base price per slot</span>
+                            <span class="font-medium" id="svc-series-base-price">$0.00</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-base-content/60">Total slots</span>
+                            <span class="font-medium" id="svc-series-slot-count">0</span>
+                        </div>
+                        <div class="divider my-1"></div>
+                        <div class="flex items-center justify-between font-semibold">
+                            <span>Total (without discount)</span>
+                            <span id="svc-series-total-no-discount">$0.00</span>
+                        </div>
+                    </div>
                 </div>
 
-                {{-- Payment Option (AJAX loaded) --}}
-                <div class="border border-base-200 rounded-lg mb-4">
-                    <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
-                        <div class="flex items-center gap-2 font-medium">
-                            <span class="icon-[tabler--credit-card] size-5 text-primary"></span>
-                            <span>Payment Option</span>
+                {{-- Registration Fee (shown for series bookings with reg fee) --}}
+                <div id="svc-series-reg-fee-container" class="hidden mb-4">
+                    <label class="flex items-center justify-between gap-3 p-3 border border-base-content/10 rounded-lg cursor-pointer hover:bg-base-200/30 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="svc-series-reg-fee-checkbox" class="checkbox checkbox-primary checkbox-sm" checked onchange="toggleSvcSeriesRegFee()">
+                            <div>
+                                <span class="font-medium text-sm">Include Registration Fee</span>
+                                <span class="text-xs text-base-content/60 block">One-time fee for billing period signup</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="p-4">
-                        <div id="svc-payment-options-loading" class="hidden py-4 text-center">
-                            <span class="loading loading-spinner loading-sm"></span>
-                            <span class="text-sm text-base-content/60 ml-2">Loading payment options...</span>
+                        <span class="font-bold text-primary" id="svc-series-reg-fee-amount">$0.00</span>
+                    </label>
+                </div>
+
+                {{-- Apply Discount Checkbox (shown for series bookings) --}}
+                <div id="svc-apply-discount-container" class="hidden mb-4">
+                    <label class="flex items-center justify-between gap-3 p-3 border border-success/20 rounded-lg cursor-pointer hover:bg-success/5 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="svc-apply-discount-checkbox" class="checkbox checkbox-success checkbox-sm" onchange="toggleSvcSeriesDiscount()">
+                            <div>
+                                <span class="font-medium text-sm">Apply Billing Period Discount</span>
+                                <span class="text-xs text-base-content/60 block" id="svc-apply-discount-desc">Apply discounted rate for this period</span>
+                            </div>
                         </div>
-                        <div id="svc-payment-options-list" class="space-y-2">
-                            {{-- Loaded via AJAX --}}
+                        <div class="text-right">
+                            <span class="font-bold text-success" id="svc-apply-discount-amount">$0.00</span>
+                            <span class="text-xs text-success block" id="svc-apply-discount-savings">Save $0.00</span>
                         </div>
-                    </div>
+                    </label>
+                </div>
+
+                {{-- Service Price (hidden, used by JS) --}}
+                <span class="hidden" id="svc-base-price-display">$0.00</span>
+
+                {{-- Payment Options (hidden, loaded via AJAX for billing credit detection) --}}
+                <div class="hidden">
+                    <div id="svc-payment-options-loading" class="hidden"></div>
+                    <div id="svc-payment-options-list"></div>
                 </div>
 
                 {{-- Billing Period Discount (collapsible) --}}
@@ -632,6 +759,8 @@
                 <input type="hidden" name="billing_discount_percent" id="svc-billing-discount-percent" value="0">
                 <input type="hidden" name="billing_credit_id" id="svc-billing-credit-id" value="">
                 <input type="hidden" name="include_registration_fee" id="svc-include-reg-fee" value="1">
+                <input type="hidden" name="booking_type" id="svc-booking-type-hidden" value="single">
+                <input type="hidden" name="series_slot_ids" id="svc-series-slot-ids-hidden" value="">
 
                 <div class="flex justify-between mt-6">
                     <button type="button" class="btn btn-ghost" id="step2-back">
@@ -1012,8 +1141,354 @@ document.addEventListener('DOMContentLoaded', function() {
         const servicePlanValid = selectedServicePlanId !== null && selectedServicePlanId !== '';
         const slotValid = selectedSlotId !== null && selectedSlotId !== '';
 
+        // For series bookings, slot is auto-selected when slots are loaded
         const allValid = clientValid && servicePlanValid && slotValid;
         document.getElementById('step1-next').disabled = !allValid;
+    }
+
+    // ========== Booking Type & Schedule Selection ==========
+    var selectedServiceBookingType = 'single';
+    var selectedSvcPeriodMonths = null;
+    var _allSvcPeriodSlotsData = [];
+    var _svcPeriodSlotsData = [];
+    var _svcScheduleOptions = [];
+    var _selectedSvcScheduleParentIds = [];
+    var _svcPeriodMeta = {};
+    var _svcSeriesDiscountedTotal = 0;
+    var _svcSeriesTotalNoDiscount = 0;
+    var _svcSeriesBillingRegFee = 0;
+
+    window.selectServiceBookingType = function(type) {
+        selectedServiceBookingType = type;
+        var dateSelection = document.getElementById('date-selection');
+        var slotSelection = document.getElementById('slot-selection');
+        var periodSelection = document.getElementById('svc-period-selection');
+        var schedulePicker = document.getElementById('svc-schedule-picker');
+        var seriesSlotSummary = document.getElementById('svc-series-slot-summary');
+
+        // Reset slot
+        selectedSlotId = null;
+        selectedSlotData = null;
+        document.getElementById('slot-id').value = '';
+        document.getElementById('slots-list').innerHTML = '';
+        slotSelection.classList.add('hidden');
+        schedulePicker.classList.add('hidden');
+        seriesSlotSummary.classList.add('hidden');
+        selectedSvcPeriodMonths = null;
+        _selectedSvcScheduleParentIds = [];
+
+        if (type === 'single' || type === 'trial') {
+            periodSelection.classList.add('hidden');
+            dateSelection.classList.remove('hidden');
+            validateStep1();
+        } else if (type === 'period') {
+            dateSelection.classList.add('hidden');
+            slotSelection.classList.add('hidden');
+            buildSvcPeriodOptions();
+            periodSelection.classList.remove('hidden');
+            validateStep1();
+        }
+    };
+
+    function buildSvcPeriodOptions() {
+        fetch('/walk-in/service-plan-defaults?service_plan_id=' + selectedServicePlanId)
+            .then(function(r) { return r.json(); })
+            .then(function(defaults) {
+                renderSvcPeriodOptions(defaults.billing_discounts || {});
+            })
+            .catch(function() { renderSvcPeriodOptions({}); });
+    }
+
+    function renderSvcPeriodOptions(discounts) {
+        var container = document.getElementById('svc-period-options');
+        var periods = { '1': '1 Month', '3': '3 Months', '6': '6 Months', '9': '9 Months', '12': '12 Months' };
+        var html = '';
+
+        Object.keys(periods).forEach(function(months) {
+            var totalAmount = parseFloat(discounts[months]) || 0;
+            if (totalAmount <= 0) return;
+
+            var m = parseInt(months);
+            var monthlyRate = m > 0 ? (totalAmount / m) : 0;
+
+            html += '<button type="button" class="svc-period-option-btn flex-1 flex flex-col items-center p-3 rounded-lg border-2 border-base-content/10 hover:border-success cursor-pointer transition-all" ' +
+                'data-months="' + months + '" onclick="selectSvcPeriod(' + months + ')">' +
+                '<div class="text-xs text-base-content/60 font-medium">' + periods[months] + '</div>' +
+                '<div class="text-lg font-bold text-success">$' + totalAmount.toFixed(2) + '</div>' +
+                '<div class="text-[10px] text-base-content/50">$' + monthlyRate.toFixed(2) + '/mo</div>' +
+                '</button>';
+        });
+
+        if (!html) {
+            html = '<div class="col-span-full text-center py-4 text-base-content/50 text-sm">No billing period discounts configured for this service.</div>';
+        }
+
+        container.innerHTML = html;
+    }
+
+    window.selectSvcPeriod = function(months) {
+        selectedSvcPeriodMonths = months;
+
+        // Highlight selected period
+        document.querySelectorAll('.svc-period-option-btn').forEach(function(btn) {
+            if (parseInt(btn.dataset.months) === months) {
+                btn.classList.remove('border-base-content/10');
+                btn.classList.add('border-success', 'bg-success/5');
+            } else {
+                btn.classList.remove('border-success', 'bg-success/5');
+                btn.classList.add('border-base-content/10');
+            }
+        });
+
+        // Reset
+        var seriesSlotSummary = document.getElementById('svc-series-slot-summary');
+        var slotsLoading = document.getElementById('svc-series-slots-loading');
+        var slotsEmpty = document.getElementById('svc-series-slots-empty');
+        var slotsList = document.getElementById('svc-series-slots-list');
+        var schedulePicker = document.getElementById('svc-schedule-picker');
+
+        schedulePicker.classList.add('hidden');
+        seriesSlotSummary.classList.remove('hidden');
+        slotsLoading.classList.remove('hidden');
+        slotsEmpty.classList.add('hidden');
+        slotsList.innerHTML = '';
+        _selectedSvcScheduleParentIds = [];
+
+        // Fetch both schedules and slots in parallel
+        Promise.all([
+            fetch('/walk-in/service-schedules?service_plan_id=' + selectedServicePlanId + '&months=' + months).then(function(r) { return r.json(); }),
+            fetch('/walk-in/service-slots-range?service_plan_id=' + selectedServicePlanId + '&months=' + months).then(function(r) { return r.json(); })
+        ]).then(function(results) {
+            var scheduleData = results[0];
+            var slotData = results[1];
+            slotsLoading.classList.add('hidden');
+
+            _svcScheduleOptions = scheduleData.schedules || [];
+            _allSvcPeriodSlotsData = slotData.slots || [];
+            _svcPeriodMeta = { total: slotData.total, period_start: slotData.period_start, period_end: slotData.period_end };
+
+            if (_allSvcPeriodSlotsData.length === 0) {
+                slotsEmpty.classList.remove('hidden');
+                _svcPeriodSlotsData = [];
+                selectedSlotId = null;
+                selectedSlotData = null;
+                validateStep1();
+                return;
+            }
+
+            // If only 1 schedule or no schedules — auto-select all, skip picker
+            if (_svcScheduleOptions.length <= 1) {
+                _selectedSvcScheduleParentIds = _svcScheduleOptions.length === 1 ? [_svcScheduleOptions[0].parent_id] : [];
+                _svcPeriodSlotsData = _allSvcPeriodSlotsData;
+                autoSelectFirstSvcSlot();
+                showSvcSlotSummary();
+                validateStep1();
+                return;
+            }
+
+            // Multiple schedules — show picker
+            var pickerHtml = '';
+            _svcScheduleOptions.forEach(function(sched) {
+                var titleLine = sched.title ? '<div class="font-semibold">' + sched.title + '</div>' : '';
+                pickerHtml += '<label class="svc-schedule-card flex items-center gap-3 p-4 rounded-lg border-2 border-base-content/10 cursor-pointer hover:border-primary transition-all has-[:checked]:border-primary has-[:checked]:bg-primary/5">' +
+                    '<input type="checkbox" class="checkbox checkbox-primary" data-parent-id="' + sched.parent_id + '" onchange="toggleSvcSchedule(this)">' +
+                    '<div class="flex-1">' +
+                    titleLine +
+                    '<div class="' + (sched.title ? 'text-sm text-base-content/70' : 'font-semibold') + '">' + sched.label + ' · ' + sched.time + '</div>' +
+                    '<div class="text-xs text-base-content/50">' + sched.instructor + (sched.location ? ' · ' + sched.location : '') +
+                    (sched.last_slot_date ? ' · Last slot: ' + sched.last_slot_date : '') + '</div>' +
+                    '</div>' +
+                    '<span class="badge badge-soft badge-primary shrink-0">' + sched.slot_count + ' slots</span>' +
+                    '</label>';
+            });
+
+            document.getElementById('svc-schedule-picker-list').innerHTML = pickerHtml;
+            schedulePicker.classList.remove('hidden');
+            seriesSlotSummary.classList.add('hidden');
+            validateStep1();
+        }).catch(function() { slotsLoading.classList.add('hidden'); });
+    };
+
+    function autoSelectFirstSvcSlot() {
+        if (_svcPeriodSlotsData.length === 0) return;
+        var first = _svcPeriodSlotsData[0];
+        selectedSlotId = first.id;
+        document.getElementById('slot-id').value = first.id;
+
+        var billingDiscounts = first.billing_discounts || {};
+        selectedSlotData = {
+            service: selectedServicePlanName,
+            time: first.time,
+            price: parseFloat(first.price) || 0,
+            startTime: first.start_time_iso,
+            endTime: first.end_time_iso,
+            billingDiscounts: billingDiscounts,
+            servicePlanId: selectedServicePlanId,
+            registrationFee: parseFloat(first.registration_fee) || 0,
+            cancellationFee: parseFloat(first.cancellation_fee) || 0,
+            graceHours: parseInt(first.cancellation_grace_hours) || 48,
+            instructor: first.instructor
+        };
+    }
+
+    function showSvcSlotSummary() {
+        var slotsList = document.getElementById('svc-series-slots-list');
+        var html = '<div class="flex items-center justify-between p-4 bg-success/5 border border-success/20 rounded-lg">' +
+            '<div class="flex items-center gap-3">' +
+            '<div class="flex items-center justify-center size-10 rounded-full bg-success/10">' +
+            '<span class="icon-[tabler--calendar-check] size-5 text-success"></span></div>' +
+            '<div>' +
+            '<div class="font-semibold">' + _svcPeriodSlotsData.length + ' Available Slots</div>' +
+            '<div class="text-sm text-base-content/60">' + (_svcPeriodMeta.period_start || '') + ' to ' + (_svcPeriodMeta.period_end || '') + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<button type="button" class="btn btn-ghost btn-sm gap-1" onclick="openSvcPeriodSlotsModal()">' +
+            '<span class="icon-[tabler--eye] size-4"></span> View All' +
+            '</button>' +
+            '</div>';
+        slotsList.innerHTML = html;
+        document.getElementById('svc-series-slot-summary').classList.remove('hidden');
+    }
+
+    window.toggleSvcSchedule = function(checkbox) {
+        var parentId = checkbox.dataset.parentId;
+        var pid = isNaN(parentId) ? parentId : parseInt(parentId);
+
+        if (checkbox.checked) {
+            if (_selectedSvcScheduleParentIds.indexOf(pid) === -1) _selectedSvcScheduleParentIds.push(pid);
+        } else {
+            _selectedSvcScheduleParentIds = _selectedSvcScheduleParentIds.filter(function(id) { return id !== pid; });
+        }
+
+        applySvcScheduleFilter();
+    };
+
+    function applySvcScheduleFilter() {
+        if (_selectedSvcScheduleParentIds.length === 0) {
+            _svcPeriodSlotsData = [];
+            selectedSlotId = null;
+            selectedSlotData = null;
+            document.getElementById('svc-series-slot-summary').classList.add('hidden');
+            validateStep1();
+            return;
+        }
+
+        _svcPeriodSlotsData = _allSvcPeriodSlotsData.filter(function(slot) {
+            var pid = slot.recurrence_parent_id;
+            // Match child slots by their recurrence_parent_id
+            if (pid !== null && pid !== undefined) {
+                return _selectedSvcScheduleParentIds.indexOf(pid) !== -1;
+            }
+            // Match parent slots (no recurrence_parent_id) by their own ID, or one-off slots
+            return _selectedSvcScheduleParentIds.indexOf(slot.id) !== -1 ||
+                   _selectedSvcScheduleParentIds.indexOf('oneoff') !== -1;
+        });
+
+        autoSelectFirstSvcSlot();
+        showSvcSlotSummary();
+        validateStep1();
+    }
+
+    window.openSvcPeriodSlotsModal = function() {
+        var modal = document.getElementById('svc-period-slots-modal');
+        var container = document.getElementById('svc-period-modal-slots');
+        var title = document.getElementById('svc-period-modal-title');
+
+        title.textContent = _svcPeriodSlotsData.length + ' Slots — ' + selectedSvcPeriodMonths + ' Month' + (selectedSvcPeriodMonths > 1 ? 's' : '');
+
+        var html = '';
+
+        if (_selectedSvcScheduleParentIds.length > 1) {
+            _svcScheduleOptions.forEach(function(sched) {
+                var pid = sched.parent_id;
+                if (_selectedSvcScheduleParentIds.indexOf(pid) === -1 && _selectedSvcScheduleParentIds.indexOf(parseInt(pid)) === -1) return;
+
+                var groupSlots = _svcPeriodSlotsData.filter(function(s) {
+                    var spid = s.recurrence_parent_id;
+                    return spid == pid || (pid === 'oneoff' && !spid);
+                });
+                if (groupSlots.length === 0) return;
+
+                html += '<div class="font-semibold text-sm text-primary flex items-center gap-2 mt-3 mb-2">' +
+                    '<span class="icon-[tabler--calendar-repeat] size-4"></span>' +
+                    sched.label + ' · ' + sched.time +
+                    '<span class="badge badge-sm badge-soft badge-primary">' + groupSlots.length + '</span></div>';
+
+                groupSlots.forEach(function(slot, idx) {
+                    html += renderSvcSlotRow(slot, idx);
+                });
+            });
+        } else {
+            _svcPeriodSlotsData.forEach(function(slot, idx) {
+                html += renderSvcSlotRow(slot, idx);
+            });
+        }
+
+        container.innerHTML = html;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    };
+
+    function renderSvcSlotRow(slot, idx) {
+        return '<div class="flex items-center justify-between p-3 ' + (idx % 2 === 0 ? 'bg-base-200/30' : '') + ' rounded-lg">' +
+            '<div class="flex items-center gap-3">' +
+            '<div class="text-center shrink-0 w-14">' +
+            '<div class="text-xs text-base-content/50">' + (slot.date ? slot.date.split(',')[0] : '') + '</div>' +
+            '<div class="font-bold text-sm">' + (slot.date ? (slot.date.split(', ')[1] || slot.date) : '') + '</div>' +
+            '</div>' +
+            '<div>' +
+            '<div class="font-medium text-sm">' + slot.time + '</div>' +
+            '<div class="text-xs text-base-content/60">' + slot.instructor + (slot.location ? ' · ' + slot.location : '') + '</div>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+    }
+
+    window.closeSvcPeriodSlotsModal = function() {
+        document.getElementById('svc-period-slots-modal').classList.add('hidden');
+        document.body.style.overflow = '';
+    };
+
+    // ========== Series Discount & Reg Fee Toggles ==========
+    window.toggleSvcSeriesDiscount = function() {
+        var checked = document.getElementById('svc-apply-discount-checkbox').checked;
+        if (checked && _svcSeriesDiscountedTotal > 0) {
+            document.getElementById('svc-billing-period').value = selectedSvcPeriodMonths;
+            document.getElementById('svc-billing-discount-percent').value = _svcSeriesDiscountedTotal;
+        } else {
+            document.getElementById('svc-billing-period').value = '';
+            document.getElementById('svc-billing-discount-percent').value = '0';
+        }
+        recalcSvcSeriesTotal();
+    };
+
+    window.toggleSvcSeriesRegFee = function() {
+        document.getElementById('svc-include-reg-fee').value = document.getElementById('svc-series-reg-fee-checkbox').checked ? '1' : '0';
+        recalcSvcSeriesTotal();
+    };
+
+    function recalcSvcSeriesTotal() {
+        if (selectedServiceBookingType !== 'period') return;
+
+        var useDiscount = document.getElementById('svc-apply-discount-checkbox').checked;
+        var includeRegFee = document.getElementById('svc-series-reg-fee-checkbox').checked;
+        var baseTotal = useDiscount ? _svcSeriesDiscountedTotal : _svcSeriesTotalNoDiscount;
+        var regFee = includeRegFee ? _svcSeriesBillingRegFee : 0;
+        var finalTotal = baseTotal + regFee;
+
+        document.getElementById('display-price').textContent = '$' + finalTotal.toFixed(2);
+        document.getElementById('price-input').value = finalTotal.toFixed(2);
+
+        // Show/hide original price strikethrough and discount badge
+        if (useDiscount && _svcSeriesTotalNoDiscount > _svcSeriesDiscountedTotal) {
+            document.getElementById('svc-original-price-display').textContent = '$' + _svcSeriesTotalNoDiscount.toFixed(2);
+            document.getElementById('svc-original-price-display').classList.remove('hidden');
+            document.getElementById('svc-discount-badge').classList.remove('hidden');
+            document.getElementById('svc-discount-badge-text').textContent = selectedSvcPeriodMonths + 'mo discount applied';
+        } else {
+            document.getElementById('svc-original-price-display').classList.add('hidden');
+            document.getElementById('svc-discount-badge').classList.add('hidden');
+        }
     }
 
     // Service Plan selection
@@ -1030,8 +1505,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!servicePlanSelect.value) {
             selectedServicePlanId = null;
             selectedServicePlanName = '';
+            document.getElementById('booking-type-selection').classList.add('hidden');
             document.getElementById('date-selection').classList.add('hidden');
             document.getElementById('slot-selection').classList.add('hidden');
+            document.getElementById('svc-period-selection').classList.add('hidden');
+            document.getElementById('svc-schedule-picker').classList.add('hidden');
+            document.getElementById('svc-series-slot-summary').classList.add('hidden');
             validateStep1();
             return;
         }
@@ -1039,6 +1518,16 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedServicePlanId = servicePlanSelect.value;
         selectedServicePlanName = selectedOption.dataset.name || selectedOption.text.split(' - ')[0];
         selectedServiceDuration = parseInt(selectedOption.dataset.duration) || 60;
+
+        // Show booking type selection and reset to single
+        document.getElementById('booking-type-selection').classList.remove('hidden');
+        document.querySelector('input[name="booking_type"][value="single"]').checked = true;
+        selectedServiceBookingType = 'single';
+        selectedSvcPeriodMonths = null;
+        _selectedSvcScheduleParentIds = [];
+        document.getElementById('svc-period-selection').classList.add('hidden');
+        document.getElementById('svc-schedule-picker').classList.add('hidden');
+        document.getElementById('svc-series-slot-summary').classList.add('hidden');
 
         document.getElementById('date-selection').classList.remove('hidden');
 
@@ -1302,8 +1791,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('summary-client').textContent = selectedClientName;
         document.getElementById('summary-service').textContent = selectedServicePlanName;
-        document.getElementById('summary-datetime').textContent = datePicker.altInput.value + ' at ' + selectedSlotData.time;
-        document.getElementById('summary-instructor').textContent = selectedSlotData.instructor;
+        if (selectedServiceBookingType === 'period' && selectedSvcPeriodMonths) {
+            document.getElementById('summary-datetime').textContent = _svcPeriodSlotsData.length + ' slots · ' + selectedSvcPeriodMonths + ' month' + (selectedSvcPeriodMonths > 1 ? 's' : '');
+        } else {
+            document.getElementById('summary-datetime').textContent = datePicker.altInput.value + ' at ' + selectedSlotData.time;
+        }
+        document.getElementById('summary-instructor').textContent = selectedSlotData.instructor || 'Various';
+
+        // For series bookings, check if client already has bookings for some slots
+        if (selectedServiceBookingType === 'period' && _svcPeriodSlotsData.length > 0 && selectedClientId && selectedClientId !== 'new') {
+            try {
+                var checkIds = _svcPeriodSlotsData.map(function(s) { return s.id; }).join(',');
+                var checkRes = await fetch('/walk-in/check-service-series-conflict?client_id=' + selectedClientId + '&slot_ids=' + checkIds);
+                var checkData = await checkRes.json();
+                if (checkData.has_conflict) {
+                    var newSlots = _svcPeriodSlotsData.length - checkData.existing_count;
+                    if (newSlots <= 0) {
+                        showFormError(checkData.message);
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        return;
+                    }
+                    if (!confirm(checkData.client_name + ' is already booked into ' + checkData.existing_count + ' slot(s). Only ' + newSlots + ' new slot(s) will be added. Continue?')) {
+                        btn.disabled = false;
+                        btn.innerHTML = originalText;
+                        return;
+                    }
+                }
+            } catch(e) {}
+        }
 
         const price = selectedSlotData.price;
         document.getElementById('display-price').textContent = '$' + price.toFixed(2);
@@ -1312,12 +1828,81 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Reset billing discount and load payment options for this client
         removeSvcBillingDiscount();
+
+        // Reset series-specific UI
+        document.getElementById('svc-series-price-breakdown').classList.add('hidden');
+        document.getElementById('svc-series-reg-fee-container').classList.add('hidden');
+        document.getElementById('svc-apply-discount-container').classList.add('hidden');
+        document.getElementById('svc-apply-discount-checkbox').checked = false;
+
         loadSvcPaymentOptions(clientIdValue);
+
+        // Set booking type and series slot IDs
+        document.getElementById('svc-booking-type-hidden').value = selectedServiceBookingType;
+        if (selectedServiceBookingType === 'period' && _svcPeriodSlotsData.length > 0) {
+            document.getElementById('svc-series-slot-ids-hidden').value = _svcPeriodSlotsData.map(function(s) { return s.id; }).join(',');
+        } else {
+            document.getElementById('svc-series-slot-ids-hidden').value = '';
+        }
 
         document.getElementById('booking-form').action = `/walk-in/service/${selectedSlotId}`;
         console.log('Form action set to:', document.getElementById('booking-form').action);
 
         goToStep(2);
+
+        // If "Series Service" was selected — show breakdown, reg fee, discount checkbox
+        if (selectedServiceBookingType === 'period' && selectedSvcPeriodMonths && selectedSlotData) {
+            document.getElementById('svc-billing-discount-section').classList.add('hidden');
+
+            var slotCount = _svcPeriodSlotsData.length;
+            var basePerSlot = selectedSlotData.price;
+            var totalNoDiscount = basePerSlot * slotCount;
+            var regFee = selectedSlotData.registrationFee || 0;
+            var discounts = selectedSlotData.billingDiscounts || {};
+            var discountedTotal = parseFloat(discounts[selectedSvcPeriodMonths]) || 0;
+            var savings = totalNoDiscount - discountedTotal;
+
+            // Show price breakdown
+            document.getElementById('svc-series-base-price').textContent = '$' + basePerSlot.toFixed(2);
+            document.getElementById('svc-series-slot-count').textContent = slotCount + ' slots (' + selectedSvcPeriodMonths + ' month' + (selectedSvcPeriodMonths > 1 ? 's' : '') + ')';
+            document.getElementById('svc-series-total-no-discount').textContent = '$' + totalNoDiscount.toFixed(2);
+            document.getElementById('svc-series-price-breakdown').classList.remove('hidden');
+
+            // Set display price to total without discount
+            document.getElementById('display-price').textContent = '$' + totalNoDiscount.toFixed(2);
+            document.getElementById('price-input').value = totalNoDiscount.toFixed(2);
+
+            // Show registration fee
+            if (regFee > 0) {
+                document.getElementById('svc-series-reg-fee-amount').textContent = '$' + regFee.toFixed(2);
+                document.getElementById('svc-series-reg-fee-checkbox').checked = true;
+                document.getElementById('svc-include-reg-fee').value = '1';
+                document.getElementById('svc-series-reg-fee-container').classList.remove('hidden');
+                _svcSeriesBillingRegFee = regFee;
+            }
+
+            // Show apply discount checkbox (only if discount exists)
+            if (discountedTotal > 0) {
+                document.getElementById('svc-apply-discount-amount').textContent = '$' + discountedTotal.toFixed(2);
+                document.getElementById('svc-apply-discount-savings').textContent = 'Save $' + savings.toFixed(2);
+                document.getElementById('svc-apply-discount-desc').textContent = selectedSvcPeriodMonths + ' month' + (selectedSvcPeriodMonths > 1 ? 's' : '') + ' discounted rate';
+                document.getElementById('svc-apply-discount-container').classList.remove('hidden');
+            }
+
+            // Store for toggles
+            _svcSeriesDiscountedTotal = discountedTotal;
+            _svcSeriesTotalNoDiscount = totalNoDiscount;
+
+            recalcSvcSeriesTotal();
+        }
+
+        // If "Trial Service" was selected, set price to $0 and comp
+        if (selectedServiceBookingType === 'trial') {
+            document.getElementById('svc-billing-discount-section').classList.add('hidden');
+            document.getElementById('display-price').textContent = '$0.00';
+            document.getElementById('price-input').value = '0';
+            document.getElementById('svc-payment-method-hidden').value = 'comp';
+        }
     });
 
     // Form submit validation
@@ -2005,6 +2590,12 @@ document.addEventListener('DOMContentLoaded', function() {
         var section = document.getElementById('svc-billing-discount-section');
         var optionsContainer = document.getElementById('svc-billing-discount-options');
         removeSvcBillingDiscount();
+
+        // Don't show billing discount accordion if period was already chosen in step 1
+        if (selectedServiceBookingType === 'period') {
+            section.classList.add('hidden');
+            return;
+        }
 
         if (!selectedSlotData || !selectedSlotData.billingDiscounts) {
             section.classList.add('hidden');

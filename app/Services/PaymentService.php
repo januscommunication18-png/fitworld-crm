@@ -8,6 +8,7 @@ use App\Models\ClassPassPurchase;
 use App\Models\CustomerMembership;
 use App\Models\Host;
 use App\Models\Payment;
+use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -49,6 +50,9 @@ class PaymentService
 
             $this->auditService->logPaymentProcessed($payment);
 
+            // Create transaction record for cash flow tracking
+            $this->createTransactionFromPayment($host, $client, $booking, $amount, Transaction::METHOD_MANUAL, $manualMethod, $notes);
+
             return $payment;
         });
     }
@@ -78,6 +82,9 @@ class PaymentService
 
             $this->auditService->logPaymentProcessed($payment);
 
+            // Create transaction record for cash flow tracking
+            $this->createTransactionFromPayment($host, $client, $booking, 0, Transaction::METHOD_MEMBERSHIP, null, 'Paid via membership: ' . $membership->membershipPlan?->name);
+
             return $payment;
         });
     }
@@ -106,6 +113,9 @@ class PaymentService
             ]);
 
             $this->auditService->logPaymentProcessed($payment);
+
+            // Create transaction record for cash flow tracking
+            $this->createTransactionFromPayment($host, $client, $booking, 0, Transaction::METHOD_PACK, null, 'Paid via class pass: ' . $passPurchase->classPass?->name);
 
             return $payment;
         });
@@ -145,6 +155,9 @@ class PaymentService
             ]);
 
             $this->auditService->logPaymentProcessed($payment);
+
+            // Create transaction record for cash flow tracking
+            $this->createTransactionFromPayment($host, $client, $booking, 0, Transaction::METHOD_COMP, null, $notes ?? 'Complimentary');
 
             return $payment;
         });
@@ -325,5 +338,62 @@ class PaymentService
 
             return $payment->fresh();
         });
+    }
+
+    /**
+     * Create a Transaction record from a walk-in payment for cash flow tracking
+     */
+    protected function createTransactionFromPayment(
+        Host $host,
+        Client $client,
+        ?Booking $booking,
+        float $amount,
+        string $paymentMethod,
+        ?string $manualMethod = null,
+        ?string $notes = null
+    ): Transaction {
+        // Determine transaction type from booking
+        $type = Transaction::TYPE_CLASS_BOOKING;
+        $purchasableType = null;
+        $purchasableId = null;
+        $itemName = null;
+
+        if ($booking && $booking->bookable) {
+            $bookable = $booking->bookable;
+            if ($bookable instanceof \App\Models\ClassSession) {
+                $type = Transaction::TYPE_CLASS_BOOKING;
+                $purchasableType = get_class($bookable);
+                $purchasableId = $bookable->id;
+                $itemName = $bookable->display_title ?? $bookable->classPlan?->name ?? 'Class Session';
+            } elseif ($bookable instanceof \App\Models\ServiceSlot) {
+                $type = Transaction::TYPE_SERVICE_BOOKING;
+                $purchasableType = get_class($bookable);
+                $purchasableId = $bookable->id;
+                $itemName = $bookable->title ?? $bookable->servicePlan?->name ?? 'Service Slot';
+            }
+        }
+
+        return Transaction::create([
+            'host_id' => $host->id,
+            'client_id' => $client->id,
+            'booking_id' => $booking?->id,
+            'type' => $type,
+            'purchasable_type' => $purchasableType,
+            'purchasable_id' => $purchasableId,
+            'subtotal' => $amount,
+            'tax_amount' => 0,
+            'discount_amount' => 0,
+            'total_amount' => $amount,
+            'currency' => $host->default_currency ?? 'USD',
+            'status' => Transaction::STATUS_PAID,
+            'payment_method' => $paymentMethod,
+            'manual_method' => $manualMethod,
+            'paid_at' => now(),
+            'metadata' => [
+                'item_name' => $itemName,
+                'source' => 'walk_in',
+            ],
+            'notes' => $notes,
+        ]);
     }
 }

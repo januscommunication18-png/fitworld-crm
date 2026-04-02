@@ -431,7 +431,8 @@ class BookingService
                     ? ClassPassPurchase::find($passId)
                     : ($classPlan ? $this->classPassService->getEligiblePassForClass($client, $classPlan) : null);
 
-                if ($passPurchase && $this->classPassService->deductCredit($passPurchase, $booking)) {
+                $creditsToDeduct = $options['credits_to_deduct'] ?? null;
+                if ($passPurchase && $this->classPassService->deductCredits($passPurchase, $booking, $creditsToDeduct)) {
                     $booking->update(['class_pass_purchase_id' => $passPurchase->id]);
                     $this->paymentService->processPassPayment($host, $client, $passPurchase, $booking);
                 } else {

@@ -33,13 +33,7 @@ class ClassPassController extends Controller
         $hostCurrencies = $host->currencies ?? ['USD'];
         $defaultCurrency = $host->default_currency ?? 'USD';
 
-        return view('host.catalog.class-passes.index', compact(
-            'classPasses',
-            'status',
-            'statuses',
-            'hostCurrencies',
-            'defaultCurrency'
-        ));
+        return redirect()->route('catalog.index', ['tab' => 'class-passes']);
     }
 
     public function create()
@@ -57,6 +51,7 @@ class ClassPassController extends Controller
 
         // Related data for eligibility selections
         $classPlans = $host->classPlans()->active()->orderBy('name')->get();
+        $servicePlans = $host->servicePlans()->where('is_active', true)->orderBy('name')->get();
         $instructors = $host->instructors()->where('status', 'active')->orderBy('name')->get();
         $locations = $host->locations()->orderBy('name')->get();
 
@@ -78,6 +73,7 @@ class ClassPassController extends Controller
             'renewalIntervals',
             'classTypes',
             'classPlans',
+            'servicePlans',
             'instructors',
             'locations',
             'classCategories',
@@ -215,6 +211,7 @@ class ClassPassController extends Controller
 
         // Related data for eligibility selections
         $classPlans = $host->classPlans()->active()->orderBy('name')->get();
+        $servicePlans = $host->servicePlans()->where('is_active', true)->orderBy('name')->get();
         $instructors = $host->instructors()->where('status', 'active')->orderBy('name')->get();
         $locations = $host->locations()->orderBy('name')->get();
 
@@ -237,6 +234,7 @@ class ClassPassController extends Controller
             'renewalIntervals',
             'classTypes',
             'classPlans',
+            'servicePlans',
             'instructors',
             'locations',
             'classCategories',
@@ -466,7 +464,7 @@ class ClassPassController extends Controller
     {
         $this->authorizeHost($classPass);
 
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
         $clients = $host->clients()->orderBy('first_name')->orderBy('last_name')->get();
         $hostCurrencies = $host->currencies ?? ['USD'];
         $defaultCurrency = $host->default_currency ?? 'USD';

@@ -67,6 +67,7 @@ class ScheduleController extends Controller
             'classPlans' => $host->classPlans()->where('is_active', true)->orderBy('name')->get(),
             'servicePlans' => $host->servicePlans()->where('is_active', true)->orderBy('name')->get(),
             'membershipPlans' => $host->membershipPlans()->active()->orderBy('name')->get(),
+            'classPasses' => $host->classPasses()->active()->orderBy('name')->get(),
             'spaceRentalConfigs' => $host->spaceRentalConfigs()->active()->orderBy('name')->get(),
             'upcomingEvents' => Event::forHost($host->id)->upcoming()->published()->get(),
             'classSessions' => $classSessions,

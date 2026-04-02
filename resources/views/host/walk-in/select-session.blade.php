@@ -799,6 +799,53 @@
                     </div>
                     @endif
 
+                    {{-- Section 2.9: Payment Option (class pass / billing credit / manual) --}}
+                    <div class="border border-base-200 rounded-lg" id="payment-option-section">
+                        <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
+                            <div class="flex items-center gap-2 font-medium">
+                                <span class="icon-[tabler--credit-card] size-5 text-primary"></span>
+                                <span>Payment Option</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <div id="payment-options-loading" class="hidden py-4 text-center">
+                                <span class="loading loading-spinner loading-sm"></span>
+                                <span class="text-sm text-base-content/60 ml-2">Loading payment options...</span>
+                            </div>
+                            <div id="payment-options-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    {{-- Credit Deduction Info (shown when class pass selected) --}}
+                    <div id="credit-deduct-section" class="hidden">
+                        <div class="border border-info/30 bg-info/5 rounded-lg p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="icon-[tabler--ticket] size-5 text-info"></span>
+                                <span class="font-semibold text-sm">Credit Deduction</span>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="form-control flex-1">
+                                    <label class="label py-0" for="credit-deduct-amount">
+                                        <span class="label-text text-xs">Credits to deduct</span>
+                                    </label>
+                                    <input type="number" id="credit-deduct-amount" name="credits_to_deduct"
+                                           class="input input-bordered input-sm w-24" min="1" max="99" value="1"
+                                           onchange="updateCreditDeductPreview()">
+                                </div>
+                                <div class="text-sm space-y-1">
+                                    <div class="flex items-center gap-2 text-base-content/60">
+                                        <span>Current balance:</span>
+                                        <span class="font-bold" id="credit-deduct-remaining">0</span> credits
+                                    </div>
+                                    <div class="flex items-center gap-2 text-info">
+                                        <span>After booking:</span>
+                                        <span class="font-bold" id="credit-deduct-after">0</span> credits
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- Section 3: Amount & Payment Method --}}
                     <div class="border border-base-200 rounded-lg">
                         <div class="px-4 py-3 bg-base-200/30 border-b border-base-200 rounded-t-lg">
@@ -2322,6 +2369,150 @@ document.addEventListener('DOMContentLoaded', function() {
     let availableOffers = [];
 
     // Fetch available offers when entering step 2
+    // ========== Payment Options (Class Pass / Billing Credit / Manual) ==========
+    function loadPaymentOptions() {
+        var list = document.getElementById('payment-options-list');
+        var loading = document.getElementById('payment-options-loading');
+        var clientId = document.getElementById('client-id').value;
+
+        list.innerHTML = '';
+        document.getElementById('payment-method-hidden').value = 'manual';
+        document.getElementById('class-pass-purchase-id').value = '';
+
+        if (!clientId) return;
+
+        loading.classList.remove('hidden');
+
+        var sessionParam = selectedSessionId ? '&session_id=' + selectedSessionId : '';
+        fetch('/walk-in/payment-methods/' + clientId + '?class_plan_id=' + (selectedClassPlanId || '') + sessionParam)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var html = '';
+
+                // Class pass packs
+                if (data.packs && data.packs.length > 0) {
+                    data.packs.forEach(function(pack) {
+                        var creditsReq = pack.credits_required || 1;
+                        var remaining = pack.classes_remaining;
+                        var afterDeduct = remaining - creditsReq;
+                        html += '<label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-info has-[:checked]:bg-info/5 transition-all">' +
+                            '<input type="radio" name="payment_option" value="pack_' + pack.id + '" class="radio radio-info mt-0.5" onchange="selectPaymentOption(\'pack\', ' + pack.id + ', ' + remaining + ', ' + creditsReq + ')">' +
+                            '<div class="flex-1">' +
+                            '<div class="font-medium flex items-center gap-2">' +
+                            '<span class="icon-[tabler--ticket] size-5 text-info"></span> Use Class Pass' +
+                            '<span class="badge badge-info badge-sm">Pack</span></div>' +
+                            '<div class="text-sm text-base-content/60 mt-1">' + pack.name + ' — ' + remaining + ' credit' + (remaining !== 1 ? 's' : '') + ' remaining</div>' +
+                            '<div class="text-xs text-info mt-1 flex items-center gap-1">' +
+                            '<span class="icon-[tabler--minus] size-3"></span> ' +
+                            creditsReq + ' credit' + (creditsReq !== 1 ? 's' : '') + ' for this class → ' +
+                            '<span class="font-bold">' + afterDeduct + ' remaining after</span></div>' +
+                            (pack.expires_at ? '<div class="text-xs text-base-content/50 mt-0.5">Expires: ' + pack.expires_at + '</div>' : '') +
+                            '</div></label>';
+                    });
+                }
+
+                // Billing credits
+                if (data.billing_credits && data.billing_credits.length > 0) {
+                    data.billing_credits.forEach(function(credit) {
+                        html += '<label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">' +
+                            '<input type="radio" name="payment_option" value="billing_credit_' + credit.id + '" class="radio radio-success mt-0.5" onchange="selectPaymentOption(\'billing_credit\', ' + credit.id + ')">' +
+                            '<div class="flex-1">' +
+                            '<div class="font-medium flex items-center gap-2">' +
+                            '<span class="icon-[tabler--calendar-dollar] size-5 text-success"></span> Use Billing Credit' +
+                            '<span class="badge badge-success badge-sm">Prepaid</span></div>' +
+                            '<div class="text-sm text-base-content/60 mt-1">' + credit.source_name + ' — $' + credit.credit_remaining.toFixed(2) + ' remaining</div>' +
+                            '<div class="text-xs text-base-content/50 mt-0.5">' + credit.billing_period + 'mo prepaid · Valid until ' + credit.end_date + '</div>' +
+                            '</div></label>';
+                    });
+                }
+
+                // Pay Now (default)
+                html += '<label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">' +
+                    '<input type="radio" name="payment_option" value="manual" class="radio radio-primary mt-0.5" onchange="selectPaymentOption(\'manual\')" checked>' +
+                    '<div class="flex-1"><div class="font-medium flex items-center gap-2">' +
+                    '<span class="icon-[tabler--cash] size-5 text-primary"></span> Pay Now</div>' +
+                    '<div class="text-sm text-base-content/60 mt-1">Cash, card, or other payment</div></div></label>';
+
+                // Comp (if allowed)
+                if (data.comp) {
+                    html += '<label class="flex items-start gap-3 p-4 border-2 border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-warning has-[:checked]:bg-warning/5 transition-all">' +
+                        '<input type="radio" name="payment_option" value="comp" class="radio radio-warning mt-0.5" onchange="selectPaymentOption(\'comp\')">' +
+                        '<div class="flex-1"><div class="font-medium flex items-center gap-2">' +
+                        '<span class="icon-[tabler--gift] size-5 text-warning"></span> Complimentary</div>' +
+                        '<div class="text-sm text-base-content/60 mt-1">No charge for this class</div></div></label>';
+                }
+
+                list.innerHTML = html;
+            })
+            .catch(function() {})
+            .finally(function() { loading.classList.add('hidden'); });
+    }
+
+    window.selectPaymentOption = function(option, id, creditsRemaining, creditsRequired) {
+        var paymentMethodHidden = document.getElementById('payment-method-hidden');
+        var packIdHidden = document.getElementById('class-pass-purchase-id');
+        var billingCreditHidden = document.getElementById('billing_credit_id_hidden');
+        var paymentMethodContainer = document.getElementById('payment-method-container');
+        var priceInput = document.getElementById('price-input');
+        var displayPrice = document.getElementById('display-price');
+        var creditDeductSection = document.getElementById('credit-deduct-section');
+
+        packIdHidden.value = '';
+        billingCreditHidden.value = '';
+        if (creditDeductSection) creditDeductSection.classList.add('hidden');
+
+        if (option === 'pack') {
+            paymentMethodHidden.value = 'pack';
+            packIdHidden.value = id;
+            paymentMethodContainer.classList.add('hidden');
+            displayPrice.textContent = '$0.00';
+            priceInput.value = '0';
+
+            // Show credit deduction info with editable input
+            if (creditDeductSection) {
+                var credReq = creditsRequired || 1;
+                document.getElementById('credit-deduct-amount').value = credReq;
+                document.getElementById('credit-deduct-remaining').textContent = creditsRemaining;
+                document.getElementById('credit-deduct-after').textContent = creditsRemaining - credReq;
+                creditDeductSection.classList.remove('hidden');
+            }
+        } else if (option === 'billing_credit') {
+            paymentMethodHidden.value = 'billing_credit';
+            billingCreditHidden.value = id;
+            paymentMethodContainer.classList.add('hidden');
+            displayPrice.textContent = '$0.00';
+            priceInput.value = '0';
+        } else if (option === 'comp') {
+            paymentMethodHidden.value = 'comp';
+            paymentMethodContainer.classList.add('hidden');
+            displayPrice.textContent = '$0.00';
+            priceInput.value = '0';
+        } else {
+            // Manual pay
+            paymentMethodHidden.value = 'manual';
+            paymentMethodContainer.classList.remove('hidden');
+            if (selectedSessionData) {
+                displayPrice.textContent = '$' + selectedSessionData.price.toFixed(2);
+                priceInput.value = selectedSessionData.price.toFixed(2);
+            }
+        }
+    };
+
+    window.updateCreditDeductPreview = function() {
+        var amount = parseInt(document.getElementById('credit-deduct-amount').value) || 1;
+        var remaining = parseInt(document.getElementById('credit-deduct-remaining').textContent) || 0;
+        var after = remaining - amount;
+        var afterEl = document.getElementById('credit-deduct-after');
+        afterEl.textContent = after;
+        if (after < 0) {
+            afterEl.classList.add('text-error');
+            afterEl.classList.remove('text-info');
+        } else {
+            afterEl.classList.remove('text-error');
+            afterEl.classList.add('text-info');
+        }
+    };
+
     function fetchAvailableOffers() {
         const offersLoading = document.getElementById('offers-loading');
         const offersEmpty = document.getElementById('offers-empty');
@@ -3407,6 +3598,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('price-input').value = '0';
             document.getElementById('payment-method-hidden').value = 'comp';
         }
+
+        // Load payment options (class pass, billing credit, etc.) for step 2
+        loadPaymentOptions();
 
         // Fetch available offers for step 2
         fetchAvailableOffers();

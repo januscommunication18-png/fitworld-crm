@@ -17,7 +17,7 @@ class ServiceSlotController extends Controller
 {
     public function index(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
 
         // Get filter parameters
         $servicePlanId = $request->get('service_plan_id');
@@ -74,7 +74,7 @@ class ServiceSlotController extends Controller
 
     public function create(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
 
         $servicePlans = $host->servicePlans()->active()->orderBy('name')->get();
         $instructors = $host->instructors()->active()->orderBy('name')->get();
@@ -93,7 +93,12 @@ class ServiceSlotController extends Controller
 
     public function store(ServiceSlotRequest $request)
     {
-        $host = auth()->user()->host;
+        \Log::info('ServiceSlot store called', [
+            'all_input' => $request->except('_token'),
+            'validated' => $request->validated(),
+        ]);
+
+        $host = auth()->user()->currentHost();
         $data = $request->validated();
         $data['host_id'] = $host->id;
 
@@ -113,8 +118,17 @@ class ServiceSlotController extends Controller
         $recurrenceDays = $request->recurrence_days ?? [];
 
         if ($isRecurring && !empty($recurrenceDays)) {
+            // Build recurrence rule
+            $recurrenceService = app(\App\Services\Schedule\RecurrenceService::class);
+            $recurrenceRule = $recurrenceService->buildRecurrenceRule(
+                $recurrenceDays,
+                $request->recurrence_end_date ? 'on' : 'never',
+                $request->recurrence_end_date ? Carbon::parse($request->recurrence_end_date) : null
+            );
+
             // Create recurring slots
             $createdCount = 0;
+            $parentSlot = null;
             $endDate = $request->recurrence_end_date
                 ? Carbon::parse($request->recurrence_end_date)
                 : $startTime->copy()->addWeeks(12);
@@ -130,9 +144,10 @@ class ServiceSlotController extends Controller
 
                     // Check for overlapping slots
                     if (!$this->hasOverlappingSlot($host->id, $data['instructor_id'], $slotStartTime, $slotEndTime)) {
-                        ServiceSlot::create([
+                        $slot = ServiceSlot::create([
                             'host_id' => $host->id,
                             'service_plan_id' => $data['service_plan_id'],
+                            'title' => $data['title'] ?? null,
                             'instructor_id' => $data['instructor_id'],
                             'location_id' => $data['location_id'] ?? null,
                             'room_id' => $data['room_id'] ?? null,
@@ -141,7 +156,15 @@ class ServiceSlotController extends Controller
                             'price' => $data['price'] ?? null,
                             'status' => $data['status'],
                             'notes' => $data['notes'] ?? null,
+                            'recurrence_rule' => $parentSlot === null ? $recurrenceRule : null,
+                            'recurrence_parent_id' => $parentSlot?->id,
                         ]);
+
+                        // First created slot becomes the parent
+                        if ($parentSlot === null) {
+                            $parentSlot = $slot;
+                        }
+
                         $createdCount++;
                     }
                 }
@@ -182,7 +205,7 @@ class ServiceSlotController extends Controller
     {
         $this->authorizeHost($serviceSlot);
 
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
         $servicePlans = $host->servicePlans()->active()->orderBy('name')->get();
         $instructors = $host->instructors()->active()->orderBy('name')->get();
         $locations = $host->locations()->active()->orderBy('name')->get();
@@ -230,7 +253,7 @@ class ServiceSlotController extends Controller
 
     public function bulkCreate(Request $request)
     {
-        $host = auth()->user()->host;
+        $host = auth()->user()->currentHost();
 
         $request->validate([
             'service_plan_id' => 'required|exists:service_plans,id',

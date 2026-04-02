@@ -35,10 +35,6 @@
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['schedule.add_slot'] ?? 'Add Slot' }}
             </a>
-            <button type="button" class="btn btn-soft btn-secondary" data-overlay="#bulk-create-modal">
-                <span class="icon-[tabler--calendar-plus] size-5"></span>
-                {{ $trans['schedule.bulk_add'] ?? 'Bulk Add' }}
-            </button>
         </div>
     </div>
 

@@ -21,10 +21,65 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 class="text-2xl font-bold">{{ $title }}</h1>
-        <a href="{{ route('walk-in.select') }}" class="btn btn-primary">
-            <span class="icon-[tabler--plus] size-5"></span>
-            {{ $trans['bookings.booking'] ?? 'Booking' }}
-        </a>
+        <div class="flex items-center gap-2">
+            {{-- Schedule Planner --}}
+            <a href="{{ route('schedule-planner.index') }}" class="btn btn-outline">
+                <span class="icon-[tabler--calendar-repeat] size-5"></span>
+                Schedule Planner
+            </a>
+
+            {{-- Sell Dropdown --}}
+            <div class="relative">
+                <button type="button" class="btn btn-warning" onclick="toggleDropdown('sell-dropdown')">
+                    <span class="icon-[tabler--shopping-cart] size-5"></span>
+                    Sell
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <ul id="sell-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
+                    <li>
+                        <a href="{{ route('walk-in.select-classpass') }}">
+                            <span class="icon-[tabler--ticket] size-5 text-info"></span>
+                            Class Pass
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('walk-in.select-membership') }}">
+                            <span class="icon-[tabler--id-badge-2] size-5 text-warning"></span>
+                            Membership
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            {{-- Add Booking Dropdown --}}
+            <div class="relative">
+                <button type="button" class="btn btn-success" onclick="toggleDropdown('booking-dropdown')">
+                    <span class="icon-[tabler--user-plus] size-5"></span>
+                    {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <ul id="booking-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
+                    <li>
+                        <a href="{{ route('walk-in.select') }}">
+                            <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                            Class Session
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('walk-in.select-service') }}">
+                            <span class="icon-[tabler--massage] size-5 text-success"></span>
+                            Service Slot
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ route('space-rentals.create') }}">
+                            <span class="icon-[tabler--building] size-5 text-secondary"></span>
+                            Space Rental
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     {{-- Filter Tabs --}}
@@ -285,5 +340,25 @@
 
 {{-- Cancel Booking Modal (shared) --}}
 @include('host.bookings.partials.cancel-modal-shared')
+
+@push('scripts')
+<script>
+window.toggleDropdown = function(id) {
+    var dropdown = document.getElementById(id);
+    var allDropdowns = document.querySelectorAll('#booking-dropdown, #sell-dropdown');
+    allDropdowns.forEach(function(d) {
+        if (d.id !== id) d.classList.add('hidden');
+    });
+    dropdown.classList.toggle('hidden');
+};
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.relative')) {
+        document.querySelectorAll('#booking-dropdown, #sell-dropdown').forEach(function(d) {
+            d.classList.add('hidden');
+        });
+    }
+});
+</script>
+@endpush
 
 @endsection

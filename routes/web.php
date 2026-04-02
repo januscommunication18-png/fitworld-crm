@@ -529,11 +529,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/walk-in/service-slots', [WalkInController::class, 'getServiceSlotsByDate'])->name('walk-in.service-slots');
     Route::get('/walk-in/service-plan-defaults', [WalkInController::class, 'getServicePlanDefaults'])->name('walk-in.service-plan-defaults');
     Route::post('/walk-in/service-slots/quick-create', [WalkInController::class, 'quickCreateServiceSlot'])->name('walk-in.service-slots.quick-create');
+    Route::get('/walk-in/service-slots-range', [WalkInController::class, 'getServiceSlotsByDateRange'])->name('walk-in.service-slots-range');
+    Route::get('/walk-in/service-schedules', [WalkInController::class, 'getServiceSchedules'])->name('walk-in.service-schedules');
+    Route::get('/walk-in/check-service-series-conflict', [WalkInController::class, 'checkServiceSeriesConflict'])->name('walk-in.check-service-series-conflict');
 
     // Walk-In Membership Booking
     Route::get('/walk-in/memberships', [WalkInController::class, 'selectMembership'])->name('walk-in.select-membership');
     Route::get('/walk-in/membership-plans', [WalkInController::class, 'getMembershipPlans'])->name('walk-in.membership-plans');
     Route::post('/walk-in/membership/book', [WalkInController::class, 'bookMembership'])->name('walk-in.membership.book');
+
+    // Walk-In Class Pass
+    Route::get('/walk-in/classpass', [WalkInController::class, 'selectClassPass'])->name('walk-in.select-classpass');
+    Route::post('/walk-in/classpass/sell', [WalkInController::class, 'sellClassPass'])->name('walk-in.classpass.sell');
 
     // Walk-In Event Registration
     Route::get('/walk-in/event/{event}', [WalkInController::class, 'event'])->name('walk-in.event');

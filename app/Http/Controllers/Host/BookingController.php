@@ -54,6 +54,10 @@ class BookingController extends Controller
             'statuses' => Booking::getStatuses(),
             'sources' => Booking::getBookingSources(),
             'paymentMethods' => Booking::getPaymentMethods(),
+            'classPlansCount' => $host->classPlans()->where('is_active', true)->count(),
+            'servicePlansCount' => $host->servicePlans()->where('is_active', true)->count(),
+            'membershipPlansCount' => $host->membershipPlans()->active()->count(),
+            'spaceRentalConfigsCount' => $host->spaceRentalConfigs()->active()->count(),
         ]);
     }
 

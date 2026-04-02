@@ -268,6 +268,31 @@
                     @enderror
                 </div>
 
+                {{-- Specific Service Plans --}}
+                <div id="service-plans-section" class="{{ old('eligibility_type', $classPass?->eligibility_type ?? 'all') === 'service_plans' ? '' : 'hidden' }}">
+                    <label class="label-text mb-2 block">Select Service Plans</label>
+                    @if($servicePlans->isEmpty())
+                        <p class="text-base-content/60 text-sm">No active service plans available.</p>
+                    @else
+                        @php $selectedServicePlanIds = old('eligible_service_plan_ids', $classPass?->eligible_service_plan_ids ?? []); @endphp
+                        <div class="max-h-48 overflow-y-auto border border-base-300 rounded-lg p-3 space-y-2">
+                            @foreach($servicePlans as $plan)
+                                <label class="flex items-center gap-3 cursor-pointer hover:bg-base-200 p-2 rounded">
+                                    <input type="checkbox" name="eligible_service_plan_ids[]" value="{{ $plan->id }}"
+                                        class="checkbox checkbox-primary checkbox-sm"
+                                        {{ in_array($plan->id, $selectedServicePlanIds) ? 'checked' : '' }}>
+                                    <span class="icon-[tabler--massage] size-4 text-success"></span>
+                                    <span class="font-medium">{{ $plan->name }}</span>
+                                    <span class="text-sm text-base-content/50">{{ $plan->duration_minutes }} min · ${{ number_format($plan->price, 2) }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                    @error('eligible_service_plan_ids')
+                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 {{-- Categories --}}
                 <div id="categories-section" class="{{ old('eligibility_type', $classPass?->eligibility_type ?? 'all') === 'categories' ? '' : 'hidden' }}">
                     <label class="label-text mb-2 block">Select Categories</label>
@@ -707,12 +732,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Eligibility type changes
     document.getElementById('eligibility_type').addEventListener('change', function() {
         document.getElementById('class-plans-section').classList.add('hidden');
+        document.getElementById('service-plans-section').classList.add('hidden');
         document.getElementById('categories-section').classList.add('hidden');
         document.getElementById('instructors-section').classList.add('hidden');
         document.getElementById('locations-section').classList.add('hidden');
 
         if (this.value === 'class_plans') {
             document.getElementById('class-plans-section').classList.remove('hidden');
+        } else if (this.value === 'service_plans') {
+            document.getElementById('service-plans-section').classList.remove('hidden');
         } else if (this.value === 'categories') {
             document.getElementById('categories-section').classList.remove('hidden');
         } else if (this.value === 'instructors') {

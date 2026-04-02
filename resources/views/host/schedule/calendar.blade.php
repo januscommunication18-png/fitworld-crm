@@ -28,6 +28,29 @@
                 <span class="text-xs text-base-content/50">{{ str_replace('_', ' ', $timezone) }}</span>
             </div>
 
+            {{-- Sell Dropdown (Class Pass & Membership) --}}
+            <div class="relative">
+                <button type="button" class="btn btn-warning" onclick="toggleDropdown('sell-dropdown')">
+                    <span class="icon-[tabler--shopping-cart] size-5"></span>
+                    {{ $trans['btn.sell'] ?? 'Sell' }}
+                    <span class="icon-[tabler--chevron-down] size-4"></span>
+                </button>
+                <ul id="sell-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-lg border border-base-300 z-50">
+                    <li>
+                        <a href="{{ route('walk-in.select-classpass') }}">
+                            <span class="icon-[tabler--ticket] size-5 text-info"></span>
+                            {{ $trans['page.class_passes'] ?? 'Class Pass' }}
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="handleScheduleClick('membership', '{{ route('walk-in.select-membership') }}', {{ $membershipPlans->count() }}); return false;">
+                            <span class="icon-[tabler--id-badge-2] size-5 text-warning"></span>
+                            {{ $trans['page.memberships'] ?? 'Membership' }}
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
             {{-- Add Booking Dropdown --}}
             <div class="relative">
                 <button type="button" class="btn btn-success" onclick="toggleDropdown('booking-dropdown')">
@@ -46,12 +69,6 @@
                         <a href="#" onclick="handleScheduleClick('service', '{{ route('walk-in.select-service') }}', {{ $servicePlans->count() }}); return false;">
                             <span class="icon-[tabler--massage] size-5 text-success"></span>
                             {{ $trans['schedule.service_slots'] ?? 'Service Slot' }}
-                        </a>
-                    </li>
-                    <li>
-                        <a href="#" onclick="handleScheduleClick('membership', '{{ route('walk-in.select-membership') }}', {{ $membershipPlans->count() }}); return false;">
-                            <span class="icon-[tabler--id-badge-2] size-5 text-warning"></span>
-                            {{ $trans['page.memberships'] ?? 'Membership' }}
                         </a>
                     </li>
                     <li>
@@ -996,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Dropdown toggle function
     window.toggleDropdown = function(id) {
         const dropdown = document.getElementById(id);
-        const allDropdowns = document.querySelectorAll('#booking-dropdown, #schedule-dropdown');
+        const allDropdowns = document.querySelectorAll('#booking-dropdown, #schedule-dropdown, #sell-dropdown');
 
         // Close other dropdowns
         allDropdowns.forEach(function(d) {
@@ -1047,6 +1064,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     typeLabel = 'Membership';
                     typeLabelLower = 'membership';
                     createUrl = '{{ route("membership-plans.create") }}';
+                    break;
+                case 'class_pass':
+                    typeLabel = 'Class Pass';
+                    typeLabelLower = 'class pass';
+                    createUrl = '{{ route("class-passes.create") }}';
                     break;
                 case 'space_rental':
                     typeLabel = 'Rental Space';
