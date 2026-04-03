@@ -63,6 +63,7 @@ class PaymentController extends Controller
             'status' => $status,
             'type' => $type,
             'counts' => $counts,
+            'paymentMethods' => $this->getActivePaymentMethods($host),
         ]);
     }
 
@@ -90,6 +91,12 @@ class PaymentController extends Controller
         $metadata['confirmed_by_name'] = $user->full_name;
         $metadata['confirmed_at'] = now()->toISOString();
         $transaction->metadata = $metadata;
+
+        // Store payment method if provided
+        $manualMethod = $request->input('manual_method');
+        if ($manualMethod) {
+            $transaction->manual_method = $manualMethod;
+        }
 
         // Add confirmation notes if provided
         $notes = $request->input('notes');
@@ -169,6 +176,7 @@ class PaymentController extends Controller
 
         return view('host.payments.transaction-detail', [
             'transaction' => $transaction,
+            'paymentMethods' => $this->getActivePaymentMethods($host),
         ]);
     }
 
@@ -184,6 +192,40 @@ class PaymentController extends Controller
             Transaction::TYPE_CLASS_PACK_PURCHASE => 'Class pack activated.',
             default => '',
         };
+    }
+
+    protected function getActivePaymentMethods($host): array
+    {
+        $paymentSettings = $host->payment_settings ?? [];
+        $paymentMethods = [];
+
+        if ($paymentSettings['accept_cards'] ?? true) {
+            $paymentMethods['card'] = 'Credit/Debit Card';
+        }
+        if ($paymentSettings['accept_cash'] ?? false) {
+            $paymentMethods['cash'] = 'Cash';
+        }
+
+        $manualMethods = $paymentSettings['manual_methods'] ?? [];
+        $manualMethodLabels = [
+            'venmo' => 'Venmo',
+            'zelle' => 'Zelle',
+            'cash_app' => 'Cash App',
+            'paypal' => 'PayPal',
+            'bank_transfer' => 'Bank Transfer',
+            'cash' => 'Cash (In Person)',
+        ];
+        foreach ($manualMethods as $key => $config) {
+            if (is_array($config) && ($config['enabled'] ?? false)) {
+                $paymentMethods[$key] = $manualMethodLabels[$key] ?? ucfirst($key);
+            }
+        }
+
+        if (empty($paymentMethods)) {
+            $paymentMethods = ['cash' => 'Cash', 'card' => 'Card', 'check' => 'Check', 'other' => 'Other'];
+        }
+
+        return $paymentMethods;
     }
 
     /**

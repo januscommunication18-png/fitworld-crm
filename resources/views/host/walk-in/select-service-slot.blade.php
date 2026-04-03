@@ -762,6 +762,8 @@
                 <input type="hidden" name="booking_type" id="svc-booking-type-hidden" value="single">
                 <input type="hidden" name="series_slot_ids" id="svc-series-slot-ids-hidden" value="">
 
+                @include('components.read-to-client', ['rtcId' => 'select-service', 'rtcSubmitBtn' => 'submit-btn', 'rtcClass' => 'mt-4'])
+
                 <div class="flex justify-between mt-6">
                     <button type="button" class="btn btn-ghost" id="step2-back">
                         <span class="icon-[tabler--arrow-left] size-5"></span>

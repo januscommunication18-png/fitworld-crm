@@ -70,98 +70,256 @@
         </div>
     </div>
 
-    {{-- 1. CLASSES SECTION --}}
+    {{-- 1. CATALOG — ALL OFFERINGS STACKED --}}
+
+    {{-- CLASSES --}}
+    @if($classPlans->isNotEmpty())
     <section class="mb-12">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h2 class="text-2xl font-bold">{{ $trans['dashboard.upcoming_classes'] ?? 'Upcoming Classes' }}</h2>
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <span class="icon-[tabler--yoga] size-6 text-primary"></span>
+                    {{ $trans['page.classes'] ?? 'Classes' }}
+                </h2>
                 <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.join_sessions'] ?? 'Join our group fitness sessions' }}</p>
             </div>
-            <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm">
-                {{ $trans['btn.view_all'] ?? 'View All' }} <span class="icon-[tabler--arrow-right] size-4 ms-1"></span>
-            </a>
         </div>
-
-        @if($upcomingSessions->isEmpty())
-        <div class="card bg-base-100 shadow border border-base-200">
-            <div class="card-body items-center text-center py-16">
-                <div class="w-20 h-20 rounded-full bg-base-200 flex items-center justify-center mb-4">
-                    <span class="icon-[tabler--calendar-off] size-10 text-base-content/30"></span>
-                </div>
-                <h3 class="text-lg font-semibold">{{ $trans['dashboard.no_classes_today'] ?? 'No Upcoming Classes' }}</h3>
-                <p class="text-base-content/60">{{ $trans['subdomain.home.check_back'] ?? 'Check back soon for new classes!' }}</p>
-            </div>
-        </div>
-        @else
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            @foreach($upcomingSessions->take(6) as $session)
-            <div class="card card-side bg-base-100 shadow border border-base-200 overflow-hidden hover:shadow-lg transition-shadow">
-                {{-- Date Badge --}}
-                <div class="flex flex-col items-center justify-center w-24 bg-primary text-primary-content shrink-0">
-                    <span class="text-sm font-medium uppercase">{{ $session->start_time->format('M') }}</span>
-                    <span class="text-3xl font-bold leading-none">{{ $session->start_time->format('j') }}</span>
-                    <span class="text-sm">{{ $session->start_time->format('D') }}</span>
-                </div>
-
-                {{-- Content --}}
-                <div class="card-body p-4">
-                    <h3 class="card-title text-base">{{ $session->title ?? ($session->classPlan->name ?? 'Class') }}</h3>
-
-                    <div class="text-sm text-base-content/60 space-y-1">
-                        <p class="flex items-center gap-2">
-                            <span class="icon-[tabler--clock] size-4"></span>
-                            {{ $session->start_time->format('g:i A') }} - {{ $session->end_time->format('g:i A') }}
-                        </p>
-                        @if($session->primaryInstructor)
-                        <p class="flex items-center gap-2">
-                            <span class="icon-[tabler--user] size-4"></span>
-                            {{ $session->primaryInstructor->name }}
-                        </p>
-                        @endif
-                        @if($session->room)
-                        <p class="flex items-center gap-2">
-                            <span class="icon-[tabler--map-pin] size-4"></span>
-                            {{ $session->room->name }}
-                        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($classPlans as $classPlan)
+            @php $cpPrice = $classPlan->getPriceForCurrency($selectedCurrency); @endphp
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-200">
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background-color: {{ $classPlan->color ?? '#6366f1' }}15;">
+                            <span class="icon-[tabler--yoga] size-7" style="color: {{ $classPlan->color ?? '#6366f1' }};"></span>
+                        </div>
+                        @if($cpPrice !== null)
+                        <div class="text-right">
+                            <div class="text-2xl font-bold" style="color: {{ $classPlan->color ?? '#6366f1' }};">{{ $currencySymbol }}{{ number_format($cpPrice, 0) }}</div>
+                            <div class="text-xs text-base-content/50">/ class</div>
+                        </div>
                         @endif
                     </div>
-
-                    <div class="card-actions justify-between items-center mt-auto pt-2">
-                        @php $spotsLeft = $session->capacity - ($session->bookings_count ?? 0); @endphp
-                        @if($spotsLeft <= 0)
-                            <span class="badge badge-error">{{ $trans['subdomain.schedule.full'] ?? 'Full' }}</span>
-                            <a href="{{ route('subdomain.class-request.session', ['subdomain' => $host->subdomain, 'sessionId' => $session->id, 'waitlist' => 1]) }}"
-                               class="btn btn-warning btn-sm">
-                                {{ $trans['btn.join_waitlist'] ?? 'Join Waitlist' }}
-                            </a>
-                        @else
-                            @if($spotsLeft <= 3)
-                                <span class="badge badge-warning">{{ $spotsLeft }} {{ $trans['subdomain.home.left'] ?? 'left' }}</span>
-                            @else
-                                <span class="text-xs text-base-content/40">{{ $spotsLeft }} {{ $trans['subdomain.home.spots'] ?? 'spots' }}</span>
-                            @endif
-                            <div class="flex items-center gap-2">
-                                <a href="{{ route('subdomain.class', ['subdomain' => $host->subdomain, 'classSession' => $session->id]) }}"
-                                   class="btn btn-ghost btn-sm">
-                                    <span class="icon-[tabler--info-circle] size-4"></span>
-                                    {{ $trans['subdomain.class.details'] ?? 'Details' }}
-                                </a>
-                                <form action="{{ route('booking.select-class-session', ['subdomain' => $host->subdomain, 'session' => $session->id]) }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="btn btn-primary btn-sm">
-                                        <span class="icon-[tabler--calendar-plus] size-4"></span>
-                                        {{ $trans['btn.book_now'] ?? 'Book' }}
-                                    </button>
-                                </form>
-                            </div>
+                    <h3 class="card-title text-lg mt-4">{{ $classPlan->name }}</h3>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        @if($classPlan->category)<span class="badge badge-ghost badge-sm">{{ $classPlan->category }}</span>@endif
+                        @if($classPlan->difficulty_level)<span class="badge badge-sm {{ $classPlan->getDifficultyBadgeClass() }}">{{ ucfirst($classPlan->difficulty_level) }}</span>@endif
+                    </div>
+                    @if($classPlan->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2 mt-1">{{ $classPlan->description }}</p>
+                    @endif
+                    <div class="flex items-center gap-4 text-sm text-base-content/50 mt-2">
+                        @if($classPlan->default_duration_minutes)
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--clock] size-4"></span> {{ $classPlan->formatted_duration }}</span>
                         @endif
+                        @if($classPlan->default_capacity)
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--users] size-4"></span> Max {{ $classPlan->default_capacity }}</span>
+                        @endif
+                    </div>
+                    <div class="card-actions mt-4 flex-col gap-2">
+                        <a href="{{ route('booking.select-class-plan-type', ['subdomain' => $host->subdomain, 'classPlan' => $classPlan->id]) }}" class="btn btn-primary w-full">
+                            <span class="icon-[tabler--calendar-plus] size-5"></span> {{ $trans['btn.book_now'] ?? 'Book Now' }}
+                        </a>
+                        <a href="{{ route('subdomain.class-request', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm w-full">
+                            <span class="icon-[tabler--info-circle] size-4"></span> {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
+                        </a>
                     </div>
                 </div>
             </div>
             @endforeach
         </div>
-        @endif
     </section>
+    @endif
+
+    {{-- SERVICES --}}
+    @if($servicePlans->isNotEmpty())
+    <section class="mb-12">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <span class="icon-[tabler--sparkles] size-6 text-secondary"></span>
+                    {{ $trans['page.services'] ?? 'Services' }}
+                </h2>
+                <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.book_private'] ?? 'Book a private session' }}</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($servicePlans as $service)
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-200">
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background-color: {{ $service->color ?? '#6366f1' }}15;">
+                            <span class="icon-[tabler--sparkles] size-7" style="color: {{ $service->color ?? '#6366f1' }};"></span>
+                        </div>
+                        @php $servicePrice = $service->getPriceForCurrency($selectedCurrency); @endphp
+                        @if($servicePrice)
+                        <div class="text-2xl font-bold" style="color: {{ $service->color ?? '#6366f1' }};">{{ $currencySymbol }}{{ number_format($servicePrice, 0) }}</div>
+                        @endif
+                    </div>
+                    <h3 class="card-title text-lg mt-4">{{ $service->name }}</h3>
+                    @if($service->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2">{{ $service->description }}</p>
+                    @endif
+                    <div class="flex items-center gap-4 text-sm text-base-content/50 mt-2">
+                        @if($service->duration_minutes)
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--clock] size-4"></span> {{ $service->duration_minutes }} {{ $trans['common.minutes'] ?? 'min' }}</span>
+                        @endif
+                    </div>
+                    <div class="card-actions mt-4 flex-col gap-2">
+                        <form action="{{ route('booking.select-service-plan', ['subdomain' => $host->subdomain, 'servicePlan' => $service->id]) }}" method="POST" class="w-full">
+                            @csrf
+                            <button type="submit" class="btn btn-primary w-full">
+                                <span class="icon-[tabler--calendar-plus] size-5"></span> {{ $trans['btn.book_now'] ?? 'Book Now' }}
+                            </button>
+                        </form>
+                        <a href="{{ route('subdomain.service-request.plan', ['subdomain' => $host->subdomain, 'servicePlanId' => $service->id]) }}" class="btn btn-ghost btn-sm w-full">
+                            <span class="icon-[tabler--info-circle] size-4"></span> {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+    @endif
+
+    {{-- CLASS PASSES --}}
+    @if($classPasses->isNotEmpty())
+    <section class="mb-12">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <span class="icon-[tabler--ticket] size-6 text-info"></span>
+                    {{ $trans['page.class_passes'] ?? 'Class Passes' }}
+                </h2>
+                <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.buy_credits'] ?? 'Buy class credits at discounted rates' }}</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($classPasses as $pass)
+            @php $passPrice = $pass->getPriceForCurrency($selectedCurrency); @endphp
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-200">
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center bg-info/10">
+                            <span class="icon-[tabler--ticket] size-7 text-info"></span>
+                        </div>
+                        @if($passPrice !== null)
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-info">{{ $currencySymbol }}{{ number_format($passPrice, 0) }}</div>
+                            <div class="text-xs text-base-content/50">{{ $pass->class_count }} classes</div>
+                        </div>
+                        @endif
+                    </div>
+                    <h3 class="card-title text-lg mt-4">{{ $pass->name }}</h3>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        <span class="badge badge-info badge-sm">{{ $pass->class_count }} Credits</span>
+                        @if($pass->is_recurring)<span class="badge badge-secondary badge-sm">Recurring</span>@endif
+                    </div>
+                    @if($pass->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2 mt-1">{{ $pass->description }}</p>
+                    @endif
+                    <div class="text-sm text-base-content/50 mt-2 space-y-1">
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--clock] size-4"></span> {{ $pass->formatted_validity }}</span>
+                        @if($passPrice && $pass->class_count > 0)
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--calculator] size-4"></span> {{ $currencySymbol }}{{ number_format($passPrice / $pass->class_count, 2) }} / class</span>
+                        @endif
+                    </div>
+                    <div class="card-actions mt-4 flex-col gap-2">
+                        <a href="{{ route('booking.select-membership', ['subdomain' => $host->subdomain]) }}" class="btn btn-info w-full">
+                            <span class="icon-[tabler--calendar-plus] size-5"></span> {{ $trans['btn.book_now'] ?? 'Book Now' }}
+                        </a>
+                        <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm w-full">
+                            <span class="icon-[tabler--info-circle] size-4"></span> {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+    @endif
+
+    {{-- MEMBERSHIPS --}}
+    @if($membershipPlans->isNotEmpty())
+    <section class="mb-12">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <span class="icon-[tabler--id-badge-2] size-6 text-success"></span>
+                    {{ $trans['page.memberships'] ?? 'Memberships' }}
+                </h2>
+                <p class="text-base-content/60 mt-1">{{ $trans['subdomain.home.join_studio'] ?? 'Join our studio with a membership plan' }}</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach($membershipPlans as $plan)
+            @php
+                $planPrice = $plan->getPriceForCurrency($selectedCurrency);
+                $hasPriceInCurrency = $planPrice !== null;
+            @endphp
+            <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-200">
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center bg-success/10">
+                            <span class="icon-[tabler--id-badge-2] size-7 text-success"></span>
+                        </div>
+                        <div class="text-right">
+                            @if($hasPriceInCurrency)
+                            <div class="text-2xl font-bold text-success">{{ $currencySymbol }}{{ number_format($planPrice, 0) }}</div>
+                            <div class="text-xs text-base-content/50">/ {{ $plan->interval }}</div>
+                            @else
+                            <div class="text-sm text-base-content/50">{{ $trans['subdomain.home.not_available'] ?? 'Not available in' }} {{ $selectedCurrency }}</div>
+                            @endif
+                        </div>
+                    </div>
+                    <h3 class="card-title text-lg mt-4">{{ $plan->name }}</h3>
+                    <span class="badge badge-success badge-sm">{{ $trans['page.memberships'] ?? 'Membership' }}</span>
+                    @if($plan->description)
+                    <p class="text-sm text-base-content/60 line-clamp-2">{{ $plan->description }}</p>
+                    @endif
+                    <div class="text-sm text-base-content/50 mt-2 space-y-1">
+                        @if($plan->type === 'unlimited')
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--infinity] size-4 text-success"></span> {{ $trans['subdomain.home.unlimited_classes'] ?? 'Unlimited Classes' }}</span>
+                        @else
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--ticket] size-4"></span> {{ $plan->credits_per_cycle }} {{ $trans['page.classes'] ?? 'classes' }} {{ $trans['common.per'] ?? 'per' }} {{ $plan->interval }}</span>
+                        @endif
+                        @if($plan->addon_members > 0)
+                        <span class="flex items-center gap-1"><span class="icon-[tabler--users-plus] size-4 text-primary"></span> {{ $trans['subdomain.home.bring'] ?? 'Bring' }} +{{ $plan->addon_members }} {{ Str::plural('guest', $plan->addon_members) }}</span>
+                        @endif
+                    </div>
+                    @if($plan->free_amenities && count($plan->free_amenities) > 0)
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        @foreach(array_slice($plan->free_amenities, 0, 3) as $amenity)
+                        <span class="badge badge-ghost badge-xs">{{ $amenity }}</span>
+                        @endforeach
+                        @if(count($plan->free_amenities) > 3)
+                        <span class="badge badge-ghost badge-xs">+{{ count($plan->free_amenities) - 3 }} {{ $trans['common.more'] ?? 'more' }}</span>
+                        @endif
+                    </div>
+                    @endif
+                    <div class="card-actions mt-4 flex-col gap-2">
+                        @if($hasPriceInCurrency)
+                        <form action="{{ route('booking.select-membership-plan', ['subdomain' => $host->subdomain, 'plan' => $plan->id]) }}" method="POST" class="w-full">
+                            @csrf
+                            <input type="hidden" name="currency" value="{{ $selectedCurrency }}">
+                            <button type="submit" class="btn btn-success w-full">
+                                <span class="icon-[tabler--calendar-plus] size-5"></span> {{ $trans['btn.book_now'] ?? 'Book Now' }}
+                            </button>
+                        </form>
+                        @else
+                        <button type="button" class="btn btn-disabled w-full" disabled>{{ $trans['subdomain.home.unavailable'] ?? 'Unavailable' }}</button>
+                        @endif
+                        <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm w-full">
+                            <span class="icon-[tabler--info-circle] size-4"></span> {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </section>
+    @endif
 
     {{-- 1.5 EVENTS SECTION --}}
     @if(isset($upcomingEvents) && $upcomingEvents->isNotEmpty())
@@ -266,8 +424,8 @@
     </section>
     @endif
 
-    {{-- 2. MEMBERSHIPS & SERVICES SECTION --}}
-    @if($servicePlans->isNotEmpty() || isset($membershipPlans) && $membershipPlans->isNotEmpty())
+    {{-- 2. MEMBERSHIPS & SERVICES SECTION (replaced by catalog above) --}}
+    @if(false && ($servicePlans->isNotEmpty() || isset($membershipPlans) && $membershipPlans->isNotEmpty()))
     <section class="mb-12">
         <div class="text-center mb-8">
             <h2 class="text-2xl font-bold">{{ $trans['subdomain.home.memberships'] ?? 'Memberships' }} & {{ $trans['page.services'] ?? 'Services' }}</h2>

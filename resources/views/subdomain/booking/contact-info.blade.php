@@ -66,7 +66,7 @@
                     <div class="card-body py-4 md:py-5">
                         <div class="flex flex-col sm:flex-row sm:items-center gap-4">
                             <div class="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0">
-                                @if(($item['type'] ?? '') === 'class_session')
+                                @if(($item['type'] ?? '') === 'class_plan' || ($item['type'] ?? '') === 'class_session')
                                     <span class="icon-[tabler--yoga] size-7 text-primary"></span>
                                 @elseif(($item['type'] ?? '') === 'service_slot' || ($item['type'] ?? '') === 'service_plan')
                                     <span class="icon-[tabler--sparkles] size-7 text-primary"></span>
@@ -77,75 +77,48 @@
                                 @endif
                             </div>
                             <div class="flex-1 min-w-0">
-                                <h2 class="text-xl font-bold text-base-content">{{ $item['name'] ?? 'Your Selection' }}</h2>
-                                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-base-content/70">
-                                    @if(($item['type'] ?? '') === 'membership_plan')
-                                        {{-- Membership Plan Info --}}
-                                        <span class="flex items-center gap-1">
-                                            <span class="icon-[tabler--id-badge-2] size-4"></span>
-                                            Membership Plan
-                                        </span>
+                                <h2 id="booking-item-name" class="text-xl font-bold text-base-content">{{ $item['name'] ?? 'Your Selection' }}</h2>
+                                <div id="booking-item-meta" class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-base-content/70">
+                                    @if(($item['type'] ?? '') === 'class_plan')
+                                        @php $cbt = $item['class_booking_type'] ?? 'single'; @endphp
+                                        @if($cbt === 'series')
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--calendar-repeat] size-4"></span> Series Class</span>
+                                            @if(!empty($item['billing_period']))
+                                                <span class="flex items-center gap-1"><span class="icon-[tabler--refresh] size-4"></span> {{ $item['billing_period'] }}</span>
+                                            @endif
+                                        @else
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--calendar-event] size-4"></span> Single Class</span>
+                                        @endif
+                                    @elseif(($item['type'] ?? '') === 'membership_plan')
+                                        <span class="flex items-center gap-1"><span class="icon-[tabler--id-badge-2] size-4"></span> Membership Plan</span>
                                         @if(!empty($item['billing_period']))
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--refresh] size-4"></span>
-                                                Billed {{ $item['billing_period'] }}
-                                            </span>
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--refresh] size-4"></span> Billed {{ $item['billing_period'] }}</span>
                                         @endif
                                     @elseif(($item['type'] ?? '') === 'class_pack')
-                                        {{-- Class Pack Info --}}
-                                        <span class="flex items-center gap-1">
-                                            <span class="icon-[tabler--ticket] size-4"></span>
-                                            Class Pack
-                                        </span>
+                                        <span class="flex items-center gap-1"><span class="icon-[tabler--ticket] size-4"></span> Class Pack</span>
                                         @if(!empty($item['class_count']))
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--check] size-4"></span>
-                                                {{ $item['class_count'] }} classes
-                                            </span>
-                                        @endif
-                                        @if(!empty($item['validity_days']))
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--clock] size-4"></span>
-                                                Valid for {{ $item['validity_days'] }} days
-                                            </span>
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--check] size-4"></span> {{ $item['class_count'] }} classes</span>
                                         @endif
                                     @elseif(($item['type'] ?? '') === 'service_plan')
-                                        {{-- Service Plan Info (no slot) --}}
-                                        <span class="flex items-center gap-1">
-                                            <span class="icon-[tabler--sparkles] size-4"></span>
-                                            Service
-                                        </span>
+                                        <span class="flex items-center gap-1"><span class="icon-[tabler--sparkles] size-4"></span> Service</span>
                                         @if(!empty($item['duration']))
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--clock] size-4"></span>
-                                                {{ $item['duration'] }} minutes
-                                            </span>
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--clock] size-4"></span> {{ $item['duration'] }} minutes</span>
                                         @endif
                                     @else
-                                        {{-- Class/Service Booking Info --}}
                                         @if(!empty($item['datetime']))
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--calendar] size-4"></span>
-                                                {{ $item['datetime'] }}
-                                            </span>
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--calendar] size-4"></span> {{ $item['datetime'] }}</span>
                                         @endif
                                         @if(!empty($item['instructor']))
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--user] size-4"></span>
-                                                {{ $item['instructor'] }}
-                                            </span>
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--user] size-4"></span> {{ $item['instructor'] }}</span>
                                         @endif
                                         @if(!empty($item['location']))
-                                            <span class="flex items-center gap-1">
-                                                <span class="icon-[tabler--map-pin] size-4"></span>
-                                                {{ $item['location'] }}
-                                            </span>
+                                            <span class="flex items-center gap-1"><span class="icon-[tabler--map-pin] size-4"></span> {{ $item['location'] }}</span>
                                         @endif
                                     @endif
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
+                                <span id="booking-item-price" class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
                                 @if(($item['type'] ?? '') === 'membership_plan')
                                     <div class="text-sm text-base-content/60">{{ $item['billing_period'] ?? 'per month' }}</div>
                                 @endif
@@ -154,6 +127,55 @@
                                 @endif
                             </div>
                         </div>
+
+                        {{-- Booking Type Selector (for class plans only) --}}
+                        @if(($item['type'] ?? '') === 'class_plan')
+                        @php
+                            $currentType = $item['class_booking_type'] ?? 'single';
+                            $billingDiscounts = $item['billing_discounts'] ?? [];
+                            $hasSeriesOption = $item['has_series_option'] ?? false;
+                            $basePrice = $item['original_price'] ?? $item['price'] ?? 0;
+                        @endphp
+                        <div class="border-t border-primary/20 mt-4 pt-4">
+                            <p class="text-sm font-medium text-base-content/70 mb-3">Booking Type</p>
+                            <div class="flex flex-wrap gap-2" id="class-booking-type-selector">
+                                <button type="button" data-type="single"
+                                    class="booking-type-btn btn btn-sm {{ $currentType === 'single' ? 'btn-primary' : 'btn-ghost border border-base-300' }}">
+                                    <span class="icon-[tabler--calendar-event] size-4"></span> Single Class
+                                </button>
+                                @if($hasSeriesOption)
+                                <button type="button" data-type="series"
+                                    class="booking-type-btn btn btn-sm {{ $currentType === 'series' ? 'btn-primary' : 'btn-ghost border border-base-300' }}">
+                                    <span class="icon-[tabler--calendar-repeat] size-4"></span> Series Class
+                                </button>
+                                @endif
+                            </div>
+
+                            {{-- Series: Billing Period Options --}}
+                            @if($hasSeriesOption)
+                            <div id="series-period-picker" class="{{ $currentType === 'series' ? '' : 'hidden' }} mt-3">
+                                <p class="text-xs text-base-content/60 mb-2">Select billing period</p>
+                                <div class="flex flex-wrap gap-2">
+                                    @php
+                                        $periods = ['1' => '1 Mo', '3' => '3 Mo', '6' => '6 Mo', '9' => '9 Mo', '12' => '12 Mo'];
+                                    @endphp
+                                    @foreach($periods as $months => $label)
+                                        @php $periodTotal = floatval($billingDiscounts[$months] ?? 0); @endphp
+                                        @if($periodTotal > 0)
+                                        @php $m = (int) $months; $monthlyRate = $m > 0 ? $periodTotal / $m : 0; @endphp
+                                        <button type="button" data-period="{{ $months }}" data-price="{{ $periodTotal }}"
+                                            class="billing-period-btn btn btn-sm btn-ghost border border-base-300 flex-col h-auto py-2 px-3">
+                                            <span class="text-xs text-base-content/60">{{ $label }}</span>
+                                            <span class="font-bold text-success">{{ $currencySymbol }}{{ number_format($periodTotal, 0) }}</span>
+                                            <span class="text-[10px] text-base-content/50">{{ $currencySymbol }}{{ number_format($monthlyRate, 2) }}/mo</span>
+                                        </button>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -239,18 +261,20 @@
                                                 <input type="tel" id="phone" name="phone"
                                                        value="{{ old('phone', $prefillData['phone'] ?? '') }}"
                                                        required
-                                                       placeholder="+1 (555) 123-4567"
+                                                       inputmode="numeric"
+                                                       pattern="[0-9+\-\s()]*"
+                                                       placeholder="1234567890"
                                                        class="input input-bordered w-full pl-10 focus:input-primary @error('phone') input-error @enderror">
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="divider"></div>
-
-                                    <button type="submit" class="btn btn-primary btn-lg w-full gap-2">
-                                        Continue to Payment
-                                        <span class="icon-[tabler--arrow-right] size-5"></span>
-                                    </button>
+                                    <div class="mt-8">
+                                        <button type="submit" class="btn btn-primary btn-lg w-full gap-2">
+                                            Continue to Payment
+                                            <span class="icon-[tabler--arrow-right] size-5"></span>
+                                        </button>
+                                    </div>
                                 </form>
                             </div>
                         </div>
@@ -318,4 +342,103 @@
         </div>
     </div>
 </div>
+@if(($item['type'] ?? '') === 'class_plan')
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var classPlanId = '{{ $item["class_plan_id"] ?? $item["id"] ?? "" }}';
+    var csrfToken = '{{ csrf_token() }}';
+    var subdomain = '{{ $host->subdomain }}';
+    var currencySymbol = '{{ $currencySymbol }}';
+
+    // Booking type buttons
+    document.querySelectorAll('.booking-type-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var type = this.dataset.type;
+            var data = { class_booking_type: type, _token: csrfToken };
+
+            // For series, need a billing period — select first available if none selected
+            var periodPicker = document.getElementById('series-period-picker');
+            if (type === 'series') {
+                if (periodPicker) periodPicker.classList.remove('hidden');
+                var selectedPeriod = document.querySelector('.billing-period-btn.btn-success');
+                if (!selectedPeriod) {
+                    var firstPeriod = document.querySelector('.billing-period-btn');
+                    if (firstPeriod) {
+                        firstPeriod.click();
+                        return;
+                    }
+                }
+                data.billing_period = selectedPeriod ? selectedPeriod.dataset.period : null;
+            } else {
+                if (periodPicker) periodPicker.classList.add('hidden');
+            }
+
+            updateBookingType(data, this);
+        });
+    });
+
+    // Billing period buttons
+    document.querySelectorAll('.billing-period-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            // Highlight
+            document.querySelectorAll('.billing-period-btn').forEach(function(b) {
+                b.classList.remove('btn-success', 'border-success');
+                b.classList.add('btn-ghost', 'border-base-300');
+            });
+            this.classList.remove('btn-ghost', 'border-base-300');
+            this.classList.add('btn-success', 'border-success');
+
+            // Also make sure series is the active type
+            var data = {
+                class_booking_type: 'series',
+                billing_period: this.dataset.period,
+                _token: csrfToken
+            };
+
+            var seriesBtn = document.querySelector('.booking-type-btn[data-type="series"]');
+            updateBookingType(data, seriesBtn);
+        });
+    });
+
+    function updateBookingType(data, activeBtn) {
+        // Update button states
+        document.querySelectorAll('.booking-type-btn').forEach(function(b) {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-ghost', 'border', 'border-base-300');
+        });
+        if (activeBtn) {
+            activeBtn.classList.remove('btn-ghost', 'border-base-300');
+            activeBtn.classList.add('btn-primary');
+        }
+
+        // AJAX update session
+        fetch('{{ route("booking.process-class-plan-type", ["subdomain" => $host->subdomain, "classPlan" => $item["class_plan_id"] ?? $item["id"] ?? 0]) }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.success && resp.item) {
+                // Update the display
+                document.getElementById('booking-item-name').textContent = resp.item.name;
+                document.getElementById('booking-item-price').textContent = currencySymbol + parseFloat(resp.item.price).toFixed(2);
+
+                // Update meta
+                var meta = document.getElementById('booking-item-meta');
+                var type = resp.item.class_booking_type || 'single';
+                if (type === 'series') {
+                    meta.innerHTML = '<span class="flex items-center gap-1"><span class="icon-[tabler--calendar-repeat] size-4"></span> Series Class</span>' +
+                        (resp.item.billing_period ? '<span class="flex items-center gap-1"><span class="icon-[tabler--refresh] size-4"></span> ' + resp.item.billing_period + '</span>' : '');
+                } else {
+                    meta.innerHTML = '<span class="flex items-center gap-1"><span class="icon-[tabler--calendar-event] size-4"></span> Single Class</span>';
+                }
+            }
+        });
+    }
+});
+</script>
+@endpush
+@endif
 @endsection

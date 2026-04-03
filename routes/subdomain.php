@@ -75,6 +75,11 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::post('/claim/{token}', [WaitlistClaimController::class, 'claim'])->name('subdomain.waitlist-claim.post');
         Route::get('/claim/{token}/success', [WaitlistClaimController::class, 'success'])->name('subdomain.waitlist-claim.success');
 
+        // Membership Schedule Selection (token-based, no login required)
+        Route::get('/my-membership/{accessToken}', [\App\Http\Controllers\Subdomain\MembershipAccessController::class, 'show'])->name('subdomain.membership-access');
+        Route::post('/my-membership/{accessToken}/select-schedules', [\App\Http\Controllers\Subdomain\MembershipAccessController::class, 'selectSchedules'])->name('subdomain.membership-select-schedules');
+        Route::get('/my-membership/{accessToken}/confirmed', [\App\Http\Controllers\Subdomain\MembershipAccessController::class, 'confirmed'])->name('subdomain.membership-confirmed');
+
         // ─────────────────────────────────────────────────────────────
         // 1:1 Meeting Booking (Public)
         // ─────────────────────────────────────────────────────────────
@@ -111,9 +116,9 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
 
         // Step 1: Select what to book
         Route::get('/book', [BookingFlowController::class, 'selectType'])->name('booking.select-type');
-        Route::get('/book/class', [BookingFlowController::class, 'selectClass'])->name('booking.select-class');
-        // Note: /book/class/{classPlanId} route removed - users should use /book/class without filter
         Route::post('/book/class/{session}', [BookingFlowController::class, 'selectClassSession'])->name('booking.select-class-session');
+        Route::get('/book/class-plan/{classPlan}', [BookingFlowController::class, 'selectClassPlanType'])->name('booking.select-class-plan-type')->where('classPlan', '[0-9]+');
+        Route::post('/book/class-plan/{classPlan}/select', [BookingFlowController::class, 'processClassPlanType'])->name('booking.process-class-plan-type')->where('classPlan', '[0-9]+');
         Route::get('/book/service', [BookingFlowController::class, 'selectService'])->name('booking.select-service');
         Route::get('/book/service/{servicePlanId}', [BookingFlowController::class, 'selectService'])->name('booking.select-service.filter')->where('servicePlanId', '[0-9]+');
         Route::post('/book/service/{slot}', [BookingFlowController::class, 'selectServiceSlot'])->name('booking.select-service-slot');
@@ -140,6 +145,7 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
 
         // Step 4: Confirmation
         Route::get('/book/confirmation/{transaction}', [BookingFlowController::class, 'confirmation'])->name('booking.confirmation');
+        Route::get('/invoice/{transaction}/download', [BookingFlowController::class, 'downloadInvoice'])->name('booking.invoice.download');
 
         // Clear booking and start over
         Route::get('/book/clear', [BookingFlowController::class, 'clear'])->name('booking.clear');

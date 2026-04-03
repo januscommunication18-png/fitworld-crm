@@ -89,9 +89,16 @@
                                 @endif
                             </div>
                         </div>
-                        <button class="btn btn-sm btn-outline" onclick="toggleEmailPreview({{ $index }})">
-                            <span class="icon-[tabler--eye] size-4"></span> Preview
-                        </button>
+                        <div class="flex items-center gap-1">
+                            <button class="btn btn-sm btn-outline" onclick="toggleEmailPreview({{ $index }})">
+                                <span class="icon-[tabler--eye] size-4"></span> Preview
+                            </button>
+                            @if($email['html'])
+                            <button class="btn btn-sm btn-outline" onclick="openEmailInNewTab({{ $index }})" title="Open in new tab">
+                                <span class="icon-[tabler--external-link] size-4"></span>
+                            </button>
+                            @endif
+                        </div>
                     </div>
 
                     {{-- Email Preview --}}
@@ -139,6 +146,16 @@
 @push('scripts')
 <script>
 var emailHtmlData = @json(collect($emails)->pluck('html')->toArray());
+
+function openEmailInNewTab(index) {
+    var html = emailHtmlData[index] || '';
+    if (html) {
+        var win = window.open('', '_blank');
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
+    }
+}
 
 function toggleEmailPreview(index) {
     var preview = document.getElementById('email-preview-' + index);

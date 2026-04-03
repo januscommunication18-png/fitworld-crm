@@ -333,6 +333,8 @@
                         </div>
                         @endif
 
+                        @include('components.read-to-client', ['rtcId' => 'event', 'rtcSubmitBtn' => 'submit-btn', 'rtcClass' => 'mb-4'])
+
                         <button type="submit" class="btn btn-error btn-block" id="submit-btn" disabled>
                             <span class="icon-[tabler--check] size-5"></span>
                             {{ $trans['btn.register_attendee'] ?? 'Register Attendee' }}

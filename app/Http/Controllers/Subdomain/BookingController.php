@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Subdomain;
 
 use App\Http\Controllers\Controller;
+use App\Models\ClassPass;
+use App\Models\ClassPlan;
 use App\Models\ClassSession;
 use App\Models\Event;
 use App\Models\Host;
@@ -61,16 +63,33 @@ class BookingController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Get active service plans
+        // Get active service plans (visible on booking page)
         $servicePlans = ServicePlan::where('host_id', $host->id)
             ->where('is_active', true)
+            ->where('is_visible_on_booking_page', true)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
-        // Get active membership plans
+        // Get active membership plans (visible publicly)
         $membershipPlans = MembershipPlan::where('host_id', $host->id)
             ->where('status', MembershipPlan::STATUS_ACTIVE)
+            ->where('visibility_public', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        // Get active class plans (visible on booking page)
+        $classPlans = ClassPlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->where('is_visible_on_booking_page', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        // Get active class passes (visible publicly)
+        $classPasses = ClassPass::where('host_id', $host->id)
+            ->visible()
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -100,6 +119,8 @@ class BookingController extends Controller
             'instructors' => $instructors,
             'servicePlans' => $servicePlans,
             'membershipPlans' => $membershipPlans,
+            'classPlans' => $classPlans,
+            'classPasses' => $classPasses,
             'galleryImages' => $galleryImages,
             'bookingSettings' => $bookingSettings,
             'memberPortalEnabled' => $memberPortalEnabled,

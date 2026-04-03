@@ -665,6 +665,8 @@
                         </div>
                         @endif
 
+                        @include('components.read-to-client', ['rtcId' => 'service-slot', 'rtcSubmitBtn' => 'submit-btn', 'rtcClass' => 'mb-4'])
+
                         <button type="submit" class="btn btn-primary btn-block" id="submit-btn" disabled>
                             <span class="icon-[tabler--check] size-5"></span>
                             {{ $trans['btn.confirm_booking'] ?? 'Confirm Booking' }}

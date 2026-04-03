@@ -350,10 +350,20 @@
                 </div>
                 @endif
 
-                @if($host->subdomain)
+                @if($transaction->invoice && $host->subdomain)
                 <div style="text-align: center; margin-top: 24px;">
-                    <a href="https://{{ $host->subdomain }}.fitcrm.biz" class="cta-button">
-                        Visit {{ $host->studio_name }}
+                    <a href="{{ route('booking.invoice.download', ['subdomain' => $host->subdomain, 'transaction' => $transaction->id]) }}" class="cta-button">
+                        &#128196; Download Invoice PDF
+                    </a>
+                </div>
+                @endif
+
+                @if(!empty($scheduleSelectionUrl))
+                <div style="margin-top: 24px; padding: 20px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                    <p style="margin: 0 0 8px 0; font-weight: 600; color: #166534;">Select Your Schedule</p>
+                    <p style="margin: 0 0 16px 0; font-size: 14px; color: #15803d;">Choose which class schedules you'd like to attend as part of your membership.</p>
+                    <a href="{{ $scheduleSelectionUrl }}" style="display: inline-block; padding: 10px 24px; background-color: #16a34a; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                        Pick My Schedule &rarr;
                     </a>
                 </div>
                 @endif

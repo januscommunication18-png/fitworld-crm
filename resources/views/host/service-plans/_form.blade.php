@@ -429,6 +429,16 @@
                         <p class="text-xs text-base-content/60">Service can be booked</p>
                     </div>
                 </label>
+
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="is_visible_on_booking_page" value="1"
+                        class="toggle toggle-primary"
+                        {{ old('is_visible_on_booking_page', $servicePlan?->is_visible_on_booking_page ?? true) ? 'checked' : '' }}>
+                    <div>
+                        <span class="font-medium">Visible on Booking Page</span>
+                        <p class="text-xs text-base-content/60">Show this service to customers on the public booking page</p>
+                    </div>
+                </label>
             </div>
         </div>
 

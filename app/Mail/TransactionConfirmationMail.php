@@ -21,6 +21,7 @@ class TransactionConfirmationMail extends Mailable implements ShouldQueue
     public ?Booking $booking;
     protected ?string $icsContent;
     protected ?string $pdfContent;
+    public ?string $scheduleSelectionUrl;
 
     /**
      * Create a new message instance.
@@ -29,12 +30,14 @@ class TransactionConfirmationMail extends Mailable implements ShouldQueue
         Transaction $transaction,
         ?Booking $booking = null,
         ?string $icsContent = null,
-        ?string $pdfContent = null
+        ?string $pdfContent = null,
+        ?string $scheduleSelectionUrl = null
     ) {
         $this->transaction = $transaction;
         $this->booking = $booking;
         $this->icsContent = $icsContent;
         $this->pdfContent = $pdfContent;
+        $this->scheduleSelectionUrl = $scheduleSelectionUrl;
     }
 
     /**
@@ -86,6 +89,7 @@ class TransactionConfirmationMail extends Mailable implements ShouldQueue
                 'itemInstructor' => $metadata['item_instructor'] ?? null,
                 'itemLocation' => $metadata['item_location'] ?? null,
                 'hasCalendarInvite' => !empty($this->icsContent),
+                'scheduleSelectionUrl' => $this->scheduleSelectionUrl,
             ],
         );
     }

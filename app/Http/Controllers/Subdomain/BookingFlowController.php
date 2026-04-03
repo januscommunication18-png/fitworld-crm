@@ -167,6 +167,110 @@ class BookingFlowController extends Controller
     }
 
     /**
+     * Select a class plan and redirect to contact page with type selection
+     */
+    public function selectClassPlanType(Request $request)
+    {
+        $host = $this->getHost($request);
+        $classPlanId = $request->route('classPlan');
+
+        $classPlan = ClassPlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->where('is_visible_on_booking_page', true)
+            ->findOrFail($classPlanId);
+
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $currencySymbol = MembershipPlan::getCurrencySymbol($currency);
+        $price = $classPlan->getPriceForCurrency($currency) ?? 0;
+
+        // Store class plan as selected item — default to single class
+        $this->bookingService->setBookingType($request, 'class_plan');
+        $this->bookingService->setSelectedItem($request, [
+            'type' => 'class_plan',
+            'id' => $classPlan->id,
+            'name' => $classPlan->name,
+            'price' => $price,
+            'currency' => $currency,
+            'currency_symbol' => $currencySymbol,
+            'original_price' => $price,
+            'class_plan_id' => $classPlan->id,
+            'class_booking_type' => 'single',
+            'billing_discounts' => $classPlan->billing_discounts ?? [],
+            'has_series_option' => count(array_filter($classPlan->billing_discounts ?? [], fn($v) => floatval($v) > 0)) > 0,
+        ]);
+
+        return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
+     * Update class plan booking type (AJAX from contact page)
+     */
+    public function processClassPlanType(Request $request)
+    {
+        $host = $this->getHost($request);
+        $classPlanId = $request->route('classPlan');
+
+        $classPlan = ClassPlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->findOrFail($classPlanId);
+
+        $validated = $request->validate([
+            'class_booking_type' => 'required|in:single,series',
+            'billing_period' => 'required_if:class_booking_type,series|nullable|integer|in:1,3,6,9,12',
+        ]);
+
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $currencySymbol = MembershipPlan::getCurrencySymbol($currency);
+        $bookingType = $validated['class_booking_type'];
+
+        if ($bookingType === 'single') {
+            $price = $classPlan->getPriceForCurrency($currency) ?? 0;
+
+            $this->bookingService->setBookingType($request, 'class_plan');
+            $this->bookingService->setSelectedItem($request, [
+                'type' => 'class_plan',
+                'id' => $classPlan->id,
+                'name' => $classPlan->name,
+                'price' => $price,
+                'currency' => $currency,
+                'currency_symbol' => $currencySymbol,
+                'original_price' => $price,
+                'class_plan_id' => $classPlan->id,
+                'class_booking_type' => 'single',
+                'billing_discounts' => $classPlan->billing_discounts ?? [],
+                'has_series_option' => count(array_filter($classPlan->billing_discounts ?? [], fn($v) => floatval($v) > 0)) > 0,
+            ]);
+        } elseif ($bookingType === 'series') {
+            $billingPeriod = (int) $validated['billing_period'];
+            $billingDiscounts = $classPlan->billing_discounts ?? [];
+            $totalPrice = floatval($billingDiscounts[$billingPeriod] ?? 0);
+            $basePrice = $classPlan->getPriceForCurrency($currency) ?? 0;
+
+            if ($totalPrice <= 0) {
+                $totalPrice = $basePrice * $billingPeriod;
+            }
+
+            $this->bookingService->setBookingType($request, 'class_plan');
+            $this->bookingService->setSelectedItem($request, [
+                'type' => 'class_plan',
+                'id' => $classPlan->id,
+                'name' => $classPlan->name . ' — ' . $billingPeriod . ' Month Series',
+                'price' => $totalPrice,
+                'currency' => $currency,
+                'currency_symbol' => $currencySymbol,
+                'original_price' => $basePrice * $billingPeriod,
+                'class_plan_id' => $classPlan->id,
+                'class_booking_type' => 'series',
+                'billing_period' => $billingPeriod . ' months',
+                'billing_discounts' => $billingDiscounts,
+                'has_series_option' => true,
+            ]);
+        }
+
+        return response()->json(['success' => true, 'item' => $this->bookingService->getState($request)['selected_item']]);
+    }
+
+    /**
      * Find an applicable membership for a class plan
      */
     protected function findApplicableMembershipForClass(Host $host, Client $client, ClassPlan $classPlan): ?CustomerMembership
@@ -883,7 +987,7 @@ class BookingFlowController extends Controller
 
         return redirect()->route('booking.confirmation', [
             'subdomain' => $host->subdomain,
-            'transaction' => $transaction->transaction_id,
+            'transaction' => $transaction->id,
         ]);
     }
 
@@ -947,7 +1051,7 @@ class BookingFlowController extends Controller
 
         return redirect()->route('booking.confirmation', [
             'subdomain' => $host->subdomain,
-            'transaction' => $transaction->transaction_id,
+            'transaction' => $transaction->id,
         ]);
     }
 
@@ -1014,11 +1118,11 @@ class BookingFlowController extends Controller
                 'line_items' => $lineItems,
                 'success_url' => route('booking.stripe-success', [
                     'subdomain' => $host->subdomain,
-                    'transaction' => $transaction->transaction_id,
+                    'transaction' => $transaction->id,
                 ]) . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('booking.stripe-cancel', [
                     'subdomain' => $host->subdomain,
-                    'transaction' => $transaction->transaction_id,
+                    'transaction' => $transaction->id,
                 ]),
                 'customer_email' => $bookingState['contact_info']['email'] ?? null,
                 'metadata' => [
@@ -1167,10 +1271,14 @@ class BookingFlowController extends Controller
     public function confirmation(Request $request)
     {
         $host = $this->getHost($request);
-        $transactionId = $request->route('transaction');
+        $transactionParam = $request->route('transaction');
 
-        $transaction = Transaction::where('transaction_id', $transactionId)
-            ->where('host_id', $host->id)
+        // Look up by primary key ID first, then fall back to transaction_id string
+        $transaction = Transaction::where('host_id', $host->id)
+            ->where(function ($q) use ($transactionParam) {
+                $q->where('id', $transactionParam)
+                  ->orWhere('transaction_id', $transactionParam);
+            })
             ->with(['client', 'booking', 'purchasable', 'invoice'])
             ->first();
 
@@ -1190,6 +1298,30 @@ class BookingFlowController extends Controller
             'transaction' => $transaction,
             'paymentInstructions' => $paymentInstructions,
         ]);
+    }
+
+    /**
+     * Download invoice PDF for a transaction (public, no auth)
+     */
+    public function downloadInvoice(Request $request)
+    {
+        $host = $this->getHost($request);
+        $transactionParam = $request->route('transaction');
+
+        $transaction = Transaction::where('host_id', $host->id)
+            ->where(function ($q) use ($transactionParam) {
+                $q->where('id', $transactionParam)
+                  ->orWhere('transaction_id', $transactionParam);
+            })
+            ->with('invoice')
+            ->first();
+
+        if (!$transaction || !$transaction->invoice) {
+            abort(404, 'Invoice not found.');
+        }
+
+        $invoiceService = app(\App\Services\InvoiceService::class);
+        return $invoiceService->downloadPdf($transaction->invoice);
     }
 
     /**

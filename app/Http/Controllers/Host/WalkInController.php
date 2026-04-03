@@ -834,7 +834,7 @@ class WalkInController extends Controller
                     'capacity_override' => true, // Walk-ins can override capacity
                     'send_intake_form' => $validated['send_intake_form'] ?? false,
                     'questionnaire_ids' => $validated['questionnaire_ids'] ?? [],
-                    'send_confirmation_email' => !empty($validated['send_intake_form']),
+                    'send_confirmation_email' => false, // We send TransactionConfirmationMail with invoice below
                 ]
             );
 
@@ -945,6 +945,48 @@ class WalkInController extends Controller
                     ]);
                     $seriesBookedCount++;
                 }
+            }
+
+            // Create transaction + invoice + send email with PDF
+            $pricePaid = (float) ($validated['price_paid'] ?? $booking->price_paid ?? 0);
+            $defaultCurrency = $host->default_currency ?? 'USD';
+
+            $transaction = \App\Models\Transaction::create([
+                'host_id' => $host->id,
+                'client_id' => $client->id,
+                'type' => \App\Models\Transaction::TYPE_CLASS_BOOKING,
+                'purchasable_type' => ClassSession::class,
+                'purchasable_id' => $classSession->id,
+                'booking_id' => $booking->id,
+                'subtotal' => $pricePaid,
+                'tax_amount' => 0,
+                'discount_amount' => (float) $discountAmount,
+                'total_amount' => $pricePaid,
+                'currency' => $defaultCurrency,
+                'status' => \App\Models\Transaction::STATUS_PAID,
+                'payment_method' => $validated['payment_method'] === 'comp' ? \App\Models\Transaction::METHOD_COMP : \App\Models\Transaction::METHOD_MANUAL,
+                'manual_method' => $validated['manual_method'] ?? null,
+                'paid_at' => now(),
+                'metadata' => [
+                    'item_name' => $classSession->display_title,
+                    'item_datetime' => $classSession->start_time->format('M j, Y g:i A'),
+                    'item_instructor' => $classSession->primaryInstructor?->name,
+                    'item_location' => $classSession->room?->location?->name ?? $classSession->location?->name,
+                    'source' => 'walk_in',
+                ],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            try {
+                app(\App\Services\InvoiceService::class)->createFromTransaction($transaction);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create invoice for class booking', ['error' => $e->getMessage()]);
+            }
+
+            try {
+                app(\App\Services\TransactionService::class)->sendConfirmationEmail($transaction, $booking);
+            } catch (\Exception $e) {
+                Log::warning('Failed to send class booking confirmation email', ['error' => $e->getMessage()]);
             }
 
             $successMsg = "Walk-in booking confirmed for {$client->full_name}!";
@@ -1109,6 +1151,7 @@ class WalkInController extends Controller
                     'price_paid' => $validated['price_paid'] ?? null,
                     'check_in_now' => $validated['check_in_now'] ?? false,
                     'payment_notes' => $validated['notes'] ?? null,
+                    'send_confirmation_email' => false, // We send TransactionConfirmationMail with invoice below
                 ]
             );
 
@@ -1223,6 +1266,48 @@ class WalkInController extends Controller
                         $seriesBookedCount++;
                     }
                 }
+            }
+
+            // Create transaction + invoice + send email with PDF
+            $pricePaid = (float) ($validated['price_paid'] ?? $booking->price_paid ?? 0);
+            $defaultCurrency = $host->default_currency ?? 'USD';
+
+            $svcTransaction = \App\Models\Transaction::create([
+                'host_id' => $host->id,
+                'client_id' => $client->id,
+                'type' => \App\Models\Transaction::TYPE_SERVICE_BOOKING,
+                'purchasable_type' => \App\Models\ServiceSlot::class,
+                'purchasable_id' => $serviceSlot->id,
+                'booking_id' => $booking->id,
+                'subtotal' => $pricePaid,
+                'tax_amount' => 0,
+                'discount_amount' => (float) $discountAmount,
+                'total_amount' => $pricePaid,
+                'currency' => $defaultCurrency,
+                'status' => \App\Models\Transaction::STATUS_PAID,
+                'payment_method' => $validated['payment_method'] === 'comp' ? \App\Models\Transaction::METHOD_COMP : \App\Models\Transaction::METHOD_MANUAL,
+                'manual_method' => $validated['manual_method'] ?? null,
+                'paid_at' => now(),
+                'metadata' => [
+                    'item_name' => $serviceSlot->servicePlan?->name ?? $serviceSlot->title ?? 'Service',
+                    'item_datetime' => $serviceSlot->start_time->format('M j, Y g:i A'),
+                    'item_instructor' => $serviceSlot->instructor?->name,
+                    'item_location' => $serviceSlot->location?->name,
+                    'source' => 'walk_in',
+                ],
+                'notes' => $validated['notes'] ?? null,
+            ]);
+
+            try {
+                app(\App\Services\InvoiceService::class)->createFromTransaction($svcTransaction);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create invoice for service booking', ['error' => $e->getMessage()]);
+            }
+
+            try {
+                app(\App\Services\TransactionService::class)->sendConfirmationEmail($svcTransaction, $booking);
+            } catch (\Exception $e) {
+                Log::warning('Failed to send service booking confirmation email', ['error' => $e->getMessage()]);
             }
 
             $successMsg = "Slot Booked for {$client->full_name}!";
@@ -2054,6 +2139,16 @@ class WalkInController extends Controller
             ]);
         }
 
+        // Send confirmation email with invoice
+        try {
+            app(\App\Services\TransactionService::class)->sendConfirmationEmail($transaction);
+        } catch (\Exception $e) {
+            Log::warning('Failed to send class pass confirmation email', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return redirect()->route('schedule.calendar')
             ->with('success', "Class pass \"{$classPass->name}\" sold to {$client->full_name}. They now have {$purchase->classes_remaining} credits.");
     }
@@ -2484,6 +2579,16 @@ class WalkInController extends Controller
                 ]);
             }
 
+            // Send confirmation email with invoice
+            try {
+                app(\App\Services\TransactionService::class)->sendConfirmationEmail($transaction);
+            } catch (\Exception $e) {
+                Log::warning('Failed to send membership confirmation email', [
+                    'transaction_id' => $transaction->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             // Determine redirect based on where we came from
             $redirectRoute = !empty($validated['class_session_id']) ? 'membership-schedules.index' : 'schedule.calendar';
 
@@ -2602,10 +2707,28 @@ class WalkInController extends Controller
 
             $event->clients()->attach($client->id, $pivotData);
 
-            // TODO: Send confirmation email if requested
-            // if (!empty($validated['send_confirmation'])) {
-            //     Mail::to($client->email)->send(new EventRegistrationConfirmation($event, $client));
-            // }
+            // Send confirmation email
+            if ($client->email) {
+                try {
+                    \Illuminate\Support\Facades\Mail::to($client->email)
+                        ->sendNow(new \App\Mail\BookingConfirmationMail(
+                            new \App\Models\Booking([
+                                'host_id' => $host->id,
+                                'client_id' => $client->id,
+                                'bookable_type' => \App\Models\Event::class,
+                                'bookable_id' => $event->id,
+                                'status' => $validated['status'],
+                                'booked_at' => now(),
+                            ])
+                        ));
+                } catch (\Exception $e) {
+                    Log::warning('Failed to send event registration email', [
+                        'event_id' => $event->id,
+                        'client_id' => $client->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             $statusMessage = $validated['status'] === 'waitlisted'
                 ? 'added to waitlist'

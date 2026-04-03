@@ -308,7 +308,7 @@
                         There are no membership plans or class packs available at this time.
                     </p>
                     <div class="card-actions justify-center mt-6">
-                        <a href="{{ route('booking.select-class', ['subdomain' => $host->subdomain]) }}" class="btn btn-primary">
+                        <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="btn btn-primary">
                             <span class="icon-[tabler--calendar-plus] size-5"></span>
                             Book a Class Instead
                         </a>

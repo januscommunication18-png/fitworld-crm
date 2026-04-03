@@ -80,6 +80,16 @@ class TransactionService
                 ],
             ]);
 
+            // Always create an invoice immediately (invoice = "you owe us")
+            try {
+                $this->createInvoiceFromTransaction($transaction);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create invoice for transaction', [
+                    'transaction_id' => $transaction->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             return $transaction;
         });
     }
@@ -279,8 +289,14 @@ class TransactionService
                     break;
             }
 
-            // Create invoice
-            $results['invoice'] = $this->createInvoiceFromTransaction($transaction);
+            // Mark existing invoice as paid, or create one if missing
+            $transaction->load('invoice');
+            if ($transaction->invoice) {
+                $transaction->invoice->markPaid();
+                $results['invoice'] = $transaction->invoice;
+            } else {
+                $results['invoice'] = $this->createInvoiceFromTransaction($transaction);
+            }
         });
 
         // Send confirmation email (outside of DB transaction)
@@ -330,13 +346,33 @@ class TransactionService
                 $pdfContent = $invoiceService->getPdfContent($transaction->invoice);
             }
 
-            Mail::to($transaction->client->email)
-                ->send(new TransactionConfirmationMail(
-                    $transaction,
-                    $booking,
-                    $icsContent,
-                    $pdfContent
-                ));
+            // Generate schedule selection link for membership purchases
+            $scheduleSelectionUrl = null;
+            if ($transaction->type === Transaction::TYPE_MEMBERSHIP_PURCHASE) {
+                $membership = \App\Models\CustomerMembership::where('client_id', $transaction->client_id)
+                    ->where('membership_plan_id', $transaction->purchasable_id)
+                    ->whereNotNull('access_token')
+                    ->latest()
+                    ->first();
+
+                if ($membership && $transaction->host->subdomain) {
+                    $scheduleSelectionUrl = route('subdomain.membership-access', [
+                        'subdomain' => $transaction->host->subdomain,
+                        'accessToken' => $membership->access_token,
+                    ]);
+                }
+            }
+
+            $mail = new TransactionConfirmationMail(
+                $transaction,
+                $booking,
+                $icsContent,
+                $pdfContent,
+                $scheduleSelectionUrl
+            );
+
+            // Send immediately (bypass queue) so email appears in logs and is delivered right away
+            Mail::to($transaction->client->email)->sendNow($mail);
 
             // Mark invoice as sent
             if ($transaction->invoice && $transaction->invoice->status === Invoice::STATUS_DRAFT) {

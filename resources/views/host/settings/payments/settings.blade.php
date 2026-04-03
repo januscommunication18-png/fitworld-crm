@@ -187,6 +187,18 @@ $enabledManualMethods = $paymentSettings['manual_methods'] ?? [];
         </div>
     </div>
 
+    {{-- Read to Client Card --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold mb-2">Read to Client</h2>
+            <p class="text-sm text-base-content/60 mb-4">This text will be shown in the payment confirmation drawer. Staff should read it to the client before confirming payment.</p>
+            <div>
+                <label class="label-text" for="read_to_client">Terms & Conditions</label>
+                <textarea id="read_to_client" class="textarea w-full" rows="5" placeholder="Enter terms, cancellation policy, or any important information to read to the client before confirming payment...">{{ $paymentSettings['read_to_client'] ?? '' }}</textarea>
+            </div>
+        </div>
+    </div>
+
     {{-- Receipt Settings Card --}}
     <div class="card bg-base-100">
         <div class="card-body">
@@ -290,6 +302,7 @@ function savePaymentSettings() {
         currency: document.getElementById('currency').value,
         send_receipts: document.getElementById('send_receipts').checked,
         receipt_footer: document.getElementById('receipt_footer').value,
+        read_to_client: document.getElementById('read_to_client').value,
         manual_methods: manualMethods
     };
 

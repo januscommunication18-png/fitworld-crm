@@ -39,7 +39,19 @@ class CustomerMembership extends Model
         'paused_at',
         'expires_at',
         'created_by_user_id',
+        'access_token',
     ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($membership) {
+            if (empty($membership->access_token)) {
+                $membership->access_token = bin2hex(random_bytes(32));
+            }
+        });
+    }
 
     protected function casts(): array
     {

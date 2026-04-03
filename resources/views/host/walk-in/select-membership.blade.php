@@ -658,6 +658,8 @@
                             </div>
                         </div>
 
+                        @include('components.read-to-client', ['rtcId' => 'membership', 'rtcSubmitBtn' => 'submit-btn', 'rtcClass' => 'mt-4'])
+
                         <button type="submit" id="submit-btn" class="btn btn-primary w-full mt-4" disabled>
                             <span class="icon-[tabler--check] size-5"></span>
                             {{ $trans['btn.complete_sale'] ?? 'Complete Sale' }}

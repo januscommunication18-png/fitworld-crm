@@ -93,7 +93,7 @@
                 <div id="tab-classes" class="tab-content">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         @foreach($classPlans as $plan)
-                        <a href="{{ route('booking.select-class.filter', ['subdomain' => $host->subdomain, 'classPlanId' => $plan->id]) }}"
+                        <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}"
                            class="card bg-base-100 hover:shadow-lg transition-shadow cursor-pointer">
                             <div class="card-body">
                                 @if($plan->image_url)
@@ -121,7 +121,7 @@
                     </div>
 
                     <div class="text-center mt-6">
-                        <a href="{{ route('booking.select-class', ['subdomain' => $host->subdomain]) }}"
+                        <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}"
                            class="btn btn-primary">
                             <span class="icon-[tabler--calendar] size-5"></span>
                             View All Class Sessions

@@ -1,6 +1,6 @@
 @extends('layouts.dashboard')
 
-@section('title', 'Transaction ' . $transaction->transaction_id)
+@section('title', 'Transaction ' . ($transaction->invoice?->invoice_number ?? $transaction->transaction_id ?? '#'.$transaction->id))
 
 @section('breadcrumbs')
     <ol>
@@ -269,13 +269,13 @@
                         @if($transaction->status === 'pending')
                         <button type="button"
                                 class="btn btn-success w-full"
-                                onclick="openConfirmModal('{{ $transaction->id }}', '{{ $transaction->transaction_id }}', '{{ $transaction->formatted_total }}')">
+                                onclick="openConfirmModal('{{ $transaction->id }}', '{{ $transaction->invoice?->invoice_number ?? $transaction->transaction_id ?? '#'.$transaction->id }}', '{{ $transaction->formatted_total }}')">
                             <span class="icon-[tabler--check] size-4"></span>
                             Confirm Payment
                         </button>
                         <button type="button"
                                 class="btn btn-error btn-outline w-full"
-                                onclick="openCancelModal('{{ $transaction->id }}', '{{ $transaction->transaction_id }}')">
+                                onclick="openCancelModal('{{ $transaction->id }}', '{{ $transaction->invoice?->invoice_number ?? $transaction->transaction_id ?? '#'.$transaction->id }}')">
                             <span class="icon-[tabler--x] size-4"></span>
                             Cancel Transaction
                         </button>
@@ -496,143 +496,5 @@
     </div>
 </div>
 
-{{-- Confirm Payment Modal --}}
-<div id="confirm-modal" class="fixed inset-0 z-50 hidden" role="dialog" tabindex="-1">
-    {{-- Backdrop --}}
-    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeConfirmModal()"></div>
-    {{-- Modal Content --}}
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-base-100 rounded-xl shadow-xl w-full max-w-md relative">
-            <div class="flex items-center justify-between p-4 border-b border-base-200">
-                <h3 class="text-lg font-semibold flex items-center gap-2">
-                    <span class="icon-[tabler--check-circle] size-6 text-success"></span>
-                    Confirm Payment
-                </h3>
-                <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeConfirmModal()">
-                    <span class="icon-[tabler--x] size-4"></span>
-                </button>
-            </div>
-            <form id="confirm-form" method="POST">
-                @csrf
-                <div class="p-4 space-y-4">
-                    <p class="text-base-content/70">
-                        Confirm payment for transaction <span id="confirm-transaction-id" class="font-mono font-semibold"></span>?
-                    </p>
-                    <p class="text-sm text-base-content/60">
-                        Amount: <span id="confirm-amount" class="font-semibold text-success"></span>
-                    </p>
-
-                    <div class="form-control">
-                        <label class="label" for="confirm-notes">
-                            <span class="label-text">Notes (optional)</span>
-                        </label>
-                        <textarea id="confirm-notes"
-                                  name="notes"
-                                  class="textarea textarea-bordered h-24"
-                                  placeholder="Add any notes about this payment confirmation..."></textarea>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-2 p-4 border-t border-base-200">
-                    <button type="button" class="btn btn-ghost" onclick="closeConfirmModal()">Cancel</button>
-                    <button type="submit" class="btn btn-success gap-1">
-                        <span class="icon-[tabler--check] size-4"></span>
-                        Confirm Payment
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Cancel Transaction Modal --}}
-<div id="cancel-modal" class="fixed inset-0 z-50 hidden" role="dialog" tabindex="-1">
-    {{-- Backdrop --}}
-    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeCancelModal()"></div>
-    {{-- Modal Content --}}
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-base-100 rounded-xl shadow-xl w-full max-w-md relative">
-            <div class="flex items-center justify-between p-4 border-b border-base-200">
-                <h3 class="text-lg font-semibold flex items-center gap-2">
-                    <span class="icon-[tabler--x-circle] size-6 text-error"></span>
-                    Cancel Transaction
-                </h3>
-                <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeCancelModal()">
-                    <span class="icon-[tabler--x] size-4"></span>
-                </button>
-            </div>
-            <form id="cancel-form" method="POST">
-                @csrf
-                <div class="p-4 space-y-4">
-                    <p class="text-base-content/70">
-                        Cancel transaction <span id="cancel-transaction-id" class="font-mono font-semibold"></span>?
-                    </p>
-                    <div class="alert alert-warning">
-                        <span class="icon-[tabler--alert-triangle] size-5"></span>
-                        <span>This action cannot be undone.</span>
-                    </div>
-
-                    <div class="form-control">
-                        <label class="label" for="cancel-reason">
-                            <span class="label-text">Reason for cancellation <span class="text-error">*</span></span>
-                        </label>
-                        <textarea id="cancel-reason"
-                                  name="reason"
-                                  class="textarea textarea-bordered h-24"
-                                  placeholder="Enter the reason for cancelling this transaction..."
-                                  required></textarea>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-2 p-4 border-t border-base-200">
-                    <button type="button" class="btn btn-ghost" onclick="closeCancelModal()">Back</button>
-                    <button type="submit" class="btn btn-error gap-1">
-                        <span class="icon-[tabler--x] size-4"></span>
-                        Cancel Transaction
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-@push('scripts')
-<script>
-    const confirmModal = document.getElementById('confirm-modal');
-    const cancelModal = document.getElementById('cancel-modal');
-
-    function openConfirmModal(transactionId, transactionCode, amount) {
-        document.getElementById('confirm-transaction-id').textContent = transactionCode;
-        document.getElementById('confirm-amount').textContent = amount;
-        document.getElementById('confirm-form').action = '/payments/transactions/' + transactionId + '/confirm';
-        document.getElementById('confirm-notes').value = '';
-        confirmModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeConfirmModal() {
-        confirmModal.classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-
-    function openCancelModal(transactionId, transactionCode) {
-        document.getElementById('cancel-transaction-id').textContent = transactionCode;
-        document.getElementById('cancel-form').action = '/payments/transactions/' + transactionId + '/cancel';
-        document.getElementById('cancel-reason').value = '';
-        cancelModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeCancelModal() {
-        cancelModal.classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-
-    // Close modal on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeConfirmModal();
-            closeCancelModal();
-        }
-    });
-</script>
-@endpush
+@include('host.payments._transaction-modals')
 @endsection

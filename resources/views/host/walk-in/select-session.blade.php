@@ -1029,6 +1029,8 @@
                     </div>
                 </div>
 
+                @include('components.read-to-client', ['rtcId' => 'select-session', 'rtcSubmitBtn' => 'submit-btn', 'rtcClass' => 'mt-4'])
+
                 <div class="flex justify-between mt-6">
                     <button type="button" class="btn btn-ghost" id="step2-back">
                         <span class="icon-[tabler--arrow-left] size-5"></span>

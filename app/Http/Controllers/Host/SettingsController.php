@@ -653,6 +653,7 @@ class SettingsController extends Controller
             'currency' => 'nullable|string|size:3',
             'send_receipts' => 'boolean',
             'receipt_footer' => 'nullable|string|max:500',
+            'read_to_client' => 'nullable|string|max:5000',
             'manual_methods' => 'nullable|array',
             'manual_methods.*.enabled' => 'boolean',
             'manual_methods.*.instructions' => 'nullable|string|max:500',
@@ -1158,49 +1159,48 @@ class SettingsController extends Controller
         $logPath = storage_path('logs/laravel.log');
 
         if (file_exists($logPath)) {
-            $content = file_get_contents($logPath);
+            // Read the log file and split by log entries
+            $content = @file_get_contents($logPath);
+            if ($content) {
+                // Find all email entries by splitting on timestamps
+                // Each email starts with [timestamp] ... local.DEBUG: From:
+                $parts = preg_split('/(?=\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\][^\[]*?local\.DEBUG: From:)/', $content, -1, PREG_SPLIT_NO_EMPTY);
 
-            // Match email log entries - Laravel logs emails with "local.DEBUG: From:"
-            // Pattern: [timestamp] local.DEBUG: From: ... followed by email content until next log entry
-            preg_match_all('/\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\][^\[]*?local\.DEBUG: From:([^\n]+)\nTo:([^\n]+)\nSubject:([^\n]+)(.*?)(?=\[\d{4}-\d{2}-\d{2}|\z)/s', $content, $matches, PREG_SET_ORDER);
+                foreach ($parts as $part) {
+                    if (!preg_match('/^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\].*?local\.DEBUG: From:(.+)$/m', $part, $m)) {
+                        continue;
+                    }
 
-            foreach ($matches as $match) {
-                $timestamp = $match[1];
-                $from = trim($match[2]);
-                $to = trim($match[3]);
-                $subject = trim($match[4]);
-                $body = trim($match[5]);
+                    $email = [
+                        'timestamp' => $m[1],
+                        'from' => trim($m[2]),
+                        'to' => '',
+                        'subject' => '',
+                        'body' => '',
+                        'html' => '',
+                    ];
 
-                // Extract HTML content from multipart email
-                // Look for Content-Type: text/html section
-                $html = '';
-                if (preg_match('/Content-Type:\s*text\/html[^\n]*\n(?:Content-Transfer-Encoding:[^\n]*\n)?\n(<!DOCTYPE.*?<\/html>)/si', $body, $htmlMatch)) {
-                    $html = $htmlMatch[1];
-                } elseif (preg_match('/(<!DOCTYPE.*?<\/html>)/si', $body, $htmlMatch)) {
-                    // Fallback: just find the HTML document
-                    $html = $htmlMatch[1];
+                    if (preg_match('/^To:\s*(.+)$/m', $part, $tm)) {
+                        $email['to'] = trim($tm[1]);
+                    }
+                    if (preg_match('/^Subject:\s*(.+)$/m', $part, $sm)) {
+                        $email['subject'] = trim($sm[1]);
+                    }
+
+                    // Extract HTML — limit search to avoid base64 PDF blobs
+                    $htmlSearch = substr($part, 0, 300000);
+                    if (preg_match('/(<!DOCTYPE[^>]*>.*?<\/html>)/si', $htmlSearch, $hm)) {
+                        $email['html'] = $hm[1];
+                    }
+
+                    $emails[] = $email;
                 }
 
-                // Extract plain text for preview
-                $plainBody = '';
-                if (preg_match('/Content-Type:\s*text\/plain[^\n]*\n(?:Content-Transfer-Encoding:[^\n]*\n)?\n(.*?)(?=--[a-zA-Z0-9_]+|$)/si', $body, $textMatch)) {
-                    $plainBody = trim($textMatch[1]);
-                    $plainBody = preg_replace('/\s+/', ' ', $plainBody);
-                    $plainBody = substr($plainBody, 0, 200) . (strlen($plainBody) > 200 ? '...' : '');
-                }
-
-                $emails[] = [
-                    'timestamp' => $timestamp,
-                    'to' => $to,
-                    'from' => $from,
-                    'subject' => $subject,
-                    'body' => $plainBody,
-                    'html' => $html,
-                ];
+                unset($content, $parts);
             }
 
-            // Reverse to show newest first
             $emails = array_reverse($emails);
+            $emails = array_slice($emails, 0, 50);
         }
 
         return view('host.settings.advanced.email-logs', compact('emails'));

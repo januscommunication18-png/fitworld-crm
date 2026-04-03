@@ -275,6 +275,8 @@
                             </div>
                         </div>
 
+                        @include('components.read-to-client', ['rtcId' => 'classpass', 'rtcSubmitBtn' => 'submit-btn', 'rtcClass' => 'mt-4'])
+
                         <button type="submit" class="btn btn-primary w-full mt-4" id="submit-btn" disabled>
                             <span class="icon-[tabler--check] size-5"></span>
                             Complete Sale

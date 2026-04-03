@@ -103,7 +103,9 @@ class Transaction extends Model
         parent::boot();
 
         static::creating(function ($transaction) {
-            if (empty($transaction->transaction_id)) {
+            // Only generate transaction_id when payment is already completed
+            // Pending transactions get their ID when payment is confirmed via markPaid()
+            if (empty($transaction->transaction_id) && $transaction->status === self::STATUS_PAID) {
                 $transaction->transaction_id = self::generateTransactionId();
             }
         });
@@ -209,11 +211,18 @@ class Transaction extends Model
      */
     public function markPaid(?string $stripeChargeId = null): self
     {
-        $this->update([
+        $data = [
             'status' => self::STATUS_PAID,
             'paid_at' => now(),
             'stripe_charge_id' => $stripeChargeId,
-        ]);
+        ];
+
+        // Generate transaction ID on payment confirmation if not already set
+        if (empty($this->transaction_id)) {
+            $data['transaction_id'] = self::generateTransactionId();
+        }
+
+        $this->update($data);
 
         return $this->fresh();
     }

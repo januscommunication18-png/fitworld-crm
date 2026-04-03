@@ -269,6 +269,11 @@ class BookingService
             // Mark slot as booked
             $slot->update(['status' => 'booked']);
 
+            // Send booking confirmation email
+            if ($client->email && ($options['send_confirmation_email'] ?? true)) {
+                $this->sendBookingConfirmationEmail($booking);
+            }
+
             return $booking->load(['client', 'bookable', 'payments']);
         });
     }
