@@ -104,6 +104,141 @@ class ScheduledMembershipController extends Controller
     }
 
     /**
+     * Show the form for editing a scheduled membership session.
+     */
+    public function edit(ClassSession $classSession)
+    {
+        $host = auth()->user()->host;
+
+        if ($classSession->host_id !== $host->id) {
+            abort(404);
+        }
+
+        $classSession->load(['primaryInstructor', 'location', 'membershipPlans', 'backupInstructors']);
+
+        // Parse recurrence rule to get days and end config
+        $recurrenceDays = [];
+        $recurrenceEndType = 'after';
+        $recurrenceCount = 12;
+        $recurrenceEndDate = null;
+
+        if ($classSession->recurrence_rule) {
+            $parsed = $this->recurrenceService->parseRecurrenceRule($classSession->recurrence_rule);
+
+            $dayMap = [0 => 'sunday', 1 => 'monday', 2 => 'tuesday', 3 => 'wednesday', 4 => 'thursday', 5 => 'friday', 6 => 'saturday'];
+            if (!empty($parsed['days_of_week'])) {
+                $recurrenceDays = array_map(fn($d) => $dayMap[(int) $d] ?? '', $parsed['days_of_week']);
+            }
+
+            if (!empty($parsed['count'])) {
+                $recurrenceEndType = 'after';
+                $recurrenceCount = $parsed['count'];
+            } elseif (!empty($parsed['until'])) {
+                $recurrenceEndType = 'on';
+                $recurrenceEndDate = $parsed['until'];
+            } else {
+                $recurrenceEndType = 'never';
+            }
+        }
+
+        // Gather instructor IDs (primary first, then backups)
+        $instructorIds = [];
+        if ($classSession->primary_instructor_id) {
+            $instructorIds[] = $classSession->primary_instructor_id;
+        }
+        foreach ($classSession->backupInstructors as $backup) {
+            $instructorIds[] = $backup->id;
+        }
+
+        $membershipPlans = MembershipPlan::where('host_id', $host->id)
+            ->active()
+            ->orderBy('name')
+            ->get();
+
+        return view('host.scheduled-membership.create', [
+            'membershipPlans' => $membershipPlans,
+            'instructors' => $host->instructors()->active()->orderBy('name')->get(),
+            'locations' => $host->locations()->orderBy('name')->get(),
+            'selectedMembershipPlanId' => $classSession->membershipPlans->first()?->id,
+            'selectedDate' => $classSession->start_time->format('Y-m-d'),
+            'session' => $classSession,
+            'editMode' => true,
+            'sessionTitle' => $classSession->title,
+            'startTime' => $classSession->start_time->format('H:i'),
+            'endTime' => $classSession->end_time->format('H:i'),
+            'recurrenceDays' => $recurrenceDays,
+            'recurrenceEndType' => $recurrenceEndType,
+            'recurrenceCount' => $recurrenceCount,
+            'recurrenceEndDate' => $recurrenceEndDate,
+            'instructorIds' => $instructorIds,
+            'locationId' => $classSession->location_id,
+            'capacity' => $classSession->capacity,
+            'notes' => $classSession->notes,
+            'status' => $classSession->status,
+        ]);
+    }
+
+    /**
+     * Update a scheduled membership session.
+     */
+    public function update(Request $request, ClassSession $classSession)
+    {
+        $host = auth()->user()->host;
+
+        if ($classSession->host_id !== $host->id) {
+            abort(404);
+        }
+
+        $request->validate([
+            'membership_plan_id' => 'required|exists:membership_plans,id',
+            'title' => 'nullable|string|max:255',
+            'start_date' => 'required|date',
+            'start_time' => 'required|date_format:H:i',
+            'end_time' => 'required|date_format:H:i|after:start_time',
+            'instructor_ids' => 'nullable|array',
+            'instructor_ids.*' => 'exists:instructors,id',
+            'location_id' => 'nullable|exists:locations,id',
+            'capacity' => 'required|integer|min:1|max:500',
+            'notes' => 'nullable|string|max:1000',
+            'status' => 'nullable|in:draft,published',
+        ]);
+
+        $startDateTime = Carbon::parse($request->start_date . ' ' . $request->start_time);
+        $endDateTime = Carbon::parse($request->start_date . ' ' . $request->end_time);
+        $durationMinutes = $startDateTime->diffInMinutes($endDateTime);
+
+        $instructorIds = array_filter($request->instructor_ids ?? []);
+        $primaryInstructorId = !empty($instructorIds) ? array_shift($instructorIds) : null;
+
+        $membershipPlan = MembershipPlan::find($request->membership_plan_id);
+        $sessionTitle = $request->title ?: $membershipPlan->name . ' Session';
+
+        $classSession->update([
+            'primary_instructor_id' => $primaryInstructorId,
+            'location_id' => $request->location_id,
+            'title' => $sessionTitle,
+            'start_time' => $startDateTime,
+            'end_time' => $endDateTime,
+            'duration_minutes' => $durationMinutes,
+            'capacity' => $request->capacity,
+            'status' => $request->status ?? $classSession->status,
+            'notes' => $request->notes,
+        ]);
+
+        if (!empty($instructorIds)) {
+            $classSession->syncBackupInstructors($instructorIds);
+        } else {
+            $classSession->syncBackupInstructors([]);
+        }
+
+        $classSession->membershipPlans()->sync([$request->membership_plan_id]);
+
+        return redirect()
+            ->route('schedule-planner.index', ['type' => 'membership', 'membership_plan_id' => $request->membership_plan_id])
+            ->with('success', 'Membership schedule updated successfully.');
+    }
+
+    /**
      * Store scheduled membership class sessions.
      */
     public function store(Request $request)

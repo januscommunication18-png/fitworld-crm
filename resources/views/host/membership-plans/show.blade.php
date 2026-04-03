@@ -176,6 +176,72 @@
                 </div>
             </div>
 
+            {{-- Billing Period Discounts --}}
+            @if($membershipPlan->billing_discounts && count(array_filter($membershipPlan->billing_discounts)) > 0)
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--discount] size-5"></span>
+                        Billing Period Discounts
+                    </h2>
+                    <p class="text-sm text-base-content/60 mt-1">Discounted monthly rates for longer billing commitments.</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
+                        @php
+                            $billingPeriods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months'];
+                            $basePrice = $membershipPlan->prices[$defaultCurrency] ?? 0;
+                            $symbol = $currencySymbols[$defaultCurrency] ?? $defaultCurrency;
+                        @endphp
+                        @foreach($billingPeriods as $months => $label)
+                            @php
+                                $totalForPeriod = (float) ($membershipPlan->billing_discounts[$months] ?? 0);
+                                $hasDiscount = $totalForPeriod > 0;
+                                $m = (int) $months;
+                                $monthlyRate = $m > 0 ? $totalForPeriod / $m : 0;
+                                $totalWithout = $basePrice * $m;
+                                $savings = $hasDiscount ? $totalWithout - $totalForPeriod : 0;
+                            @endphp
+                            <div class="text-center p-3 rounded-lg {{ $hasDiscount ? 'bg-success/10' : 'bg-base-200/50' }}">
+                                <div class="text-sm text-base-content/60">{{ $label }}</div>
+                                <div class="text-xl font-bold {{ $hasDiscount ? 'text-success' : 'text-base-content/40' }}">
+                                    {{ $symbol }}{{ $hasDiscount ? number_format($totalForPeriod, 2) : number_format($totalWithout, 2) }}
+                                </div>
+                                @if($hasDiscount)
+                                    <div class="text-xs text-base-content/50">{{ $symbol }}{{ number_format($monthlyRate, 2) }}/mo</div>
+                                @endif
+                                @if($savings > 0)
+                                    <div class="text-xs text-success mt-0.5">Save {{ $symbol }}{{ number_format($savings, 2) }}</div>
+                                @elseif(!$hasDiscount)
+                                    <div class="text-xs text-base-content/40 mt-0.5">Base price</div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+
+                    @if(($membershipPlan->registration_fee && $membershipPlan->registration_fee > 0) || ($membershipPlan->cancellation_fee && $membershipPlan->cancellation_fee > 0))
+                    <div class="divider my-4"></div>
+                    <div class="flex flex-wrap gap-6 text-sm">
+                        @if($membershipPlan->registration_fee > 0)
+                        <div>
+                            <span class="text-base-content/60">Registration Fee</span>
+                            <div class="font-semibold">{{ $symbol }}{{ number_format($membershipPlan->registration_fee, 2) }}</div>
+                        </div>
+                        @endif
+                        @if($membershipPlan->cancellation_fee > 0)
+                        <div>
+                            <span class="text-base-content/60">Cancellation Fee</span>
+                            <div class="font-semibold text-error">{{ $symbol }}{{ number_format($membershipPlan->cancellation_fee, 2) }}</div>
+                        </div>
+                        @endif
+                        <div>
+                            <span class="text-base-content/60">Grace Period</span>
+                            <div class="font-semibold">{{ $membershipPlan->cancellation_grace_hours ?? 48 }} hours</div>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             {{-- Eligibility --}}
             <div class="card bg-base-100">
                 <div class="card-header">

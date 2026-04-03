@@ -499,6 +499,8 @@ Route::middleware('auth')->group(function () {
     // Scheduled Membership Classes
     Route::get('/membership-schedules', [ScheduledMembershipController::class, 'index'])->name('membership-schedules.index');
     Route::get('/scheduled-membership/create', [ScheduledMembershipController::class, 'create'])->name('scheduled-membership.create');
+    Route::get('/scheduled-membership/{classSession}/edit', [ScheduledMembershipController::class, 'edit'])->name('scheduled-membership.edit');
+    Route::put('/scheduled-membership/{classSession}', [ScheduledMembershipController::class, 'update'])->name('scheduled-membership.update');
     Route::post('/scheduled-membership', [ScheduledMembershipController::class, 'store'])->name('scheduled-membership.store');
 
     // Walk-In Booking
@@ -536,6 +538,7 @@ Route::middleware('auth')->group(function () {
     // Walk-In Membership Booking
     Route::get('/walk-in/memberships', [WalkInController::class, 'selectMembership'])->name('walk-in.select-membership');
     Route::get('/walk-in/membership-plans', [WalkInController::class, 'getMembershipPlans'])->name('walk-in.membership-plans');
+    Route::get('/walk-in/membership-schedules', [WalkInController::class, 'getMembershipSchedules'])->name('walk-in.membership-schedules');
     Route::post('/walk-in/membership/book', [WalkInController::class, 'bookMembership'])->name('walk-in.membership.book');
 
     // Walk-In Class Pass

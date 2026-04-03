@@ -178,6 +178,69 @@
                     @enderror
                 </div>
 
+                {{-- Billing Period Discounts --}}
+                <div>
+                    <label class="label-text mb-2 block">Billing Period Discounts</label>
+                    <p class="text-sm text-base-content/60 mb-4">Set the total amount for each billing period. Client pays this amount upfront for the entire period.</p>
+
+                    @php
+                        $billingPeriods = ['1' => '1 Mo', '3' => '3 Mo', '6' => '6 Mo', '9' => '9 Mo', '12' => '12 Mo'];
+                        $defaultDiscounts = ['1' => 0, '3' => 0, '6' => 0, '9' => 0, '12' => 0];
+                    @endphp
+                    <div class="flex items-end gap-2">
+                        @foreach($billingPeriods as $months => $label)
+                        <div class="flex-1 min-w-0">
+                            <label class="label-text text-xs text-center block mb-1" for="billing_discounts_{{ $months }}">{{ $label }}</label>
+                            <label class="input input-bordered input-sm flex items-center gap-0.5">
+                                <span class="text-base-content/50 text-xs">$</span>
+                                <input type="number" id="billing_discounts_{{ $months }}" name="billing_discounts[{{ $months }}]" step="0.01" min="0"
+                                       value="{{ old('billing_discounts.' . $months, $membershipPlan?->billing_discounts[$months] ?? $defaultDiscounts[$months]) }}"
+                                       class="grow w-full text-center" placeholder="0">
+                            </label>
+                        </div>
+                        @endforeach
+                    </div>
+                    <p class="text-xs text-base-content/50 mt-3">
+                        <span class="icon-[tabler--info-circle] size-3 align-middle"></span>
+                        Example: Base price $100/month, set 6 Mo to $540 — client pays $540 total ($90/mo) instead of $600
+                    </p>
+
+                    <div class="divider text-base-content/40 text-xs mt-6 mb-4">FEES & CANCELLATION POLICY</div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="label-text text-sm" for="registration_fee">Registration Fee</label>
+                            <label class="input input-bordered input-sm flex items-center gap-0.5 mt-1">
+                                <span class="text-base-content/50 text-xs">$</span>
+                                <input type="number" id="registration_fee" name="registration_fee" step="0.01" min="0"
+                                       value="{{ old('registration_fee', $membershipPlan?->registration_fee ?? '') }}"
+                                       class="grow w-full" placeholder="0.00">
+                            </label>
+                            <p class="text-xs text-base-content/50 mt-1">One-time fee when purchasing a billing period</p>
+                        </div>
+                        <div>
+                            <label class="label-text text-sm" for="cancellation_fee">Cancellation Fee</label>
+                            <label class="input input-bordered input-sm flex items-center gap-0.5 mt-1">
+                                <span class="text-base-content/50 text-xs">$</span>
+                                <input type="number" id="cancellation_fee" name="cancellation_fee" step="0.01" min="0"
+                                       value="{{ old('cancellation_fee', $membershipPlan?->cancellation_fee ?? '') }}"
+                                       class="grow w-full" placeholder="0.00">
+                            </label>
+                            <p class="text-xs text-base-content/50 mt-1">Fee charged for early cancellation</p>
+                        </div>
+                        <div>
+                            <label class="label-text text-sm" for="cancellation_grace_hours">Grace Period</label>
+                            <label class="input input-bordered input-sm flex items-center gap-0.5 mt-1">
+                                <input type="number" id="cancellation_grace_hours" name="cancellation_grace_hours" step="1" min="0" max="720"
+                                       value="{{ old('cancellation_grace_hours', $membershipPlan?->cancellation_grace_hours ?? 48) }}"
+                                       class="grow w-full" placeholder="48">
+                                <span class="text-base-content/50 text-xs">hrs</span>
+                            </label>
+                            <p class="text-xs text-base-content/50 mt-1">Full refund window after purchase</p>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Addon Members --}}
                 <div>
                     <label class="label-text" for="addon_members">Addon Members</label>

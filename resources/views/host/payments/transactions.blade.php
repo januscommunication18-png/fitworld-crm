@@ -63,6 +63,7 @@
                         <tr>
                             <th>Date</th>
                             <th>Transaction ID</th>
+                            <th>Invoice</th>
                             <th>Client</th>
                             <th>Type</th>
                             <th>Amount</th>
@@ -80,6 +81,13 @@
                             </td>
                             <td>
                                 <span class="font-mono text-xs">{{ $transaction->transaction_id }}</span>
+                            </td>
+                            <td>
+                                @if($transaction->invoice)
+                                    <span class="font-mono text-xs">{{ $transaction->invoice->invoice_number }}</span>
+                                @else
+                                    <span class="text-base-content/50">—</span>
+                                @endif
                             </td>
                             <td>
                                 @if($transaction->client)

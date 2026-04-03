@@ -62,8 +62,8 @@
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>
-            <h1 class="text-2xl font-bold">Membership Schedule</h1>
-            <p class="text-base-content/60 mt-1">Create recurring class sessions for membership holders with auto-enrollment.</p>
+            <h1 class="text-2xl font-bold">{{ ($editMode ?? false) ? 'Edit' : 'Create' }} Membership Schedule</h1>
+            <p class="text-base-content/60 mt-1">{{ ($editMode ?? false) ? 'Update this scheduled membership session.' : 'Create recurring class sessions for membership holders with auto-enrollment.' }}</p>
         </div>
     </div>
 
@@ -77,8 +77,11 @@
             <a href="{{ route('membership-plans.create') }}" class="btn btn-sm btn-warning">Create Membership Plan</a>
         </div>
     @else
-        <form action="{{ route('scheduled-membership.store') }}" method="POST">
+        <form action="{{ ($editMode ?? false) ? route('scheduled-membership.update', $session) : route('scheduled-membership.store') }}" method="POST">
             @csrf
+            @if($editMode ?? false)
+                @method('PUT')
+            @endif
             <input type="hidden" name="is_recurring" value="1">
 
             <div class="space-y-6">
@@ -123,7 +126,7 @@
                         <div>
                             <label class="label-text" for="title">Session Title</label>
                             <input type="text" id="title" name="title"
-                                value="{{ old('title') }}"
+                                value="{{ old('title', $sessionTitle ?? '') }}"
                                 class="input w-full @error('title') input-error @enderror"
                                 placeholder="e.g., Yoga for Members, Member Morning Class">
                             <p class="text-xs text-base-content/60 mt-1">Optional. If left empty, the membership plan name will be used.</p>
@@ -135,7 +138,7 @@
                 </div>
 
                 {{-- Card 2: Recurring Schedule --}}
-                <div class="card bg-base-100">
+                <div class="card bg-base-100 {{ ($editMode ?? false) ? '' : '' }}">
                     <div class="card-header">
                         <div class="flex items-center gap-2">
                             <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">2</span>
@@ -157,7 +160,7 @@
                             <div>
                                 <label class="label-text" for="start_time">Start Time</label>
                                 <input type="text" id="start_time" name="start_time"
-                                    value="{{ old('start_time', '09:00') }}"
+                                    value="{{ old('start_time', $startTime ?? '09:00') }}"
                                     class="input w-full flatpickr-time @error('start_time') input-error @enderror"
                                     placeholder="Select time..." required>
                                 @error('start_time')
@@ -167,7 +170,7 @@
                             <div>
                                 <label class="label-text" for="end_time">End Time</label>
                                 <input type="text" id="end_time" name="end_time"
-                                    value="{{ old('end_time', '10:00') }}"
+                                    value="{{ old('end_time', $endTime ?? '10:00') }}"
                                     class="input w-full flatpickr-time @error('end_time') input-error @enderror"
                                     placeholder="Select time..." required>
                                 @error('end_time')
@@ -190,7 +193,7 @@
                                         'saturday' => 'Sat',
                                         'sunday' => 'Sun',
                                     ];
-                                    $oldDays = old('recurrence_days', []);
+                                    $oldDays = old('recurrence_days', $recurrenceDays ?? []);
                                 @endphp
                                 @foreach($days as $value => $label)
                                 <label class="cursor-pointer">
@@ -211,21 +214,21 @@
                             <div>
                                 <label class="label-text" for="recurrence_end_type">Ends</label>
                                 <select id="recurrence_end_type" name="recurrence_end_type" class="select w-full">
-                                    <option value="after" {{ old('recurrence_end_type', 'after') === 'after' ? 'selected' : '' }}>After number of occurrences</option>
-                                    <option value="on" {{ old('recurrence_end_type') === 'on' ? 'selected' : '' }}>On specific date</option>
-                                    <option value="never" {{ old('recurrence_end_type') === 'never' ? 'selected' : '' }}>Never (ongoing)</option>
+                                    <option value="after" {{ old('recurrence_end_type', $recurrenceEndType ?? 'after') === 'after' ? 'selected' : '' }}>After number of occurrences</option>
+                                    <option value="on" {{ old('recurrence_end_type', $recurrenceEndType ?? 'after') === 'on' ? 'selected' : '' }}>On specific date</option>
+                                    <option value="never" {{ old('recurrence_end_type', $recurrenceEndType ?? 'after') === 'never' ? 'selected' : '' }}>Never (ongoing)</option>
                                 </select>
                             </div>
                             <div id="recurrence-count-wrapper">
                                 <label class="label-text" for="recurrence_count">Number of Sessions</label>
                                 <input type="number" id="recurrence_count" name="recurrence_count"
-                                    value="{{ old('recurrence_count', 12) }}"
+                                    value="{{ old('recurrence_count', $recurrenceCount ?? 12) }}"
                                     class="input w-full" min="1" max="52">
                             </div>
                             <div id="recurrence-end-date-wrapper" class="hidden">
                                 <label class="label-text" for="recurrence_end_date">End Date</label>
                                 <input type="text" id="recurrence_end_date" name="recurrence_end_date"
-                                    value="{{ old('recurrence_end_date') }}"
+                                    value="{{ old('recurrence_end_date', $recurrenceEndDate ?? '') }}"
                                     class="input w-full flatpickr-date"
                                     placeholder="Select end date...">
                             </div>
@@ -258,7 +261,7 @@
                                 }'>
                                 @foreach($instructors as $instructor)
                                 <option value="{{ $instructor->id }}"
-                                    {{ in_array($instructor->id, old('instructor_ids', [])) ? 'selected' : '' }}>
+                                    {{ in_array($instructor->id, old('instructor_ids', $instructorIds ?? [])) ? 'selected' : '' }}>
                                     {{ $instructor->name }}
                                 </option>
                                 @endforeach
@@ -297,7 +300,7 @@
                                 <option value="">Select a location...</option>
                                 @foreach($locations as $location)
                                 <option value="{{ $location->id }}"
-                                    {{ old('location_id') == $location->id ? 'selected' : '' }}>
+                                    {{ old('location_id', $locationId ?? '') == $location->id ? 'selected' : '' }}>
                                     {{ $location->name }}
                                 </option>
                                 @endforeach
@@ -322,7 +325,7 @@
                             <div>
                                 <label class="label-text" for="capacity">Capacity</label>
                                 <input type="number" id="capacity" name="capacity"
-                                    value="{{ old('capacity', 20) }}"
+                                    value="{{ old('capacity', $capacity ?? 20) }}"
                                     class="input w-full @error('capacity') input-error @enderror"
                                     min="1" max="500" required>
                                 @error('capacity')
@@ -352,7 +355,7 @@
                     <div class="card-body">
                         <textarea id="notes" name="notes" rows="3"
                             class="textarea w-full @error('notes') input-error @enderror"
-                            placeholder="Notes for staff only (not visible to clients)">{{ old('notes') }}</textarea>
+                            placeholder="Notes for staff only (not visible to clients)">{{ old('notes', $notes ?? '') }}</textarea>
                         @error('notes')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -372,13 +375,13 @@
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="status" value="draft"
                                     class="radio radio-primary"
-                                    {{ old('status', 'draft') === 'draft' ? 'checked' : '' }}>
+                                    {{ old('status', $status ?? 'draft') === 'draft' ? 'checked' : '' }}>
                                 <span class="label-text">Draft</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
                                 <input type="radio" name="status" value="published"
                                     class="radio radio-primary"
-                                    {{ old('status') === 'published' ? 'checked' : '' }}>
+                                    {{ old('status', $status ?? 'draft') === 'published' ? 'checked' : '' }}>
                                 <span class="label-text">Published</span>
                                 <span class="badge badge-success badge-sm">Live</span>
                             </label>
@@ -391,8 +394,8 @@
                 <div class="flex justify-end gap-3">
                     <a href="{{ route('schedule.calendar') }}" class="btn btn-ghost">Cancel</a>
                     <button type="submit" class="btn btn-primary">
-                        <span class="icon-[tabler--calendar-plus] size-5"></span>
-                        Create Scheduled Sessions
+                        <span class="icon-[tabler--{{ ($editMode ?? false) ? 'check' : 'calendar-plus' }}] size-5"></span>
+                        {{ ($editMode ?? false) ? 'Update Schedule' : 'Create Scheduled Sessions' }}
                     </button>
                 </div>
             </div>

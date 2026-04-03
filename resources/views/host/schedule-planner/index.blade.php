@@ -20,7 +20,11 @@
             <h1 class="text-2xl font-bold">Schedule Planner</h1>
             <p class="text-base-content/60 mt-1">View and manage recurring schedules</p>
         </div>
-        @if($type === 'service')
+        @if($type === 'membership')
+            <a href="{{ route('scheduled-membership.create') }}" class="btn btn-primary btn-sm">
+                <span class="icon-[tabler--plus] size-4"></span> Create Membership Session
+            </a>
+        @elseif($type === 'service')
             <a href="{{ route('service-slots.create') }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--plus] size-4"></span> Create Service Slot
             </a>
@@ -47,11 +51,28 @@
                         <span class="icon-[tabler--massage] size-4"></span>
                         Services
                     </a>
+                    <a href="{{ route('schedule-planner.index', ['type' => 'membership', 'membership_plan_id' => $type === 'membership' ? $selectedPlanId : null]) }}"
+                       class="px-4 py-1.5 text-sm font-medium flex items-center gap-2 transition-colors {{ $type === 'membership' ? 'bg-primary text-primary-content' : 'hover:bg-base-200' }}">
+                        <span class="icon-[tabler--id-badge-2] size-4"></span>
+                        Memberships
+                    </a>
                 </div>
 
                 {{-- Plan Filter --}}
                 <div class="form-control w-64">
-                    @if($type === 'service')
+                    @if($type === 'membership')
+                        <select id="plan-filter" class="select select-bordered select-sm"
+                                onchange="window.location.href='/schedule-planner?type=membership&membership_plan_id=' + this.value">
+                            @foreach($membershipPlans as $plan)
+                                <option value="{{ $plan->id }}" {{ $selectedPlanId == $plan->id ? 'selected' : '' }}>
+                                    {{ $plan->name }}
+                                </option>
+                            @endforeach
+                            @if($membershipPlans->isEmpty())
+                                <option value="" disabled selected>No active membership plans</option>
+                            @endif
+                        </select>
+                    @elseif($type === 'service')
                         <select id="plan-filter" class="select select-bordered select-sm"
                                 onchange="window.location.href='/schedule-planner?type=service&service_plan_id=' + this.value">
                             @foreach($servicePlans as $plan)
@@ -91,7 +112,12 @@
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--calendar-off] size-12 text-base-content/20 mx-auto mb-4"></span>
                 <h3 class="text-lg font-semibold mb-2">No Schedules Found</h3>
-                @if($type === 'service')
+                @if($type === 'membership')
+                    <p class="text-base-content/60 mb-4">No recurring or upcoming sessions found for this membership plan.</p>
+                    <a href="{{ route('scheduled-membership.create') }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--plus] size-4"></span> Create First Session
+                    </a>
+                @elseif($type === 'service')
                     <p class="text-base-content/60 mb-4">No recurring or upcoming service slots found for this service plan.</p>
                     <a href="{{ route('service-slots.create', ['service_plan_id' => $selectedPlanId]) }}" class="btn btn-primary btn-sm">
                         <span class="icon-[tabler--plus] size-4"></span> Create First Slot
@@ -158,15 +184,30 @@
                                 </span>
                             </td>
                             <td>
-                                @if($type === 'service')
-                                    <a href="{{ route('service-slots.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </a>
-                                @else
-                                    <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
-                                        <span class="icon-[tabler--eye] size-4"></span>
-                                    </a>
-                                @endif
+                                <div class="flex items-center gap-1">
+                                    @if($type === 'service')
+                                        <a href="{{ route('service-slots.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
+                                        <a href="{{ route('service-slots.edit', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                            <span class="icon-[tabler--pencil] size-4"></span>
+                                        </a>
+                                    @elseif($type === 'membership')
+                                        <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
+                                        <a href="{{ route('scheduled-membership.edit', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                            <span class="icon-[tabler--pencil] size-4"></span>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
+                                            <span class="icon-[tabler--eye] size-4"></span>
+                                        </a>
+                                        <a href="{{ route('class-sessions.edit', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
+                                            <span class="icon-[tabler--pencil] size-4"></span>
+                                        </a>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach

@@ -13,7 +13,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-4xl mx-auto">
+<div class="max-w-5xl mx-auto">
     {{-- Header --}}
     <div class="flex items-center gap-4 mb-6">
         <a href="{{ $selectedClassSession ? route('membership-schedules.index') : route('schedule.calendar') }}" class="btn btn-ghost btn-circle">
@@ -74,9 +74,9 @@
             <input type="hidden" name="class_session_id" value="{{ $selectedClassSession->id }}">
         @endif
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
             {{-- Main Content --}}
-            <div class="lg:col-span-2 space-y-6">
+            <div class="lg:col-span-3 space-y-6">
                 {{-- Client Selection --}}
                 <div class="card bg-base-100 border border-base-200">
                     <div class="card-body">
@@ -85,68 +85,71 @@
                             {{ $trans['walk_in.select_client'] ?? 'Select Client' }}
                         </h2>
 
-                        {{-- Client Type Selection --}}
-                        <div id="client-type-selection" class="grid grid-cols-2 gap-3 mb-4">
-                            <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                                <input type="radio" name="client_type" value="existing" class="radio radio-primary" checked>
-                                <span class="icon-[tabler--users] size-6 text-primary"></span>
-                                <div>
-                                    <span class="font-semibold">{{ $trans['walk_in.existing_client'] ?? 'Existing Client' }}</span>
-                                    <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.search_client_list'] ?? 'Search client list' }}</span>
-                                </div>
-                            </label>
-                            <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
-                                <input type="radio" name="client_type" value="new" class="radio radio-success">
-                                <span class="icon-[tabler--user-plus] size-6 text-success"></span>
-                                <div>
-                                    <span class="font-semibold">{{ $trans['walk_in.new_client'] ?? 'New Client' }}</span>
-                                    <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.create_new_profile'] ?? 'Create new profile' }}</span>
-                                </div>
-                            </label>
-                        </div>
+                        {{-- Client Selection Form (hidden when client is selected) --}}
+                        <div id="client-selection-form">
+                            {{-- Client Type Selection --}}
+                            <div id="client-type-selection" class="grid grid-cols-2 gap-3 mb-4">
+                                <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                    <input type="radio" name="client_type" value="existing" class="radio radio-primary" checked>
+                                    <span class="icon-[tabler--users] size-6 text-primary"></span>
+                                    <div>
+                                        <span class="font-semibold">{{ $trans['walk_in.existing_client'] ?? 'Existing Client' }}</span>
+                                        <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.search_client_list'] ?? 'Search client list' }}</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-success has-[:checked]:bg-success/5 transition-all">
+                                    <input type="radio" name="client_type" value="new" class="radio radio-success">
+                                    <span class="icon-[tabler--user-plus] size-6 text-success"></span>
+                                    <div>
+                                        <span class="font-semibold">{{ $trans['walk_in.new_client'] ?? 'New Client' }}</span>
+                                        <span class="text-xs text-base-content/60 block">{{ $trans['walk_in.create_new_profile'] ?? 'Create new profile' }}</span>
+                                    </div>
+                                </label>
+                            </div>
 
-                        {{-- Existing Client Search --}}
-                        <div id="existing-client-section">
-                            <div class="form-control mb-4">
-                                <div class="relative">
-                                    <span class="icon-[tabler--search] size-5 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2"></span>
-                                    <input type="text"
-                                           id="client-search"
-                                           class="input input-bordered w-full pl-10"
-                                           placeholder="{{ $trans['walk_in.search_placeholder'] ?? 'Search by name, email or phone...' }}">
+                            {{-- Existing Client Search --}}
+                            <div id="existing-client-section">
+                                <div class="form-control mb-4">
+                                    <div class="relative">
+                                        <span class="icon-[tabler--search] size-5 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2"></span>
+                                        <input type="text"
+                                               id="client-search"
+                                               class="input input-bordered w-full pl-10"
+                                               placeholder="{{ $trans['walk_in.search_placeholder'] ?? 'Search by name, email or phone...' }}">
+                                    </div>
                                 </div>
+                                <div id="client-search-results" class="space-y-2"></div>
                             </div>
-                            <div id="client-search-results" class="space-y-2"></div>
-                        </div>
 
-                        {{-- New Client Form --}}
-                        <div id="new-client-section" class="hidden space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="form-control">
-                                    <label class="label-text" for="new_first_name">{{ $trans['field.first_name'] ?? 'First Name' }}</label>
-                                    <input type="text" id="new_first_name" class="input input-bordered" placeholder="John">
+                            {{-- New Client Form --}}
+                            <div id="new-client-section" class="hidden space-y-4">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="form-control">
+                                        <label class="label-text" for="new_first_name">{{ $trans['field.first_name'] ?? 'First Name' }}</label>
+                                        <input type="text" id="new_first_name" class="input input-bordered" placeholder="John">
+                                    </div>
+                                    <div class="form-control">
+                                        <label class="label-text" for="new_last_name">{{ $trans['field.last_name'] ?? 'Last Name' }}</label>
+                                        <input type="text" id="new_last_name" class="input input-bordered" placeholder="Doe">
+                                    </div>
                                 </div>
                                 <div class="form-control">
-                                    <label class="label-text" for="new_last_name">{{ $trans['field.last_name'] ?? 'Last Name' }}</label>
-                                    <input type="text" id="new_last_name" class="input input-bordered" placeholder="Doe">
+                                    <label class="label-text" for="new_email">{{ $trans['field.email'] ?? 'Email' }}</label>
+                                    <input type="email" id="new_email" class="input input-bordered" placeholder="john@example.com">
                                 </div>
+                                <div class="form-control">
+                                    <label class="label-text" for="new_phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
+                                    <input type="tel" id="new_phone" class="input input-bordered" placeholder="+1 234 567 8900">
+                                </div>
+                                <button type="button" id="create-client-btn" class="btn btn-success btn-sm">
+                                    <span class="icon-[tabler--plus] size-4"></span>
+                                    {{ $trans['btn.create_client'] ?? 'Create Client' }}
+                                </button>
                             </div>
-                            <div class="form-control">
-                                <label class="label-text" for="new_email">{{ $trans['field.email'] ?? 'Email' }}</label>
-                                <input type="email" id="new_email" class="input input-bordered" placeholder="john@example.com">
-                            </div>
-                            <div class="form-control">
-                                <label class="label-text" for="new_phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
-                                <input type="tel" id="new_phone" class="input input-bordered" placeholder="+1 234 567 8900">
-                            </div>
-                            <button type="button" id="create-client-btn" class="btn btn-success btn-sm">
-                                <span class="icon-[tabler--plus] size-4"></span>
-                                {{ $trans['btn.create_client'] ?? 'Create Client' }}
-                            </button>
                         </div>
 
                         {{-- Selected Client Display --}}
-                        <div id="selected-client" class="hidden mt-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                        <div id="selected-client" class="hidden p-4 bg-primary/5 border border-primary/20 rounded-lg">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-3">
                                     <div id="selected-client-avatar" class="avatar placeholder">
@@ -205,6 +208,11 @@
                                 <input type="hidden" name="membership_plan_id" value="{{ $selectedPlan->id }}"
                                        data-price="{{ $selectedPlan->getPriceForCurrency($defaultCurrency) }}"
                                        data-name="{{ $selectedPlan->name }}"
+                                       data-billing-discounts='@json($selectedPlan->billing_discounts ?? [])'
+                                       data-registration-fee="{{ $selectedPlan->registration_fee ?? 0 }}"
+                                       data-cancellation-fee="{{ $selectedPlan->cancellation_fee ?? 0 }}"
+                                       data-grace-hours="{{ $selectedPlan->cancellation_grace_hours ?? 48 }}"
+                                       data-interval="{{ $selectedPlan->interval }}"
                                        id="preselected-plan">
                             </div>
                         </div>
@@ -227,30 +235,34 @@
                                     </a>
                                 </div>
                             @else
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div class="space-y-2">
                                     @foreach($membershipPlans as $plan)
-                                        <label class="membership-plan-option flex flex-col p-4 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
-                                            <div class="flex items-start justify-between mb-2">
+                                        <label class="membership-plan-option flex items-center gap-4 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">
+                                            <input type="radio" name="membership_plan_id" value="{{ $plan->id }}"
+                                                   data-price="{{ $plan->getPriceForCurrency($defaultCurrency) }}"
+                                                   data-name="{{ $plan->name }}"
+                                                   data-billing-discounts='@json($plan->billing_discounts ?? [])'
+                                                   data-registration-fee="{{ $plan->registration_fee ?? 0 }}"
+                                                   data-cancellation-fee="{{ $plan->cancellation_fee ?? 0 }}"
+                                                   data-grace-hours="{{ $plan->cancellation_grace_hours ?? 48 }}"
+                                                   data-interval="{{ $plan->interval }}"
+                                                   class="radio radio-primary shrink-0">
+                                            <div class="w-3 h-3 rounded-full shrink-0" style="background-color: {{ $plan->color }}"></div>
+                                            <div class="flex-1 min-w-0">
                                                 <div class="flex items-center gap-2">
-                                                    <input type="radio" name="membership_plan_id" value="{{ $plan->id }}"
-                                                           data-price="{{ $plan->getPriceForCurrency($defaultCurrency) }}"
-                                                           data-name="{{ $plan->name }}"
-                                                           class="radio radio-primary">
-                                                    <div class="w-3 h-3 rounded-full" style="background-color: {{ $plan->color }}"></div>
                                                     <span class="font-semibold">{{ $plan->name }}</span>
+                                                    <span class="badge badge-soft badge-xs {{ $plan->type_badge_class }}">{{ $plan->formatted_type }}</span>
+                                                    @if($plan->type === 'credits')
+                                                        <span class="badge badge-soft badge-xs badge-info">{{ $plan->credits_per_cycle }} credits</span>
+                                                    @endif
                                                 </div>
-                                                <span class="badge badge-soft {{ $plan->type_badge_class }}">{{ $plan->formatted_type }}</span>
-                                            </div>
-                                            <div class="ml-7">
-                                                <div class="text-lg font-bold text-primary">{{ $plan->getFormattedPriceForCurrency($defaultCurrency) }}{{ $plan->formatted_interval }}</div>
                                                 @if($plan->description)
-                                                    <p class="text-xs text-base-content/60 mt-1 line-clamp-2">{{ $plan->description }}</p>
+                                                    <p class="text-xs text-base-content/60 mt-0.5 line-clamp-1">{{ $plan->description }}</p>
                                                 @endif
-                                                @if($plan->type === 'credits')
-                                                    <div class="text-xs text-base-content/60 mt-1">
-                                                        {{ $plan->credits_per_cycle }} credits per cycle
-                                                    </div>
-                                                @endif
+                                            </div>
+                                            <div class="text-right shrink-0">
+                                                <div class="font-bold text-primary">{{ $plan->getFormattedPriceForCurrency($defaultCurrency) }}</div>
+                                                <div class="text-xs text-base-content/50">{{ $plan->formatted_interval }}</div>
                                             </div>
                                         </label>
                                     @endforeach
@@ -259,6 +271,58 @@
                         </div>
                     </div>
                 @endif
+
+                {{-- Billing Period Selection --}}
+                <div id="billing-period-section" class="card bg-base-100 border border-base-200 hidden">
+                    <div class="card-body">
+                        <h2 class="card-title mb-2">
+                            <span class="icon-[tabler--discount] size-5"></span>
+                            Billing Period
+                        </h2>
+                        <p class="text-sm text-base-content/60 mb-4">Select a billing period. Longer commitments may include discounts.</p>
+
+                        <div id="billing-period-options" class="flex gap-2 flex-wrap"></div>
+
+                        <input type="hidden" name="billing_period" id="billing_period" value="">
+                    </div>
+                </div>
+
+                {{-- Linked Schedules --}}
+                <div id="schedules-section" class="card bg-base-100 border border-base-200 hidden">
+                    <div class="card-body">
+                        <h2 class="card-title mb-2">
+                            <span class="icon-[tabler--calendar-repeat] size-5"></span>
+                            Linked Schedules
+                        </h2>
+                        <p class="text-sm text-base-content/60 mb-4">Select which schedules to enroll the client into.</p>
+
+                        <div id="schedules-loading" class="hidden text-center py-4">
+                            <span class="loading loading-spinner loading-md"></span>
+                        </div>
+
+                        <div id="schedules-list" class="space-y-2"></div>
+
+                        <div id="schedules-empty" class="hidden text-center py-6">
+                            <span class="icon-[tabler--calendar-off] size-8 text-base-content/20"></span>
+                            <p class="text-sm text-base-content/50 mt-2">No schedules linked to this membership plan.</p>
+                        </div>
+
+                        {{-- Extra Charge for Multiple Schedules --}}
+                        <div id="extra-charge-section" class="hidden mt-4 pt-4 border-t border-base-200">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="icon-[tabler--coin] size-4 text-warning"></span>
+                                <span class="font-medium text-sm">Extra Schedule Charge</span>
+                                <span class="badge badge-warning badge-xs">Multiple Schedules</span>
+                            </div>
+                            <p class="text-xs text-base-content/60 mb-2">Client is enrolling into multiple schedules. Add an extra charge if needed.</p>
+                            <label class="input input-bordered input-sm flex items-center gap-1 w-full max-w-xs">
+                                <span class="text-base-content/50 text-xs">$</span>
+                                <input type="number" name="extra_schedule_charge" id="extra_schedule_charge" step="0.01" min="0"
+                                       value="" class="grow w-full" placeholder="0.00">
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- Start Date --}}
                 <div class="card bg-base-100 border border-base-200">
@@ -279,7 +343,7 @@
             </div>
 
             {{-- Sidebar --}}
-            <div class="space-y-6">
+            <div class="lg:col-span-2 space-y-6">
                 {{-- Payment --}}
                 <div class="card bg-base-100 border border-base-200">
                     <div class="card-body">
@@ -521,23 +585,76 @@
                             <span class="icon-[tabler--receipt] size-5"></span>
                             {{ $trans['walk_in.summary'] ?? 'Summary' }}
                         </h2>
-                        <div id="summary-content" class="space-y-2 text-sm">
-                            <div class="flex justify-between">
+                        <div id="summary-content" class="space-y-3 text-sm">
+                            {{-- Info rows --}}
+                            <div class="flex justify-between items-center">
                                 <span class="text-base-content/60">{{ $trans['field.client'] ?? 'Client' }}</span>
-                                <span id="summary-client" class="font-medium">{{ $trans['common.not_selected'] ?? 'Not selected' }}</span>
+                                <span id="summary-client" class="font-medium text-right">{{ $trans['common.not_selected'] ?? 'Not selected' }}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div class="flex justify-between items-center">
                                 <span class="text-base-content/60">{{ $trans['field.membership'] ?? 'Membership' }}</span>
-                                <span id="summary-plan" class="font-medium">{{ $trans['common.not_selected'] ?? 'Not selected' }}</span>
+                                <span id="summary-plan" class="font-medium text-right">{{ $trans['common.not_selected'] ?? 'Not selected' }}</span>
                             </div>
-                            <div class="flex justify-between">
+                            <div id="summary-period-row" class="flex justify-between items-center hidden">
+                                <span class="text-base-content/60">Billing Period</span>
+                                <span id="summary-period" class="font-medium"></span>
+                            </div>
+                            <div id="summary-schedules-row" class="flex justify-between items-center hidden">
+                                <span class="text-base-content/60">Schedules</span>
+                                <span id="summary-schedules" class="font-medium"></span>
+                            </div>
+                            <div class="flex justify-between items-center">
                                 <span class="text-base-content/60">{{ $trans['field.start_date'] ?? 'Start Date' }}</span>
                                 <span id="summary-date" class="font-medium">{{ now()->format('M j, Y') }}</span>
                             </div>
-                            <div class="divider my-2"></div>
-                            <div class="flex justify-between text-lg">
-                                <span class="font-semibold">{{ $trans['field.total'] ?? 'Total' }}</span>
-                                <span id="summary-total" class="font-bold text-primary">$0.00</span>
+
+                            {{-- Price breakdown --}}
+                            <div class="border-t border-base-200 pt-3 space-y-2">
+                                <div id="summary-base-row" class="flex justify-between hidden">
+                                    <span class="text-base-content/60">Plan Price</span>
+                                    <span id="summary-base-price" class="font-medium"></span>
+                                </div>
+                                <div id="summary-savings-row" class="flex justify-between hidden">
+                                    <span class="text-base-content/60">Savings</span>
+                                    <span id="summary-savings" class="font-medium text-success"></span>
+                                </div>
+
+                                {{-- Registration Fee Checkbox --}}
+                                <div id="summary-regfee-row" class="hidden">
+                                    <label class="flex items-center justify-between cursor-pointer py-1">
+                                        <span class="flex items-center gap-2">
+                                            <input type="checkbox" name="charge_registration_fee" id="charge_registration_fee" value="1"
+                                                   class="checkbox checkbox-primary checkbox-xs" onchange="updateSummary()">
+                                            <span class="text-base-content/60">Registration Fee</span>
+                                        </span>
+                                        <span id="summary-regfee" class="font-medium"></span>
+                                    </label>
+                                </div>
+
+                                {{-- Extra Schedule Charge --}}
+                                <div id="summary-extra-row" class="flex justify-between hidden">
+                                    <span class="text-base-content/60">Extra Schedule Charge</span>
+                                    <span id="summary-extra" class="font-medium"></span>
+                                </div>
+                            </div>
+
+                            {{-- Cancellation policy info --}}
+                            <div id="summary-cancel-info" class="hidden border-t border-base-200 pt-2">
+                                <div class="flex items-start gap-2 text-xs text-base-content/50">
+                                    <span class="icon-[tabler--info-circle] size-3.5 mt-0.5 shrink-0"></span>
+                                    <span>
+                                        Cancellation fee: <strong id="summary-cancel-fee">$0</strong> &bull;
+                                        Grace period: <strong id="summary-grace-hours">48</strong>h
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Total --}}
+                            <div class="border-t border-base-200 pt-3">
+                                <div class="flex justify-between text-lg">
+                                    <span class="font-semibold">{{ $trans['field.total'] ?? 'Total' }}</span>
+                                    <span id="summary-total" class="font-bold text-primary">$0.00</span>
+                                </div>
                             </div>
                         </div>
 
@@ -672,13 +789,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Billing period state
+    let selectedBillingPeriod = null;
+    let currentPlanData = null;
+    let selectedScheduleIds = [];
+    let schedulesData = [];
+
     // Membership plan selection
     document.querySelectorAll('input[name="membership_plan_id"]').forEach(radio => {
         radio.addEventListener('change', function() {
-            updateSummary();
-            updateSubmitButton();
+            onPlanSelected(this);
         });
     });
+
+    // Handle preselected plan on load
+    const preselectedPlan = document.getElementById('preselected-plan');
+    if (preselectedPlan) {
+        onPlanSelected(preselectedPlan);
+    }
 
     // Start date change
     startDateInput.addEventListener('change', updateSummary);
@@ -690,6 +818,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selected-client-email').textContent = client.email || client.phone || '';
 
         selectedClientDiv.classList.remove('hidden');
+        document.getElementById('client-selection-form').classList.add('hidden');
         clientSearch.value = '';
         clientSearchResults.innerHTML = '';
 
@@ -700,40 +829,342 @@ document.addEventListener('DOMContentLoaded', function() {
     window.clearSelectedClient = function() {
         clientIdInput.value = '';
         selectedClientDiv.classList.add('hidden');
+        document.getElementById('client-selection-form').classList.remove('hidden');
         updateSummary();
         updateSubmitButton();
     };
+
+    function onPlanSelected(planInput) {
+        var discounts = {};
+        try { discounts = JSON.parse(planInput.dataset.billingDiscounts || '{}'); } catch(e) {}
+
+        currentPlanData = {
+            price: parseFloat(planInput.dataset.price) || 0,
+            name: planInput.dataset.name,
+            billingDiscounts: discounts,
+            registrationFee: parseFloat(planInput.dataset.registrationFee) || 0,
+            cancellationFee: parseFloat(planInput.dataset.cancellationFee) || 0,
+            graceHours: parseInt(planInput.dataset.graceHours) || 48,
+            interval: planInput.dataset.interval || 'monthly'
+        };
+
+        // Reset billing period
+        selectedBillingPeriod = null;
+        document.getElementById('billing_period').value = '';
+
+        // Check if plan has any billing discounts
+        var hasDiscounts = false;
+        if (discounts) {
+            for (var k in discounts) {
+                if (parseFloat(discounts[k]) > 0) { hasDiscounts = true; break; }
+            }
+        }
+
+        var billingSection = document.getElementById('billing-period-section');
+
+        if (hasDiscounts) {
+            billingSection.classList.remove('hidden');
+            renderBillingPeriods(discounts, currentPlanData.price);
+        } else {
+            billingSection.classList.add('hidden');
+        }
+
+        // Reset registration fee checkbox
+        var regCheckbox = document.getElementById('charge_registration_fee');
+        if (regCheckbox) regCheckbox.checked = false;
+
+        // Fetch linked schedules
+        selectedScheduleIds = [];
+        schedulesData = [];
+        document.getElementById('extra_schedule_charge').value = '';
+        fetchMembershipSchedules(planInput.value);
+
+        updateSummary();
+        updateSubmitButton();
+    }
+
+    function renderBillingPeriods(discounts, basePrice) {
+        var container = document.getElementById('billing-period-options');
+        var periods = { '1': '1 Month', '3': '3 Months', '6': '6 Months', '9': '9 Months', '12': '12 Months' };
+        var html = '';
+        var hasAny = false;
+
+        for (var months in periods) {
+            var totalAmount = parseFloat(discounts[months]) || 0;
+            if (totalAmount <= 0) continue;
+            hasAny = true;
+
+            var m = parseInt(months);
+            var monthlyRate = m > 0 ? (totalAmount / m) : 0;
+            var totalWithout = basePrice * m;
+            var savings = totalWithout - totalAmount;
+
+            html += '<button type="button" class="billing-period-btn flex-1 min-w-[100px] flex flex-col items-center p-3 rounded-lg border-2 border-base-content/10 hover:border-success cursor-pointer transition-all" ' +
+                'data-months="' + months + '" onclick="selectBillingPeriod(' + months + ')">' +
+                '<div class="text-xs text-base-content/60 font-medium">' + periods[months] + '</div>' +
+                '<div class="text-lg font-bold text-success">$' + totalAmount.toFixed(2) + '</div>' +
+                '<div class="text-[10px] text-base-content/50">$' + monthlyRate.toFixed(2) + '/mo</div>';
+
+            if (savings > 0) {
+                html += '<div class="text-[10px] text-success mt-0.5">Save $' + savings.toFixed(2) + '</div>';
+            }
+
+            html += '</button>';
+        }
+
+        if (!hasAny) {
+            container.innerHTML = '<p class="text-sm text-base-content/50">No billing period discounts configured.</p>';
+            container.closest('#billing-period-section').querySelector('#billing-period-options').parentElement;
+        } else {
+            container.innerHTML = html;
+        }
+    }
+
+    window.selectBillingPeriod = function(months) {
+        selectedBillingPeriod = months;
+        document.getElementById('billing_period').value = months;
+
+        // Highlight selected
+        document.querySelectorAll('.billing-period-btn').forEach(function(btn) {
+            if (parseInt(btn.dataset.months) === months) {
+                btn.classList.remove('border-base-content/10');
+                btn.classList.add('border-success', 'bg-success/10');
+            } else {
+                btn.classList.add('border-base-content/10');
+                btn.classList.remove('border-success', 'bg-success/10');
+            }
+        });
+
+        updateSummary();
+    };
+
+    function fetchMembershipSchedules(planId) {
+        var section = document.getElementById('schedules-section');
+        var loading = document.getElementById('schedules-loading');
+        var list = document.getElementById('schedules-list');
+        var empty = document.getElementById('schedules-empty');
+        var extraSection = document.getElementById('extra-charge-section');
+
+        section.classList.remove('hidden');
+        loading.classList.remove('hidden');
+        list.innerHTML = '';
+        empty.classList.add('hidden');
+        extraSection.classList.add('hidden');
+
+        fetch('{{ route("walk-in.membership-schedules") }}?membership_plan_id=' + planId)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                loading.classList.add('hidden');
+                schedulesData = data.schedules || [];
+
+                if (schedulesData.length === 0) {
+                    empty.classList.remove('hidden');
+                    section.classList.add('hidden');
+                    return;
+                }
+
+                renderSchedulesList(schedulesData);
+
+                // Auto-select first schedule
+                if (schedulesData.length > 0) {
+                    toggleSchedule(schedulesData[0].id, true);
+                }
+            })
+            .catch(function() {
+                loading.classList.add('hidden');
+                empty.classList.remove('hidden');
+            });
+    }
+
+    function renderSchedulesList(schedules) {
+        var list = document.getElementById('schedules-list');
+        var html = '';
+
+        schedules.forEach(function(schedule) {
+            html += '<label class="schedule-option flex items-center gap-3 p-3 border border-base-300 rounded-lg cursor-pointer hover:bg-base-200/50 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all">' +
+                '<input type="checkbox" name="schedule_ids[]" value="' + schedule.id + '" ' +
+                'class="checkbox checkbox-primary checkbox-sm schedule-checkbox" ' +
+                'data-schedule-id="' + schedule.id + '" ' +
+                'onchange="onScheduleToggle()">' +
+                '<div class="flex-1 min-w-0">' +
+                    '<div class="flex items-center gap-2">' +
+                        (schedule.is_recurring
+                            ? '<span class="icon-[tabler--calendar-repeat] size-4 text-primary"></span>'
+                            : '<span class="icon-[tabler--calendar-event] size-4 text-base-content/40"></span>') +
+                        '<span class="font-medium text-sm">' + schedule.title + '</span>' +
+                    '</div>' +
+                    '<div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-base-content/60">' +
+                        '<span class="flex items-center gap-1">' +
+                            '<span class="icon-[tabler--clock] size-3"></span>' +
+                            schedule.days + ' &bull; ' + schedule.time +
+                        '</span>' +
+                        '<span class="flex items-center gap-1">' +
+                            '<span class="icon-[tabler--user] size-3"></span>' +
+                            schedule.instructor +
+                        '</span>' +
+                        '<span class="flex items-center gap-1">' +
+                            '<span class="icon-[tabler--map-pin] size-3"></span>' +
+                            schedule.location +
+                        '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<span class="badge badge-soft badge-sm ' + (schedule.session_count > 0 ? 'badge-success' : 'badge-neutral') + '">' +
+                    schedule.session_count + ' upcoming' +
+                '</span>' +
+            '</label>';
+        });
+
+        list.innerHTML = html;
+    }
+
+    function toggleSchedule(id, checked) {
+        var checkbox = document.querySelector('.schedule-checkbox[data-schedule-id="' + id + '"]');
+        if (checkbox) {
+            checkbox.checked = checked;
+            onScheduleToggle();
+        }
+    }
+
+    window.onScheduleToggle = function() {
+        var checkboxes = document.querySelectorAll('.schedule-checkbox:checked');
+        selectedScheduleIds = [];
+        checkboxes.forEach(function(cb) {
+            selectedScheduleIds.push(parseInt(cb.value));
+        });
+
+        // Show extra charge input when more than 1 schedule selected
+        var extraSection = document.getElementById('extra-charge-section');
+        if (selectedScheduleIds.length > 1) {
+            extraSection.classList.remove('hidden');
+        } else {
+            extraSection.classList.add('hidden');
+            document.getElementById('extra_schedule_charge').value = '';
+        }
+
+        updateSummary();
+    };
+
+    // Extra charge input listener
+    document.getElementById('extra_schedule_charge').addEventListener('input', function() {
+        updateSummary();
+    });
 
     function updateSummary() {
         // Client
         const clientName = document.getElementById('selected-client-name').textContent;
         document.getElementById('summary-client').textContent = clientIdInput.value ? clientName : 'Not selected';
 
-        // Plan - check for both radio button (regular selection) and hidden input (pre-selected)
+        // Plan
         let selectedPlan = document.querySelector('input[name="membership_plan_id"]:checked');
-        const preselectedPlan = document.getElementById('preselected-plan');
+        const preselectedPlanEl = document.getElementById('preselected-plan');
+        if (!selectedPlan && preselectedPlanEl) selectedPlan = preselectedPlanEl;
 
-        if (!selectedPlan && preselectedPlan) {
-            selectedPlan = preselectedPlan;
+        // Schedules row
+        var schedulesRow = document.getElementById('summary-schedules-row');
+        if (selectedScheduleIds.length > 0) {
+            schedulesRow.classList.remove('hidden');
+            document.getElementById('summary-schedules').textContent = selectedScheduleIds.length + ' selected';
+        } else {
+            schedulesRow.classList.add('hidden');
         }
 
         if (selectedPlan) {
             document.getElementById('summary-plan').textContent = selectedPlan.dataset.name;
-            const price = parseFloat(selectedPlan.dataset.price) || 0;
-
-            // Update price field and summary based on payment method
+            const basePrice = parseFloat(selectedPlan.dataset.price) || 0;
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+
+            var periodRow = document.getElementById('summary-period-row');
+            var baseRow = document.getElementById('summary-base-row');
+            var savingsRow = document.getElementById('summary-savings-row');
+            var regfeeRow = document.getElementById('summary-regfee-row');
+            var cancelInfo = document.getElementById('summary-cancel-info');
+
+            var totalPrice = basePrice;
+            var regFee = currentPlanData ? currentPlanData.registrationFee : 0;
+            var cancelFee = currentPlanData ? currentPlanData.cancellationFee : 0;
+            var graceHours = currentPlanData ? currentPlanData.graceHours : 48;
+
+            // Billing period breakdown
+            if (selectedBillingPeriod && currentPlanData && currentPlanData.billingDiscounts) {
+                var periodTotal = parseFloat(currentPlanData.billingDiscounts[selectedBillingPeriod]) || 0;
+                if (periodTotal > 0) {
+                    var m = selectedBillingPeriod;
+                    var totalWithout = basePrice * m;
+                    var savings = totalWithout - periodTotal;
+
+                    totalPrice = periodTotal;
+
+                    periodRow.classList.remove('hidden');
+                    document.getElementById('summary-period').textContent = m + ' month' + (m > 1 ? 's' : '');
+
+                    baseRow.classList.remove('hidden');
+                    document.getElementById('summary-base-price').textContent = '$' + totalWithout.toFixed(2) + ' (' + m + ' x $' + basePrice.toFixed(2) + ')';
+
+                    if (savings > 0) {
+                        savingsRow.classList.remove('hidden');
+                        document.getElementById('summary-savings').textContent = '-$' + savings.toFixed(2);
+                    } else {
+                        savingsRow.classList.add('hidden');
+                    }
+                } else {
+                    periodRow.classList.add('hidden');
+                    baseRow.classList.add('hidden');
+                    savingsRow.classList.add('hidden');
+                }
+            } else {
+                periodRow.classList.add('hidden');
+                baseRow.classList.add('hidden');
+                savingsRow.classList.add('hidden');
+            }
+
+            // Registration fee — show checkbox if plan has one, charge only when checked
+            if (regFee > 0) {
+                regfeeRow.classList.remove('hidden');
+                document.getElementById('summary-regfee').textContent = '+$' + regFee.toFixed(2);
+                var regChecked = document.getElementById('charge_registration_fee').checked;
+                if (regChecked) {
+                    totalPrice += regFee;
+                }
+            } else {
+                regfeeRow.classList.add('hidden');
+            }
+
+            // Cancellation policy info
+            if (cancelFee > 0) {
+                cancelInfo.classList.remove('hidden');
+                document.getElementById('summary-cancel-fee').textContent = '$' + cancelFee.toFixed(2);
+                document.getElementById('summary-grace-hours').textContent = graceHours;
+            } else {
+                cancelInfo.classList.add('hidden');
+            }
+
+            // Extra schedule charge
+            var extraRow = document.getElementById('summary-extra-row');
+            var extraCharge = parseFloat(document.getElementById('extra_schedule_charge').value) || 0;
+            if (extraCharge > 0 && selectedScheduleIds.length > 1) {
+                extraRow.classList.remove('hidden');
+                document.getElementById('summary-extra').textContent = '+$' + extraCharge.toFixed(2);
+                totalPrice += extraCharge;
+            } else {
+                extraRow.classList.add('hidden');
+            }
+
             if (paymentMethod === 'comp') {
                 document.getElementById('summary-total').textContent = '$0.00 (Comp)';
             } else {
-                document.getElementById('summary-total').textContent = '$' + price.toFixed(2);
-                if (!pricePaidInput.value) {
-                    pricePaidInput.value = price.toFixed(2);
-                }
+                document.getElementById('summary-total').textContent = '$' + totalPrice.toFixed(2);
+                pricePaidInput.value = totalPrice.toFixed(2);
             }
         } else {
             document.getElementById('summary-plan').textContent = 'Not selected';
             document.getElementById('summary-total').textContent = '$0.00';
+            document.getElementById('summary-period-row').classList.add('hidden');
+            document.getElementById('summary-base-row').classList.add('hidden');
+            document.getElementById('summary-savings-row').classList.add('hidden');
+            document.getElementById('summary-regfee-row').classList.add('hidden');
+            document.getElementById('summary-extra-row').classList.add('hidden');
+            document.getElementById('summary-cancel-info').classList.add('hidden');
+            schedulesRow.classList.add('hidden');
         }
 
         // Date
@@ -743,6 +1174,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('summary-date').textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
         }
     }
+    window.updateSummary = updateSummary;
 
     function updateSubmitButton() {
         const hasClient = clientIdInput.value !== '';
@@ -754,16 +1186,10 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSummary();
     updateSubmitButton();
 
-    // If a plan is pre-selected (either radio or hidden input), update the price field
+    // If a plan is pre-selected via radio (not hidden input, which is handled above)
     let initialPlan = document.querySelector('input[name="membership_plan_id"]:checked');
-    if (!initialPlan) {
-        initialPlan = document.getElementById('preselected-plan');
-    }
     if (initialPlan) {
-        const price = parseFloat(initialPlan.dataset.price) || 0;
-        if (!pricePaidInput.value) {
-            pricePaidInput.value = price.toFixed(2);
-        }
+        onPlanSelected(initialPlan);
     }
 });
 
@@ -773,14 +1199,34 @@ let statusCheckInterval = null;
 const canOverridePrice = {{ ($canOverridePrice ?? false) ? 'true' : 'false' }};
 
 function getOriginalPrice() {
-    let selectedPlan = document.querySelector('input[name="membership_plan_id"]:checked');
-    if (!selectedPlan) {
-        selectedPlan = document.getElementById('preselected-plan');
+    if (!currentPlanData) {
+        let selectedPlan = document.querySelector('input[name="membership_plan_id"]:checked');
+        if (!selectedPlan) selectedPlan = document.getElementById('preselected-plan');
+        if (selectedPlan) return parseFloat(selectedPlan.dataset.price) || 0;
+        return 0;
     }
-    if (selectedPlan) {
-        return parseFloat(selectedPlan.dataset.price) || 0;
+
+    var total = currentPlanData.price;
+
+    // If a billing period is selected, use the period total
+    if (selectedBillingPeriod && currentPlanData.billingDiscounts) {
+        var periodTotal = parseFloat(currentPlanData.billingDiscounts[selectedBillingPeriod]) || 0;
+        if (periodTotal > 0) total = periodTotal;
     }
-    return 0;
+
+    // Add registration fee if checked
+    var regCheckbox = document.getElementById('charge_registration_fee');
+    if (regCheckbox && regCheckbox.checked && currentPlanData.registrationFee > 0) {
+        total += currentPlanData.registrationFee;
+    }
+
+    // Add extra schedule charge
+    var extraCharge = parseFloat(document.getElementById('extra_schedule_charge').value) || 0;
+    if (extraCharge > 0 && selectedScheduleIds.length > 1) {
+        total += extraCharge;
+    }
+
+    return total;
 }
 
 // Direct override for managers/owners with permission
@@ -1151,19 +1597,8 @@ function removeOverride() {
     const directInput = document.getElementById('direct-override-price');
     if (directInput) directInput.value = '';
 
-    // Reset to original price
-    let selectedPlan = document.querySelector('input[name="membership_plan_id"]:checked');
-    if (!selectedPlan) {
-        selectedPlan = document.getElementById('preselected-plan');
-    }
-    if (selectedPlan) {
-        const originalPrice = parseFloat(selectedPlan.dataset.price) || 0;
-        const pricePaidInput = document.getElementById('price_paid');
-        if (pricePaidInput) {
-            pricePaidInput.value = originalPrice.toFixed(2);
-        }
-        document.getElementById('summary-total').textContent = '$' + originalPrice.toFixed(2);
-    }
+    // Reset price using updateSummary which accounts for billing periods
+    updateSummary();
 }
 </script>
 @endpush

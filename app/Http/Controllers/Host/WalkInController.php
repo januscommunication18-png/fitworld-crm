@@ -23,6 +23,7 @@ use App\Services\PaymentService;
 use App\Services\MembershipService;
 use App\Services\ClassPassService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class WalkInController extends Controller
@@ -2020,7 +2021,7 @@ class WalkInController extends Controller
         ]);
 
         // Create transaction for class pass purchase
-        \App\Models\Transaction::create([
+        $transaction = \App\Models\Transaction::create([
             'host_id' => $host->id,
             'client_id' => $client->id,
             'type' => \App\Models\Transaction::TYPE_CLASS_PACK_PURCHASE,
@@ -2042,6 +2043,16 @@ class WalkInController extends Controller
             ],
             'notes' => $validated['notes'],
         ]);
+
+        // Create invoice
+        try {
+            app(\App\Services\InvoiceService::class)->createFromTransaction($transaction);
+        } catch (\Exception $e) {
+            Log::warning('Failed to create invoice for class pass transaction', [
+                'transaction_id' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return redirect()->route('schedule.calendar')
             ->with('success', "Class pass \"{$classPass->name}\" sold to {$client->full_name}. They now have {$purchase->classes_remaining} credits.");
@@ -2074,10 +2085,78 @@ class WalkInController extends Controller
                     'formatted_price_with_interval' => $plan->formatted_price_with_interval,
                     'credits_per_cycle' => $plan->credits_per_cycle,
                     'color' => $plan->color,
+                    'billing_discounts' => $plan->billing_discounts,
+                    'registration_fee' => $plan->registration_fee,
+                    'cancellation_fee' => $plan->cancellation_fee,
+                    'cancellation_grace_hours' => $plan->cancellation_grace_hours,
                 ];
             });
 
         return response()->json(['plans' => $plans]);
+    }
+
+    /**
+     * Get schedules linked to a membership plan (for walk-in flow)
+     */
+    public function getMembershipSchedules(Request $request)
+    {
+        $host = auth()->user()->currentHost();
+        $membershipPlanId = $request->get('membership_plan_id');
+
+        if (!$membershipPlanId) {
+            return response()->json(['schedules' => []]);
+        }
+
+        $dayNames = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
+        $recurrenceService = app(\App\Services\Schedule\RecurrenceService::class);
+
+        // Get parent sessions linked to this membership plan
+        $parents = ClassSession::where('host_id', $host->id)
+            ->whereNull('class_plan_id')
+            ->whereHas('membershipPlans', function ($q) use ($membershipPlanId) {
+                $q->where('membership_plans.id', $membershipPlanId);
+            })
+            ->where(function ($q) {
+                $q->whereNotNull('recurrence_rule')
+                  ->orWhere(function ($q2) {
+                      $q2->whereNull('recurrence_parent_id')->whereNull('recurrence_rule');
+                  });
+            })
+            ->with(['primaryInstructor:id,name', 'location:id,name'])
+            ->orderBy('start_time')
+            ->get();
+
+        $schedules = $parents->map(function ($parent) use ($dayNames, $recurrenceService) {
+            $childCount = ClassSession::where('recurrence_parent_id', $parent->id)
+                ->where('status', ClassSession::STATUS_PUBLISHED)
+                ->where('start_time', '>=', now())
+                ->count();
+
+            $totalCount = $childCount + ($parent->start_time->isFuture() && $parent->status === ClassSession::STATUS_PUBLISHED ? 1 : 0);
+
+            $dayLabel = $parent->start_time->format('l');
+            if ($parent->recurrence_rule) {
+                $parsed = $recurrenceService->parseRecurrenceRule($parent->recurrence_rule);
+                if (!empty($parsed['days_of_week'])) {
+                    $dayLabel = collect($parsed['days_of_week'])
+                        ->map(fn($d) => $dayNames[(int) $d] ?? $d)
+                        ->implode(', ');
+                }
+            }
+
+            return [
+                'id' => $parent->id,
+                'title' => $parent->title ?? 'Untitled',
+                'days' => $dayLabel,
+                'time' => $parent->start_time->format('g:i A') . ' - ' . $parent->end_time->format('g:i A'),
+                'instructor' => $parent->primaryInstructor?->name ?? 'TBD',
+                'location' => $parent->location?->name ?? '—',
+                'session_count' => $totalCount,
+                'is_recurring' => (bool) $parent->recurrence_rule,
+            ];
+        });
+
+        return response()->json(['schedules' => $schedules]);
     }
 
     /**
@@ -2102,6 +2181,11 @@ class WalkInController extends Controller
             'book_into_class' => 'nullable|boolean',
             'price_override_code' => 'nullable|string|max:20',
             'price_override_amount' => 'nullable|numeric|min:0',
+            'billing_period' => 'nullable|integer|in:1,3,6,9,12',
+            'schedule_ids' => 'nullable|array',
+            'schedule_ids.*' => 'integer|exists:class_sessions,id',
+            'extra_schedule_charge' => 'nullable|numeric|min:0',
+            'charge_registration_fee' => 'nullable|boolean',
         ]);
 
         // Verify client belongs to host
@@ -2203,19 +2287,28 @@ class WalkInController extends Controller
                 ? \Carbon\Carbon::parse($validated['start_date'])
                 : now();
 
-            // Calculate end date based on interval
-            $endDate = match ($membershipPlan->interval) {
-                'weekly' => $startDate->copy()->addWeek(),
-                'monthly' => $startDate->copy()->addMonth(),
-                'quarterly' => $startDate->copy()->addMonths(3),
-                'yearly' => $startDate->copy()->addYear(),
-                default => $startDate->copy()->addMonth(),
-            };
+            // Calculate end date based on billing period or interval
+            $billingPeriod = $validated['billing_period'] ?? null;
+            if ($billingPeriod) {
+                $endDate = $startDate->copy()->addMonths((int) $billingPeriod);
+            } else {
+                $endDate = match ($membershipPlan->interval) {
+                    'weekly' => $startDate->copy()->addWeek(),
+                    'monthly' => $startDate->copy()->addMonth(),
+                    'quarterly' => $startDate->copy()->addMonths(3),
+                    'yearly' => $startDate->copy()->addYear(),
+                    default => $startDate->copy()->addMonth(),
+                };
+            }
+
+            // Extra charge for multiple schedules
+            $extraScheduleCharge = floatval($validated['extra_schedule_charge'] ?? 0);
+            $selectedScheduleIds = $validated['schedule_ids'] ?? [];
 
             // Calculate price paid
             $pricePaid = $validated['payment_method'] === 'comp'
                 ? 0
-                : ($validated['price_paid'] ?? max(0, $originalPrice - $discountAmount));
+                : ($validated['price_paid'] ?? max(0, $originalPrice - $discountAmount + $extraScheduleCharge));
 
             // Create customer membership
             $customerMembership = CustomerMembership::create([
@@ -2257,6 +2350,70 @@ class WalkInController extends Controller
                 $priceOverrideRequest->update(['metadata' => $metadata]);
             }
 
+            // Auto-enroll into all upcoming linked membership schedule sessions
+            $enrolledCount = 0;
+            $linkedSessions = ClassSession::where('host_id', $host->id)
+                ->whereNull('class_plan_id')
+                ->where('status', ClassSession::STATUS_PUBLISHED)
+                ->where('start_time', '>=', now())
+                ->whereHas('membershipPlans', function ($q) use ($membershipPlan) {
+                    $q->where('membership_plans.id', $membershipPlan->id);
+                })
+                ->get();
+
+            // If user selected specific schedules, also include their child sessions
+            if (!empty($selectedScheduleIds)) {
+                // Get child sessions of selected parent schedules
+                $childSessions = ClassSession::where('host_id', $host->id)
+                    ->whereIn('recurrence_parent_id', $selectedScheduleIds)
+                    ->where('status', ClassSession::STATUS_PUBLISHED)
+                    ->where('start_time', '>=', now())
+                    ->get();
+
+                // Merge and deduplicate
+                $linkedSessions = $linkedSessions->merge($childSessions)->unique('id');
+            }
+
+            // Filter by membership expiry
+            if ($endDate) {
+                $linkedSessions = $linkedSessions->filter(fn($s) => $s->start_time->lte($endDate));
+            }
+
+            foreach ($linkedSessions as $linkedSession) {
+                try {
+                    // Skip if already booked
+                    $existingBooking = \App\Models\Booking::where('client_id', $client->id)
+                        ->where('bookable_type', ClassSession::class)
+                        ->where('bookable_id', $linkedSession->id)
+                        ->whereNotIn('status', [\App\Models\Booking::STATUS_CANCELLED])
+                        ->exists();
+
+                    if ($existingBooking) continue;
+
+                    \App\Models\Booking::create([
+                        'host_id' => $host->id,
+                        'client_id' => $client->id,
+                        'bookable_type' => ClassSession::class,
+                        'bookable_id' => $linkedSession->id,
+                        'status' => \App\Models\Booking::STATUS_CONFIRMED,
+                        'booking_source' => \App\Models\Booking::SOURCE_ONLINE,
+                        'intake_status' => \App\Models\Booking::INTAKE_NOT_REQUIRED,
+                        'payment_method' => \App\Models\Booking::PAYMENT_MEMBERSHIP,
+                        'customer_membership_id' => $customerMembership->id,
+                        'price_paid' => 0,
+                        'booked_at' => now(),
+                    ]);
+
+                    $enrolledCount++;
+                } catch (\Exception $e) {
+                    Log::warning('Auto-enrollment failed for session', [
+                        'session_id' => $linkedSession->id,
+                        'client_id' => $client->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // If a class session was specified and user wants to book into it
             if (!empty($validated['class_session_id']) && !empty($validated['book_into_class'])) {
                 $classSession = ClassSession::where('host_id', $host->id)
@@ -2276,9 +2433,10 @@ class WalkInController extends Controller
                             ]
                         );
 
+                        $enrollMsg = $enrolledCount > 0 ? " Auto-enrolled into {$enrolledCount} scheduled sessions." : '';
                         return redirect()
                             ->route('membership-schedules.index')
-                            ->with('success', "Membership '{$membershipPlan->name}' sold and {$client->full_name} booked into {$classSession->display_title}!");
+                            ->with('success', "Membership '{$membershipPlan->name}' sold and {$client->full_name} booked into {$classSession->display_title}!{$enrollMsg}");
                     } catch (\Exception $e) {
                         // Membership was sold but booking failed - still redirect with partial success
                         return redirect()
@@ -2289,7 +2447,7 @@ class WalkInController extends Controller
             }
 
             // Create transaction for membership purchase
-            \App\Models\Transaction::create([
+            $transaction = \App\Models\Transaction::create([
                 'host_id' => $host->id,
                 'client_id' => $client->id,
                 'type' => \App\Models\Transaction::TYPE_MEMBERSHIP_PURCHASE,
@@ -2308,16 +2466,31 @@ class WalkInController extends Controller
                     'item_name' => $membershipPlan->name,
                     'membership_id' => $customerMembership->id,
                     'source' => 'walk_in',
+                    'billing_period' => $billingPeriod,
+                    'schedule_ids' => $selectedScheduleIds,
+                    'extra_schedule_charge' => $extraScheduleCharge > 0 ? $extraScheduleCharge : null,
+                    'registration_fee_charged' => !empty($validated['charge_registration_fee']),
                 ],
                 'notes' => $validated['notes'] ?? null,
             ]);
 
+            // Create invoice for the transaction
+            try {
+                app(\App\Services\InvoiceService::class)->createFromTransaction($transaction);
+            } catch (\Exception $e) {
+                Log::warning('Failed to create invoice for membership transaction', [
+                    'transaction_id' => $transaction->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             // Determine redirect based on where we came from
             $redirectRoute = !empty($validated['class_session_id']) ? 'membership-schedules.index' : 'schedule.calendar';
 
+            $enrollMsg = $enrolledCount > 0 ? " Auto-enrolled into {$enrolledCount} scheduled sessions." : '';
             return redirect()
                 ->route($redirectRoute)
-                ->with('success', "Membership '{$membershipPlan->name}' sold to {$client->full_name}!");
+                ->with('success', "Membership '{$membershipPlan->name}' sold to {$client->full_name}!{$enrollMsg}");
 
         } catch (\Exception $e) {
             return back()
