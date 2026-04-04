@@ -18,8 +18,8 @@ class TrackUserLogin
     {
         $user = $event->user;
 
-        // Only track for users with a host_id (studio staff)
-        if ($user->host_id) {
+        // Only track for User model (studio staff), not Client (member portal)
+        if ($user instanceof \App\Models\User && $user->host_id) {
             $this->sessionTrackingService->recordLogin($user, request());
         }
     }

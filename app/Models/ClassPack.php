@@ -12,6 +12,8 @@ class ClassPack extends Model
 {
     use HasFactory;
 
+    protected $table = 'class_passes';
+
     // Status constants
     const STATUS_ACTIVE = 'active';
     const STATUS_ARCHIVED = 'archived';

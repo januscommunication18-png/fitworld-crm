@@ -36,8 +36,8 @@
                         <span class="icon-[tabler--calendar-event] size-6 text-primary"></span>
                     </div>
                     <div>
-                        <p class="text-2xl font-bold">{{ $upcomingBookings->count() }}</p>
-                        <p class="text-sm text-base-content/60">{{ $trans['member.dashboard.upcoming_bookings'] ?? 'Upcoming Bookings' }}</p>
+                        <p class="text-2xl font-bold">{{ $todayBookings->count() }}</p>
+                        <p class="text-sm text-base-content/60">Today's Bookings</p>
                     </div>
                 </div>
             </div>
@@ -121,17 +121,23 @@
         <div class="card bg-base-100">
             <div class="card-body">
                 <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-lg font-semibold">{{ $trans['member.dashboard.upcoming_bookings'] ?? 'Upcoming Bookings' }}</h2>
+                    <h2 class="text-lg font-semibold">Today's Schedule</h2>
                     <a href="{{ route('member.portal.bookings', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm">
                         {{ $trans['btn.view_all'] ?? 'View All' }}
                         <span class="icon-[tabler--arrow-right] size-4"></span>
                     </a>
                 </div>
 
-                @if($upcomingBookings->count() > 0)
+                @if($todayBookings->count() > 0)
                     <div class="space-y-3">
-                        @foreach($upcomingBookings as $booking)
-                            @php $bookable = $booking->bookable; @endphp
+                        @foreach($todayBookings as $booking)
+                            @php
+                                $bookable = $booking->bookable;
+                                $canCheckIn = $bookable && $bookable->start_time && !$booking->checked_in_at
+                                    && now()->gte($bookable->start_time->copy()->subMinutes(30))
+                                    && now()->lte($bookable->start_time->copy()->addMinutes(30))
+                                    && $booking->status === 'confirmed';
+                            @endphp
                             @if($bookable)
                             <div class="flex items-center gap-4 p-3 rounded-lg bg-base-200/50">
                                 <div class="text-center min-w-[50px]">
@@ -139,17 +145,32 @@
                                     <p class="text-xs text-base-content/60 uppercase">{{ $bookable->start_time->format('M') }}</p>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="font-medium truncate">{{ $bookable->display_title ?? $bookable->classPlan?->name ?? $bookable->servicePlan?->name ?? ($trans['common.booking'] ?? 'Booking') }}</p>
+                                    <p class="font-medium truncate">{{ $bookable->display_title ?? $bookable->classPlan?->name ?? $bookable->servicePlan?->name ?? 'Booking' }}</p>
                                     <p class="text-sm text-base-content/60">
                                         {{ $bookable->start_time->format('g:i A') }}
-                                        @if($bookable->primaryInstructor)
-                                            • {{ $bookable->primaryInstructor->name }}
+                                        @if($bookable->primaryInstructor ?? $bookable->instructor ?? null)
+                                            &bull; {{ ($bookable->primaryInstructor ?? $bookable->instructor)->name }}
                                         @endif
                                     </p>
                                 </div>
-                                <span class="badge badge-sm {{ $booking->status === 'confirmed' ? 'badge-success' : ($booking->status === 'waitlisted' ? 'badge-warning' : 'badge-neutral') }}">
-                                    {{ ucfirst($booking->status) }}
-                                </span>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    @if($booking->checked_in_at)
+                                        <span class="badge badge-sm badge-success gap-1">
+                                            <span class="icon-[tabler--check] size-3"></span> Checked In
+                                        </span>
+                                    @elseif($canCheckIn)
+                                        <form action="{{ route('member.portal.self-checkin', ['subdomain' => $host->subdomain, 'booking' => $booking->id]) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-success btn-xs gap-1">
+                                                <span class="icon-[tabler--check] size-3"></span> Check In
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="badge badge-sm {{ $booking->status === 'confirmed' ? 'badge-success' : 'badge-warning' }}">
+                                            {{ ucfirst($booking->status) }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                             @endif
                         @endforeach
@@ -157,11 +178,7 @@
                 @else
                     <div class="text-center py-8">
                         <span class="icon-[tabler--calendar-off] size-12 text-base-content/20 mx-auto"></span>
-                        <p class="text-base-content/60 mt-2">{{ $trans['member.dashboard.no_upcoming'] ?? 'No upcoming bookings' }}</p>
-                        <a href="{{ route('subdomain.class-request', ['subdomain' => $host->subdomain]) }}"
-                           class="btn btn-primary btn-sm mt-4">
-                            {{ $trans['member.dashboard.book_class'] ?? 'Book a Class' }}
-                        </a>
+                        <p class="text-base-content/60 mt-2">No classes or services scheduled for today</p>
                     </div>
                 @endif
             </div>
@@ -203,8 +220,11 @@
         </div>
     </div>
 
-    {{-- Active Memberships & Class Packs --}}
-    @if($activeMemberships->count() > 0 || $activeClassPacks->count() > 0)
+    {{-- Active Plans: Memberships, Class Packs, Class & Service Bookings --}}
+    @php
+        $hasActivePlans = $activeMemberships->count() > 0 || $activeClassPacks->count() > 0;
+    @endphp
+    @if($hasActivePlans)
     <div class="mt-6">
         <h2 class="text-lg font-semibold mb-4">{{ $trans['member.dashboard.active_plans'] ?? 'Your Active Plans' }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -228,10 +248,33 @@
                         {{ $trans['member.dashboard.renews'] ?? 'Renews' }} {{ $membership->end_date->format('M j, Y') }}
                     </p>
                     @endif
+
+                    @if($membership->membershipPlan?->classSessions?->isNotEmpty() && $membership->access_token)
+                    <div class="mt-3 pt-3 border-t border-base-200">
+                        @php
+                            $hasScheduleBookings = \App\Models\Booking::where('customer_membership_id', $membership->id)
+                                ->where('status', \App\Models\Booking::STATUS_CONFIRMED)
+                                ->exists();
+                        @endphp
+                        @if($hasScheduleBookings)
+                            <div class="flex items-center gap-2 text-success text-sm">
+                                <span class="icon-[tabler--circle-check-filled] size-5"></span>
+                                <span class="font-medium">Schedule selected</span>
+                            </div>
+                        @else
+                            <a href="{{ route('subdomain.membership-access', ['subdomain' => $host->subdomain, 'accessToken' => $membership->access_token]) }}"
+                               class="btn btn-primary btn-sm w-full gap-2">
+                                <span class="icon-[tabler--calendar-repeat] size-4"></span>
+                                Select Your Schedule
+                            </a>
+                        @endif
+                    </div>
+                    @endif
                 </div>
             </div>
             @endforeach
 
+            {{-- Class Packs --}}
             @foreach($activeClassPacks as $pack)
             <div class="card bg-base-100">
                 <div class="card-body">

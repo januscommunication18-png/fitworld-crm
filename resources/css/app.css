@@ -13,6 +13,13 @@
 /* FitCRM Theme - Custom branding variables (edit fitcrm-theme.css to customize) */
 @import "./fitcrm-theme.css";
 
+/* ── Avatar placeholder centering fix ─────────────────────── */
+.avatar.placeholder > div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* ── Layout wrapper ────────────────────────────────────────── */
 #layout-wrapper { display: flex; min-height: 100vh; }
 

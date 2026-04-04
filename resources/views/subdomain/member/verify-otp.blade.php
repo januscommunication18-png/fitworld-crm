@@ -69,21 +69,25 @@
 
                         <div class="space-y-4">
                             <div>
-                                <label class="label-text" for="code">Verification Code</label>
-                                <input type="text" id="code" name="code"
-                                       maxlength="6"
-                                       pattern="[0-9]{6}"
-                                       inputmode="numeric"
-                                       autocomplete="one-time-code"
-                                       required autofocus
-                                       placeholder="Enter 6-digit code"
-                                       class="input input-bordered w-full mt-1 text-center text-2xl tracking-[0.5em] font-mono @error('code') input-error @enderror">
-                                <p class="text-xs text-base-content/50 mt-1 text-center">
+                                <label class="label-text text-center block mb-2">Verification Code</label>
+                                <input type="hidden" id="code" name="code" value="">
+                                <div class="flex justify-center gap-2" id="otp-inputs">
+                                    @for($i = 0; $i < 6; $i++)
+                                    <input type="text"
+                                           class="otp-digit input input-bordered w-12 h-14 text-center text-2xl font-mono @error('code') input-error @enderror"
+                                           maxlength="1"
+                                           inputmode="numeric"
+                                           pattern="[0-9]"
+                                           {{ $i === 0 ? 'autofocus' : '' }}
+                                           data-index="{{ $i }}">
+                                    @endfor
+                                </div>
+                                <p class="text-xs text-base-content/50 mt-2 text-center">
                                     Code expires in {{ $settings['activation_code_expiry_minutes'] ?? 10 }} minutes
                                 </p>
                             </div>
 
-                            <button type="submit" class="btn btn-primary w-full">
+                            <button type="submit" id="verify-btn" class="btn btn-primary w-full" disabled>
                                 <span class="icon-[tabler--check] size-5"></span>
                                 Verify & Sign In
                             </button>
@@ -116,9 +120,48 @@
 
 @push('scripts')
 <script>
-// Auto-format OTP input
-document.getElementById('code').addEventListener('input', function(e) {
-    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6);
+document.addEventListener('DOMContentLoaded', function() {
+    var digits = document.querySelectorAll('.otp-digit');
+    var hiddenInput = document.getElementById('code');
+    var verifyBtn = document.getElementById('verify-btn');
+
+    function updateHiddenInput() {
+        var code = '';
+        digits.forEach(function(d) { code += d.value; });
+        hiddenInput.value = code;
+        verifyBtn.disabled = code.length !== 6;
+    }
+
+    digits.forEach(function(input, index) {
+        input.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 1);
+            updateHiddenInput();
+            if (this.value && index < 5) {
+                digits[index + 1].focus();
+            }
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && index > 0) {
+                digits[index - 1].focus();
+                digits[index - 1].value = '';
+                updateHiddenInput();
+            }
+        });
+
+        // Handle paste
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+            for (var i = 0; i < pasted.length && i < 6; i++) {
+                digits[i].value = pasted[i];
+            }
+            if (pasted.length > 0) {
+                digits[Math.min(pasted.length, 5)].focus();
+            }
+            updateHiddenInput();
+        });
+    });
 });
 </script>
 @endpush

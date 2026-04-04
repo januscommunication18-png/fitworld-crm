@@ -1,16 +1,25 @@
 @php
-    $rtcHost = auth()->user()->currentHost() ?? auth()->user()->host ?? null;
+    $rtcHost = $rtcHost ?? (auth()->guard('web')->user()?->currentHost() ?? auth()->guard('web')->user()?->host ?? null);
+    // Fallback: check if $host is available in the parent view (subdomain pages)
+    if (!$rtcHost && isset($host)) {
+        $rtcHost = $host;
+    }
     $rtcText = $rtcHost?->payment_settings['read_to_client'] ?? '';
     $rtcHasText = !empty(trim($rtcText));
     $rtcCheckboxId = 'rtc-agreed-' . ($rtcId ?? 'default');
     $rtcSubmitId = $rtcSubmitBtn ?? null;
+    // On public pages, show as "Terms & Conditions" instead of "Read to Client"
+    $rtcLabel = $rtcPublicMode ?? false ? 'Guide For Client' : 'Read to Client';
+    $rtcAgreeText = $rtcPublicMode ?? false
+        ? 'I have read and agree to the above'
+        : 'Do you understand and agree to the terms as I have explained them?';
 @endphp
 
 @if($rtcHasText)
 <div class="bg-info/5 border border-info/20 rounded-xl p-4 {{ $rtcClass ?? 'mt-4' }}">
     <div class="flex items-center gap-2 mb-3">
         <span class="icon-[tabler--file-text] size-5 text-info"></span>
-        <h4 class="font-semibold text-info text-sm">Read to Client</h4>
+        <h4 class="font-semibold text-info text-sm">{{ $rtcLabel }}</h4>
     </div>
     <div class="text-sm text-base-content/80 border border-info/10 rounded-lg p-3 bg-base-100 max-h-48 overflow-y-auto leading-relaxed">
         {!! nl2br(e($rtcText)) !!}
@@ -21,8 +30,8 @@
                data-submit-btn="{{ $rtcSubmitId }}"
                onchange="toggleRtcSubmit(this)">
         <div>
-            <span class="font-medium text-sm">Customer agrees to the terms</span>
-            <p class="text-xs text-base-content/60">Do you understand and agree to the terms as I have explained them?</p>
+            <span class="font-medium text-sm">{{ ($rtcPublicMode ?? false) ? 'I agree to the terms' : 'Customer agrees to the terms' }}</span>
+            <p class="text-xs text-base-content/60">{{ $rtcAgreeText }}</p>
         </div>
     </label>
 </div>

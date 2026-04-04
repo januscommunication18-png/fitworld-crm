@@ -45,6 +45,27 @@ class BookingFlowController extends Controller
     }
 
     /**
+     * Check if member portal requires signup/login before booking.
+     * Returns a redirect response if signup is required, null otherwise.
+     */
+    protected function requiresMemberAuth(Request $request, Host $host): ?\Illuminate\Http\RedirectResponse
+    {
+        if (!$host->isMemberPortalEnabled()) {
+            return null;
+        }
+
+        if (Auth::guard('member')->check()) {
+            return null;
+        }
+
+        // Store the intended URL so we can redirect back after signup/login
+        $request->session()->put('url.intended', url()->full());
+
+        return redirect()->route('member.signup', ['subdomain' => $host->subdomain])
+            ->with('info', 'Please sign up or log in to book.');
+    }
+
+    /**
      * Step 1: Select booking type - Redirect to member portal booking page
      */
     public function selectType(Request $request)
@@ -172,6 +193,7 @@ class BookingFlowController extends Controller
     public function selectClassPlanType(Request $request)
     {
         $host = $this->getHost($request);
+        if ($redirect = $this->requiresMemberAuth($request, $host)) return $redirect;
         $classPlanId = $request->route('classPlan');
 
         $classPlan = ClassPlan::where('host_id', $host->id)
@@ -390,6 +412,7 @@ class BookingFlowController extends Controller
     public function selectServicePlanDirect(Request $request, string $subdomain, ServicePlan $servicePlan)
     {
         $host = $this->getHost($request);
+        if ($redirect = $this->requiresMemberAuth($request, $host)) return $redirect;
 
         // Verify service belongs to this host
         if ($servicePlan->host_id !== $host->id || !$servicePlan->is_active) {
@@ -421,6 +444,7 @@ class BookingFlowController extends Controller
     public function selectMembership(Request $request)
     {
         $host = $this->getHost($request);
+        if ($redirect = $this->requiresMemberAuth($request, $host)) return $redirect;
 
         $membershipPlans = MembershipPlan::where('host_id', $host->id)
             ->where('status', 'active')
@@ -468,6 +492,7 @@ class BookingFlowController extends Controller
     public function selectMembershipPlan(Request $request)
     {
         $host = $this->getHost($request);
+        if ($redirect = $this->requiresMemberAuth($request, $host)) return $redirect;
 
         // Resolve plan model from route parameter
         $planId = $request->route('plan');
@@ -515,6 +540,7 @@ class BookingFlowController extends Controller
     public function selectClassPack(Request $request)
     {
         $host = $this->getHost($request);
+        if ($redirect = $this->requiresMemberAuth($request, $host)) return $redirect;
 
         // Resolve pack model from route parameter
         $packId = $request->route('pack');
@@ -559,6 +585,7 @@ class BookingFlowController extends Controller
     public function contactInfo(Request $request)
     {
         $host = $this->getHost($request);
+        if ($redirect = $this->requiresMemberAuth($request, $host)) return $redirect;
         $bookingState = $this->bookingService->getState($request);
 
         // Ensure we have a selected item

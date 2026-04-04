@@ -187,6 +187,7 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
 
             // My Schedule (member's booked classes)
             Route::get('/my-schedule', [MemberPortalController::class, 'bookings'])->name('member.portal.bookings');
+            Route::post('/my-schedule/{booking}/check-in', [MemberPortalController::class, 'selfCheckIn'])->name('member.portal.self-checkin');
 
             // Booking (browse classes, services, memberships)
             Route::get('/booking', [MemberPortalController::class, 'booking'])->name('member.portal.booking');

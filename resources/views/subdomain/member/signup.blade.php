@@ -48,6 +48,13 @@
                 </div>
             @endif
 
+            @if(session('info'))
+                <div class="alert alert-info mb-6">
+                    <span class="icon-[tabler--info-circle] size-5"></span>
+                    <span>{{ session('info') }}</span>
+                </div>
+            @endif
+
             @if($errors->any())
                 <div class="alert alert-error mb-6">
                     <span class="icon-[tabler--alert-circle] size-5"></span>

@@ -202,10 +202,20 @@
                                 @endif
 
                                 @if($isLoggedIn)
-                                    <div class="alert bg-success/10 text-success border-success/20 mb-4">
-                                        <span class="icon-[tabler--check] size-5"></span>
-                                        <span>Logged in as <strong>{{ $prefillData['first_name'] ?? '' }} {{ $prefillData['last_name'] ?? '' }}</strong></span>
-                                    </div>
+                                @push('scripts')
+                                <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    var toast = document.createElement('div');
+                                    toast.className = 'fixed top-4 right-4 z-[100] alert alert-success shadow-lg max-w-sm transition-opacity duration-300';
+                                    toast.innerHTML = '<span class="icon-[tabler--check] size-5"></span><span>Logged in as <strong>{{ $prefillData['first_name'] ?? '' }} {{ $prefillData['last_name'] ?? '' }}</strong></span>';
+                                    document.body.appendChild(toast);
+                                    setTimeout(function() {
+                                        toast.style.opacity = '0';
+                                        setTimeout(function() { toast.remove(); }, 300);
+                                    }, 4000);
+                                });
+                                </script>
+                                @endpush
                                 @endif
 
                                 <form action="{{ route('booking.contact.save', ['subdomain' => $host->subdomain]) }}" method="POST">

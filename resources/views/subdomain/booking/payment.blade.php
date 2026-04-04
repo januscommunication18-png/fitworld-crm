@@ -308,6 +308,9 @@
                                 </label>
                             </div>
 
+                            {{-- Terms & Conditions --}}
+                            @include('components.read-to-client', ['rtcId' => 'payment', 'rtcSubmitBtn' => 'submit-btn', 'rtcClass' => 'mb-4', 'rtcPublicMode' => true])
+
                             {{-- Complete Booking Button --}}
                             <div class="card bg-base-100 shadow-xl">
                                 <div class="card-body">

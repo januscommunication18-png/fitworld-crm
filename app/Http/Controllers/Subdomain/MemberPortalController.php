@@ -46,14 +46,14 @@ class MemberPortalController extends Controller
         $host = $this->getHost($request);
         $member = $this->getMember();
 
-        // Get upcoming bookings
-        $upcomingBookings = Booking::where('client_id', $member->id)
+        // Get today's bookings only
+        $todayBookings = Booking::where('client_id', $member->id)
             ->where('host_id', $host->id)
+            ->where('status', Booking::STATUS_CONFIRMED)
             ->whereHas('bookable', function ($q) {
-                $q->where('start_time', '>=', now());
+                $q->whereDate('start_time', today());
             })
             ->with(['bookable'])
-            ->take(5)
             ->get()
             ->sortBy(fn($b) => $b->bookable?->start_time);
 
@@ -68,7 +68,7 @@ class MemberPortalController extends Controller
         $activeMemberships = $member->customerMemberships()
             ->where('host_id', $host->id)
             ->where('status', 'active')
-            ->with('membershipPlan')
+            ->with(['membershipPlan', 'membershipPlan.classSessions'])
             ->get();
 
         // Get active class packs (usable = has credits + not expired)
@@ -88,7 +88,7 @@ class MemberPortalController extends Controller
         return view('subdomain.member.portal.dashboard', [
             'host' => $host,
             'member' => $member,
-            'upcomingBookings' => $upcomingBookings,
+            'todayBookings' => $todayBookings,
             'recentTransactions' => $recentTransactions,
             'activeMemberships' => $activeMemberships,
             'activeClassPacks' => $activeClassPacks,
@@ -238,6 +238,45 @@ class MemberPortalController extends Controller
             'bookings' => $bookings,
             'filter' => $filter,
         ]);
+    }
+
+    /**
+     * Self check-in for a booking
+     */
+    public function selfCheckIn(Request $request, string $subdomain, Booking $booking)
+    {
+        $host = $this->getHost($request);
+        $member = $this->getMember();
+
+        // Verify booking belongs to this member and host
+        if ($booking->client_id !== $member->id || $booking->host_id !== $host->id) {
+            abort(403);
+        }
+
+        if ($booking->status !== Booking::STATUS_CONFIRMED) {
+            return back()->with('error', 'This booking cannot be checked in.');
+        }
+
+        if ($booking->checked_in_at) {
+            return back()->with('info', 'You are already checked in.');
+        }
+
+        // Only allow check-in within 30 minutes before the session starts
+        $bookable = $booking->bookable;
+        if ($bookable && $bookable->start_time) {
+            $windowStart = $bookable->start_time->copy()->subMinutes(30);
+            $windowEnd = $bookable->start_time->copy()->addMinutes(30);
+            if (now()->lt($windowStart)) {
+                return back()->with('error', 'Check-in is available 30 minutes before your session starts.');
+            }
+        }
+
+        $booking->update([
+            'checked_in_at' => now(),
+            'checked_in_method' => Booking::CHECKIN_SELF ?? 'self',
+        ]);
+
+        return back()->with('success', 'Checked in successfully!');
     }
 
     /**

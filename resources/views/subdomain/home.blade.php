@@ -226,9 +226,13 @@
                         @endif
                     </div>
                     <div class="card-actions mt-4 flex-col gap-2">
-                        <a href="{{ route('booking.select-membership', ['subdomain' => $host->subdomain]) }}" class="btn btn-info w-full">
-                            <span class="icon-[tabler--calendar-plus] size-5"></span> {{ $trans['btn.book_now'] ?? 'Book Now' }}
-                        </a>
+                        <form action="{{ route('booking.select-class-pack', ['subdomain' => $host->subdomain, 'pack' => $pass->id]) }}" method="POST" class="w-full">
+                            @csrf
+                            <input type="hidden" name="currency" value="{{ $selectedCurrency }}">
+                            <button type="submit" class="btn btn-info w-full">
+                                <span class="icon-[tabler--calendar-plus] size-5"></span> {{ $trans['btn.book_now'] ?? 'Book Now' }}
+                            </button>
+                        </form>
                         <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain]) }}" class="btn btn-ghost btn-sm w-full">
                             <span class="icon-[tabler--info-circle] size-4"></span> {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
                         </a>

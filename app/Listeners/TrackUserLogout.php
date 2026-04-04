@@ -18,7 +18,7 @@ class TrackUserLogout
     {
         $user = $event->user;
 
-        if ($user && $user->host_id) {
+        if ($user instanceof \App\Models\User && $user->host_id) {
             $this->sessionTrackingService->recordLogout($user);
         }
     }
