@@ -19,7 +19,16 @@ class TranslationViewComposer
             return;
         }
 
-        $selectedLang = session("studio_language_{$host->id}", $host->default_language_app ?? 'en');
+        // Subdomain (public) pages use "language_{id}", studio portal uses "studio_language_{id}"
+        $request = request();
+        $isSubdomain = $request && $request->attributes->has('subdomain_host');
+        $defaultLang = $isSubdomain
+            ? ($host->default_language_booking ?? 'en')
+            : ($host->default_language_app ?? 'en');
+
+        $selectedLang = session("language_{$host->id}",
+            session("studio_language_{$host->id}", $defaultLang)
+        );
         $t = TranslationService::make($host, $selectedLang);
 
         $view->with('trans', $t->all());

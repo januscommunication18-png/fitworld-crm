@@ -133,7 +133,7 @@
                     <div class="flex items-center justify-between mb-4">
                         <h2 class="card-title text-lg">Segment Members</h2>
                         @if($segment->type === 'static')
-                            <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('add-client-modal').showModal()">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="openDrawer('add-client', event)">
                                 <span class="icon-[tabler--plus] size-4"></span>
                                 Add Client
                             </button>
@@ -295,31 +295,113 @@
     </div>
 </div>
 
-{{-- Add Client Modal (for static segments) --}}
+{{-- Add Client Drawer (for static segments) --}}
 @if($segment->type === 'static')
-    <dialog id="add-client-modal" class="modal">
-        <div class="modal-box">
-            <form method="dialog">
-                <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-                    <span class="icon-[tabler--x] size-4"></span>
+    <x-detail-drawer id="add-client" title="Add Clients to Segment" size="lg" :showFooter="false">
+        <form action="{{ route('segments.add-client', $segment) }}" method="POST" id="add-client-form">
+            @csrf
+
+            {{-- Search --}}
+            <div class="relative mb-4">
+                <span class="icon-[tabler--search] size-4 text-base-content/50 absolute start-3 top-1/2 -translate-y-1/2"></span>
+                <input type="text" id="client-search" class="input input-sm ps-9 w-full" placeholder="Search clients by name or email..." autocomplete="off" />
+            </div>
+
+            {{-- Selected count --}}
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-sm text-base-content/60"><span id="selected-count">0</span> selected</span>
+                <button type="button" class="btn btn-ghost btn-xs" id="clear-selection">Clear all</button>
+            </div>
+
+            {{-- Client list --}}
+            <div class="border border-base-200 rounded-lg max-h-[400px] overflow-y-auto" id="client-list">
+                @forelse($availableClients as $c)
+                    <label class="client-item flex items-center gap-3 px-3 py-2.5 hover:bg-base-200/50 cursor-pointer border-b border-base-200 last:border-0"
+                           data-name="{{ strtolower($c->first_name . ' ' . $c->last_name) }}"
+                           data-email="{{ strtolower($c->email) }}">
+                        <input type="checkbox" name="client_ids[]" value="{{ $c->id }}" class="checkbox checkbox-sm checkbox-primary client-checkbox" />
+                        <div class="avatar avatar-placeholder">
+                            <div class="bg-neutral text-neutral-content w-8 h-8 rounded-full text-xs">
+                                {{ strtoupper(substr($c->first_name, 0, 1) . substr($c->last_name, 0, 1)) }}
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-sm">{{ $c->first_name }} {{ $c->last_name }}</div>
+                            <div class="text-xs text-base-content/50 truncate">{{ $c->email }}</div>
+                        </div>
+                    </label>
+                @empty
+                    <div class="text-center py-8 text-base-content/50">
+                        <span class="icon-[tabler--users-minus] size-8 mx-auto mb-2 block"></span>
+                        <p class="text-sm">All clients are already in this segment.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            {{-- No results message --}}
+            <div id="no-results" class="hidden text-center py-6 text-base-content/50 text-sm">
+                No clients match your search.
+            </div>
+
+            {{-- Submit --}}
+            <div class="flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary flex-1" id="add-clients-btn" disabled>
+                    <span class="icon-[tabler--plus] size-4"></span> Add Clients
                 </button>
-            </form>
-            <h3 class="font-bold text-lg">Add Client to Segment</h3>
-            <form action="{{ route('segments.add-client', $segment) }}" method="POST" class="mt-4">
-                @csrf
-                <div>
-                    <label class="label-text" for="client_id">Select Client</label>
-                    <select id="client_id" name="client_id" class="select w-full" required>
-                        <option value="">Choose a client...</option>
-                        {{-- This would typically be loaded via AJAX for large client lists --}}
-                    </select>
-                </div>
-                <div class="modal-action">
-                    <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-client-modal').close()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Client</button>
-                </div>
-            </form>
-        </div>
-    </dialog>
+                <button type="button" class="btn btn-ghost" onclick="closeDrawer('add-client')">Cancel</button>
+            </div>
+        </form>
+    </x-detail-drawer>
 @endif
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var searchInput = document.getElementById('client-search');
+    var clientItems = document.querySelectorAll('.client-item');
+    var checkboxes = document.querySelectorAll('.client-checkbox');
+    var selectedCount = document.getElementById('selected-count');
+    var addBtn = document.getElementById('add-clients-btn');
+    var clearBtn = document.getElementById('clear-selection');
+    var noResults = document.getElementById('no-results');
+
+    if (!searchInput) return;
+
+    // Search filter
+    searchInput.addEventListener('input', function() {
+        var query = this.value.toLowerCase().trim();
+        var visible = 0;
+
+        clientItems.forEach(function(item) {
+            var name = item.dataset.name || '';
+            var email = item.dataset.email || '';
+            var match = !query || name.indexOf(query) !== -1 || email.indexOf(query) !== -1;
+            item.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+
+        noResults.classList.toggle('hidden', visible > 0);
+    });
+
+    // Update selected count
+    function updateCount() {
+        var count = document.querySelectorAll('.client-checkbox:checked').length;
+        selectedCount.textContent = count;
+        addBtn.disabled = count === 0;
+        addBtn.textContent = '';
+        addBtn.innerHTML = '<span class="icon-[tabler--plus] size-4"></span> Add ' + (count > 0 ? count + ' ' : '') + 'Client' + (count !== 1 ? 's' : '');
+    }
+
+    checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateCount);
+    });
+
+    // Clear all
+    clearBtn.addEventListener('click', function() {
+        checkboxes.forEach(function(cb) { cb.checked = false; });
+        updateCount();
+    });
+});
+</script>
+@endpush
 @endsection

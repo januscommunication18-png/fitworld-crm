@@ -134,7 +134,18 @@ class SegmentController extends Controller
             'avg_visits' => $segment->clients()->avg('total_classes_attended') ?? 0,
         ];
 
-        return view('host.segments.show', compact('segment', 'clients', 'analytics'));
+        // For static segments, get clients not already in the segment
+        $availableClients = collect();
+        if ($segment->type === 'static') {
+            $existingIds = $segment->clients()->pluck('clients.id');
+            $availableClients = \App\Models\Client::where('host_id', $segment->host_id)
+                ->whereNotIn('id', $existingIds)
+                ->orderBy('first_name')
+                ->select('id', 'first_name', 'last_name', 'email')
+                ->get();
+        }
+
+        return view('host.segments.show', compact('segment', 'clients', 'analytics', 'availableClients'));
     }
 
     public function edit(Segment $segment)
@@ -265,23 +276,26 @@ class SegmentController extends Controller
         }
 
         $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
+            'client_ids' => 'required|array|min:1',
+            'client_ids.*' => 'exists:clients,id',
         ]);
 
-        $client = Client::find($validated['client_id']);
-        if ($client->host_id !== $segment->host_id) {
-            abort(403);
+        $added = 0;
+        foreach ($validated['client_ids'] as $clientId) {
+            $client = Client::find($clientId);
+            if ($client && $client->host_id === $segment->host_id) {
+                if (!$segment->clients()->where('client_id', $client->id)->exists()) {
+                    $segment->clients()->attach($client->id, [
+                        'added_by' => auth()->id(),
+                    ]);
+                    $added++;
+                }
+            }
         }
 
-        // Add client to segment
-        if (!$segment->clients()->where('client_id', $client->id)->exists()) {
-            $segment->clients()->attach($client->id, [
-                'added_by' => auth()->id(),
-            ]);
-            $segment->updateMemberCount();
-        }
+        $segment->updateMemberCount();
 
-        return back()->with('success', 'Client added to segment.');
+        return back()->with('success', $added . ' ' . Str::plural('client', $added) . ' added to segment.');
     }
 
     /**
