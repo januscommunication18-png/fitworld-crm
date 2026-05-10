@@ -165,6 +165,49 @@ class Host extends Model
     }
 
     /**
+     * Convert a hex color to OKLCH CSS string.
+     */
+    public static function hexToOklch(string $hex): string
+    {
+        $hex = ltrim($hex, '#');
+        $r = hexdec(substr($hex, 0, 2)) / 255;
+        $g = hexdec(substr($hex, 2, 2)) / 255;
+        $b = hexdec(substr($hex, 4, 2)) / 255;
+
+        // sRGB to linear RGB
+        $linearize = fn($c) => $c <= 0.04045 ? $c / 12.92 : pow(($c + 0.055) / 1.055, 2.4);
+        $lr = $linearize($r);
+        $lg = $linearize($g);
+        $lb = $linearize($b);
+
+        // Linear RGB to CIE XYZ (D65)
+        $x = 0.4124564 * $lr + 0.3575761 * $lg + 0.1804375 * $lb;
+        $y = 0.2126729 * $lr + 0.7151522 * $lg + 0.0721750 * $lb;
+        $z = 0.0193339 * $lr + 0.1191920 * $lg + 0.9503041 * $lb;
+
+        // XYZ to LMS (using M1 matrix for OKLab)
+        $l = 0.8189330101 * $x + 0.3618667424 * $y - 0.1288597137 * $z;
+        $m = 0.0329845436 * $x + 0.9293118715 * $y + 0.0361456387 * $z;
+        $s = 0.0482003018 * $x + 0.2643662691 * $y + 0.6338517070 * $z;
+
+        // Cube root
+        $l_ = $l > 0 ? pow($l, 1 / 3) : 0;
+        $m_ = $m > 0 ? pow($m, 1 / 3) : 0;
+        $s_ = $s > 0 ? pow($s, 1 / 3) : 0;
+
+        // LMS to OKLab
+        $L = 0.2104542553 * $l_ + 0.7936177850 * $m_ - 0.0040720468 * $s_;
+        $A = 1.9779984951 * $l_ - 2.4285922050 * $m_ + 0.4505937099 * $s_;
+        $B = 0.0259040371 * $l_ + 0.7827717662 * $m_ - 0.8086757660 * $s_;
+
+        // OKLab to OKLCH
+        $C = sqrt($A * $A + $B * $B);
+        $H = $C < 0.0001 ? 0 : fmod(rad2deg(atan2($B, $A)) + 360, 360);
+
+        return sprintf('oklch(%.2f%% %.3f %.2f)', $L * 100, $C, $H);
+    }
+
+    /**
      * Get default booking settings
      */
     public static function defaultBookingSettings(): array

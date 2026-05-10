@@ -304,9 +304,9 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h2 class="text-lg font-semibold">{{ $trans['settings.studio_gallery'] ?? 'Studio Gallery' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.gallery_desc'] ?? 'Showcase your studio with photos (displays on booking page)' }}</p>
+                    <p class="text-base-content/60 text-sm">{{ $trans['settings.gallery_desc'] ?? 'Showcase your studio with photos (displays on booking page)' }} <span class="text-base-content/40">(<span id="gallery-current-count">{{ $galleryCount }}</span>/{{ $galleryMaxTotal }})</span></p>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('upload-gallery-drawer')">
+                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('upload-gallery-drawer')" @if($galleryCount >= $galleryMaxTotal) disabled @endif>
                     <span class="icon-[tabler--plus] size-4"></span> {{ $trans['settings.add_image'] ?? 'Add Image' }}
                 </button>
             </div>
@@ -407,6 +407,18 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <div class="flex items-center gap-2">
                     <span class="icon-[tabler--brand-tiktok] size-5 text-base-content"></span>
                     <span id="display-tiktok" class="text-sm">{{ $host->social_links['tiktok'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--brand-youtube] size-5 text-red-600"></span>
+                    <span id="display-youtube" class="text-sm">{{ $host->social_links['youtube'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--brand-bluesky] size-5 text-sky-500"></span>
+                    <span id="display-bluesky" class="text-sm">{{ $host->social_links['bluesky'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="icon-[tabler--link] size-5 text-base-content/70"></span>
+                    <span id="display-other" class="text-sm">{{ $host->social_links['other'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
                 </div>
             </div>
         </div>
@@ -1009,6 +1021,24 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     </label>
                     <input id="social_tiktok" type="url" class="input w-full" value="{{ $host->social_links['tiktok'] ?? '' }}" placeholder="https://tiktok.com/@yourstudio" />
                 </div>
+                <div>
+                    <label class="label-text flex items-center gap-2" for="social_youtube">
+                        <span class="icon-[tabler--brand-youtube] size-4 text-red-600"></span> YouTube
+                    </label>
+                    <input id="social_youtube" type="url" class="input w-full" value="{{ $host->social_links['youtube'] ?? '' }}" placeholder="https://youtube.com/@yourstudio" />
+                </div>
+                <div>
+                    <label class="label-text flex items-center gap-2" for="social_bluesky">
+                        <span class="icon-[tabler--brand-bluesky] size-4 text-sky-500"></span> Bluesky
+                    </label>
+                    <input id="social_bluesky" type="url" class="input w-full" value="{{ $host->social_links['bluesky'] ?? '' }}" placeholder="https://bsky.app/profile/yourstudio" />
+                </div>
+                <div>
+                    <label class="label-text flex items-center gap-2" for="social_other">
+                        <span class="icon-[tabler--link] size-4 text-base-content/70"></span> Other
+                    </label>
+                    <input id="social_other" type="url" class="input w-full" value="{{ $host->social_links['other'] ?? '' }}" placeholder="https://example.com" />
+                </div>
             </div>
         </div>
         <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
@@ -1539,7 +1569,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <span class="icon-[tabler--cloud-upload] size-12 text-base-content/30 mb-2 block mx-auto"></span>
                     <p class="text-sm text-base-content/60">Drag and drop images here, or</p>
                     <button type="button" class="btn btn-soft btn-sm mt-2" id="gallery-browse-btn">Browse Files</button>
-                    <p class="text-xs text-base-content/40 mt-2">You can select multiple images</p>
+                    <p class="text-xs text-base-content/40 mt-2">You can select multiple images (max <span id="gallery-remaining-slots">{{ $galleryMaxTotal - $galleryCount }}</span> more)</p>
                 </div>
                 <div id="gallery-upload-preview" class="hidden w-full">
                     <div id="gallery-preview-grid" class="grid grid-cols-3 gap-2 mb-3"></div>
@@ -1549,7 +1579,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     </button>
                 </div>
             </div>
-            <p class="text-xs text-base-content/50 text-center mt-4">PNG, JPG, or WebP. Max 5MB each.</p>
+            <p class="text-xs text-base-content/50 text-center mt-4">PNG, JPG, or WebP. Max 5MB each. Max {{ $galleryMaxTotal }} total images.</p>
         </div>
         <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="upload-gallery-btn" disabled>
@@ -1654,7 +1684,10 @@ function captureDrawerData(id) {
                 instagram: document.getElementById('social_instagram')?.value || '',
                 facebook: document.getElementById('social_facebook')?.value || '',
                 website: document.getElementById('social_website')?.value || '',
-                tiktok: document.getElementById('social_tiktok')?.value || ''
+                tiktok: document.getElementById('social_tiktok')?.value || '',
+                youtube: document.getElementById('social_youtube')?.value || '',
+                bluesky: document.getElementById('social_bluesky')?.value || '',
+                other: document.getElementById('social_other')?.value || ''
             };
             break;
         case 'edit-amenities-drawer':
@@ -1720,6 +1753,9 @@ function resetDrawerData(id) {
             if (document.getElementById('social_facebook')) document.getElementById('social_facebook').value = data.facebook;
             if (document.getElementById('social_website')) document.getElementById('social_website').value = data.website;
             if (document.getElementById('social_tiktok')) document.getElementById('social_tiktok').value = data.tiktok;
+            if (document.getElementById('social_youtube')) document.getElementById('social_youtube').value = data.youtube;
+            if (document.getElementById('social_bluesky')) document.getElementById('social_bluesky').value = data.bluesky;
+            if (document.getElementById('social_other')) document.getElementById('social_other').value = data.other;
             break;
         case 'edit-amenities-drawer':
             document.querySelectorAll('.amenity-checkbox').forEach(function(cb) {
@@ -1963,7 +1999,10 @@ document.getElementById('edit-social-form').addEventListener('submit', function(
                 instagram: document.getElementById('social_instagram').value || null,
                 facebook: document.getElementById('social_facebook').value || null,
                 website: document.getElementById('social_website').value || null,
-                tiktok: document.getElementById('social_tiktok').value || null
+                tiktok: document.getElementById('social_tiktok').value || null,
+                youtube: document.getElementById('social_youtube').value || null,
+                bluesky: document.getElementById('social_bluesky').value || null,
+                other: document.getElementById('social_other').value || null
             }
         })
     })
@@ -1974,6 +2013,9 @@ document.getElementById('edit-social-form').addEventListener('submit', function(
             document.getElementById('display-facebook').textContent = document.getElementById('social_facebook').value || 'Not connected';
             document.getElementById('display-website').textContent = document.getElementById('social_website').value || 'Not connected';
             document.getElementById('display-tiktok').textContent = document.getElementById('social_tiktok').value || 'Not connected';
+            document.getElementById('display-youtube').textContent = document.getElementById('social_youtube').value || 'Not connected';
+            document.getElementById('display-bluesky').textContent = document.getElementById('social_bluesky').value || 'Not connected';
+            document.getElementById('display-other').textContent = document.getElementById('social_other').value || 'Not connected';
             closeDrawer('edit-social-drawer');
             setTimeout(function() { showToast('Social links updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
@@ -2521,6 +2563,29 @@ function saveAbout() {
 // Gallery Management
 // ============================================
 
+// Gallery limits
+var galleryMaxTotal = {{ $galleryMaxTotal }};
+var galleryCurrentCount = {{ $galleryCount }};
+
+function getGalleryRemaining() {
+    return galleryMaxTotal - galleryCurrentCount;
+}
+
+function updateGalleryCountDisplay() {
+    var countEl = document.getElementById('gallery-current-count');
+    var remainingEl = document.getElementById('gallery-remaining-slots');
+    var addBtn = document.querySelector('[onclick="openDrawer(\'upload-gallery-drawer\')"]');
+    if (countEl) countEl.textContent = galleryCurrentCount;
+    if (remainingEl) remainingEl.textContent = getGalleryRemaining();
+    // Disable add button if at limit
+    document.querySelectorAll('[onclick="openDrawer(\'upload-gallery-drawer\')"]').forEach(function(btn) {
+        btn.disabled = galleryCurrentCount >= galleryMaxTotal;
+    });
+}
+
+// Track validated gallery files for upload
+var galleryValidFiles = [];
+
 // Initialize gallery upload (multi-file)
 (function() {
     var dropZone = document.getElementById('gallery-drop-zone');
@@ -2549,9 +2614,19 @@ function saveAbout() {
 
     function handleGalleryFiles(files) {
         previewGrid.innerHTML = '';
-        var validFiles = [];
+        galleryValidFiles = [];
+        var remaining = getGalleryRemaining();
+        var maxPerUpload = Math.min(10, remaining);
+
+        if (remaining <= 0) {
+            showToast('Gallery limit reached (' + galleryMaxTotal + ' images). Please delete some images first.', 'error');
+            return;
+        }
 
         Array.from(files).forEach(function(file) {
+            if (galleryValidFiles.length >= maxPerUpload) {
+                return;
+            }
             if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
                 showToast('Skipped: ' + file.name + ' (invalid type)', 'error');
                 return;
@@ -2560,7 +2635,7 @@ function saveAbout() {
                 showToast('Skipped: ' + file.name + ' (over 5MB)', 'error');
                 return;
             }
-            validFiles.push(file);
+            galleryValidFiles.push(file);
 
             var reader = new FileReader();
             reader.onload = function(e) {
@@ -2572,16 +2647,25 @@ function saveAbout() {
             reader.readAsDataURL(file);
         });
 
-        if (validFiles.length > 0) {
-            fileCount.textContent = validFiles.length + ' image' + (validFiles.length > 1 ? 's' : '') + ' selected';
+        if (galleryValidFiles.length > 0) {
+            fileCount.textContent = galleryValidFiles.length + ' image' + (galleryValidFiles.length > 1 ? 's' : '') + ' selected';
             placeholder.classList.add('hidden');
             preview.classList.remove('hidden');
             uploadBtn.disabled = false;
+
+            // Warn if some files were trimmed due to limit
+            var totalSelected = Array.from(files).filter(function(f) {
+                return ['image/png', 'image/jpeg', 'image/webp'].includes(f.type) && f.size <= 5 * 1024 * 1024;
+            }).length;
+            if (totalSelected > maxPerUpload) {
+                showToast('Only ' + maxPerUpload + ' image(s) can be uploaded (limit: ' + galleryMaxTotal + ' total). ' + (totalSelected - maxPerUpload) + ' image(s) were not included.', 'warning');
+            }
         }
     }
 
     window.clearGalleryPreview = function() {
         input.value = '';
+        galleryValidFiles = [];
         previewGrid.innerHTML = '';
         fileCount.textContent = '';
         placeholder.classList.remove('hidden');
@@ -2595,15 +2679,13 @@ document.getElementById('upload-gallery-form').addEventListener('submit', functi
     e.preventDefault();
     var btn = document.getElementById('upload-gallery-btn');
     var spinner = document.getElementById('gallery-spinner');
-    var files = document.getElementById('gallery-input').files;
-
-    if (files.length === 0) return;
+    if (galleryValidFiles.length === 0) return;
 
     btn.disabled = true;
     spinner.classList.remove('hidden');
 
     var formData = new FormData();
-    Array.from(files).forEach(function(file, index) {
+    galleryValidFiles.forEach(function(file) {
         formData.append('images[]', file);
     });
 
@@ -2612,8 +2694,14 @@ document.getElementById('upload-gallery-form').addEventListener('submit', functi
         headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
         body: formData
     })
-    .then(function(r) { return r.json(); })
+    .then(function(r) {
+        return r.json().then(function(data) { data._status = r.status; return data; });
+    })
     .then(function(result) {
+        if (result._status === 422 && result.message) {
+            showToast(result.message, 'error');
+            return;
+        }
         if (result.success) {
             // Hide empty state if present
             var emptyState = document.getElementById('gallery-empty');
@@ -2637,6 +2725,10 @@ document.getElementById('upload-gallery-form').addEventListener('submit', functi
 
             // Re-initialize sortable
             initGallerySortable();
+
+            // Update gallery count
+            galleryCurrentCount += result.images.length;
+            updateGalleryCountDisplay();
 
             clearGalleryPreview();
             closeDrawer('upload-gallery-drawer');
@@ -2729,6 +2821,10 @@ document.getElementById('confirm-delete-gallery-btn').addEventListener('click', 
         if (result.success) {
             var item = document.querySelector('.gallery-item[data-id="' + id + '"]');
             if (item) item.remove();
+
+            // Update gallery count
+            galleryCurrentCount--;
+            updateGalleryCountDisplay();
 
             document.getElementById('delete-gallery-modal').close();
             showToast('Image deleted!');

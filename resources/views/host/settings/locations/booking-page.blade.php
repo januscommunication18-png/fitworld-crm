@@ -1,5 +1,9 @@
 @extends('layouts.settings')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('vendor/quill/quill.snow.css') }}" />
+@endpush
+
 @section('title', 'Booking Page — Settings')
 
 @section('breadcrumbs')
@@ -221,14 +225,9 @@
                 <div class="space-y-6">
                     {{-- About Text --}}
                     <div>
-                        <label class="label-text" for="about_text">About Your Studio</label>
-                        <textarea
-                            id="about_text"
-                            name="about_text"
-                            class="textarea w-full"
-                            rows="4"
-                            placeholder="Tell customers about your studio, classes, and what makes you unique..."
-                        >{{ old('about_text', $settings['about_text'] ?? '') }}</textarea>
+                        <label class="label-text">About Your Studio</label>
+                        <input type="hidden" name="about_text" id="about_text_hidden" value="{{ old('about_text', $settings['about_text'] ?? '') }}" />
+                        <div id="about-text-editor" class="bg-base-100 rounded-b-lg" style="min-height: 120px;">{!! old('about_text', $settings['about_text'] ?? '') !!}</div>
                         <p class="text-xs text-base-content/60 mt-1">This appears on your booking page. Keep it concise.</p>
                     </div>
 
@@ -458,8 +457,36 @@
 @endsection
 
 @push('scripts')
+<script src="{{ asset('vendor/quill/quill.js') }}"></script>
 <script>
 var csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+// Initialize Quill editor for About Your Studio
+var aboutTextQuill = new Quill('#about-text-editor', {
+    theme: 'snow',
+    placeholder: 'Tell customers about your studio, classes, and what makes you unique...',
+    modules: {
+        toolbar: [
+            [{ 'header': [1, 2, 3, 4, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'align': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            ['blockquote'],
+            ['link'],
+            ['clean']
+        ]
+    }
+});
+
+// Sync Quill content to hidden input on form submit
+document.querySelector('form[action="{{ route("settings.booking-page.update") }}"]').addEventListener('submit', function() {
+    var content = aboutTextQuill.root.innerHTML;
+    if (content === '<p><br></p>' || content.trim() === '') {
+        content = '';
+    }
+    document.getElementById('about_text_hidden').value = content;
+});
 
 // Handle publish status toggle
 document.getElementById('booking_page_status_toggle').addEventListener('change', function(e) {

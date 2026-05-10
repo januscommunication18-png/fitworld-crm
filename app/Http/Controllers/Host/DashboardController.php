@@ -44,8 +44,8 @@ class DashboardController extends Controller
         $isStaff = $user->isStaff($host);
         $isInstructor = $user->hasInstructorRole($host);
 
-        // Check if setup checklist is complete (only for owner/admin)
-        if ($isOwnerOrAdmin) {
+        // Check if setup checklist is complete (only for owner)
+        if ($user->isOwner($host)) {
             $checklist = $this->getSetupChecklist($user, $host);
 
             // Calculate progress based on required items only (exclude optional items)

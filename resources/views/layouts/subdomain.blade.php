@@ -11,7 +11,27 @@
 
     @stack('styles')
 
+    @php
+        $brandColor = $host->booking_settings['primary_color'] ?? '#6366f1';
+        $brandOklch = \App\Models\Host::hexToOklch($brandColor);
+        // Generate content color: white for dark brands, dark for light brands
+        $hex = ltrim($brandColor, '#');
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+        $contentOklch = $luminance > 0.5 ? 'oklch(20% 0.02 275)' : 'oklch(98% 0.01 275)';
+    @endphp
     <style>
+        :root, [data-theme="light"] {
+            --color-primary: {{ $brandOklch }};
+            --color-primary-content: {{ $contentOklch }};
+        }
+        /* Quill content alignment classes */
+        .ql-align-center { text-align: center; }
+        .ql-align-right { text-align: right; }
+        .ql-align-justify { text-align: justify; }
+
         /* Smooth scrolling */
         html { scroll-behavior: smooth; }
 

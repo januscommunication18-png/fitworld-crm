@@ -6,7 +6,7 @@
             </div>
             <h1 class="text-3xl font-bold mb-3">Welcome to FitCRM</h1>
             <p class="text-base-content/60 mb-8 max-w-md mx-auto">
-                Set up your studio in minutes. Manage classes, students, and payments — all in one place.
+                Your all-in-one platform for studio management. Schedule classes, track attendance, handle payments, and grow your fitness business with ease.
             </p>
             <div class="flex flex-col items-center gap-3">
                 <button type="button" class="btn btn-primary btn-lg" @click="$emit('next')">

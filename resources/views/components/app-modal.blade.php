@@ -1,45 +1,84 @@
-<div id="app-modal" class="overlay modal overlay-open:opacity-100 overlay-open:duration-300 hidden" role="dialog" tabindex="-1">
-    <div class="modal-dialog overlay-open:opacity-100 overlay-open:duration-300 overlay-open:translate-y-0">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Apps</h3>
-                <button type="button" class="btn btn-text btn-circle btn-sm absolute end-3 top-3" aria-label="Close" data-overlay="#app-modal">
-                    <span class="icon-[tabler--x] size-4"></span>
-                </button>
+<x-detail-drawer id="apps" title="Apps" :showFooter="false" size="sm">
+    <div class="space-y-5">
+        {{-- Main --}}
+        <div>
+            <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">Main</h4>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{{ url('/dashboard') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--home] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Dashboard</span>
+                </a>
+                <a href="{{ url('/schedule/calendar') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--calendar] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Schedule</span>
+                </a>
+                <a href="{{ url('/bookings') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--book] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Bookings</span>
+                </a>
+                <a href="{{ url('/clients') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--users] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Clients</span>
+                </a>
+                <a href="{{ url('/instructors') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--user-star] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Instructors</span>
+                </a>
+                <a href="{{ url('/catalog') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--layout-grid] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Catalog</span>
+                </a>
             </div>
-            <div class="modal-body pt-0">
-                <div class="grid grid-cols-3 gap-4">
-                    {{-- Active apps --}}
-                    <a href="{{ url('/schedule') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-base-200 transition-colors">
-                        <span class="icon-[tabler--calendar] size-8 text-primary"></span>
-                        <span class="text-xs font-medium">Schedule</span>
-                    </a>
-                    <a href="{{ url('/students') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-base-200 transition-colors">
-                        <span class="icon-[tabler--users] size-8 text-primary"></span>
-                        <span class="text-xs font-medium">CRM</span>
-                    </a>
-                    <a href="{{ url('/payments') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-base-200 transition-colors">
-                        <span class="icon-[tabler--credit-card] size-8 text-primary"></span>
-                        <span class="text-xs font-medium">Payments</span>
-                    </a>
-                    <a href="{{ url('/reports') }}" class="flex flex-col items-center gap-2 p-4 rounded-lg hover:bg-base-200 transition-colors">
-                        <span class="icon-[tabler--chart-bar] size-8 text-primary"></span>
-                        <span class="text-xs font-medium">Reports</span>
-                    </a>
+        </div>
 
-                    {{-- Coming soon apps --}}
-                    <div class="flex flex-col items-center gap-2 p-4 rounded-lg opacity-50 pointer-events-none">
-                        <span class="icon-[tabler--speakerphone] size-8 text-base-content/40"></span>
-                        <span class="text-xs font-medium">Marketing</span>
-                        <span class="badge badge-xs badge-soft">Coming Soon</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-2 p-4 rounded-lg opacity-50 pointer-events-none">
-                        <span class="icon-[tabler--world] size-8 text-base-content/40"></span>
-                        <span class="text-xs font-medium">Website</span>
-                        <span class="badge badge-xs badge-soft">Coming Soon</span>
-                    </div>
-                </div>
+        {{-- Commerce --}}
+        <div>
+            <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">Commerce</h4>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{{ url('/payments/transactions') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--credit-card] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Payments</span>
+                </a>
+                <a href="{{ url('/reports') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--chart-bar] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Insights</span>
+                </a>
+                <a href="{{ url('/offers') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--speakerphone] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Marketing</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- Tools --}}
+        <div>
+            <h4 class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-3">Tools</h4>
+            <div class="grid grid-cols-3 gap-2">
+                <a href="{{ url('/helpdesk') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--help] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Help Desk</span>
+                </a>
+                <a href="{{ url('/marketplace') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--apps] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Marketplace</span>
+                </a>
+                <a href="{{ url('/settings') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--settings] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Settings</span>
+                </a>
+                <a href="{{ url('/one-on-one') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--video] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">1:1 Meetings</span>
+                </a>
+                <a href="{{ url('/segments') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--filter] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Segments</span>
+                </a>
+                <a href="{{ url('/waitlist') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-lg hover:bg-base-200 transition-colors">
+                    <span class="icon-[tabler--clock] size-7 text-primary"></span>
+                    <span class="text-xs font-medium">Waitlist</span>
+                </a>
             </div>
         </div>
     </div>
-</div>
+</x-detail-drawer>

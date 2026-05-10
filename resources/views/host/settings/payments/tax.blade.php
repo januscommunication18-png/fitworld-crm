@@ -258,20 +258,28 @@ $serviceTypes = [
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <input type="checkbox" class="toggle toggle-sm toggle-success" {{ ($rate->is_enabled ?? $rate->is_active) ? 'checked' : '' }} onchange="toggleRate({{ $rate->override_id ?? $rate->id }}, this.checked, {{ $rate->host_id ? 'true' : 'false' }})" />
+                                    <span id="status-badge-{{ $rate->override_id ?? $rate->id }}" class="badge badge-soft badge-sm {{ ($rate->is_enabled ?? $rate->is_active) ? 'badge-success' : 'badge-error' }}">
+                                        {{ ($rate->is_enabled ?? $rate->is_active) ? 'Active' : 'Inactive' }}
+                                    </span>
                                 </td>
                                 <td>
                                     <div class="flex items-center justify-end gap-1">
-                                        @if(!$rate->host_id && !($rate->has_override ?? false))
-                                        <button type="button" class="btn btn-ghost btn-xs" onclick="openOverrideDrawer({{ json_encode($rate) }})" data-tooltip="Override Rate">
-                                            <span class="icon-[tabler--edit] size-4"></span>
+                                        @if($rate->host_id || ($rate->has_override ?? false))
+                                        <button type="button" class="btn btn-ghost btn-xs" onclick="toggleRate({{ $rate->override_id ?? $rate->id }}, {{ ($rate->is_enabled ?? $rate->is_active) ? 'false' : 'true' }}, true)" data-tooltip="{{ ($rate->is_enabled ?? $rate->is_active) ? 'Deactivate' : 'Activate' }}">
+                                            <span class="icon-[tabler--{{ ($rate->is_enabled ?? $rate->is_active) ? 'circle-x' : 'circle-check' }}] size-4"></span>
                                         </button>
-                                        @elseif($rate->host_id || ($rate->has_override ?? false))
                                         <button type="button" class="btn btn-ghost btn-xs" onclick="openEditRateDrawer({{ json_encode($rate) }})" data-tooltip="Edit">
                                             <span class="icon-[tabler--pencil] size-4"></span>
                                         </button>
                                         <button type="button" class="btn btn-ghost btn-xs text-error" onclick="deleteRate({{ $rate->override_id ?? $rate->id }})" data-tooltip="Delete">
                                             <span class="icon-[tabler--trash] size-4"></span>
+                                        </button>
+                                        @else
+                                        <button type="button" class="btn btn-ghost btn-xs" onclick="toggleRate({{ $rate->id }}, {{ ($rate->is_enabled ?? $rate->is_active) ? 'false' : 'true' }}, false)" data-tooltip="{{ ($rate->is_enabled ?? $rate->is_active) ? 'Deactivate' : 'Activate' }}">
+                                            <span class="icon-[tabler--{{ ($rate->is_enabled ?? $rate->is_active) ? 'circle-x' : 'circle-check' }}] size-4"></span>
+                                        </button>
+                                        <button type="button" class="btn btn-ghost btn-xs" onclick="openOverrideDrawer({{ json_encode($rate) }})" data-tooltip="Override Rate">
+                                            <span class="icon-[tabler--edit] size-4"></span>
                                         </button>
                                         @endif
                                     </div>
@@ -632,12 +640,6 @@ function updateExemptMethods() {
 
 // Toggle rate active status
 function toggleRate(rateId, isActive, isCustom) {
-    if (!isCustom) {
-        // For system rates, we need to create an override to disable
-        showToast('Create an override to disable system rates', 'warning');
-        return;
-    }
-
     fetch('{{ url("/settings/payments/tax/rates") }}/' + rateId + '/toggle', {
         method: 'PATCH',
         headers: {
@@ -650,7 +652,24 @@ function toggleRate(rateId, isActive, isCustom) {
     .then(function(r) { return r.json(); })
     .then(function(result) {
         if (result.success) {
-            showToast(isActive ? 'Rate enabled' : 'Rate disabled');
+            // Update badge
+            var badge = document.getElementById('status-badge-' + rateId);
+            if (badge) {
+                badge.className = 'badge badge-soft badge-sm ' + (isActive ? 'badge-success' : 'badge-error');
+                badge.textContent = isActive ? 'Active' : 'Inactive';
+            }
+            // Update the toggle button icon and onclick
+            var row = document.getElementById('rate-row-' + rateId);
+            if (row) {
+                var toggleBtn = row.querySelector('[data-tooltip="Activate"], [data-tooltip="Deactivate"]');
+                if (toggleBtn) {
+                    var newState = !isActive;
+                    toggleBtn.setAttribute('onclick', 'toggleRate(' + rateId + ', ' + newState + ', ' + isCustom + ')');
+                    toggleBtn.setAttribute('data-tooltip', isActive ? 'Deactivate' : 'Activate');
+                    toggleBtn.innerHTML = '<span class="icon-[tabler--' + (isActive ? 'circle-x' : 'circle-check') + '] size-4"></span>';
+                }
+            }
+            showToast(isActive ? 'Rate activated' : 'Rate deactivated');
         } else {
             showToast(result.message || 'Failed to update', 'error');
         }

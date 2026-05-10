@@ -124,22 +124,19 @@
         @endif
 
         {{-- Alerts bell --}}
-        <button type="button" class="btn btn-ghost btn-sm btn-square indicator"
-            aria-haspopup="dialog" aria-expanded="false" aria-controls="alerts-drawer" data-overlay="#alerts-drawer">
-            <span class="indicator-item badge badge-error badge-xs"></span>
+        <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="openDrawer('alerts', event)" aria-label="Notifications">
             <span class="icon-[tabler--bell] size-5"></span>
         </button>
 
         {{-- App grid --}}
-        <button type="button" class="btn btn-ghost btn-sm btn-square"
-            aria-haspopup="dialog" aria-expanded="false" aria-controls="app-modal" data-overlay="#app-modal">
+        <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="openDrawer('apps', event)" aria-label="Apps">
             <span class="icon-[tabler--grid-dots] size-5"></span>
         </button>
 
-        {{-- Chat --}}
-        <a href="#" class="btn btn-ghost btn-sm btn-square" aria-label="Chat">
+        {{-- Chat (hidden until implemented) --}}
+        {{-- <a href="#" class="btn btn-ghost btn-sm btn-square" aria-label="Chat">
             <span class="icon-[tabler--message-circle] size-5"></span>
-        </a>
+        </a> --}}
 
         {{-- Profile dropdown --}}
         <div class="dropdown relative inline-flex [--auto-close:inside] [--placement:bottom-end]">

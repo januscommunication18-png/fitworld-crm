@@ -202,7 +202,9 @@ class SettingsController extends Controller
     {
         $host = auth()->user()->host;
         $defaultLocation = $host->defaultLocation();
-        return view('host.settings.studio.profile', compact('host', 'defaultLocation'));
+        $galleryCount = \App\Models\StudioGalleryImage::where('host_id', $host->id)->count();
+        $galleryMaxTotal = 20;
+        return view('host.settings.studio.profile', compact('host', 'defaultLocation', 'galleryCount', 'galleryMaxTotal'));
     }
 
     public function updateStudioProfile(Request $request)
@@ -336,6 +338,9 @@ class SettingsController extends Controller
             'social_links.facebook' => 'nullable|url|max:255',
             'social_links.website' => 'nullable|url|max:255',
             'social_links.tiktok' => 'nullable|url|max:255',
+            'social_links.youtube' => 'nullable|url|max:255',
+            'social_links.bluesky' => 'nullable|url|max:255',
+            'social_links.other' => 'nullable|url|max:255',
         ]);
 
         $host->update(['social_links' => $validated['social_links'] ?? []]);
@@ -1227,12 +1232,26 @@ class SettingsController extends Controller
      */
     public function uploadGalleryImage(Request $request)
     {
-        $request->validate([
-            'images' => 'required|array|min:1|max:20',
-            'images.*' => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
-        ]);
-
         $host = auth()->user()->host;
+
+        // Check total gallery limit (max 20 images)
+        $currentCount = \App\Models\StudioGalleryImage::where('host_id', $host->id)->count();
+        $maxTotal = 20;
+        $remaining = $maxTotal - $currentCount;
+
+        if ($remaining <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Gallery limit reached. Maximum {$maxTotal} images allowed. Please delete some images first.",
+            ], 422);
+        }
+
+        $request->validate([
+            'images' => 'required|array|min:1|max:' . min(10, $remaining),
+            'images.*' => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
+        ], [
+            'images.max' => "You can only upload {$remaining} more image(s). Maximum {$maxTotal} gallery images allowed.",
+        ]);
 
         // Get max sort order
         $maxSort = \App\Models\StudioGalleryImage::where('host_id', $host->id)->max('sort_order') ?? -1;

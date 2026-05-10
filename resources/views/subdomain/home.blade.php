@@ -594,7 +594,7 @@
                     <span class="icon-[tabler--info-circle] size-6 text-primary"></span>
                     {{ $trans['subdomain.home.about_us'] ?? 'About Us' }}
                 </h2>
-                <div class="prose prose-sm max-w-none text-base-content/80">
+                <div class="prose prose-sm max-w-none text-base-content/80 overflow-hidden break-words [overflow-wrap:anywhere]">
                     {!! $bookingSettings['about_text'] ?? $host->about !!}
                 </div>
 
@@ -839,6 +839,26 @@
                             <span class="icon-[tabler--world] size-7"></span>
                         </div>
                         <span class="text-sm font-medium">Website</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($host->social_links['bluesky']))
+                    <a href="{{ $host->social_links['bluesky'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-sky-500 flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--brand-bluesky] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">Bluesky</span>
+                    </a>
+                    @endif
+
+                    @if(!empty($host->social_links['other']))
+                    <a href="{{ $host->social_links['other'] }}" target="_blank" rel="noopener"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl bg-base-100 hover:shadow-lg transition-all group min-w-[100px]">
+                        <div class="w-14 h-14 rounded-full bg-base-content/20 flex items-center justify-center text-base-content group-hover:scale-110 transition-transform">
+                            <span class="icon-[tabler--link] size-7"></span>
+                        </div>
+                        <span class="text-sm font-medium">Other</span>
                     </a>
                     @endif
                 </div>

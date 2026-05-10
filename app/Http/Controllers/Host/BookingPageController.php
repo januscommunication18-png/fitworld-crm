@@ -80,13 +80,19 @@ class BookingPageController extends Controller
             'filter_class_type', 'filter_instructor', 'filter_location',
         ];
 
+        // Sanitize about_text HTML — allow only safe tags from Quill
+        $aboutText = $validated['about_text'];
+        if ($aboutText) {
+            $aboutText = strip_tags($aboutText, '<p><br><strong><em><u><s><ol><ul><li><a><span><h1><h2><h3><h4><blockquote>');
+        }
+
         // Prepare booking_settings array (exclude host-level fields)
         $bookingSettings = [
             'display_name' => $validated['display_name'],
             'primary_color' => $validated['primary_color'],
             'theme' => $validated['theme'],
             'font' => $validated['font'],
-            'about_text' => $validated['about_text'],
+            'about_text' => $aboutText,
             'location_display' => $validated['location_display'],
             'default_view' => $validated['default_view'],
         ];

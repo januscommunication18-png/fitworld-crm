@@ -66,40 +66,10 @@
     <div class="card bg-base-100">
         <div class="card-body">
             <h2 class="text-lg font-semibold mb-4">Recent Payouts</h2>
-            <div class="overflow-x-auto">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Arrival</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Feb 5, 2026</td>
-                            <td class="font-medium">$1,234.56</td>
-                            <td><span class="badge badge-success badge-soft badge-sm">Paid</span></td>
-                            <td class="text-sm text-base-content/60">Feb 7, 2026</td>
-                        </tr>
-                        <tr>
-                            <td>Jan 29, 2026</td>
-                            <td class="font-medium">$987.00</td>
-                            <td><span class="badge badge-success badge-soft badge-sm">Paid</span></td>
-                            <td class="text-sm text-base-content/60">Jan 31, 2026</td>
-                        </tr>
-                        <tr>
-                            <td>Jan 22, 2026</td>
-                            <td class="font-medium">$1,567.89</td>
-                            <td><span class="badge badge-success badge-soft badge-sm">Paid</span></td>
-                            <td class="text-sm text-base-content/60">Jan 24, 2026</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="mt-4">
-                <a href="#" class="text-primary text-sm">View all payouts →</a>
+            <div class="text-center py-8">
+                <span class="icon-[tabler--building-bank] size-12 text-base-content/20 mx-auto block"></span>
+                <p class="text-base-content/50 mt-2">No payouts yet</p>
+                <p class="text-xs text-base-content/40 mt-1">Payouts will appear here once transactions are processed</p>
             </div>
         </div>
     </div>
