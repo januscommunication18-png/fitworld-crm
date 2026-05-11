@@ -364,6 +364,43 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Location -> Room auto-load
+    var locationRooms = @json($locations->mapWithKeys(fn($loc) => [$loc->id => $loc->rooms->map(fn($r) => ['id' => $r->id, 'name' => $r->name])]));
+    var locationSelect = document.getElementById('location_id');
+    var roomSelect = document.getElementById('room_id');
+    var selectedRoomId = {{ old('room_id', $serviceSlot->room_id ?? 'null') }};
+
+    function updateRooms() {
+        var locationId = locationSelect.value;
+        var rooms = locationRooms[locationId] || [];
+
+        roomSelect.innerHTML = '<option value="">Select a room...</option>';
+        rooms.forEach(function(room) {
+            var opt = document.createElement('option');
+            opt.value = room.id;
+            opt.textContent = room.name;
+            if (room.id == selectedRoomId) opt.selected = true;
+            roomSelect.appendChild(opt);
+        });
+
+        // Show/hide room field based on whether rooms exist
+        roomSelect.closest('div').style.display = rooms.length > 0 ? '' : 'none';
+    }
+
+    locationSelect.addEventListener('change', function() {
+        selectedRoomId = null; // Reset on manual change
+        updateRooms();
+    });
+
+    // Also observe for HSSelect (advanced select) changes
+    var observer = new MutationObserver(function() {
+        updateRooms();
+    });
+    observer.observe(locationSelect, { attributes: true, childList: true });
+
+    // Initial load
+    updateRooms();
+
     var servicePlanSelect = document.getElementById('service_plan_id');
     var dateInput = document.getElementById('slot_date');
     var timeInput = document.getElementById('slot_time');

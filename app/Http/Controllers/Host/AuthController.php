@@ -25,6 +25,21 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // Check if the email exists
+        $user = \App\Models\User::where('email', $credentials['email'])->first();
+
+        if (!$user) {
+            return back()->withErrors([
+                'email' => 'No account found with this email address.',
+            ])->onlyInput('email');
+        }
+
+        if (!$user->password) {
+            return back()->withErrors([
+                'email' => 'This account hasn\'t been set up yet. Please check your email for an invitation link.',
+            ])->onlyInput('email');
+        }
+
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
@@ -47,7 +62,7 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'email' => 'These credentials do not match our records.',
+            'password' => 'The password you entered is incorrect.',
         ])->onlyInput('email');
     }
 
@@ -173,9 +188,10 @@ class AuthController extends Controller
                 'regex:/[A-Z]/',      // at least one uppercase
                 'regex:/[a-z]/',      // at least one lowercase
                 'regex:/[0-9]/',      // at least one number
+                'regex:/[^A-Za-z0-9]/', // at least one special character
             ],
         ], [
-            'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, and one number.',
+            'password.regex' => 'Password must include uppercase, lowercase, number, and special character.',
         ]);
 
         $status = Password::reset(

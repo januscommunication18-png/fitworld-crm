@@ -8,12 +8,16 @@
             <p class="text-base-content/60 mb-8 max-w-md mx-auto">
                 Your all-in-one platform for studio management. Schedule classes, track attendance, handle payments, and grow your fitness business with ease.
             </p>
-            <div class="flex flex-col items-center gap-3">
-                <button type="button" class="btn btn-primary btn-lg" @click="$emit('next')">
-                    Get Started (Free)
-                    <span class="icon-[tabler--arrow-right] size-5"></span>
-                </button>
-                <a href="/login" class="link link-primary text-sm no-underline">Already have an account? Log in</a>
+            <button type="button" class="btn btn-primary btn-lg" @click="$emit('next')">
+                Get Started (Free)
+                <span class="icon-[tabler--arrow-right] size-5"></span>
+            </button>
+
+            <div class="text-center mt-6">
+                <p class="text-sm text-base-content/60">
+                    Already have an account?
+                    <a href="/login" class="link link-primary no-underline">Log in</a>
+                </p>
             </div>
         </div>
     </div>

@@ -44,7 +44,34 @@
                     <input type="password" id="password" name="password"
                         class="input w-full @error('password') input-error @enderror"
                         placeholder="Enter new password" required autofocus />
-                    <p class="text-xs text-base-content/50 mt-1">Minimum 8 characters with uppercase, lowercase, and number</p>
+
+                    {{-- Password Strength Indicator --}}
+                    <div class="mt-2" id="password-strength">
+                        <div class="flex gap-1 mb-2">
+                            <div id="str-1" class="h-1.5 flex-1 rounded-full bg-base-300 transition-colors duration-300"></div>
+                            <div id="str-2" class="h-1.5 flex-1 rounded-full bg-base-300 transition-colors duration-300"></div>
+                            <div id="str-3" class="h-1.5 flex-1 rounded-full bg-base-300 transition-colors duration-300"></div>
+                            <div id="str-4" class="h-1.5 flex-1 rounded-full bg-base-300 transition-colors duration-300"></div>
+                            <div id="str-5" class="h-1.5 flex-1 rounded-full bg-base-300 transition-colors duration-300"></div>
+                        </div>
+                        <ul class="space-y-1 text-xs">
+                            <li id="rule-length" class="flex items-center gap-1.5 text-base-content/50">
+                                <span class="icon-[tabler--circle] size-3.5 rule-icon"></span> At least 8 characters
+                            </li>
+                            <li id="rule-upper" class="flex items-center gap-1.5 text-base-content/50">
+                                <span class="icon-[tabler--circle] size-3.5 rule-icon"></span> Contains uppercase letter
+                            </li>
+                            <li id="rule-lower" class="flex items-center gap-1.5 text-base-content/50">
+                                <span class="icon-[tabler--circle] size-3.5 rule-icon"></span> Contains lowercase letter
+                            </li>
+                            <li id="rule-number" class="flex items-center gap-1.5 text-base-content/50">
+                                <span class="icon-[tabler--circle] size-3.5 rule-icon"></span> Contains number
+                            </li>
+                            <li id="rule-special" class="flex items-center gap-1.5 text-base-content/50">
+                                <span class="icon-[tabler--circle] size-3.5 rule-icon"></span> Contains special character (!@#$%...)
+                            </li>
+                        </ul>
+                    </div>
                 </div>
 
                 {{-- Confirm Password --}}
@@ -71,5 +98,38 @@
         </div>
     </div>
 
+<script>
+document.getElementById('password').addEventListener('input', function() {
+    var pw = this.value;
+    var rules = [
+        { id: 'rule-length', valid: pw.length >= 8 },
+        { id: 'rule-upper', valid: /[A-Z]/.test(pw) },
+        { id: 'rule-lower', valid: /[a-z]/.test(pw) },
+        { id: 'rule-number', valid: /[0-9]/.test(pw) },
+        { id: 'rule-special', valid: /[^A-Za-z0-9]/.test(pw) },
+    ];
+
+    var strength = 0;
+    rules.forEach(function(rule) {
+        var el = document.getElementById(rule.id);
+        var icon = el.querySelector('.rule-icon');
+        if (rule.valid) {
+            strength++;
+            el.className = 'flex items-center gap-1.5 text-success';
+            icon.className = 'icon-[tabler--circle-check] size-3.5 rule-icon';
+        } else {
+            el.className = 'flex items-center gap-1.5 text-base-content/50';
+            icon.className = 'icon-[tabler--circle] size-3.5 rule-icon';
+        }
+    });
+
+    var colors = ['bg-base-300', 'bg-error', 'bg-warning', 'bg-warning', 'bg-info', 'bg-success'];
+    var color = colors[strength] || 'bg-base-300';
+    for (var i = 1; i <= 5; i++) {
+        var bar = document.getElementById('str-' + i);
+        bar.className = 'h-1.5 flex-1 rounded-full transition-colors duration-300 ' + (i <= strength ? color : 'bg-base-300');
+    }
+});
+</script>
 </body>
 </html>

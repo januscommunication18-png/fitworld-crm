@@ -78,7 +78,7 @@ class ServiceSlotController extends Controller
 
         $servicePlans = $host->servicePlans()->active()->orderBy('name')->get();
         $instructors = $host->instructors()->active()->orderBy('name')->get();
-        $locations = $host->locations()->active()->orderBy('name')->get();
+        $locations = $host->locations()->active()->with('rooms')->orderBy('name')->get();
 
         // Pre-select values from query parameters
         $selectedServicePlanId = $request->get('service_plan_id');
@@ -208,7 +208,7 @@ class ServiceSlotController extends Controller
         $host = auth()->user()->currentHost();
         $servicePlans = $host->servicePlans()->active()->orderBy('name')->get();
         $instructors = $host->instructors()->active()->orderBy('name')->get();
-        $locations = $host->locations()->active()->orderBy('name')->get();
+        $locations = $host->locations()->active()->with('rooms')->orderBy('name')->get();
         $statuses = ServiceSlot::getStatuses();
 
         return view('host.service-slots.edit', compact('serviceSlot', 'servicePlans', 'instructors', 'locations', 'statuses'));
