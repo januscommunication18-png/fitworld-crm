@@ -42,7 +42,7 @@
     <div class="flex items-center gap-2 px-4 h-16 border-b border-base-content/10 shrink-0">
         <a href="{{ url('/dashboard') }}" class="flex items-center gap-2 no-underline">
             <span class="icon-[tabler--activity] size-7 text-primary shrink-0"></span>
-            <span class="sidebar-logo-text text-xl font-bold text-base-content">FitCRM</span>
+            <span class="sidebar-logo-text text-xl font-bold text-base-content">{{ config('app.name') }}</span>
         </a>
         <button type="button" class="btn btn-ghost btn-xs btn-square ms-auto sidebar-label" id="sidebar-toggle" aria-label="Toggle sidebar">
             <span class="icon-[tabler--chevron-left] size-4"></span>

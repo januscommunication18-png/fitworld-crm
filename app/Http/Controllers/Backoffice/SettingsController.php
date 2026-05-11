@@ -87,9 +87,9 @@ class SettingsController extends Controller
         ]);
 
         try {
-            \Mail::raw('This is a test email from FitCRM Admin Backoffice.', function ($message) use ($validated) {
+            \Mail::raw('This is a test email from ' . config('app.name') . ' Admin Backoffice.', function ($message) use ($validated) {
                 $message->to($validated['email'])
-                        ->subject('FitCRM Test Email');
+                        ->subject(config('app.name') . ' Test Email');
             });
 
             return redirect()->back()

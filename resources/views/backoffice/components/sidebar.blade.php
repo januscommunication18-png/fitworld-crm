@@ -6,7 +6,7 @@
             <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span class="icon-[tabler--building-store] size-5 text-primary-content"></span>
             </div>
-            <span class="text-lg font-bold text-base-content">FitCRM</span>
+            <span class="text-lg font-bold text-base-content">{{ config('app.name') }}</span>
             <span class="badge badge-soft badge-neutral badge-sm">Admin</span>
         </a>
     </div>

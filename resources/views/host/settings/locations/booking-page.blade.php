@@ -123,33 +123,58 @@
                     </div>
 
                     {{-- Cover Image Upload --}}
+                    @php
+                        $coverPositionY = $host->booking_settings['cover_position_y'] ?? 50;
+                    @endphp
                     <div>
                         <label class="label-text mb-2 block">Cover Image</label>
-                        <div id="cover-preview" class="relative w-full h-40 bg-base-200 rounded-lg border-2 border-dashed border-base-content/20 overflow-hidden flex items-center justify-center">
+                        <div id="cover-preview" class="relative w-full h-48 bg-base-200 rounded-xl border-2 border-dashed border-base-content/20 overflow-hidden flex items-center justify-center"
+                             ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/5')"
+                             ondragleave="this.classList.remove('border-primary', 'bg-primary/5')"
+                             ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/5'); handleCoverDrop(event)">
                             @if($host->cover_image_path)
-                            <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->cover_image_path) }}" alt="Cover" class="w-full h-full object-cover" />
-                            <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                <button type="button" onclick="document.getElementById('cover-input').click()" class="btn btn-sm btn-ghost text-white">
-                                    <span class="icon-[tabler--edit] size-4"></span> Change
+                            <img id="cover-img" src="{{ Storage::disk(config('filesystems.uploads'))->url($host->cover_image_path) }}" alt="Cover"
+                                 class="w-full h-full object-cover select-none"
+                                 style="object-position: center {{ $coverPositionY }}%;"
+                                 draggable="false" />
+
+                            {{-- Reposition hint --}}
+                            <div id="cover-reposition-hint" class="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1.5 rounded-full pointer-events-none hidden">
+                                <span class="icon-[tabler--arrows-vertical] size-3 inline-block align-middle mr-1"></span>
+                                Drag to reposition
+                            </div>
+
+                            {{-- Actions overlay --}}
+                            <div id="cover-actions" class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-end justify-center pb-3 gap-2">
+                                <button type="button" onclick="startRepositioning()" class="btn btn-xs bg-white/20 text-white border-0 hover:bg-white/30 backdrop-blur-sm">
+                                    <span class="icon-[tabler--arrows-vertical] size-3.5"></span> Reposition
                                 </button>
-                                <button type="button" onclick="removeCover()" class="btn btn-sm btn-ghost text-white">
-                                    <span class="icon-[tabler--trash] size-4"></span> Remove
+                                <button type="button" onclick="document.getElementById('cover-input').click()" class="btn btn-xs bg-white/20 text-white border-0 hover:bg-white/30 backdrop-blur-sm">
+                                    <span class="icon-[tabler--edit] size-3.5"></span> Change
+                                </button>
+                                <button type="button" onclick="removeCover()" class="btn btn-xs bg-white/20 text-white border-0 hover:bg-white/30 backdrop-blur-sm">
+                                    <span class="icon-[tabler--trash] size-3.5"></span> Remove
                                 </button>
                             </div>
+
+                            {{-- Reposition save bar --}}
+                            <div id="cover-reposition-bar" class="absolute bottom-0 inset-x-0 bg-black/70 backdrop-blur-sm px-4 py-2 flex items-center justify-between hidden">
+                                <span class="text-white text-xs">Drag image up or down to adjust</span>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="cancelRepositioning()" class="btn btn-xs btn-ghost text-white">Cancel</button>
+                                    <button type="button" onclick="savePosition()" class="btn btn-xs btn-primary">Save Position</button>
+                                </div>
+                            </div>
                             @else
-                            <div class="text-center">
-                                <span class="icon-[tabler--photo] size-10 text-base-content/30"></span>
-                                <p class="text-sm text-base-content/60 mt-2">No cover image</p>
+                            <div class="text-center cursor-pointer" onclick="document.getElementById('cover-input').click()">
+                                <span class="icon-[tabler--photo-up] size-10 text-base-content/30"></span>
+                                <p class="text-sm font-medium text-base-content/60 mt-2">Click to upload or drag & drop</p>
+                                <p class="text-xs text-base-content/40 mt-1">Recommended: 1200x400px</p>
                             </div>
                             @endif
                         </div>
                         <input type="file" id="cover-input" class="hidden" accept="image/*" />
-                        @if(!$host->cover_image_path)
-                        <button type="button" onclick="document.getElementById('cover-input').click()" class="btn btn-soft btn-sm mt-2">
-                            <span class="icon-[tabler--upload] size-4"></span> Upload Cover Image
-                        </button>
-                        @endif
-                        <p class="text-xs text-base-content/60 mt-1">Recommended: 1200x400px, JPG or PNG</p>
+                        <p class="text-xs text-base-content/50 mt-1.5">JPG, PNG or WebP. After uploading, click "Reposition" to adjust the visible area.</p>
                     </div>
 
                     {{-- Display Name --}}
@@ -561,9 +586,19 @@ document.getElementById('logo-input').addEventListener('change', function(e) {
 // Cover upload
 document.getElementById('cover-input').addEventListener('change', function(e) {
     if (!e.target.files[0]) return;
+    uploadCoverFile(e.target.files[0]);
+});
 
+function handleCoverDrop(e) {
+    var files = e.dataTransfer.files;
+    if (files.length > 0 && files[0].type.startsWith('image/')) {
+        uploadCoverFile(files[0]);
+    }
+}
+
+function uploadCoverFile(file) {
     var formData = new FormData();
-    formData.append('cover', e.target.files[0]);
+    formData.append('cover', file);
 
     fetch('{{ route("settings.booking-page.upload-cover") }}', {
         method: 'POST',
@@ -580,7 +615,117 @@ document.getElementById('cover-input').addEventListener('change', function(e) {
         }
     })
     .catch(function() { showToast('An error occurred', 'error'); });
-});
+}
+
+// Cover reposition
+var isRepositioning = false;
+var isDragging = false;
+var dragStartY = 0;
+var currentPositionY = {{ $host->booking_settings['cover_position_y'] ?? 50 }};
+var savedPositionY = currentPositionY;
+
+function startRepositioning() {
+    isRepositioning = true;
+    var coverImg = document.getElementById('cover-img');
+    var actions = document.getElementById('cover-actions');
+    var bar = document.getElementById('cover-reposition-bar');
+    var hint = document.getElementById('cover-reposition-hint');
+
+    actions.classList.add('hidden');
+    bar.classList.remove('hidden');
+    hint.classList.remove('hidden');
+    coverImg.style.cursor = 'grab';
+    savedPositionY = currentPositionY;
+
+    setTimeout(function() { hint.classList.add('hidden'); }, 2000);
+}
+
+function cancelRepositioning() {
+    isRepositioning = false;
+    currentPositionY = savedPositionY;
+    var coverImg = document.getElementById('cover-img');
+    coverImg.style.objectPosition = 'center ' + savedPositionY + '%';
+    coverImg.style.cursor = '';
+    document.getElementById('cover-actions').classList.remove('hidden');
+    document.getElementById('cover-reposition-bar').classList.add('hidden');
+    document.getElementById('cover-reposition-hint').classList.add('hidden');
+}
+
+function savePosition() {
+    fetch('{{ route("settings.booking-page.cover-position") }}', {
+        method: 'POST',
+        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ position_y: currentPositionY })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            savedPositionY = currentPositionY;
+            showToast('Cover position saved');
+        } else {
+            showToast('Failed to save position', 'error');
+        }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); });
+
+    isRepositioning = false;
+    var coverImg = document.getElementById('cover-img');
+    coverImg.style.cursor = '';
+    document.getElementById('cover-actions').classList.remove('hidden');
+    document.getElementById('cover-reposition-bar').classList.add('hidden');
+}
+
+// Drag to reposition
+(function() {
+    var preview = document.getElementById('cover-preview');
+
+    preview.addEventListener('mousedown', function(e) {
+        if (!isRepositioning) return;
+        isDragging = true;
+        dragStartY = e.clientY;
+        var coverImg = document.getElementById('cover-img');
+        coverImg.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        var delta = dragStartY - e.clientY;
+        dragStartY = e.clientY;
+        currentPositionY = Math.max(0, Math.min(100, currentPositionY + delta * 0.5));
+        var coverImg = document.getElementById('cover-img');
+        coverImg.style.objectPosition = 'center ' + currentPositionY + '%';
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            var coverImg = document.getElementById('cover-img');
+            if (coverImg) coverImg.style.cursor = 'grab';
+        }
+    });
+
+    // Touch support
+    preview.addEventListener('touchstart', function(e) {
+        if (!isRepositioning) return;
+        isDragging = true;
+        dragStartY = e.touches[0].clientY;
+        e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+        var delta = dragStartY - e.touches[0].clientY;
+        dragStartY = e.touches[0].clientY;
+        currentPositionY = Math.max(0, Math.min(100, currentPositionY + delta * 0.5));
+        var coverImg = document.getElementById('cover-img');
+        coverImg.style.objectPosition = 'center ' + currentPositionY + '%';
+    }, { passive: false });
+
+    document.addEventListener('touchend', function() {
+        isDragging = false;
+    });
+})();
 
 // Remove logo
 function removeLogo() {

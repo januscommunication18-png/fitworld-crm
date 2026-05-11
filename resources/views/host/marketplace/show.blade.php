@@ -619,7 +619,7 @@
                             <span class="w-6 h-6 rounded-full bg-primary text-primary-content text-sm font-bold flex items-center justify-center flex-shrink-0">3</span>
                             <div>
                                 <p class="font-medium">Enter Your Credentials</p>
-                                <p class="text-sm text-base-content/60">Go to Settings → FitCRM Sync and enter your API key and secret.</p>
+                                <p class="text-sm text-base-content/60">Go to Settings → {{ config('app.name') }} Sync and enter your API key and secret.</p>
                             </div>
                         </li>
                         <li class="flex gap-3">

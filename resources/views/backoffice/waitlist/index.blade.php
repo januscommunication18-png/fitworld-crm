@@ -8,7 +8,7 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-            <p class="text-base-content/60">Manage prospect waitlist entries for FitCRM.</p>
+            <p class="text-base-content/60">Manage prospect waitlist entries for {{ config('app.name') }}.</p>
         </div>
         <div class="flex gap-2">
             <button type="button" class="btn btn-outline" id="btn-embed-code">

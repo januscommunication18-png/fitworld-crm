@@ -16,7 +16,7 @@
             <a href="{{ route('backoffice.email-templates.index', ['tab' => 'system']) }}"
                class="tab {{ $tab === 'system' ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--settings] size-4 mr-2"></span>
-                FitCRM Templates
+                {{ config('app.name') }} Templates
             </a>
             <a href="{{ route('backoffice.email-templates.index', ['tab' => 'client', 'host_id' => $hostId]) }}"
                class="tab {{ $tab === 'client' ? 'tab-active' : '' }}">

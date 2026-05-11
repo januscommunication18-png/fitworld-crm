@@ -730,6 +730,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/locations/booking-page/cover', [BookingPageController::class, 'uploadCover'])->name('settings.booking-page.upload-cover');
     Route::delete('/settings/locations/booking-page/logo', [BookingPageController::class, 'removeLogo'])->name('settings.booking-page.remove-logo');
     Route::delete('/settings/locations/booking-page/cover', [BookingPageController::class, 'removeCover'])->name('settings.booking-page.remove-cover');
+    Route::post('/settings/locations/booking-page/cover-position', [BookingPageController::class, 'updateCoverPosition'])->name('settings.booking-page.cover-position');
 
     // Policies
     // Policies

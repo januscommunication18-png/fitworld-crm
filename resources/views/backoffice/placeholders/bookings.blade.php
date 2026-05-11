@@ -8,7 +8,7 @@
     <div class="card-body">
         @include('backoffice.components.coming-soon', [
             'title' => 'Bookings Overview',
-            'description' => 'View and manage bookings across all FitCRM clients. Monitor booking trends and cancellation rates.',
+            'description' => 'View and manage bookings across all {{ config('app.name') }} clients. Monitor booking trends and cancellation rates.',
             'icon' => 'tabler--calendar-check'
         ])
     </div>

@@ -30,7 +30,7 @@ class AdminOtpMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your FitCRM Admin Verification Code',
+            subject: 'Your ' . config('app.name') . ' Admin Verification Code',
         );
     }
 

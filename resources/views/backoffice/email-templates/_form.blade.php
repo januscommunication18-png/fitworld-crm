@@ -53,7 +53,7 @@
                     <div>
                         <label class="label-text" for="host_id">Client (optional)</label>
                         <select id="host_id" name="host_id" class="select w-full @error('host_id') input-error @enderror">
-                            <option value="">System Template (FitCRM)</option>
+                            <option value="">System Template ({{ config('app.name') }})</option>
                             @foreach($hosts as $host)
                                 <option value="{{ $host->id }}" {{ old('host_id', $hostId) == $host->id ? 'selected' : '' }}>
                                     {{ $host->studio_name }}

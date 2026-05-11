@@ -3,7 +3,7 @@
 
 Hi {{ $firstName }},
 
-Your FitCRM Admin password has been reset. Here is your new temporary password:
+Your {{ config('app.name') }} Admin password has been reset. Here is your new temporary password:
 
 <x-mail::panel>
 <div style="text-align: center; font-family: monospace; font-size: 18px; font-weight: bold;">

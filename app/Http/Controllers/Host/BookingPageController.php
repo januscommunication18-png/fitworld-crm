@@ -188,6 +188,24 @@ class BookingPageController extends Controller
     }
 
     /**
+     * Update cover image position (vertical offset)
+     */
+    public function updateCoverPosition(Request $request)
+    {
+        $request->validate([
+            'position_y' => 'required|numeric|min:0|max:100',
+        ]);
+
+        $host = auth()->user()->host;
+        $settings = $host->booking_settings ?? [];
+        $settings['cover_position_y'] = round($request->position_y, 1);
+        $host->booking_settings = $settings;
+        $host->save();
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Remove cover image
      */
     public function removeCover()

@@ -8,7 +8,7 @@
     <div class="card-body">
         @include('backoffice.components.coming-soon', [
             'title' => 'Members Overview',
-            'description' => 'View all members across FitCRM clients. Monitor membership growth and retention metrics.',
+            'description' => 'View all members across {{ config('app.name') }} clients. Monitor membership growth and retention metrics.',
             'icon' => 'tabler--users-group'
         ])
     </div>

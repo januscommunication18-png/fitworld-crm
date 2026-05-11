@@ -712,7 +712,7 @@
                         </div>
                         <div class="alert alert-soft alert-warning mt-4 text-xs">
                             <span class="icon-[tabler--info-circle] size-4"></span>
-                            <span>Estimate only. Final payout handled outside FitCRM.</span>
+                            <span>Estimate only. Final payout handled outside {{ config('app.name') }}.</span>
                         </div>
                     </div>
                 </div>

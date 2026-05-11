@@ -133,13 +133,6 @@ class ClassSessionController extends Controller
         $startTime = $request->getStartTime();
         $endTime = $request->getEndTime();
 
-        // Check for availability warnings that need user acknowledgment
-        if ($request->hasAvailabilityWarnings()) {
-            return back()
-                ->withInput()
-                ->with('availability_warnings', $request->getAvailabilityWarnings());
-        }
-
         // Build recurrence rule if recurring
         $recurrenceRule = null;
         if ($request->boolean('is_recurring') && $request->recurrence_days) {
@@ -156,14 +149,17 @@ class ClassSessionController extends Controller
             );
         }
 
-        // Check if user acknowledged scheduling conflicts
-        $hasConflict = $request->boolean('override_availability_warnings');
-        $conflictNotes = null;
-        if ($hasConflict && !empty($request->availabilityWarnings)) {
-            $conflictNotes = collect($request->availabilityWarnings)
-                ->pluck('message')
-                ->implode('; ');
-        }
+        // Detect scheduling conflicts silently (no blocking — shown in listing)
+        $conflicts = $this->conflictChecker->hasInstructorConflict(
+            $request->primary_instructor_id,
+            $startTime,
+            $endTime,
+            $host->id,
+        );
+        $hasConflict = !empty($conflicts);
+        $conflictNotes = $hasConflict
+            ? $this->conflictChecker->formatConflictMessage($conflicts, 'instructor')
+            : null;
 
         // Create the session
         $session = ClassSession::create([
@@ -290,15 +286,18 @@ class ClassSessionController extends Controller
     {
         $this->authorizeSession($classSession);
 
-        // Check for availability warnings that need user acknowledgment
-        if ($request->hasAvailabilityWarnings()) {
-            return back()
-                ->withInput()
-                ->with('availability_warnings', $request->getAvailabilityWarnings());
-        }
-
         $startTime = $request->getStartTime();
         $endTime = $request->getEndTime();
+
+        // Detect scheduling conflicts silently (no blocking — shown in listing)
+        $conflicts = $this->conflictChecker->hasInstructorConflict(
+            $request->primary_instructor_id,
+            $startTime,
+            $endTime,
+            $classSession->host_id,
+            $classSession->id,
+        );
+        $hasConflict = !empty($conflicts);
 
         $classSession->update([
             'class_plan_id' => $request->class_plan_id,
@@ -313,6 +312,10 @@ class ClassSessionController extends Controller
             'capacity' => $request->capacity,
             'price' => $request->price,
             'status' => $request->status ?? $classSession->status,
+            'has_scheduling_conflict' => $hasConflict,
+            'conflict_notes' => $hasConflict
+                ? $this->conflictChecker->formatConflictMessage($conflicts, 'instructor')
+                : null,
             'notes' => $request->notes,
         ]);
 

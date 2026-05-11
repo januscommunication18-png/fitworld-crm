@@ -130,7 +130,7 @@
                         <label class="label-text" for="from_name">From Name</label>
                         <input type="text" id="from_name" name="from_name"
                             value="{{ $settings['mail']['from_name'] }}"
-                            class="input w-full" placeholder="FitCRM">
+                            class="input w-full" placeholder="{{ config('app.name') }}">
                     </div>
                 </div>
             </div>

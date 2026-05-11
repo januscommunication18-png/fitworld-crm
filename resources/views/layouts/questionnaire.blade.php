@@ -71,7 +71,7 @@
     {{-- Footer --}}
     <footer class="py-4 text-center border-t border-base-200 bg-base-100">
         <p class="text-xs text-base-content/50">
-            Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary hover:underline">FitCRM</a>
+            Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary hover:underline">{{ config('app.name') }}</a>
         </p>
     </footer>
 

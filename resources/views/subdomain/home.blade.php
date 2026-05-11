@@ -14,7 +14,7 @@
 {{-- Hero Section --}}
 <section class="relative min-h-[320px] md:min-h-[400px] flex items-center"
          @if($host->cover_image_url)
-         style="background-image: url('{{ $host->cover_image_url }}'); background-size: cover; background-position: center;"
+         style="background-image: url('{{ $host->cover_image_url }}'); background-size: cover; background-position: center {{ $host->booking_settings['cover_position_y'] ?? 50 }}%;"
          @endif>
 
     {{-- Gradient Overlay --}}

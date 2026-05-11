@@ -8,7 +8,7 @@
     <div class="card-body">
         @include('backoffice.components.coming-soon', [
             'title' => 'Schedule Management',
-            'description' => 'View consolidated schedules across all FitCRM clients. Monitor class occupancy and scheduling patterns.',
+            'description' => 'View consolidated schedules across all {{ config('app.name') }} clients. Monitor class occupancy and scheduling patterns.',
             'icon' => 'tabler--calendar'
         ])
     </div>

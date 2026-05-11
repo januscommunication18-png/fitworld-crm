@@ -765,14 +765,14 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                             </div>
                             <div class="flex items-center gap-1">
                                 @if($cert->file_path)
-                                <a href="{{ $cert->file_url }}" target="_blank" class="btn btn-ghost btn-sm btn-square" data-tooltip="View File">
-                                    <span class="icon-[tabler--file-download] size-4"></span>
+                                <a href="{{ $cert->file_url }}" download class="btn btn-ghost btn-sm btn-square" title="Download File">
+                                    <span class="icon-[tabler--download] size-4"></span>
                                 </a>
                                 @endif
-                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editCertification({{ $cert->id }})" data-tooltip="Edit">
+                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editCertification({{ $cert->id }})" title="Edit">
                                     <span class="icon-[tabler--pencil] size-4"></span>
                                 </button>
-                                <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="deleteCertification({{ $cert->id }})" data-tooltip="Delete">
+                                <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="confirmDeleteCertification({{ $cert->id }}, '{{ addslashes($cert->name) }}')" title="Delete">
                                     <span class="icon-[tabler--trash] size-4"></span>
                                 </button>
                             </div>
@@ -1541,17 +1541,29 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Delete Certification Modal --}}
-<dialog id="delete-certification-modal" class="modal">
-    <div class="modal-box">
-        <h3 class="font-bold text-lg">Delete Certification</h3>
-        <p class="py-4">Are you sure you want to delete this certification? This action cannot be undone.</p>
+{{-- Delete Certification Confirmation --}}
+<div id="delete-certification-overlay" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="fixed inset-0 bg-black/50" onclick="closeDeleteCertModal()"></div>
+    <div class="relative bg-base-100 rounded-box shadow-2xl w-full max-w-sm p-6 z-10">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
+                <span class="icon-[tabler--trash] size-6 text-error"></span>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg">Delete Certification</h3>
+                <p class="text-sm text-base-content/60">This action cannot be undone.</p>
+            </div>
+        </div>
+        <p class="text-sm mb-6">Are you sure you want to delete <strong id="delete-cert-name"></strong>?</p>
         <input type="hidden" id="delete-certification-id" value="" />
-        <div class="modal-action">
-            <button type="button" class="btn btn-error" id="confirm-delete-certification-btn">Delete</button>
-            <button type="button" class="btn" onclick="document.getElementById('delete-certification-modal').close()">Cancel</button>
+        <div class="flex justify-end gap-2">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteCertModal()">Cancel</button>
+            <button type="button" class="btn btn-error" id="confirm-delete-certification-btn">
+                <span class="icon-[tabler--trash] size-4"></span> Delete
+            </button>
         </div>
     </div>
-</dialog>
+</div>
 
 {{-- Upload Gallery Image Drawer --}}
 <div id="upload-gallery-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
@@ -2953,9 +2965,14 @@ function editCertification(id) {
 }
 
 // Delete certification
-function deleteCertification(id) {
+function confirmDeleteCertification(id, name) {
     document.getElementById('delete-certification-id').value = id;
-    document.getElementById('delete-certification-modal').showModal();
+    document.getElementById('delete-cert-name').textContent = name;
+    document.getElementById('delete-certification-overlay').classList.remove('hidden');
+}
+
+function closeDeleteCertModal() {
+    document.getElementById('delete-certification-overlay').classList.add('hidden');
 }
 
 // Confirm delete certification
@@ -2987,7 +3004,7 @@ document.getElementById('confirm-delete-certification-btn').addEventListener('cl
                     '<span class="icon-[tabler--plus] size-4"></span> Add Certification</button></div>';
             }
 
-            document.getElementById('delete-certification-modal').close();
+            closeDeleteCertModal();
             showToast('Certification deleted!');
         } else {
             showToast(result.message || 'Failed to delete', 'error');
@@ -2996,7 +3013,7 @@ document.getElementById('confirm-delete-certification-btn').addEventListener('cl
     .catch(function() { showToast('An error occurred', 'error'); })
     .finally(function() {
         btn.disabled = false;
-        btn.innerHTML = 'Delete';
+        btn.innerHTML = '<span class="icon-[tabler--trash] size-4"></span> Delete';
     });
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\UsesCustomTemplate;
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,63 +13,52 @@ use Illuminate\Queue\SerializesModels;
 
 class ClassReminderMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesCustomTemplate;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(
         public Booking $booking
     ) {}
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
-    {
-        $className = $this->booking->bookable?->display_title
-            ?? $this->booking->bookable?->title
-            ?? 'Your Class';
-
-        return new Envelope(
-            subject: "Reminder: {$className} - Tomorrow",
-        );
-    }
-
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
+    public function build()
     {
         $bookable = $this->booking->bookable;
         $host = $this->booking->host;
 
-        return new Content(
-            markdown: 'emails.class-reminder',
-            with: [
+        $className = $bookable?->display_title ?? $bookable?->title ?? 'Your Class';
+        $instructorName = $bookable instanceof \App\Models\ServiceSlot
+            ? ($bookable?->instructor?->name ?? '')
+            : ($bookable?->primaryInstructor?->name ?? '');
+
+        $variables = [
+            'customer_name' => $this->booking->client?->full_name ?? 'there',
+            'class_name' => $className,
+            'class_date' => $bookable?->start_time?->format('l, F j, Y') ?? '-',
+            'class_time' => $bookable?->start_time && $bookable?->end_time
+                ? $bookable->start_time->format('g:i A') . ' - ' . $bookable->end_time->format('g:i A')
+                : '-',
+            'instructor_name' => $instructorName,
+            'location' => $bookable?->location?->name ?? '',
+            'studio_name' => $host?->studio_name ?? 'Our Studio',
+            'studio_email' => $host?->studio_email ?? $host?->contact_email ?? '',
+            'studio_phone' => $host?->phone ?? $host?->contact_phone ?? '',
+        ];
+
+        // Try custom template first
+        if ($host && $this->buildFromCustomTemplate('class_reminder', $host, $variables)) {
+            return $this;
+        }
+
+        // Fall back to default blade template
+        return $this->subject("Reminder: {$className} - Tomorrow")
+            ->markdown('emails.class-reminder', [
                 'booking' => $this->booking,
                 'client' => $this->booking->client,
-                'className' => $bookable?->display_title ?? $bookable?->title ?? 'Class Session',
-                'sessionDate' => $bookable?->start_time?->format('l, F j, Y') ?? '-',
-                'sessionTime' => $bookable?->start_time && $bookable?->end_time
-                    ? $bookable->start_time->format('g:i A') . ' - ' . $bookable->end_time->format('g:i A')
-                    : '-',
-                'instructorName' => $bookable instanceof \App\Models\ServiceSlot
-                    ? ($bookable?->instructor?->name ?? null)
-                    : ($bookable?->primaryInstructor?->name ?? null),
+                'className' => $className,
+                'sessionDate' => $variables['class_date'],
+                'sessionTime' => $variables['class_time'],
+                'instructorName' => $instructorName ?: null,
                 'locationName' => $bookable?->location?->name ?? null,
-                'studioName' => $host?->studio_name ?? 'Our Studio',
-            ],
-        );
-    }
-
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
-    public function attachments(): array
-    {
-        return [];
+                'studioName' => $variables['studio_name'],
+            ]);
     }
 }

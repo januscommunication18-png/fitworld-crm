@@ -3,7 +3,7 @@
 
 Hi {{ $firstName }},
 
-Your FitCRM Admin verification code is:
+Your {{ config('app.name') }} Admin verification code is:
 
 <x-mail::panel>
 <div style="text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px;">

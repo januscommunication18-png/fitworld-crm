@@ -67,7 +67,7 @@
                     <span class="icon-[tabler--copy] size-4"></span>
                 </button>
             </div>
-            <p class="text-xs text-base-content/50 mt-2">This is a read-only feed. Changes sync one-way from FitCRM to your calendar.</p>
+            <p class="text-xs text-base-content/50 mt-2">This is a read-only feed. Changes sync one-way from {{ config('app.name') }} to your calendar.</p>
         </div>
     </div>
 </div>

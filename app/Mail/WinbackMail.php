@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\UsesCustomTemplate;
 use App\Models\Client;
 use App\Models\Host;
 use Illuminate\Bus\Queueable;
@@ -13,54 +14,39 @@ use Illuminate\Queue\SerializesModels;
 
 class WinbackMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesCustomTemplate;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(
         public Client $client,
         public Host $host
     ) {}
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
+    public function build()
     {
-        $studioName = $this->host->studio_name ?? 'Our Studio';
+        $bookingDomain = config('app.booking_domain', 'fitcrm.biz');
 
-        return new Envelope(
-            subject: "We miss you at {$studioName}!",
-        );
-    }
+        $variables = [
+            'customer_name' => $this->client->full_name,
+            'last_visit_date' => $this->client->last_visit_at?->format('F j, Y') ?? 'a while ago',
+            'studio_name' => $this->host->studio_name ?? 'Our Studio',
+            'booking_url' => $this->host->subdomain
+                ? "https://{$this->host->subdomain}.{$bookingDomain}"
+                : url('/'),
+        ];
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            markdown: 'emails.winback',
-            with: [
+        // Try custom template first
+        if ($this->buildFromCustomTemplate('winback_campaign', $this->host, $variables)) {
+            return $this;
+        }
+
+        // Fall back to default blade template
+        return $this->subject("We miss you at {$variables['studio_name']}!")
+            ->markdown('emails.winback', [
                 'client' => $this->client,
-                'studioName' => $this->host->studio_name ?? 'Our Studio',
+                'studioName' => $variables['studio_name'],
                 'studioEmail' => $this->host->contact_email ?? null,
-                'bookingUrl' => $this->host->subdomain
-                    ? "https://{$this->host->subdomain}.fitnearyou.com/book"
-                    : null,
+                'bookingUrl' => $variables['booking_url'],
                 'lastVisit' => $this->client->last_visit_at?->format('F j, Y'),
-            ],
-        );
-    }
-
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
-    public function attachments(): array
-    {
-        return [];
+            ]);
     }
 }

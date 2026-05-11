@@ -333,15 +333,34 @@
                 <h3 class="card-title">Image</h3>
             </div>
             <div class="card-body">
-                @if($classPlan?->image_path)
-                <div class="mb-4">
-                    <img src="{{ $classPlan->image_url }}" alt="{{ $classPlan->name }}" class="w-full h-32 object-cover rounded-lg">
+                <input type="file" id="image" name="image" class="hidden" accept="image/jpeg,image/png,image/jpg,image/webp">
+
+                {{-- Preview (shown when image exists) --}}
+                <div id="image-preview-wrapper" class="{{ $classPlan?->image_path ? '' : 'hidden' }}">
+                    <div class="relative group rounded-xl overflow-hidden">
+                        <img id="image-preview" src="{{ $classPlan?->image_url ?? '' }}" alt="Class image" class="w-full h-44 object-cover">
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button type="button" class="btn btn-sm btn-ghost text-white" onclick="document.getElementById('image').click()">
+                                <span class="icon-[tabler--edit] size-4"></span> Change
+                            </button>
+                            <button type="button" class="btn btn-sm btn-ghost text-white" onclick="removeImage()">
+                                <span class="icon-[tabler--trash] size-4"></span> Remove
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                @endif
-                <input type="file" id="image" name="image"
-                    class="file-input file-input-bordered w-full @error('image') input-error @enderror"
-                    accept="image/jpeg,image/png,image/jpg,image/webp">
-                <p class="text-xs text-base-content/60 mt-1">JPG, PNG or WebP. Max 2MB.</p>
+
+                {{-- Upload zone (shown when no image) --}}
+                <div id="image-upload-zone" class="border-2 border-dashed border-base-content/20 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors {{ $classPlan?->image_path ? 'hidden' : '' }}"
+                     onclick="document.getElementById('image').click()"
+                     ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/5')"
+                     ondragleave="this.classList.remove('border-primary', 'bg-primary/5')"
+                     ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/5'); handleImageDrop(event)">
+                    <span class="icon-[tabler--photo-up] size-10 text-base-content/30 mx-auto block mb-3"></span>
+                    <p class="text-sm font-medium text-base-content/70">Click to upload or drag & drop</p>
+                    <p class="text-xs text-base-content/50 mt-1">JPG, PNG or WebP. Max 2MB.</p>
+                </div>
+
                 @error('image')
                     <p class="text-error text-sm mt-1">{{ $message }}</p>
                 @enderror
@@ -473,6 +492,48 @@
 
 @push('scripts')
 <script>
+    // Image upload preview
+    var imageInput = document.getElementById('image');
+    var imagePreview = document.getElementById('image-preview');
+    var imagePreviewWrapper = document.getElementById('image-preview-wrapper');
+    var imageUploadZone = document.getElementById('image-upload-zone');
+
+    imageInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            previewFile(this.files[0]);
+        }
+    });
+
+    function previewFile(file) {
+        if (!file.type.startsWith('image/')) return;
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size must be under 2MB.');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreviewWrapper.classList.remove('hidden');
+            imageUploadZone.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleImageDrop(e) {
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            imageInput.files = files;
+            previewFile(files[0]);
+        }
+    }
+
+    function removeImage() {
+        imageInput.value = '';
+        imagePreview.src = '';
+        imagePreviewWrapper.classList.add('hidden');
+        imageUploadZone.classList.remove('hidden');
+    }
+
     // Sync color picker with text input
     document.getElementById('color').addEventListener('input', function() {
         document.getElementById('color_text').value = this.value;

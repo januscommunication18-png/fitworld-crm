@@ -127,7 +127,7 @@
                 <div class="flex items-start gap-3">
                     <span class="icon-[tabler--crown] size-5 text-warning shrink-0 mt-0.5"></span>
                     <div>
-                        <strong>Premium Features:</strong> Require a compatible plan or special access granted by FitCRM support.
+                        <strong>Premium Features:</strong> Require a compatible plan or special access granted by {{ config('app.name') }} support.
                     </div>
                 </div>
                 <div class="flex items-start gap-3">

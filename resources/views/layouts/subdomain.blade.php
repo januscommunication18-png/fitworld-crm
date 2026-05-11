@@ -104,7 +104,7 @@
     {{-- Footer --}}
     <footer class="py-6 text-center border-t border-base-200">
         <p class="text-sm text-base-content/50">
-            Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary hover:underline">FitCRM</a>
+            Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary hover:underline">{{ config('app.name') }}</a>
         </p>
     </footer>
 

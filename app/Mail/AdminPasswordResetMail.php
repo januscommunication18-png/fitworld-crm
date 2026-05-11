@@ -30,7 +30,7 @@ class AdminPasswordResetMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your FitCRM Admin Password Has Been Reset',
+            subject: 'Your ' . config('app.name') . ' Admin Password Has Been Reset',
         );
     }
 

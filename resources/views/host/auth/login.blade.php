@@ -15,7 +15,7 @@
         <div class="card-body">
             {{-- Logo --}}
             <div class="text-center mb-6">
-                <a href="{{ url('/') }}" class="text-2xl font-bold text-base-content no-underline">FitCRM</a>
+                <a href="{{ url('/') }}" class="text-2xl font-bold text-base-content no-underline">{{ config('app.name') }}</a>
                 <p class="text-base-content/60 mt-1">Sign in to your studio dashboard</p>
             </div>
 

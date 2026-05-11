@@ -373,7 +373,14 @@ class InstructorController extends Controller
             }
         }
 
-        return back()->with('success', $successMessage);
+        $redirect = back()->with('success', $successMessage);
+
+        // If "Save & Next" was clicked, redirect to the next step
+        if ($request->filled('_after_save_step')) {
+            $redirect = $redirect->withInput(['_step' => $request->input('_after_save_step')]);
+        }
+
+        return $redirect;
     }
 
     /**

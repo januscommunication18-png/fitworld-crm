@@ -542,16 +542,18 @@
         </button>
         <div class="flex gap-3 ml-auto">
             <a href="{{ route('instructors.index') }}" class="btn btn-ghost">{{ $trans['btn.cancel'] ?? 'Cancel' }}</a>
-            <button type="button" id="next-step-btn" class="btn btn-primary gap-2" onclick="nextStep()">
-                {{ $trans['btn.next_step'] ?? 'Next Step' }}
-                <span class="icon-[tabler--chevron-right] size-5"></span>
-            </button>
-            <button type="submit" id="save-btn" class="btn btn-primary gap-2 hidden">
-                <span class="icon-[tabler--check] size-5"></span>
+            <button type="submit" id="save-btn" class="btn btn-outline btn-primary gap-2">
+                <span class="icon-[tabler--device-floppy] size-5"></span>
                 {{ $instructor ? ($trans['btn.save_changes'] ?? 'Save Changes') : ($trans['btn.create_instructor'] ?? 'Create Instructor') }}
+            </button>
+            <button type="submit" id="save-next-btn" class="btn btn-primary gap-2" onclick="document.getElementById('_after_save_step').value = (currentStep + 1)">
+                <span class="icon-[tabler--device-floppy] size-5"></span>
+                {{ $trans['btn.save_next'] ?? 'Save & Next' }}
+                <span class="icon-[tabler--chevron-right] size-5"></span>
             </button>
         </div>
     </div>
+    <input type="hidden" name="_after_save_step" id="_after_save_step" value="" />
 </div>
 
 @push('scripts')
@@ -559,7 +561,7 @@
 <script>
 const isEditMode = {{ $instructor ? 'true' : 'false' }};
 const totalSteps = isEditMode ? 5 : 6;
-let currentStep = 1;
+let currentStep = {{ old('_step', 1) }};
 
 function showStep(step) {
     // Hide all steps
@@ -585,8 +587,7 @@ function showStep(step) {
 
     // Update navigation buttons
     document.getElementById('prev-step-btn').classList.toggle('hidden', step === 1);
-    document.getElementById('next-step-btn').classList.toggle('hidden', step === totalSteps);
-    document.getElementById('save-btn').classList.toggle('hidden', step !== totalSteps);
+    document.getElementById('save-next-btn').classList.toggle('hidden', step === totalSteps);
 
     currentStep = step;
 }
@@ -799,6 +800,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => console.error('Remove failed:', error));
     });
     @endif
+
+    // Show the correct step on page load (e.g. after Save & Next)
+    if (currentStep > 1) {
+        showStep(currentStep);
+    } else {
+        // Ensure nav buttons are correct for step 1
+        showStep(1);
+    }
 });
 </script>
 @endpush

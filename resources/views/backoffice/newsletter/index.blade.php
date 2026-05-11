@@ -8,7 +8,7 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-            <p class="text-base-content/60">Manage newsletter subscribers for FitCRM updates and news.</p>
+            <p class="text-base-content/60">Manage newsletter subscribers for {{ config('app.name') }} updates and news.</p>
         </div>
         <div class="flex gap-2">
             <button type="button" class="btn btn-outline" onclick="openEmbedModal()">

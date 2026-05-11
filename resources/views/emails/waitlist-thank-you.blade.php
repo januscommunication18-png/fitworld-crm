@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>You're on the FitCRM Waitlist!</title>
+    <title>You're on the {{ config('app.name') }} Waitlist!</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -86,7 +86,7 @@
         <div class="email-body">
             <p>Hi {{ $waitlistEntry->first_name }},</p>
 
-            <p>Thank you for joining the <strong>FitCRM</strong> waitlist! We're thrilled to have you on board.</p>
+            <p>Thank you for joining the <strong>{{ config('app.name') }}</strong> waitlist! We're thrilled to have you on board.</p>
 
             <h2>What happens next?</h2>
 
@@ -118,11 +118,11 @@
 
             <p>Thanks for believing in us!</p>
 
-            <p><strong>The FitCRM Team</strong></p>
+            <p><strong>The {{ config('app.name') }} Team</strong></p>
         </div>
 
         <div class="email-footer">
-            <p>&copy; {{ date('Y') }} FitCRM. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
             <p><a href="mailto:hello@fitcrm.io">hello@fitcrm.io</a></p>
         </div>
     </div>

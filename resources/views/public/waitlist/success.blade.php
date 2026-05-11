@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Thank You - FitCRM</title>
+    <title>Thank You - {{ config('app.name') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -118,7 +118,7 @@
         <h1 class="success-title">You're on the list!</h1>
 
         <p class="success-message">
-            Thank you for joining the FitCRM waitlist. We'll notify you as soon as we launch with exclusive founding member pricing.
+            Thank you for joining the {{ config('app.name') }} waitlist. We'll notify you as soon as we launch with exclusive founding member pricing.
         </p>
 
         <div class="success-note">
@@ -131,7 +131,7 @@
     </div>
 
     <p class="powered-by">
-        Powered by <a href="https://fitcrm.biz" target="_blank">FitCRM</a>
+        Powered by <a href="https://fitcrm.biz" target="_blank">{{ config('app.name') }}</a>
     </p>
 </body>
 </html>

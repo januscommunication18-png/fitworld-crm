@@ -8,7 +8,7 @@
     <div class="card-body">
         @include('backoffice.components.coming-soon', [
             'title' => 'Class Management',
-            'description' => 'Manage all classes across your FitCRM clients. View class schedules, attendance, and performance metrics.',
+            'description' => 'Manage all classes across your {{ config('app.name') }} clients. View class schedules, attendance, and performance metrics.',
             'icon' => 'tabler--yoga'
         ])
     </div>

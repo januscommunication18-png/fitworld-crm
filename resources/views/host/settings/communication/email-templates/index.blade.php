@@ -41,6 +41,7 @@
     @php
         $categories = [
             'transactional' => ['label' => 'Transactional', 'icon' => 'icon-[tabler--receipt]', 'description' => 'Emails sent after bookings and payments'],
+            'automation' => ['label' => 'Automation', 'icon' => 'icon-[tabler--robot]', 'description' => 'Automated emails triggered by schedules and client activity'],
             'engagement' => ['label' => 'Client Engagement', 'icon' => 'icon-[tabler--users]', 'description' => 'Emails for intake forms and client communication'],
             'team' => ['label' => 'Team', 'icon' => 'icon-[tabler--users-group]', 'description' => 'Emails for team member invitations'],
             'authentication' => ['label' => 'Authentication', 'icon' => 'icon-[tabler--lock]', 'description' => 'Password reset and login verification emails'],

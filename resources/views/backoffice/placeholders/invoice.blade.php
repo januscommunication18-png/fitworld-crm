@@ -8,7 +8,7 @@
     <div class="card-body">
         @include('backoffice.components.coming-soon', [
             'title' => 'Invoice Management',
-            'description' => 'View and manage invoices for FitCRM subscriptions. Track payments and generate billing reports.',
+            'description' => 'View and manage invoices for {{ config('app.name') }} subscriptions. Track payments and generate billing reports.',
             'icon' => 'tabler--file-invoice'
         ])
     </div>

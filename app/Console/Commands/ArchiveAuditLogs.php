@@ -225,13 +225,15 @@ class ArchiveAuditLogs extends Command
      */
     protected function getEmailContent(Host $host, $cutoffDate): string
     {
+        $appName = config('app.name');
+
         return <<<HTML
         <h2>Audit Log Archive</h2>
         <p>The attached CSV files contain archived audit logs and user session records for <strong>{$host->name}</strong>.</p>
         <p>These records are older than {$cutoffDate->format('F j, Y')} and have been removed from the system for data retention compliance.</p>
         <p>Please store these files securely for your records.</p>
         <br>
-        <p style="color: #666; font-size: 12px;">This is an automated message from FitCRM.</p>
+        <p style="color: #666; font-size: 12px;">This is an automated message from {$appName}.</p>
         HTML;
     }
 }

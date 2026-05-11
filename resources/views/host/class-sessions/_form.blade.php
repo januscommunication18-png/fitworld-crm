@@ -381,25 +381,8 @@
                                 </div>
                             </div>
 
-                            {{-- Real-time Scheduling Warning --}}
-                            <div id="realtime-scheduling-warning" class="hidden">
-                                <div class="alert alert-soft alert-warning">
-                                    <span class="icon-[tabler--alert-triangle] size-5 shrink-0"></span>
-                                    <div class="flex-1">
-                                        <h4 class="font-semibold">Scheduling Conflict</h4>
-                                        <p id="realtime-warning-message" class="text-sm"></p>
-                                        <div class="mt-3 pt-3 border-t border-warning/30">
-                                            <label class="flex items-start gap-2 cursor-pointer" for="override_availability_warnings">
-                                                <input type="checkbox" id="override_availability_warnings" name="override_availability_warnings" value="1" class="checkbox checkbox-sm checkbox-warning mt-0.5">
-                                                <div>
-                                                    <span class="text-sm font-medium">Schedule anyway</span>
-                                                    <p class="text-xs text-base-content/60">Create session with conflict to resolve later</p>
-                                                </div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {{-- Conflict override: always allow creation, conflicts shown in listing --}}
+                            <input type="hidden" id="override_availability_warnings" name="override_availability_warnings" value="1">
 
                             {{-- Working Days with Selection Indicator --}}
                             <div>
@@ -1522,8 +1505,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var availDaysContainer = document.getElementById('instructor-days-availability');
     var instructorTimeSlot = document.getElementById('instructor-time-slot');
     var instructorTimeRange = document.getElementById('instructor-time-range');
-    var realtimeWarning = document.getElementById('realtime-scheduling-warning');
-    var realtimeWarningMessage = document.getElementById('realtime-warning-message');
+    // Conflict warning UI removed — conflicts are auto-allowed and shown in listing
     var availableSlotsSection = document.getElementById('available-time-slots-section');
     var availableSlotsLoading = document.getElementById('available-time-slots-loading');
     var availableSlotsGrid = document.getElementById('available-time-slots-grid');
@@ -1675,78 +1657,9 @@ document.addEventListener('DOMContentLoaded', function() {
         availDaysContainer.innerHTML = availHtml;
     }
 
-    // Check if session time conflicts with instructor availability
+    // Conflict check is a no-op — sessions are always created, conflicts shown in listing
     function checkSchedulingConflict(data) {
-        var sessionTime = timeInput.value;
-        var duration = parseInt(durationInput.value) || 0;
-
-        // Hide warning by default
-        realtimeWarning.classList.add('hidden');
-
-        if (!sessionTime || !duration || !data.availability) {
-            return;
-        }
-
-        // Parse session start and end times
-        var sessionStartParts = sessionTime.split(':');
-        var sessionStartMinutes = parseInt(sessionStartParts[0]) * 60 + parseInt(sessionStartParts[1]);
-        var sessionEndMinutes = sessionStartMinutes + duration;
-
-        // Parse instructor availability (convert from 12h to 24h format)
-        function parseTime12h(timeStr) {
-            var match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
-            if (!match) return null;
-            var hours = parseInt(match[1]);
-            var minutes = parseInt(match[2]);
-            var isPM = match[3].toUpperCase() === 'PM';
-            if (isPM && hours !== 12) hours += 12;
-            if (!isPM && hours === 12) hours = 0;
-            return hours * 60 + minutes;
-        }
-
-        var availFromMinutes = parseTime12h(data.availability.from);
-        var availToMinutes = parseTime12h(data.availability.to);
-
-        if (availFromMinutes === null || availToMinutes === null) {
-            return;
-        }
-
-        // Check if session time is outside availability
-        var warnings = [];
-
-        if (sessionStartMinutes < availFromMinutes || sessionEndMinutes > availToMinutes) {
-            // Format session time for display
-            var sessionStartFormatted = formatTimeForDisplay(sessionStartMinutes);
-            var sessionEndFormatted = formatTimeForDisplay(sessionEndMinutes);
-
-            warnings.push(data.instructor.name + "'s availability is " + data.availability.from + " - " + data.availability.to + ". This session is " + sessionStartFormatted + " - " + sessionEndFormatted + ".");
-        }
-
-        // Check if instructor doesn't work on selected day
-        var selectedDays = getSelectedDays();
-        var daysToCheck = selectedDays.length > 0 ? selectedDays : [data.day_of_week];
-
-        daysToCheck.forEach(function(dayIndex) {
-            if (!data.working_days[dayIndex]) {
-                warnings.push(data.instructor.name + " does not work on " + dayNames[dayIndex] + "s.");
-            }
-        });
-
-        var overrideCheckbox = document.getElementById('override_availability_warnings');
-
-        if (warnings.length > 0) {
-            realtimeWarning.classList.remove('hidden');
-            realtimeWarningMessage.innerHTML = warnings.map(function(w) { return '<span class="block">' + w + '</span>'; }).join('');
-            // Reset checkbox when new warnings appear
-            if (overrideCheckbox) {
-                overrideCheckbox.checked = false;
-            }
-        } else {
-            // No warnings - uncheck the override checkbox
-            if (overrideCheckbox) {
-                overrideCheckbox.checked = false;
-            }
-        }
+        // No UI warning — override_availability_warnings is always set via hidden input
     }
 
     function formatTimeForDisplay(totalMinutes) {

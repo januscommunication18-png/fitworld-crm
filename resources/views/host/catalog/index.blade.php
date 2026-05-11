@@ -12,52 +12,12 @@
 
 @section('content')
 <div class="space-y-6">
-    {{-- Header --}}
-    <div>
-        <h1 class="text-2xl font-bold">{{ $trans['page.classes'] ?? 'Classes' }} & {{ $trans['page.services'] ?? 'Services' }}</h1>
-        <p class="text-base-content/60 mt-1">{{ $trans['catalog.description'] ?? 'Manage your class templates and service offerings.' }}</p>
-    </div>
-
-    {{-- Tabs & Actions --}}
+    {{-- Header with Actions --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div class="tabs tabs-bordered">
-            <a href="{{ route('catalog.index', ['tab' => 'classes', 'view' => request('view', 'list')]) }}"
-               class="tab {{ $tab === 'classes' ? 'tab-active' : '' }}">
-                <span class="icon-[tabler--users-group] size-4 mr-2"></span>
-                {{ $trans['nav.catalog.class_plans'] ?? 'Class Plans' }}
-            </a>
-            <a href="{{ route('catalog.index', ['tab' => 'services', 'view' => request('view', 'list')]) }}"
-               class="tab {{ $tab === 'services' ? 'tab-active' : '' }}">
-                <span class="icon-[tabler--user] size-4 mr-2"></span>
-                {{ $trans['nav.catalog.service_plans'] ?? 'Service Plans' }}
-            </a>
-            <a href="{{ route('catalog.index', ['tab' => 'class-passes', 'view' => request('view', 'list')]) }}"
-               class="tab {{ $tab === 'class-passes' ? 'tab-active' : '' }}">
-                <span class="icon-[tabler--ticket] size-4 mr-2"></span>
-                {{ $trans['nav.catalog.class_passes'] ?? 'Class Passes' }}
-            </a>
-            <a href="{{ route('catalog.index', ['tab' => 'memberships', 'view' => request('view', 'list')]) }}"
-               class="tab {{ $tab === 'memberships' ? 'tab-active' : '' }}">
-                <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>
-                {{ $trans['page.memberships'] ?? 'Memberships' }}
-            </a>
-            <a href="{{ route('catalog.index', ['tab' => 'rental-spaces', 'view' => request('view', 'list')]) }}"
-               class="tab {{ $tab === 'rental-spaces' ? 'tab-active' : '' }}">
-                <span class="icon-[tabler--building] size-4 mr-2"></span>
-                {{ $trans['nav.rental_spaces'] ?? 'Rental Spaces' }}
-            </a>
-            <a href="{{ route('catalog.index', ['tab' => 'item-rentals', 'view' => request('view', 'list')]) }}"
-               class="tab {{ $tab === 'item-rentals' ? 'tab-active' : '' }}">
-                <span class="icon-[tabler--package] size-4 mr-2"></span>
-                {{ $trans['nav.item_rentals'] ?? 'Item Rentals' }}
-            </a>
-            <a href="{{ route('catalog.index', ['tab' => 'events', 'view' => request('view', 'list')]) }}"
-               class="tab {{ $tab === 'events' ? 'tab-active' : '' }}">
-                <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>
-                {{ $trans['nav.events'] ?? 'Events' }}
-            </a>
+        <div>
+            <h1 class="text-2xl font-bold">{{ $trans['page.classes'] ?? 'Classes' }} & {{ $trans['page.services'] ?? 'Services' }}</h1>
+            <p class="text-base-content/60 mt-1">{{ $trans['catalog.description'] ?? 'Manage your class templates and service offerings.' }}</p>
         </div>
-
         <div class="flex items-center gap-2">
             {{-- View Toggle --}}
             <div class="btn-group">
@@ -108,6 +68,45 @@
             </a>
             @endif
         </div>
+    </div>
+
+    {{-- Tabs --}}
+    <div class="tabs tabs-bordered">
+        <a href="{{ route('catalog.index', ['tab' => 'classes', 'view' => request('view', 'list')]) }}"
+           class="tab {{ $tab === 'classes' ? 'tab-active' : '' }}">
+            <span class="icon-[tabler--users-group] size-4 mr-2"></span>
+            {{ $trans['nav.catalog.class_plans'] ?? 'Class Plans' }}
+        </a>
+        <a href="{{ route('catalog.index', ['tab' => 'services', 'view' => request('view', 'list')]) }}"
+           class="tab {{ $tab === 'services' ? 'tab-active' : '' }}">
+            <span class="icon-[tabler--user] size-4 mr-2"></span>
+            {{ $trans['nav.catalog.service_plans'] ?? 'Service Plans' }}
+        </a>
+        <a href="{{ route('catalog.index', ['tab' => 'class-passes', 'view' => request('view', 'list')]) }}"
+           class="tab {{ $tab === 'class-passes' ? 'tab-active' : '' }}">
+            <span class="icon-[tabler--ticket] size-4 mr-2"></span>
+            {{ $trans['nav.catalog.class_passes'] ?? 'Class Passes' }}
+        </a>
+        <a href="{{ route('catalog.index', ['tab' => 'memberships', 'view' => request('view', 'list')]) }}"
+           class="tab {{ $tab === 'memberships' ? 'tab-active' : '' }}">
+            <span class="icon-[tabler--id-badge-2] size-4 mr-2"></span>
+            {{ $trans['page.memberships'] ?? 'Memberships' }}
+        </a>
+        <a href="{{ route('catalog.index', ['tab' => 'rental-spaces', 'view' => request('view', 'list')]) }}"
+           class="tab {{ $tab === 'rental-spaces' ? 'tab-active' : '' }}">
+            <span class="icon-[tabler--building] size-4 mr-2"></span>
+            {{ $trans['nav.rental_spaces'] ?? 'Rental Spaces' }}
+        </a>
+        <a href="{{ route('catalog.index', ['tab' => 'item-rentals', 'view' => request('view', 'list')]) }}"
+           class="tab {{ $tab === 'item-rentals' ? 'tab-active' : '' }}">
+            <span class="icon-[tabler--package] size-4 mr-2"></span>
+            {{ $trans['nav.item_rentals'] ?? 'Item Rentals' }}
+        </a>
+        <a href="{{ route('catalog.index', ['tab' => 'events', 'view' => request('view', 'list')]) }}"
+           class="tab {{ $tab === 'events' ? 'tab-active' : '' }}">
+            <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>
+            {{ $trans['nav.events'] ?? 'Events' }}
+        </a>
     </div>
 
     {{-- Content --}}

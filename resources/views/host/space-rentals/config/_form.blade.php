@@ -155,8 +155,7 @@
                 {{-- Maximum Hours --}}
                 <div class="form-control">
                     <label for="maximum_hours" class="label">
-                        <span class="label-text">{{ $trans['space_rentals.max_hours'] ?? 'Maximum Hours' }}</span>
-                        <span class="label-text-alt text-base-content/60">{{ $trans['common.optional'] ?? 'Optional' }}</span>
+                        <span class="label-text">{{ $trans['space_rentals.max_hours'] ?? 'Maximum Hours' }} <span class="text-base-content/60 font-normal">({{ $trans['common.optional'] ?? 'Optional' }})</span></span>
                     </label>
                     <input type="number" min="1" name="maximum_hours" id="maximum_hours"
                         value="{{ old('maximum_hours', $config?->maximum_hours) }}"

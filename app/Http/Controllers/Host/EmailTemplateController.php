@@ -146,6 +146,45 @@ class EmailTemplateController extends Controller
                     'studio_name' => 'Your studio name',
                 ],
             ],
+            'welcome_email' => [
+                'name' => 'Welcome Email',
+                'description' => 'Automated email sent to new clients when they sign up',
+                'category' => 'automation',
+                'variables' => [
+                    'customer_name' => 'Customer\'s full name',
+                    'studio_name' => 'Your studio name',
+                    'studio_email' => 'Studio email address',
+                    'studio_phone' => 'Studio phone number',
+                    'booking_url' => 'Link to book a class',
+                ],
+            ],
+            'class_reminder' => [
+                'name' => 'Class Reminder',
+                'description' => 'Automated reminder sent before a scheduled class',
+                'category' => 'automation',
+                'variables' => [
+                    'customer_name' => 'Customer\'s full name',
+                    'class_name' => 'Name of the class/service',
+                    'class_date' => 'Date of the class',
+                    'class_time' => 'Time of the class',
+                    'instructor_name' => 'Instructor\'s name',
+                    'location' => 'Location/address',
+                    'studio_name' => 'Your studio name',
+                    'studio_email' => 'Studio email address',
+                    'studio_phone' => 'Studio phone number',
+                ],
+            ],
+            'winback_campaign' => [
+                'name' => 'Win-back Campaign',
+                'description' => 'Automated email sent to inactive clients to encourage their return',
+                'category' => 'automation',
+                'variables' => [
+                    'customer_name' => 'Customer\'s full name',
+                    'last_visit_date' => 'Date of last visit/booking',
+                    'studio_name' => 'Your studio name',
+                    'booking_url' => 'Link to book a class',
+                ],
+            ],
         ];
     }
 
@@ -229,6 +268,9 @@ class EmailTemplateController extends Controller
             'membership_welcome' => 'Welcome to {{membership_name}}!',
             'helpdesk_reply' => 'Re: {{ticket_subject}}',
             'intake_form_request' => 'Please Complete Your Intake Form',
+            'welcome_email' => 'Welcome to {{studio_name}}!',
+            'class_reminder' => 'Reminder: {{class_name}} - Tomorrow',
+            'winback_campaign' => 'We miss you at {{studio_name}}!',
         ];
 
         return $subjects[$key] ?? 'Email from {{studio_name}}';
@@ -477,6 +519,8 @@ class EmailTemplateController extends Controller
             'form_name' => 'New Member Intake Form',
             'form_link' => url('/forms/sample'),
             'due_date' => now()->addDays(2)->format('F j, Y'),
+            'booking_url' => $host->subdomain ? url('//' . $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz')) : url('/'),
+            'last_visit_date' => now()->subDays(45)->format('F j, Y'),
         ];
     }
 
@@ -585,6 +629,41 @@ class EmailTemplateController extends Controller
     <li><strong>Due by:</strong> {{due_date}}</li>
 </ul>
 <p><a href="{{form_link}}">Click here to complete the form</a></p>
+<p>{{studio_name}}</p>',
+
+            'welcome_email' => '<h2>Welcome to {{studio_name}}!</h2>
+<p>Hi {{customer_name}},</p>
+<p>Thank you for joining {{studio_name}}! We\'re excited to have you as part of our community.</p>
+<p>Here are a few things to get started:</p>
+<ul>
+    <li>Browse our class schedule and book your first session</li>
+    <li>Check out our membership plans for the best value</li>
+    <li>Don\'t hesitate to reach out if you have any questions</li>
+</ul>
+<p><a href="{{booking_url}}">Book Your First Class</a></p>
+<p>See you soon!</p>
+<p>{{studio_name}}<br>{{studio_email}}<br>{{studio_phone}}</p>',
+
+            'class_reminder' => '<h2>Reminder: Upcoming Class</h2>
+<p>Hi {{customer_name}},</p>
+<p>This is a friendly reminder about your upcoming class:</p>
+<ul>
+    <li><strong>Class:</strong> {{class_name}}</li>
+    <li><strong>Date:</strong> {{class_date}}</li>
+    <li><strong>Time:</strong> {{class_time}}</li>
+    <li><strong>Instructor:</strong> {{instructor_name}}</li>
+    <li><strong>Location:</strong> {{location}}</li>
+</ul>
+<p>Please arrive a few minutes early. If you need to cancel, please do so at least 24 hours in advance.</p>
+<p>See you soon!</p>
+<p>{{studio_name}}</p>',
+
+            'winback_campaign' => '<h2>We Miss You!</h2>
+<p>Hi {{customer_name}},</p>
+<p>We noticed it\'s been a while since your last visit on {{last_visit_date}}. We\'d love to see you back at {{studio_name}}!</p>
+<p>Whether you\'re looking to jump back into your routine or try something new, we have classes and sessions waiting for you.</p>
+<p><a href="{{booking_url}}">Book a Class Now</a></p>
+<p>We hope to see you soon!</p>
 <p>{{studio_name}}</p>',
         ];
 
