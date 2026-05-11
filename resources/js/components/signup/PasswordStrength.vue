@@ -2,7 +2,7 @@
     <div class="mt-2">
         <!-- Strength meter -->
         <div class="flex gap-1 mb-2">
-            <div v-for="i in 4" :key="i" class="h-1.5 flex-1 rounded-full transition-colors duration-300"
+            <div v-for="i in 5" :key="i" class="h-1.5 flex-1 rounded-full transition-colors duration-300"
                 :class="i <= strength ? strengthColor : 'bg-base-300'"></div>
         </div>
 
@@ -29,6 +29,7 @@ const rules = computed(() => [
     { label: 'Contains uppercase letter', valid: /[A-Z]/.test(props.password) },
     { label: 'Contains lowercase letter', valid: /[a-z]/.test(props.password) },
     { label: 'Contains number', valid: /\d/.test(props.password) },
+    { label: 'Contains special character (!@#$%...)', valid: /[^A-Za-z0-9]/.test(props.password) },
 ])
 
 const strength = computed(() => rules.value.filter(r => r.valid).length)

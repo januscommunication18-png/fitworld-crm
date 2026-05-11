@@ -753,7 +753,7 @@
                     <div class="mt-4 flex items-center gap-4 text-sm">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $config->getFormattedHourlyRateForCurrency() }}/hr</span>
+                            <span class="font-medium">{{ $config->getFormattedHourlyRateForCurrency() }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--clock] size-4 text-base-content/60"></span>
@@ -814,7 +814,7 @@
                     <div class="flex items-center gap-6 text-sm mt-2">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $config->getFormattedHourlyRateForCurrency() }}/hr</span>
+                            <span class="font-medium">{{ $config->getFormattedHourlyRateForCurrency() }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--clock] size-4 text-base-content/60"></span>

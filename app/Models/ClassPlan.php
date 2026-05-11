@@ -139,6 +139,13 @@ class ClassPlan extends Model
         return $this->staffMembers()->wherePivot('is_active', true);
     }
 
+    public function instructors(): BelongsToMany
+    {
+        return $this->belongsToMany(Instructor::class, 'class_plan_instructor')
+            ->withPivot(['is_active'])
+            ->withTimestamps();
+    }
+
     /**
      * Get image URL
      */

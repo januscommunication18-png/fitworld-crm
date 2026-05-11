@@ -240,24 +240,99 @@ class Instructor extends Model
     }
 
     /**
-     * Get common specialties
+     * Get common specialties grouped by category
+     */
+    public static function getSpecialtyGroups(): array
+    {
+        return [
+            'Mind & Body' => [
+                'Yoga (Hatha, Vinyasa, Power, Yin, Restorative)',
+                'Pilates (Mat / Reformer)',
+                'Meditation / Mindfulness',
+                'Breathwork',
+                'Tai Chi',
+                'Qigong',
+                'Stretching / Mobility',
+                'Barre',
+            ],
+            'Strength & Conditioning' => [
+                'Strength Training',
+                'Functional Training',
+                'CrossFit',
+                'Weightlifting (Olympic)',
+                'Powerlifting',
+                'Bodyweight Training (Calisthenics)',
+                'Bootcamp',
+                'Circuit Training',
+            ],
+            'Cardio & Endurance' => [
+                'HIIT (High-Intensity Interval Training)',
+                'Indoor Cycling / Spin',
+                'Running / Treadmill',
+                'Rowing',
+                'Step Aerobics',
+                'Cardio Kickboxing',
+            ],
+            'Combat & Martial Arts' => [
+                'Boxing',
+                'Kickboxing',
+                'Muay Thai',
+                'MMA (Mixed Martial Arts)',
+                'Brazilian Jiu-Jitsu (BJJ)',
+                'Karate',
+                'Taekwondo',
+                'Self-Defense',
+            ],
+            'Dance & Movement' => [
+                'Zumba',
+                'Dance Fitness',
+                'Hip Hop Dance',
+                'Ballet Fitness',
+                'Jazzercise',
+            ],
+            'Gym & General Fitness' => [
+                'Personal Training',
+                'Small Group Training',
+                'Beginner Fitness',
+                'Senior Fitness',
+                'Youth Fitness',
+            ],
+            'Specialty & Niche' => [
+                'Prenatal / Postnatal Fitness',
+                'Rehab / Physical Therapy',
+                'Injury Recovery',
+                'Adaptive Fitness',
+                'Sports Performance Training',
+                'Athlete Conditioning',
+            ],
+            'Wellness & Recovery' => [
+                'Recovery Sessions',
+                'Foam Rolling',
+                'Mobility & Flexibility',
+                'Relaxation Therapy',
+            ],
+            'Outdoor & Activity-Based' => [
+                'Outdoor Bootcamp',
+                'Hiking Fitness',
+                'Trail Running',
+                'Cycling (Outdoor)',
+                'Adventure Fitness',
+            ],
+        ];
+    }
+
+    /**
+     * Get common specialties as flat array
      */
     public static function getCommonSpecialties(): array
     {
-        return [
-            'Yoga',
-            'Pilates',
-            'HIIT',
-            'Strength Training',
-            'Cycling',
-            'Meditation',
-            'Barre',
-            'Dance',
-            'Boxing',
-            'CrossFit',
-            'Stretching',
-            'Cardio',
-        ];
+        $specialties = [];
+        foreach (self::getSpecialtyGroups() as $options) {
+            foreach ($options as $option) {
+                $specialties[] = $option;
+            }
+        }
+        return $specialties;
     }
 
     /**

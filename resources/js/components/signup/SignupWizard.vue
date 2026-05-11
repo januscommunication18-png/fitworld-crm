@@ -1,7 +1,7 @@
 <template>
     <div class="w-full max-w-[500px] mx-auto">
         <!-- Loading state while fetching progress -->
-        <div v-if="initialLoading" class="card w-[500px]">
+        <div v-if="initialLoading" class="card w-full">
             <div class="card-body animate-pulse">
                 <div class="h-8 bg-base-300 rounded w-3/4 mb-6"></div>
                 <div class="h-4 bg-base-300 rounded w-1/2 mb-8"></div>
@@ -16,7 +16,7 @@
 
         <template v-else>
             <!-- Progress bar (steps 2-5) -->
-            <ProgressBar v-if="currentStep >= 2 && currentStep <= 5" :current-step="currentStep" :total-steps="5" />
+            <ProgressBar v-if="currentStep >= 2 && currentStep <= 5" :current-step="currentStep" :total-steps="6" />
 
             <!-- Step components -->
             <transition name="fade" mode="out-in">

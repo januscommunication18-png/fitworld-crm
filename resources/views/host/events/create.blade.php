@@ -42,6 +42,42 @@
     .flatpickr-time input {
         font-size: 1rem !important;
     }
+    /* Time-only picker fixes */
+    .flatpickr-calendar.hasTime.noCalendar {
+        width: auto !important;
+        min-width: 200px;
+    }
+    .flatpickr-time {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px;
+        max-height: none !important;
+        height: auto !important;
+        padding: 10px !important;
+    }
+    .flatpickr-time .numInputWrapper {
+        width: 50px !important;
+        height: 40px !important;
+    }
+    .flatpickr-time .numInputWrapper input {
+        font-size: 1.25rem !important;
+    }
+    .flatpickr-time .flatpickr-time-separator {
+        font-size: 1.25rem !important;
+        line-height: 40px !important;
+    }
+    .flatpickr-time .flatpickr-am-pm {
+        width: 50px !important;
+        height: 40px !important;
+        line-height: 40px !important;
+        font-size: 0.875rem !important;
+    }
+    /* Alt input styling */
+    input.flatpickr-input[readonly] + input.form-control,
+    input.flatpickr-input[readonly] + input {
+        background-color: hsl(var(--b1));
+    }
 </style>
 @endpush
 
@@ -608,18 +644,26 @@
             enableTime: true,
             noCalendar: true,
             dateFormat: 'H:i',
+            time_24hr: false,
             altInput: true,
             altFormat: 'h:i K',
-            minuteIncrement: 15
+            altInputClass: 'input input-bordered w-full',
+            minuteIncrement: 15,
+            appendTo: document.body,
+            static: false
         });
 
         flatpickr('#end_time', {
             enableTime: true,
             noCalendar: true,
             dateFormat: 'H:i',
+            time_24hr: false,
             altInput: true,
             altFormat: 'h:i K',
-            minuteIncrement: 15
+            altInputClass: 'input input-bordered w-full',
+            minuteIncrement: 15,
+            appendTo: document.body,
+            static: false
         });
 
         // Same day event toggle

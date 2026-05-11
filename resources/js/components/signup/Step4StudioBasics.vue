@@ -1,5 +1,5 @@
 <template>
-    <div class="card w-[500px]">
+    <div class="card w-full">
         <div class="card-body">
             <h2 class="text-2xl font-bold mb-1">Tell us about your studio</h2>
             <p class="text-base-content/60 mb-6">Basic info to get your profile started.</p>

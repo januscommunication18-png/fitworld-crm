@@ -1,10 +1,10 @@
 <template>
-    <div class="card w-[500px]">
+    <div class="card w-full">
         <div class="card-body text-center py-16">
             <div class="mb-6">
                 <span class="icon-[tabler--rocket] size-16 text-primary"></span>
             </div>
-            <h1 class="text-3xl font-bold mb-3">Welcome to FitCRM</h1>
+            <h1 class="text-3xl font-bold mb-3">Welcome to FITStudioHQ</h1>
             <p class="text-base-content/60 mb-8 max-w-md mx-auto">
                 Your all-in-one platform for studio management. Schedule classes, track attendance, handle payments, and grow your fitness business with ease.
             </p>

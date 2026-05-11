@@ -1,5 +1,24 @@
 @extends('layouts.settings')
 
+@push('head')
+<link rel="stylesheet" href="{{ asset('vendor/quill/quill.snow.css') }}" />
+<style>
+#header-editor-container .ql-toolbar,
+#footer-editor-container .ql-toolbar {
+    border-radius: 0.5rem 0.5rem 0 0;
+    border-color: hsl(var(--bc) / 0.2);
+    background: hsl(var(--b2));
+}
+#header-editor-container .ql-container,
+#footer-editor-container .ql-container {
+    border-radius: 0 0 0.5rem 0.5rem;
+    border-color: hsl(var(--bc) / 0.2);
+    min-height: 80px;
+    font-size: 0.875rem;
+}
+</style>
+@endpush
+
 @section('title', 'Email Templates — Settings')
 
 @section('breadcrumbs')
@@ -36,6 +55,79 @@
             <span>{{ session('error') }}</span>
         </div>
     @endif
+
+    {{-- Email Layout (Header & Footer) --}}
+    @php
+        $emailHeader = $host->booking_settings['email_header_html'] ?? '';
+        $emailFooter = $host->booking_settings['email_footer_html'] ?? '';
+    @endphp
+    <div class="card bg-base-100">
+        <details class="group">
+            <summary class="flex items-center justify-between p-5 cursor-pointer list-none hover:bg-base-200/50 transition-colors">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <span class="icon-[tabler--layout] size-5 text-primary"></span>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold">Email Layout</h3>
+                        <p class="text-base-content/60 text-sm">Customize the header and footer used in all emails</p>
+                    </div>
+                </div>
+                <span class="btn btn-sm btn-ghost gap-1 group-open:hidden">
+                    <span class="icon-[tabler--pencil] size-4"></span> Customize
+                </span>
+                <span class="btn btn-sm btn-ghost gap-1 hidden group-open:inline-flex">
+                    <span class="icon-[tabler--chevron-up] size-4"></span> Collapse
+                </span>
+            </summary>
+            <div class="border-t border-base-content/10 p-5">
+                <form action="{{ route('settings.communication.email-templates.layout') }}" method="POST">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="space-y-6">
+                        {{-- Live Preview --}}
+                        <div class="alert alert-info alert-soft">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <span class="text-sm">Header and footer are shared across all email templates. Use the preview button on any template to see how it looks.</span>
+                        </div>
+
+                        {{-- Header --}}
+                        <div>
+                            <label class="label-text font-medium mb-2 block">
+                                <span class="icon-[tabler--layout-navbar] size-4 inline-block align-middle mr-1"></span>
+                                Email Header
+                            </label>
+                            <p class="text-xs text-base-content/60 mb-2">Displayed at the top of every email with your brand color background. Supports HTML.</p>
+                            <div id="header-editor-container">
+                                <div id="header-editor" style="min-height: 80px;"></div>
+                            </div>
+                            <input type="hidden" name="email_header_html" id="email_header_html" value="{{ $emailHeader }}" />
+                            <p class="text-xs text-base-content/50 mt-1">Leave empty to use default (studio name).</p>
+                        </div>
+
+                        {{-- Footer --}}
+                        <div>
+                            <label class="label-text font-medium mb-2 block">
+                                <span class="icon-[tabler--layout-bottombar] size-4 inline-block align-middle mr-1"></span>
+                                Email Footer
+                            </label>
+                            <p class="text-xs text-base-content/60 mb-2">Displayed at the bottom of every email. Add contact info, social links, or legal text.</p>
+                            <div id="footer-editor-container">
+                                <div id="footer-editor" style="min-height: 80px;"></div>
+                            </div>
+                            <input type="hidden" name="email_footer_html" id="email_footer_html" value="{{ $emailFooter }}" />
+                            <p class="text-xs text-base-content/50 mt-1">Leave empty to use default (studio name).</p>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm" id="save-layout-btn">
+                            <span class="icon-[tabler--device-floppy] size-4"></span> Save Layout
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </details>
+    </div>
 
     {{-- Templates by Category --}}
     @php
@@ -154,7 +246,49 @@
 @endsection
 
 @push('scripts')
+<script src="{{ asset('vendor/quill/quill.js') }}"></script>
 <script>
+// Initialize Quill editors for header & footer
+var headerQuill, footerQuill;
+
+document.addEventListener('DOMContentLoaded', function() {
+    var toolbarOptions = [
+        ['bold', 'italic', 'underline'],
+        [{ 'color': [] }],
+        [{ 'align': [] }],
+        ['link', 'image'],
+        ['clean']
+    ];
+
+    headerQuill = new Quill('#header-editor', {
+        theme: 'snow',
+        placeholder: 'e.g., Your studio name, logo, or tagline...',
+        modules: { toolbar: toolbarOptions }
+    });
+
+    footerQuill = new Quill('#footer-editor', {
+        theme: 'snow',
+        placeholder: 'e.g., Contact info, social links, unsubscribe text...',
+        modules: { toolbar: toolbarOptions }
+    });
+
+    // Load existing content
+    var headerContent = document.getElementById('email_header_html').value;
+    var footerContent = document.getElementById('email_footer_html').value;
+    if (headerContent) headerQuill.root.innerHTML = headerContent;
+    if (footerContent) footerQuill.root.innerHTML = footerContent;
+
+    // Sync before form submit
+    var layoutForm = document.getElementById('save-layout-btn').closest('form');
+    layoutForm.addEventListener('submit', function() {
+        var headerHtml = headerQuill.root.innerHTML;
+        var footerHtml = footerQuill.root.innerHTML;
+        // Don't save if editor is empty (just whitespace or <p><br></p>)
+        document.getElementById('email_header_html').value = headerQuill.getText().trim() ? headerHtml : '';
+        document.getElementById('email_footer_html').value = footerQuill.getText().trim() ? footerHtml : '';
+    });
+});
+
 function previewTemplate(key) {
     var modal = document.getElementById('previewModal');
     var frame = document.getElementById('previewFrame');

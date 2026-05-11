@@ -1,5 +1,5 @@
 <template>
-    <div class="card w-[500px]">
+    <div class="card w-full">
         <div class="card-body text-center py-12">
             <!-- Verified State -->
             <template v-if="emailVerified">

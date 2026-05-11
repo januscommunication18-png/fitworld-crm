@@ -18,8 +18,15 @@ class RegisterRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:50', new ValidName],
             'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', 'min:8', 'regex:/[A-Z]/', 'regex:/[a-z]/', 'regex:/[0-9]/', 'regex:/[^A-Za-z0-9]/'],
             'is_studio_owner' => ['boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'password.regex' => 'Password must include uppercase, lowercase, number, and special character.',
         ];
     }
 }

@@ -423,7 +423,7 @@
         {{-- Staff Members --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Assigned Staff Member</h3>
+                <h3 class="card-title">Assigned Staff & Instructors</h3>
             </div>
             <div class="card-body">
                 @if($staffMembers->isEmpty())
@@ -469,6 +469,36 @@
                         </div>
                     </label>
                     @endforeach
+
+                    {{-- Standalone Instructors (without login accounts) --}}
+                    @if(isset($standaloneInstructors) && $standaloneInstructors->isNotEmpty())
+                    <div class="border-t border-base-content/10 pt-2 mt-2">
+                        <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-2 mb-2">Instructors</div>
+                        @foreach($standaloneInstructors as $instructor)
+                        <label class="class-staff-member-item flex items-center gap-2 p-2 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200"
+                            data-name="{{ strtolower($instructor->name) }}" data-email="{{ strtolower($instructor->email ?? '') }}" data-role="instructor">
+                            <input type="checkbox" name="instructor_ids[]" value="{{ $instructor->id }}"
+                                class="checkbox checkbox-primary checkbox-sm class-staff-checkbox"
+                                {{ in_array($instructor->id, old('instructor_ids', $assignedInstructorIds ?? [])) ? 'checked' : '' }}>
+                            <div class="flex items-center gap-2 flex-1 min-w-0">
+                                @if($instructor->photo_url)
+                                <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}" class="w-8 h-8 rounded-full object-cover shrink-0">
+                                @else
+                                <div class="avatar avatar-placeholder shrink-0">
+                                    <div class="bg-accent text-accent-content w-8 h-8 rounded-full font-bold text-xs">
+                                        {{ $instructor->initials }}
+                                    </div>
+                                </div>
+                                @endif
+                                <div class="min-w-0">
+                                    <div class="font-medium text-sm truncate">{{ $instructor->name }}</div>
+                                    <div class="text-xs text-base-content/60">Instructor</div>
+                                </div>
+                            </div>
+                        </label>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
                 <p id="class-staff-no-results" class="text-base-content/50 text-sm py-2 text-center hidden">No staff found.</p>
                 @endif

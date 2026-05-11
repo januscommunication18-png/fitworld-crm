@@ -220,9 +220,9 @@
 
                 {{-- Requires Waiver --}}
                 <div class="form-control md:col-span-2">
-                    <label class="label cursor-pointer justify-start gap-3">
+                    <label class="flex items-start gap-3 cursor-pointer">
                         <input type="checkbox" name="requires_waiver" value="1"
-                            class="toggle toggle-primary"
+                            class="checkbox checkbox-primary mt-0.5"
                             {{ old('requires_waiver', $config?->requires_waiver ?? true) ? 'checked' : '' }}>
                         <div>
                             <span class="label-text font-medium">{{ $trans['space_rentals.require_waiver'] ?? 'Require Liability Waiver' }}</span>
@@ -233,19 +233,47 @@
 
                 {{-- Waiver Document Upload --}}
                 <div class="form-control md:col-span-2" id="waiver-upload">
-                    <label for="waiver_document" class="label">
+                    <label class="label">
                         <span class="label-text">{{ $trans['space_rentals.waiver_document'] ?? 'Waiver Document (PDF)' }}</span>
                     </label>
-                    @if($config?->waiver_document_path)
-                        <div class="flex items-center gap-3 mb-2 p-3 bg-base-200 rounded-lg">
-                            <span class="icon-[tabler--file-certificate] size-5 text-primary"></span>
-                            <span class="text-sm">{{ $trans['space_rentals.current_waiver'] ?? 'Current waiver uploaded' }}</span>
+                    <input type="file" name="waiver_document" id="waiver_document" accept=".pdf" class="hidden">
+
+                    {{-- Preview (shown when file exists) --}}
+                    <div id="waiver-preview-wrapper" class="{{ $config?->waiver_document_path ? '' : 'hidden' }}">
+                        <div class="flex items-center justify-between p-4 border border-base-content/10 rounded-xl bg-base-200/50">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <span class="icon-[tabler--file-certificate] size-5 text-primary"></span>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-sm" id="waiver-file-name">{{ $config?->waiver_document_path ? basename($config->waiver_document_path) : '' }}</div>
+                                    <div class="text-xs text-base-content/50">PDF document</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="document.getElementById('waiver_document').click()" title="Replace">
+                                    <span class="icon-[tabler--edit] size-4"></span>
+                                </button>
+                                <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="removeWaiver()" title="Remove">
+                                    <span class="icon-[tabler--trash] size-4"></span>
+                                </button>
+                            </div>
                         </div>
-                    @endif
-                    <input type="file" name="waiver_document" id="waiver_document" accept=".pdf"
-                        class="file-input file-input-bordered w-full">
+                    </div>
+
+                    {{-- Upload zone (shown when no file) --}}
+                    <div id="waiver-upload-zone" class="border-2 border-dashed border-base-content/20 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors {{ $config?->waiver_document_path ? 'hidden' : '' }}"
+                         onclick="document.getElementById('waiver_document').click()"
+                         ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/5')"
+                         ondragleave="this.classList.remove('border-primary', 'bg-primary/5')"
+                         ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/5'); handleWaiverDrop(event)">
+                        <span class="icon-[tabler--file-upload] size-10 text-base-content/30 mx-auto block mb-3"></span>
+                        <p class="text-sm font-medium text-base-content/70">Click to upload or drag & drop</p>
+                        <p class="text-xs text-base-content/50 mt-1">PDF only. Max 5MB.</p>
+                    </div>
+
                     @error('waiver_document')
-                        <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
+                        <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -393,6 +421,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial state
     updateTypeOptions();
+
+    // Waiver file upload preview
+    var waiverInput = document.getElementById('waiver_document');
+    var waiverPreview = document.getElementById('waiver-preview-wrapper');
+    var waiverZone = document.getElementById('waiver-upload-zone');
+    var waiverFileName = document.getElementById('waiver-file-name');
+
+    if (waiverInput) {
+        waiverInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                showWaiverPreview(this.files[0]);
+            }
+        });
+    }
+
+    window.handleWaiverDrop = function(e) {
+        var files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type === 'application/pdf') {
+            waiverInput.files = files;
+            showWaiverPreview(files[0]);
+        }
+    };
+
+    window.removeWaiver = function() {
+        waiverInput.value = '';
+        waiverPreview.classList.add('hidden');
+        waiverZone.classList.remove('hidden');
+    };
+
+    function showWaiverPreview(file) {
+        if (file.type !== 'application/pdf') {
+            alert('Please upload a PDF file.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size must be under 5MB.');
+            return;
+        }
+        waiverFileName.textContent = file.name;
+        waiverPreview.classList.remove('hidden');
+        waiverZone.classList.add('hidden');
+    }
 });
 </script>
 @endpush

@@ -26,6 +26,36 @@
         background: oklch(var(--p)) !important;
         border-color: oklch(var(--p)) !important;
     }
+    .flatpickr-calendar.hasTime.noCalendar {
+        width: auto !important;
+        min-width: 200px;
+    }
+    .flatpickr-time {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px;
+        max-height: none !important;
+        height: auto !important;
+        padding: 10px !important;
+    }
+    .flatpickr-time .numInputWrapper {
+        width: 50px !important;
+        height: 40px !important;
+    }
+    .flatpickr-time .numInputWrapper input {
+        font-size: 1.25rem !important;
+    }
+    .flatpickr-time .flatpickr-time-separator {
+        font-size: 1.25rem !important;
+        line-height: 40px !important;
+    }
+    .flatpickr-time .flatpickr-am-pm {
+        width: 50px !important;
+        height: 40px !important;
+        line-height: 40px !important;
+        font-size: 0.875rem !important;
+    }
 </style>
 @endpush
 
@@ -467,8 +497,8 @@
 
         flatpickr('#start_date', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'F j, Y' });
         flatpickr('#end_date', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'F j, Y' });
-        flatpickr('#start_time', { enableTime: true, noCalendar: true, dateFormat: 'H:i', altInput: true, altFormat: 'h:i K', minuteIncrement: 15 });
-        flatpickr('#end_time', { enableTime: true, noCalendar: true, dateFormat: 'H:i', altInput: true, altFormat: 'h:i K', minuteIncrement: 15 });
+        flatpickr('#start_time', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: false, altInput: true, altFormat: 'h:i K', altInputClass: 'input input-bordered w-full', minuteIncrement: 15, appendTo: document.body, static: false });
+        flatpickr('#end_time', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: false, altInput: true, altFormat: 'h:i K', altInputClass: 'input input-bordered w-full', minuteIncrement: 15, appendTo: document.body, static: false });
     });
 </script>
 @endpush

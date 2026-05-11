@@ -51,6 +51,19 @@ class ClassPlanController extends Controller
         $progressTemplates = $this->getEnabledProgressTemplates();
         $staffMembers = $host->getAllTeamMembers();
 
+        // Get instructors without login accounts (not linked to a user)
+        $linkedInstructorUserIds = $host->teamMembers()
+            ->wherePivotNotNull('instructor_id')
+            ->pluck('host_user.instructor_id')
+            ->toArray();
+
+        $standaloneInstructors = $host->instructors()
+            ->whereNull('user_id')
+            ->whereNotIn('id', $linkedInstructorUserIds)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
         // Multi-currency support
         $hostCurrencies = $host->currencies ?? ['USD'];
         $defaultCurrency = $host->default_currency ?? 'USD';
@@ -63,6 +76,7 @@ class ClassPlanController extends Controller
             'questionnaires',
             'progressTemplates',
             'staffMembers',
+            'standaloneInstructors',
             'hostCurrencies',
             'defaultCurrency',
             'currencySymbols'
@@ -120,6 +134,11 @@ class ClassPlanController extends Controller
         // Attach staff members if provided
         if ($request->has('staff_member_ids')) {
             $classPlan->staffMembers()->attach($request->input('staff_member_ids'));
+        }
+
+        // Attach instructors if provided
+        if ($request->has('instructor_ids')) {
+            $classPlan->instructors()->attach($request->input('instructor_ids'));
         }
 
         // Sync questionnaire attachments
@@ -198,7 +217,21 @@ class ClassPlanController extends Controller
         $progressTemplates = $this->getEnabledProgressTemplates();
         $staffMembers = $host->getAllTeamMembers();
         $assignedStaffMemberIds = $classPlan->staffMembers->pluck('id')->toArray();
+        $assignedInstructorIds = $classPlan->instructors ? $classPlan->instructors->pluck('id')->toArray() : [];
         $classPlan->load(['questionnaireAttachments', 'progressTemplateAttachments']);
+
+        // Get instructors without login accounts
+        $linkedInstructorUserIds = $host->teamMembers()
+            ->wherePivotNotNull('instructor_id')
+            ->pluck('host_user.instructor_id')
+            ->toArray();
+
+        $standaloneInstructors = $host->instructors()
+            ->whereNull('user_id')
+            ->whereNotIn('id', $linkedInstructorUserIds)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
 
         // Multi-currency support
         $hostCurrencies = $host->currencies ?? ['USD'];
@@ -213,7 +246,9 @@ class ClassPlanController extends Controller
             'questionnaires',
             'progressTemplates',
             'staffMembers',
+            'standaloneInstructors',
             'assignedStaffMemberIds',
+            'assignedInstructorIds',
             'hostCurrencies',
             'defaultCurrency',
             'currencySymbols'
@@ -286,6 +321,13 @@ class ClassPlanController extends Controller
             $classPlan->staffMembers()->sync($request->input('staff_member_ids'));
         } else {
             $classPlan->staffMembers()->detach();
+        }
+
+        // Sync instructors
+        if ($request->has('instructor_ids')) {
+            $classPlan->instructors()->sync($request->input('instructor_ids'));
+        } else {
+            $classPlan->instructors()->detach();
         }
 
         // Sync questionnaire attachments

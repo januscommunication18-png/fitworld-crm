@@ -252,16 +252,24 @@
                     <label class="label">
                         <span class="label-text font-medium">{{ $trans['field.specialties'] ?? 'Specialties' }}</span>
                     </label>
-                    <div class="flex flex-col gap-2">
-                        @php
-                            $selectedSpecialties = old('specialties', $instructor?->specialties ?? []);
-                        @endphp
-                        @foreach($specialties as $specialty)
-                        <label class="cursor-pointer flex items-center gap-3 px-4 py-3 rounded-lg border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition-all hover:border-primary/30">
-                            <input type="checkbox" name="specialties[]" value="{{ $specialty }}" class="checkbox checkbox-sm checkbox-primary"
-                                {{ in_array($specialty, $selectedSpecialties) ? 'checked' : '' }} />
-                            <span class="flex-1">{{ $specialty }}</span>
-                        </label>
+                    @php
+                        $selectedSpecialties = old('specialties', $instructor?->specialties ?? []);
+                        $specialtyGroups = \App\Models\Instructor::getSpecialtyGroups();
+                    @endphp
+                    <div class="space-y-4">
+                        @foreach($specialtyGroups as $group => $items)
+                        <div>
+                            <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">{{ $group }}</div>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($items as $specialty)
+                                <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary transition-all hover:border-primary/30 text-sm">
+                                    <input type="checkbox" name="specialties[]" value="{{ $specialty }}" class="hidden"
+                                        {{ in_array($specialty, $selectedSpecialties) ? 'checked' : '' }} />
+                                    <span>{{ $specialty }}</span>
+                                </label>
+                                @endforeach
+                            </div>
+                        </div>
                         @endforeach
                     </div>
                 </div>

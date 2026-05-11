@@ -219,6 +219,7 @@ class EmailTemplateController extends Controller
 
         return view('host.settings.communication.email-templates.index', [
             'templates' => $templates,
+            'host' => $host,
         ]);
     }
 
@@ -369,12 +370,43 @@ class EmailTemplateController extends Controller
     }
 
     /**
+     * Update global email header & footer layout
+     */
+    public function updateLayout(Request $request)
+    {
+        $request->validate([
+            'email_header_html' => 'nullable|string|max:5000',
+            'email_footer_html' => 'nullable|string|max:5000',
+        ]);
+
+        $host = auth()->user()->currentHost();
+        $settings = $host->booking_settings ?? [];
+        $settings['email_header_html'] = $request->input('email_header_html', '');
+        $settings['email_footer_html'] = $request->input('email_footer_html', '');
+        $host->booking_settings = $settings;
+        $host->save();
+
+        return back()->with('success', 'Email layout updated successfully.');
+    }
+
+    /**
      * Wrap body content in email layout
      */
     protected function wrapInEmailLayout(string $content, $host): string
     {
         $studioName = $host->studio_name ?? 'Your Studio';
         $primaryColor = $host->booking_settings['primary_color'] ?? '#6366f1';
+
+        $customHeader = $host->booking_settings['email_header_html'] ?? '';
+        $customFooter = $host->booking_settings['email_footer_html'] ?? '';
+
+        $headerHtml = !empty($customHeader)
+            ? $customHeader
+            : '<h1 style="margin:0;font-size:24px;font-weight:600;">' . htmlspecialchars($studioName) . '</h1>';
+
+        $footerHtml = !empty($customFooter)
+            ? $customFooter
+            : '<p>' . htmlspecialchars($studioName) . '</p>';
 
         return '<!DOCTYPE html>
 <html>
@@ -385,7 +417,6 @@ class EmailTemplateController extends Controller
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 0; background-color: #f3f4f6; }
         .container { max-width: 600px; margin: 0 auto; background: white; }
         .header { background: ' . $primaryColor . '; color: white; padding: 24px; text-align: center; }
-        .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
         .content { padding: 32px 24px; }
         .content h2 { color: #111827; margin-top: 0; }
         .content ul { padding-left: 20px; }
@@ -395,13 +426,9 @@ class EmailTemplateController extends Controller
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>' . htmlspecialchars($studioName) . '</h1>
-        </div>
+        <div class="header">' . $headerHtml . '</div>
         <div class="content">' . $content . '</div>
-        <div class="footer">
-            <p>' . htmlspecialchars($studioName) . '</p>
-        </div>
+        <div class="footer">' . $footerHtml . '</div>
     </div>
 </body>
 </html>';

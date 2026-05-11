@@ -811,6 +811,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/settings/communication/email-templates/{key}/preview', [EmailTemplateController::class, 'preview'])->name('settings.communication.email-templates.preview');
     Route::post('/settings/communication/email-templates/{key}/test', [EmailTemplateController::class, 'sendTest'])->name('settings.communication.email-templates.test');
     Route::post('/settings/communication/email-templates/{key}/reset', [EmailTemplateController::class, 'reset'])->name('settings.communication.email-templates.reset');
+    Route::put('/settings/communication/email-templates-layout', [EmailTemplateController::class, 'updateLayout'])->name('settings.communication.email-templates.layout');
 
     // Settings - Integrations
     Route::get('/settings/integrations/stripe', [SettingsController::class, 'stripeIntegration'])->name('settings.integrations.stripe');
