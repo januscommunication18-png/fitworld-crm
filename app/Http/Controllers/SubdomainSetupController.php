@@ -67,8 +67,9 @@ class SubdomainSetupController extends Controller
         // Check if there's an existing user with this email
         $existingUser = User::where('email', $invitation->email)->first();
 
-        // Check if user is already a member of this studio
-        if ($existingUser) {
+        // Check if user is already a member of this studio WITH login access
+        // Users without a password are invited stubs who still need to set up their account
+        if ($existingUser && !is_null($existingUser->password) && $existingUser->status !== User::STATUS_INVITED) {
             $alreadyMember = DB::table('host_user')
                 ->where('user_id', $existingUser->id)
                 ->where('host_id', $host->id)
@@ -82,10 +83,13 @@ class SubdomainSetupController extends Controller
             }
         }
 
+        // Invited stubs (no password) should be treated as new users for the form
+        $isInvitedStub = $existingUser && (is_null($existingUser->password) || $existingUser->status === User::STATUS_INVITED);
+
         return view('subdomain.invite-setup', [
             'host' => $host,
             'invitation' => $invitation,
-            'existingUser' => $existingUser,
+            'existingUser' => $isInvitedStub ? null : $existingUser,
         ]);
     }
 
@@ -105,9 +109,10 @@ class SubdomainSetupController extends Controller
 
         // Check if user exists with this email
         $existingUser = User::where('email', $invitation->email)->first();
+        $isInvitedStub = $existingUser && (is_null($existingUser->password) || $existingUser->status === User::STATUS_INVITED);
 
-        if ($existingUser) {
-            // Existing user - verify password
+        if ($existingUser && !$isInvitedStub) {
+            // Existing user with password - verify password
             $request->validate([
                 'password' => 'required|string',
             ]);
@@ -115,6 +120,28 @@ class SubdomainSetupController extends Controller
             if (!Hash::check($request->password, $existingUser->password)) {
                 return back()->withErrors(['password' => 'The password is incorrect.']);
             }
+
+            $user = $existingUser;
+        } elseif ($isInvitedStub) {
+            // Invited stub user - needs to set up their account
+            $request->validate([
+                'first_name' => ['required', 'string', 'max:255', 'regex:/^[^\d]+$/'],
+                'last_name' => ['required', 'string', 'max:255', 'regex:/^[^\d]+$/'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
+
+            $existingUser->update([
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'password' => Hash::make($request->password),
+                'host_id' => $host->id,
+                'role' => $invitation->role,
+                'permissions' => $invitation->permissions,
+                'status' => User::STATUS_ACTIVE,
+                'instructor_id' => $invitation->instructor_id,
+                'is_instructor' => $invitation->role === 'instructor',
+                'email_verified_at' => now(),
+            ]);
 
             $user = $existingUser;
         } else {
@@ -126,7 +153,7 @@ class SubdomainSetupController extends Controller
             ]);
 
             $user = User::create([
-                'host_id' => $host->id, // Set primary host
+                'host_id' => $host->id,
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
                 'email' => $invitation->email,
@@ -136,7 +163,7 @@ class SubdomainSetupController extends Controller
                 'status' => User::STATUS_ACTIVE,
                 'instructor_id' => $invitation->instructor_id,
                 'is_instructor' => $invitation->role === 'instructor',
-                'email_verified_at' => now(), // Auto-verify since they received the email
+                'email_verified_at' => now(),
             ]);
         }
 
