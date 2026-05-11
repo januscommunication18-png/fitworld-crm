@@ -29,8 +29,35 @@
     </div>
     @endif
 
+    {{-- Info Banner --}}
+    <div class="alert alert-info alert-soft">
+        <span class="icon-[tabler--info-circle] size-5"></span>
+        <div>
+            <div class="font-medium">Permissions apply to team members with system access only</div>
+            <div class="text-sm">Only team members who have a login account and an assigned role (Admin, Manager, Staff, Instructor) can have their permissions customized here. Instructors without login access are managed from the <a href="{{ route('instructors.index') }}" class="link font-medium">Instructors</a> page.</div>
+        </div>
+    </div>
+
     {{-- Overview Stats --}}
+    @php
+        $totalMembers = $users->count();
+        $customCount = $users->filter(fn($u) => !empty($u->pivot->permissions ?? $u->permissions))->count();
+        $accessGranted = $users->filter(fn($u) => !$u->trashed() && ($u->pivot->role ?? $u->role) !== 'owner')->count();
+    @endphp
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div class="card bg-base-100">
+            <div class="card-body p-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-base-content/5 flex items-center justify-center">
+                        <span class="icon-[tabler--users-group] size-5 text-base-content/60"></span>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold">{{ $totalMembers }} <span class="text-sm font-normal text-base-content/50">/ {{ $accessGranted }} active</span></div>
+                        <div class="text-xs text-base-content/60">Total Members</div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="card bg-base-100">
             <div class="card-body p-4">
                 <div class="flex items-center gap-3">
@@ -64,21 +91,8 @@
                         <span class="icon-[tabler--user] size-5 text-info"></span>
                     </div>
                     <div>
-                        <div class="text-2xl font-bold">{{ $roleCounts['staff'] ?? 0 }}</div>
-                        <div class="text-xs text-base-content/60">Staff</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card bg-base-100">
-            <div class="card-body p-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                        <span class="icon-[tabler--yoga] size-5 text-accent"></span>
-                    </div>
-                    <div>
-                        <div class="text-2xl font-bold">{{ $roleCounts['instructor'] ?? 0 }}</div>
-                        <div class="text-xs text-base-content/60">Instructors</div>
+                        <div class="text-2xl font-bold">{{ ($roleCounts['staff'] ?? 0) + ($roleCounts['instructor'] ?? 0) }}</div>
+                        <div class="text-xs text-base-content/60">Staff & Instructors</div>
                     </div>
                 </div>
             </div>
@@ -90,9 +104,6 @@
                         <span class="icon-[tabler--adjustments] size-5 text-primary"></span>
                     </div>
                     <div>
-                        @php
-                            $customCount = $users->filter(fn($u) => !empty($u->permissions))->count();
-                        @endphp
                         <div class="text-2xl font-bold">{{ $customCount }}</div>
                         <div class="text-xs text-base-content/60">Custom Overrides</div>
                     </div>

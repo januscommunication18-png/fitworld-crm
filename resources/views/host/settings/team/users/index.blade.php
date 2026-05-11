@@ -63,9 +63,8 @@
                         <tr>
                             <th>User</th>
                             <th>Role</th>
-                            <th>Status</th>
-                            <th>Access Level</th>
-                            <th>Last Active</th>
+                            <th>Status / Access</th>
+                            <th class="hidden lg:table-cell">Last Active</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -116,27 +115,27 @@
                                 <span class="badge {{ $roleBadge }} badge-soft badge-sm">{{ ucfirst($userRole) }}</span>
                             </td>
                             <td>
-                                @if($user->trashed())
-                                    <span class="badge badge-neutral badge-soft badge-sm">Removed</span>
-                                @elseif($user->status === 'suspended')
-                                    <span class="badge badge-error badge-soft badge-sm">Suspended</span>
-                                @elseif($user->status === 'deactivated')
-                                    <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
-                                @else
-                                    <span class="badge badge-success badge-soft badge-sm">Active</span>
-                                @endif
-                            </td>
-                            <td>
-                                @if($hasLogin)
-                                    <span class="badge badge-success badge-soft badge-sm">Granted</span>
-                                    @if($isPending)
-                                        <span class="badge badge-warning badge-soft badge-xs ml-1">Pending</span>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    @if($user->trashed())
+                                        <span class="badge badge-neutral badge-soft badge-sm">Removed</span>
+                                    @elseif($user->status === 'suspended')
+                                        <span class="badge badge-error badge-soft badge-sm">Suspended</span>
+                                    @elseif($user->status === 'deactivated')
+                                        <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
+                                    @else
+                                        <span class="badge badge-success badge-soft badge-sm">Active</span>
                                     @endif
-                                @else
-                                    <span class="badge badge-neutral badge-soft badge-sm">No Access</span>
-                                @endif
+                                    @if($hasLogin)
+                                        <span class="badge badge-success badge-soft badge-sm">Access</span>
+                                        @if($isPending)
+                                            <span class="badge badge-warning badge-soft badge-xs">Pending</span>
+                                        @endif
+                                    @else
+                                        <span class="badge badge-neutral badge-soft badge-sm">No Access</span>
+                                    @endif
+                                </div>
                             </td>
-                            <td class="text-sm text-base-content/60">
+                            <td class="hidden lg:table-cell text-sm text-base-content/60">
                                 @if($user->last_login_at)
                                     {{ $user->last_login_at->diffForHumans() }}
                                 @else
@@ -232,16 +231,15 @@
                                 <span class="badge {{ $roleBadge }} badge-soft badge-sm">{{ ucfirst($invitation->role) }}</span>
                             </td>
                             <td>
-                                <span class="badge badge-success badge-soft badge-sm">Active</span>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <span class="badge badge-success badge-soft badge-sm">Access</span>
+                                    <span class="badge badge-warning badge-soft badge-xs">Pending</span>
+                                    @if($invitation->isExpired())
+                                        <span class="badge badge-error badge-soft badge-xs">Expired</span>
+                                    @endif
+                                </div>
                             </td>
-                            <td>
-                                <span class="badge badge-success badge-soft badge-sm">Granted</span>
-                                <span class="badge badge-warning badge-soft badge-xs ml-1">Pending</span>
-                                @if($invitation->isExpired())
-                                    <span class="badge badge-error badge-soft badge-xs ml-1">Expired</span>
-                                @endif
-                            </td>
-                            <td class="text-sm text-base-content/60">
+                            <td class="hidden lg:table-cell text-sm text-base-content/60">
                                 Invited {{ $invitation->created_at->diffForHumans() }}
                             </td>
                             <td>
@@ -253,7 +251,7 @@
                                         </button>
                                     </form>
                                     @if($invitation->instructor_id && $invitation->instructor)
-                                        <a href="{{ route('instructors.show', $invitation->instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Instructor Profile">
+                                        <a href="{{ route('instructors.show', ['instructor' => $invitation->instructor, 'ref' => 'team']) }}" class="btn btn-ghost btn-xs btn-square" title="View Instructor Profile">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
                                     @elseif($invitationUser)
@@ -281,7 +279,7 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <a href="{{ route('instructors.show', $instructor) }}" class="font-medium hover:text-primary">{{ $instructor->name }}</a>
+                                        <a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}" class="font-medium hover:text-primary">{{ $instructor->name }}</a>
                                         <div class="text-sm text-base-content/60">{{ $instructor->email ?? 'No email' }}</div>
                                     </div>
                                 </div>
@@ -290,16 +288,16 @@
                                 <span class="badge badge-accent badge-soft badge-sm">Instructor</span>
                             </td>
                             <td>
-                                @if($instructor->is_active)
-                                    <span class="badge badge-success badge-soft badge-sm">Active</span>
-                                @else
-                                    <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
-                                @endif
+                                <div class="flex flex-wrap items-center gap-1">
+                                    @if($instructor->is_active)
+                                        <span class="badge badge-success badge-soft badge-sm">Active</span>
+                                    @else
+                                        <span class="badge badge-neutral badge-soft badge-sm">Inactive</span>
+                                    @endif
+                                    <span class="badge badge-neutral badge-soft badge-sm">No Access</span>
+                                </div>
                             </td>
-                            <td>
-                                <span class="badge badge-neutral badge-soft badge-sm">No Access</span>
-                            </td>
-                            <td class="text-sm text-base-content/60">
+                            <td class="hidden lg:table-cell text-sm text-base-content/60">
                                 —
                             </td>
                             <td>
@@ -312,7 +310,7 @@
                                         </button>
                                     </form>
                                     @endif
-                                    <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
+                                    <a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
                                         <span class="icon-[tabler--eye] size-4"></span>
                                     </a>
                                 </div>
@@ -322,7 +320,7 @@
 
                         @if($users->isEmpty() && $invitations->isEmpty() && $instructorsWithoutLogin->isEmpty())
                         <tr>
-                            <td colspan="6" class="text-center py-8">
+                            <td colspan="5" class="text-center py-8">
                                 <div class="text-base-content/50">
                                     <span class="icon-[tabler--search] size-8 mb-2 block mx-auto"></span>
                                     @if($search)

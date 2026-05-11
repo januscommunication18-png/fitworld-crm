@@ -249,12 +249,9 @@
                         <thead>
                             <tr>
                                 <th>{{ $trans['field.instructor'] ?? 'Instructor' }}</th>
-                                <th>{{ $trans['field.email'] ?? 'Email' }}</th>
-                                <th>{{ $trans['field.phone'] ?? 'Phone' }}</th>
                                 <th>{{ $trans['common.status'] ?? 'Status' }}</th>
-                                <th>{{ $trans['instructors.employment'] ?? 'Employment' }}</th>
+                                <th class="hidden xl:table-cell">{{ $trans['instructors.employment'] ?? 'Employment' }}</th>
                                 <th>{{ $trans['instructors.rate'] ?? 'Rate' }}</th>
-                                <th>{{ $trans['instructors.access_level'] ?? 'Access Level' }}</th>
                                 <th class="w-20">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
@@ -273,32 +270,18 @@
                                                     </div>
                                                 </div>
                                             @endif
-                                            <a href="{{ route('instructors.show', $instructor) }}" class="font-medium hover:text-primary">
-                                                {{ $instructor->name }}
-                                            </a>
+                                            <div>
+                                                <a href="{{ route('instructors.show', $instructor) }}" class="font-medium hover:text-primary">
+                                                    {{ $instructor->name }}
+                                                </a>
+                                                <div class="text-xs text-base-content/50">{{ $instructor->email ?? $instructor->phone ?? '' }}</div>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td class="text-base-content/70">{{ $instructor->email ?? '-' }}</td>
-                                    <td class="text-base-content/70">{{ $instructor->phone ?? '-' }}</td>
-                                    <td>
-                                        @if($instructor->status === 'pending' || !$instructor->isProfileComplete())
-                                            <span class="badge badge-soft badge-sm badge-warning" title="{{ $trans['instructors.profile_incomplete'] ?? 'Profile incomplete' }}">
-                                                {{ $trans['common.pending'] ?? 'Pending' }}
-                                            </span>
-                                        @elseif($instructor->is_active)
-                                            <span class="badge badge-soft badge-sm badge-success">{{ $trans['common.active'] ?? 'Active' }}</span>
-                                        @else
-                                            <span class="badge badge-soft badge-sm badge-neutral">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-base-content/70">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</td>
-                                    <td class="text-success font-medium">{{ $instructor->getFormattedRate() ?? '-' }}</td>
                                     <td>
                                         @php
                                             $hasAccount = $instructor->hasAccount();
                                             $linkedUser = $instructor->user;
-
-                                            // If no direct link, check if user exists with same email
                                             if (!$hasAccount && $instructor->email) {
                                                 $linkedUser = \App\Models\User::where('email', $instructor->email)
                                                     ->whereNotNull('password')
@@ -306,15 +289,21 @@
                                                 $hasAccount = $linkedUser !== null;
                                             }
                                         @endphp
-                                        @if($hasAccount)
-                                            <span class="badge badge-soft badge-success badge-sm">{{ $trans['instructors.granted'] ?? 'Granted' }}</span>
-                                            @if($linkedUser && $linkedUser->status === 'invited')
-                                                <span class="badge badge-soft badge-warning badge-xs ml-1">{{ $trans['instructors.invite_pending'] ?? 'Invite Pending' }}</span>
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            @if($instructor->status === 'pending' || !$instructor->isProfileComplete())
+                                                <span class="badge badge-soft badge-sm badge-warning">{{ $trans['common.pending'] ?? 'Pending' }}</span>
+                                            @elseif($instructor->is_active)
+                                                <span class="badge badge-soft badge-sm badge-success">{{ $trans['common.active'] ?? 'Active' }}</span>
+                                            @else
+                                                <span class="badge badge-soft badge-sm badge-neutral">{{ $trans['common.inactive'] ?? 'Inactive' }}</span>
                                             @endif
-                                        @else
-                                            <span class="badge badge-soft badge-neutral badge-sm">{{ $trans['instructors.no_access'] ?? 'No Access' }}</span>
-                                        @endif
+                                            @if($hasAccount)
+                                                <span class="badge badge-soft badge-success badge-xs">{{ $trans['instructors.granted'] ?? 'Access' }}</span>
+                                            @endif
+                                        </div>
                                     </td>
+                                    <td class="hidden xl:table-cell text-base-content/70">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</td>
+                                    <td class="text-success font-medium">{{ $instructor->getFormattedRate() ?? '-' }}</td>
                                     <td>
                                         <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['instructors.view_profile'] ?? 'View Profile' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>

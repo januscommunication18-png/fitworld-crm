@@ -6,7 +6,13 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        @if(request('ref') === 'team')
+        <li><a href="{{ route('settings.index') }}">{{ $trans['nav.settings'] ?? 'Settings' }}</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li><a href="{{ route('settings.team.users') }}">{{ $trans['nav.team'] ?? 'Users & Roles' }}</a></li>
+        @else
         <li><a href="{{ route('instructors.index') }}">{{ $trans['nav.instructors'] ?? 'Instructors' }}</a></li>
+        @endif
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">{{ $instructor->name }}</li>
     </ol>
@@ -32,7 +38,7 @@
             <div class="flex flex-col lg:flex-row lg:items-start gap-6">
                 {{-- Profile Photo & Basic Info --}}
                 <div class="flex items-start gap-4 flex-1">
-                    <a href="{{ route('instructors.index') }}" class="btn btn-ghost btn-sm btn-circle">
+                    <a href="{{ request('ref') === 'team' ? route('settings.team.users') : route('instructors.index') }}" class="btn btn-ghost btn-sm btn-circle">
                         <span class="icon-[tabler--arrow-left] size-5"></span>
                     </a>
                     <div class="relative">

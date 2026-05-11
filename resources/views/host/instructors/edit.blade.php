@@ -6,9 +6,15 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('instructors.index') }}">{{ $trans['nav.instructors'] ?? 'Instructors' }}</a></li>
+        @if(request('ref') === 'team')
+        <li><a href="{{ route('settings.index') }}">{{ $trans['nav.settings'] ?? 'Settings' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('instructors.show', $instructor) }}">{{ $instructor->name }}</a></li>
+        <li><a href="{{ route('settings.team.users') }}">{{ $trans['nav.team'] ?? 'Users & Roles' }}</a></li>
+        @else
+        <li><a href="{{ route('instructors.index') }}">{{ $trans['nav.instructors'] ?? 'Instructors' }}</a></li>
+        @endif
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li><a href="{{ route('instructors.show', array_filter(['instructor' => $instructor, 'ref' => request('ref')])) }}">{{ $instructor->name }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">{{ $trans['btn.edit'] ?? 'Edit' }}</li>
     </ol>
@@ -18,7 +24,7 @@
 <div class="space-y-6">
     {{-- Back Button --}}
     <div class="flex items-center gap-4">
-        <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-sm btn-circle">
+        <a href="{{ route('instructors.show', array_filter(['instructor' => $instructor, 'ref' => request('ref')])) }}" class="btn btn-ghost btn-sm btn-circle">
             <span class="icon-[tabler--arrow-left] size-5"></span>
         </a>
         <div>

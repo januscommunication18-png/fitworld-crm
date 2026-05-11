@@ -115,7 +115,7 @@
             <div class="flex-1">
                 <p>This team member has an instructor profile with employment details, schedule, and class assignments.</p>
             </div>
-            <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-info btn-sm">
+            <a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}" class="btn btn-info btn-sm">
                 <span class="icon-[tabler--user-star] size-4"></span>
                 View Instructor Profile
             </a>
@@ -553,7 +553,7 @@
                                     @endif
 
                                     @if($userRole === 'instructor' && $instructor)
-                                        <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-soft btn-sm w-full justify-start">
+                                        <a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}" class="btn btn-soft btn-sm w-full justify-start">
                                             <span class="icon-[tabler--user-star] size-4"></span>
                                             View Instructor Profile
                                         </a>
@@ -668,7 +668,7 @@
                     <div class="flex-1">
                         <p>Billing information for instructors is managed in their instructor profile, which includes employment details, rates, and earnings.</p>
                     </div>
-                    <a href="{{ route('instructors.show', ['instructor' => $instructor, 'tab' => 'billing']) }}" class="btn btn-info btn-sm">
+                    <a href="{{ route('instructors.show', ['instructor' => $instructor, 'tab' => 'billing', 'ref' => 'team']) }}" class="btn btn-info btn-sm">
                         <span class="icon-[tabler--wallet] size-4"></span>
                         View Instructor Billing
                     </a>
