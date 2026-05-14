@@ -233,15 +233,7 @@
                             </div>
 
                             <div class="form-control">
-                                <label class="label" for="phone">
-                                    <span class="label-text font-medium">Phone Number</span>
-                                </label>
-                                <div class="relative">
-                                    <span class="icon-[tabler--phone] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
-                                    <input type="tel" id="phone" name="phone" class="input input-bordered w-full pl-10 @error('phone') input-error @enderror"
-                                           value="{{ old('phone') }}" placeholder="+1 (555) 123-4567"
-                                           oninput="this.value = this.value.replace(/[^0-9+\-\(\)\s]/g, '')" />
-                                </div>
+                                <x-phone-input name="phone" :value="old('phone')" label="Phone Number" id-suffix="team-invite" />
                             </div>
                         </div>
 

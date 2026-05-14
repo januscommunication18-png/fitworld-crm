@@ -1,6 +1,6 @@
 <template>
-    <div class="card w-full">
-        <div class="card-body">
+    <div class="card w-full overflow-hidden">
+        <div class="card-body min-w-0">
             <h2 class="text-2xl font-bold mb-1">Tell us about your studio</h2>
             <p class="text-base-content/60 mb-6">Basic info to get your profile started.</p>
 
@@ -13,9 +13,13 @@
                 </div>
 
                 <div>
-                    <label class="label-text">Studio Categories <span class="text-error">*</span></label>
+                    <div class="flex items-center justify-between">
+                        <label class="label-text">Studio Categories <span class="text-error">*</span></label>
+                        <button v-if="localData.studio_categories.length > 0" type="button" class="text-xs link link-primary" @click="categoriesRef?.clearAll()">Clear all</button>
+                    </div>
                     <p class="text-xs text-base-content/50 mb-2">Select all categories that apply to your studio</p>
                     <MultiSelectCategories
+                        ref="categoriesRef"
                         v-model="localData.studio_categories"
                         :has-error="!!errors.studio_categories"
                         placeholder="Search and select categories..."
@@ -23,46 +27,27 @@
                     <p v-if="errors.studio_categories" class="text-error text-xs mt-1">{{ errors.studio_categories[0] }}</p>
                 </div>
 
-                <!-- Country + State Row -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="label-text" for="country">Country <span class="text-error">*</span></label>
-                        <SearchSelect
-                            v-model="localData.country"
-                            :options="countryOptions"
-                            placeholder="Search country..."
-                            @change="onCountryChange"
-                        />
-                        <p v-if="errors.country" class="text-error text-xs mt-1">{{ errors.country[0] }}</p>
-                    </div>
-                    <div>
-                        <label class="label-text" for="state">State / Province</label>
-                        <SearchSelect
-                            v-model="localData.state"
-                            :options="stateOptions"
-                            placeholder="Search state..."
-                            :disabled="!localData.country"
-                        />
-                        <p v-if="errors.state" class="text-error text-xs mt-1">{{ errors.state[0] }}</p>
-                    </div>
+                <!-- Studio Address (Smarty autocomplete + validation) -->
+                <div>
+                    <label class="label-text">Studio Address <span class="text-error">*</span></label>
+                    <AddressAutocomplete
+                        v-model="localData.address"
+                        :address="addressProps"
+                        :input-class="{ 'input-error': errors.address }"
+                        placeholder="Search address, city, or zip code..."
+                        @select="handleAddressSelect"
+                    />
+                    <p v-if="errors.address" class="text-error text-xs mt-1">{{ errors.address[0] }}</p>
                 </div>
 
-                <!-- City + Timezone Row -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="label-text" for="city">City</label>
-                        <input id="city" type="text" class="input w-full" :class="{ 'input-error': errors.city }"
-                            v-model="localData.city" placeholder="e.g. Austin" />
-                        <p v-if="errors.city" class="text-error text-xs mt-1">{{ errors.city[0] }}</p>
-                    </div>
-                    <div>
-                        <label class="label-text" for="timezone">Timezone</label>
-                        <SearchSelect
-                            v-model="localData.timezone"
-                            :options="timezoneOptions"
-                            placeholder="Search timezone..."
-                        />
-                    </div>
+                <!-- Timezone -->
+                <div>
+                    <label class="label-text" for="timezone">Timezone</label>
+                    <SearchSelect
+                        v-model="localData.timezone"
+                        :options="timezoneOptions"
+                        placeholder="Search timezone..."
+                    />
                 </div>
 
                 <!-- Default Currency -->
@@ -120,6 +105,7 @@ import api from '../../utils/api.js'
 import { debounce } from '../../utils/debounce.js'
 import SearchSelect from './SearchSelect.vue'
 import MultiSelectCategories from './MultiSelectCategories.vue'
+import AddressAutocomplete from './AddressAutocomplete.vue'
 
 const props = defineProps({
     formData: { type: Object, required: true },
@@ -137,51 +123,6 @@ const currencies = {
     'EUR': { symbol: '€', name: 'Euro' },
     'AUD': { symbol: 'A$', name: 'Australian Dollar' },
     'INR': { symbol: '₹', name: 'Indian Rupee' },
-}
-
-const countries = {
-    'US': { name: 'United States', flag: '🇺🇸', timezone: 'America/New_York' },
-    'CA': { name: 'Canada', flag: '🇨🇦', timezone: 'America/Toronto' },
-    'GB': { name: 'United Kingdom', flag: '🇬🇧', timezone: 'Europe/London' },
-    'DE': { name: 'Germany', flag: '🇩🇪', timezone: 'Europe/Berlin' },
-    'AU': { name: 'Australia', flag: '🇦🇺', timezone: 'Australia/Sydney' },
-    'IN': { name: 'India', flag: '🇮🇳', timezone: 'Asia/Kolkata' },
-}
-
-const statesByCountry = {
-    'US': [
-        'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
-        'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky',
-        'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi',
-        'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico',
-        'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania',
-        'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
-        'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming', 'District of Columbia'
-    ],
-    'CA': [
-        'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
-        'Nova Scotia', 'Ontario', 'Prince Edward Island', 'Quebec', 'Saskatchewan',
-        'Northwest Territories', 'Nunavut', 'Yukon'
-    ],
-    'GB': [
-        'England', 'Scotland', 'Wales', 'Northern Ireland'
-    ],
-    'DE': [
-        'Baden-Württemberg', 'Bavaria', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hesse',
-        'Lower Saxony', 'Mecklenburg-Vorpommern', 'North Rhine-Westphalia', 'Rhineland-Palatinate',
-        'Saarland', 'Saxony', 'Saxony-Anhalt', 'Schleswig-Holstein', 'Thuringia'
-    ],
-    'AU': [
-        'New South Wales', 'Victoria', 'Queensland', 'Western Australia', 'South Australia',
-        'Tasmania', 'Australian Capital Territory', 'Northern Territory'
-    ],
-    'IN': [
-        'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat',
-        'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh',
-        'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
-        'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
-        'Uttarakhand', 'West Bengal', 'Delhi'
-    ],
 }
 
 const timezones = [
@@ -203,23 +144,6 @@ const timezones = [
     { value: 'Asia/Kolkata', label: 'India (IST)' },
 ]
 
-const countryOptions = computed(() => {
-    return Object.entries(countries).map(([code, info]) => ({
-        value: code,
-        label: info.name
-    }))
-})
-
-const stateOptions = computed(() => {
-    if (!localData.country || !statesByCountry[localData.country]) {
-        return []
-    }
-    return statesByCountry[localData.country].map(state => ({
-        value: state,
-        label: state
-    }))
-})
-
 const timezoneOptions = computed(() => {
     return timezones.map(tz => ({
         value: tz.value,
@@ -234,6 +158,7 @@ const currencyOptions = computed(() => {
     }))
 })
 
+const categoriesRef = ref(null)
 const subdomainAvailable = ref(null)
 const checkingSubdomain = ref(false)
 const subdomainManuallyEdited = ref(false)
@@ -241,24 +166,32 @@ const subdomainManuallyEdited = ref(false)
 const localData = reactive({
     studio_name: props.formData.studio_name,
     studio_categories: props.formData.studio_categories || [],
+    address: props.formData.address || '',
     country: props.formData.country || '',
-    city: props.formData.city,
+    city: props.formData.city || '',
     state: props.formData.state || '',
+    zipcode: props.formData.zipcode || '',
     timezone: props.formData.timezone || 'America/New_York',
     subdomain: props.formData.subdomain,
     default_currency: props.formData.default_currency || 'USD',
 })
 
-const isValid = computed(() => localData.studio_name && localData.studio_categories.length > 0 && localData.country && localData.subdomain && subdomainAvailable.value !== false)
+// Props to pass existing address data to the AddressAutocomplete component
+const addressProps = computed(() => ({
+    address_line_1: localData.address,
+    city: localData.city,
+    state: localData.state,
+    zip_code: localData.zipcode,
+    country: localData.country || 'United States',
+}))
 
-function onCountryChange() {
-    // Reset state when country changes
-    localData.state = ''
-    // Auto-set timezone based on country
-    const countryInfo = countries[localData.country]
-    if (countryInfo && countryInfo.timezone) {
-        localData.timezone = countryInfo.timezone
-    }
+const isValid = computed(() => localData.studio_name && localData.studio_categories.length > 0 && localData.address && localData.subdomain && subdomainAvailable.value !== false)
+
+function handleAddressSelect(addressData) {
+    localData.city = addressData.city || ''
+    localData.state = addressData.state || ''
+    localData.zipcode = addressData.zipcode || addressData.zip_code || ''
+    localData.country = addressData.country || 'United States'
 }
 
 function generateSubdomainFromName(name) {
@@ -269,15 +202,6 @@ function generateSubdomainFromName(name) {
         .replace(/--+/g, '-')
         .replace(/(?:^-|-$)/g, '')
 }
-
-// Watch studio_name and auto-populate subdomain
-watch(() => localData.studio_name, (newName) => {
-    if (!subdomainManuallyEdited.value) {
-        localData.subdomain = generateSubdomainFromName(newName)
-        subdomainAvailable.value = null
-        checkSubdomainAvailability(localData.subdomain)
-    }
-})
 
 function formatSubdomain() {
     localData.subdomain = localData.subdomain.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-')
@@ -298,6 +222,15 @@ const checkSubdomainAvailability = debounce(async (value) => {
         checkingSubdomain.value = false
     }
 }, 500)
+
+// Watch studio_name and auto-populate subdomain
+watch(() => localData.studio_name, (newName) => {
+    if (!subdomainManuallyEdited.value && newName) {
+        localData.subdomain = generateSubdomainFromName(newName)
+        subdomainAvailable.value = null
+        checkSubdomainAvailability(localData.subdomain)
+    }
+}, { immediate: true })
 
 function handleSubdomainInput() {
     subdomainManuallyEdited.value = true

@@ -1,18 +1,8 @@
-@extends('layouts.settings')
+@extends('layouts.support')
 
 @section('title', 'Support Request #' . $supportRequest->id)
 
-@section('breadcrumbs')
-    <ol>
-        <li><a href="{{ url('/dashboard') }}"><span class="icon-[tabler--home] size-4"></span> Dashboard</a></li>
-        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('support.requests.index') }}">Support Requests</a></li>
-        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li aria-current="page">#{{ $supportRequest->id }}</li>
-    </ol>
-@endsection
-
-@section('settings-content')
+@section('content')
 <div class="space-y-6">
     {{-- Header --}}
     <div class="flex items-center justify-between">

@@ -233,12 +233,13 @@
                             </p>
                             <input type="hidden" id="personal-code-value" value="{{ $personalOverrideCode }}">
                             @else
-                            <p class="text-2xl font-mono font-bold text-base-content/40">Not assigned</p>
+                            <p class="text-2xl font-mono font-bold text-base-content/40" id="personal-code-display">Not assigned</p>
+                            <input type="hidden" id="personal-code-value" value="">
                             @endif
                         </div>
                     </div>
-                    @if($personalOverrideCode)
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2" id="override-code-actions">
+                        @if($personalOverrideCode)
                         <button type="button" onclick="toggleCodeVisibility()" id="toggle-code-btn" class="btn btn-ghost btn-sm btn-circle" title="Show code">
                             <span class="icon-[tabler--eye] size-5" id="toggle-code-icon"></span>
                         </button>
@@ -246,8 +247,16 @@
                             <span class="icon-[tabler--copy] size-4"></span>
                             Copy
                         </button>
+                        <button type="button" onclick="regenerateOverrideCode()" id="regenerate-code-btn" class="btn btn-ghost btn-sm" title="Regenerate code">
+                            <span class="icon-[tabler--refresh] size-4"></span>
+                        </button>
+                        @else
+                        <button type="button" onclick="generateOverrideCode()" id="generate-code-btn" class="btn btn-primary btn-sm">
+                            <span class="icon-[tabler--key] size-4"></span>
+                            Generate Code
+                        </button>
+                        @endif
                     </div>
-                    @endif
                 </div>
             </div>
 
@@ -321,6 +330,93 @@
                 btn.classList.remove('btn-success');
                 btn.classList.add('btn-primary');
             }, 2000);
+        });
+    }
+
+    async function generateOverrideCode() {
+        const btn = document.getElementById('generate-code-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Generating...';
+
+        try {
+            const response = await fetch('{{ route("price-override.personal-code") }}', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                },
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.code) {
+                document.getElementById('personal-code-display').textContent = result.code;
+                document.getElementById('personal-code-display').classList.remove('text-base-content/40');
+                document.getElementById('personal-code-display').classList.add('text-primary');
+                document.getElementById('personal-code-value').value = result.code;
+
+                // Replace generate button with show/copy buttons
+                btn.parentElement.innerHTML = '<button type="button" onclick="toggleCodeVisibility()" id="toggle-code-btn" class="btn btn-ghost btn-sm btn-circle" title="Show code"><span class="icon-[tabler--eye] size-5" id="toggle-code-icon"></span></button><button type="button" onclick="copyOverrideCode()" id="copy-code-btn" class="btn btn-primary btn-sm"><span class="icon-[tabler--copy] size-4"></span> Copy</button>';
+
+                showToast('Override code generated successfully!', 'success');
+            } else {
+                showToast(result.message || 'Failed to generate code.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<span class="icon-[tabler--key] size-4"></span> Generate Code';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('An error occurred. Please try again.', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<span class="icon-[tabler--key] size-4"></span> Generate Code';
+        }
+    }
+
+    function regenerateOverrideCode() {
+        showConfirmModal({
+            title: 'Regenerate Override Code',
+            message: 'This will replace your current code. Any saved references to the old code will stop working. Continue?',
+            type: 'warning',
+            btnText: 'Regenerate',
+            btnIcon: 'icon-[tabler--refresh]',
+            onConfirm: async function() {
+                var btn = document.getElementById('regenerate-code-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+
+                try {
+                    var response = await fetch('{{ route("price-override.personal-code") }}?regenerate=1', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        },
+                    });
+
+                    var result = await response.json();
+
+                    if (result.success && result.code) {
+                        document.getElementById('personal-code-display').textContent = result.code;
+                        document.getElementById('personal-code-display').classList.remove('text-base-content/40');
+                        document.getElementById('personal-code-display').classList.add('text-primary');
+                        document.getElementById('personal-code-value').value = result.code;
+                        codeVisible = true;
+
+                        var copyBtn = document.getElementById('copy-code-btn');
+                        if (copyBtn) copyBtn.classList.remove('hidden');
+                        var icon = document.getElementById('toggle-code-icon');
+                        if (icon) icon.className = 'icon-[tabler--eye-off] size-5';
+
+                        showToast('Override code regenerated successfully!', 'success');
+                    } else {
+                        showToast(result.message || 'Failed to regenerate code.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('An error occurred. Please try again.', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span class="icon-[tabler--refresh] size-4"></span>';
+                }
+            }
         });
     }
     </script>
@@ -400,7 +496,7 @@
 <div id="drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeAllDrawers()"></div>
 
 {{-- Edit Profile Drawer --}}
-<div id="edit-profile-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-profile-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Edit Personal Information</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-profile-drawer')">
@@ -412,41 +508,36 @@
             <div class="space-y-4">
                 <div>
                     <label class="label-text" for="first_name">First Name <span class="text-error">*</span></label>
-                    <input type="text" id="first_name" name="first_name" value="{{ $user->first_name }}" class="input w-full" required>
+                    <input type="text" id="first_name" name="first_name" value="{{ $user->first_name }}" class="input w-full" required pattern="^[A-Za-z\s\-']+$" title="Name should only contain letters, spaces, hyphens, or apostrophes" oninput="this.value = this.value.replace(/[0-9]/g, '')">
                     <span class="error-message text-error text-sm hidden"></span>
                 </div>
 
                 <div>
                     <label class="label-text" for="last_name">Last Name <span class="text-error">*</span></label>
-                    <input type="text" id="last_name" name="last_name" value="{{ $user->last_name }}" class="input w-full" required>
+                    <input type="text" id="last_name" name="last_name" value="{{ $user->last_name }}" class="input w-full" required pattern="^[A-Za-z\s\-']+$" title="Name should only contain letters, spaces, hyphens, or apostrophes" oninput="this.value = this.value.replace(/[0-9]/g, '')">
                     <span class="error-message text-error text-sm hidden"></span>
                 </div>
 
                 <div>
-                    <label class="label-text" for="email">Email Address <span class="text-error">*</span></label>
-                    <input type="email" id="email" name="email" value="{{ $user->email }}" class="input w-full" required>
-                    <span class="error-message text-error text-sm hidden"></span>
+                    <label class="label-text" for="email">Email Address</label>
+                    <input type="email" id="email" name="email" value="{{ $user->email }}" class="input w-full" readonly>
                 </div>
 
-                <div>
-                    <label class="label-text" for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" value="{{ $user->phone }}" class="input w-full" placeholder="Optional">
-                    <span class="error-message text-error text-sm hidden"></span>
-                </div>
+                <x-phone-input name="phone" :value="$user->phone" label="Phone Number" id-suffix="profile" />
             </div>
         </div>
-        <div class="p-4 border-t border-base-200 flex justify-end gap-2">
-            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-profile-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-profile-btn">
                 <span class="loading loading-spinner loading-sm hidden"></span>
                 Save Changes
             </button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-profile-drawer')">Cancel</button>
         </div>
     </form>
 </div>
 
 {{-- Change Password Drawer --}}
-<div id="change-password-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="change-password-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Change Password</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('change-password-drawer')">
@@ -476,12 +567,12 @@
                 </div>
             </div>
         </div>
-        <div class="p-4 border-t border-base-200 flex justify-end gap-2">
-            <button type="button" class="btn btn-ghost" onclick="closeDrawer('change-password-drawer')">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" class="btn btn-primary" id="save-password-btn">
                 <span class="loading loading-spinner loading-sm hidden"></span>
                 Update Password
             </button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('change-password-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -553,6 +644,11 @@ async function saveProfile(e) {
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
 
+    // Use the phone component to get the full number with country code
+    if (typeof PhoneInput_profile !== 'undefined') {
+        data.phone = PhoneInput_profile.getFullNumber();
+    }
+
     try {
         const response = await fetch('{{ route("settings.profile.update") }}', {
             method: 'PUT',
@@ -574,18 +670,17 @@ async function saveProfile(e) {
             document.getElementById('display-phone').textContent = data.phone || 'Not set';
 
             closeDrawer('edit-profile-drawer');
-
-            // Show success toast
-            if (typeof Notyf !== 'undefined') {
-                new Notyf().success(result.message);
-            }
+            showToast(result.message || 'Profile updated successfully!', 'success');
         } else {
             if (result.errors) {
                 showErrors('profile-form', result.errors);
+            } else {
+                showToast(result.message || 'Failed to save. Please try again.', 'error');
             }
         }
     } catch (error) {
         console.error('Error:', error);
+        showToast('An error occurred. Please try again.', 'error');
     } finally {
         btn.disabled = false;
         spinner.classList.add('hidden');
@@ -620,10 +715,7 @@ async function savePassword(e) {
         if (response.ok && result.success) {
             e.target.reset();
             closeDrawer('change-password-drawer');
-
-            if (typeof Notyf !== 'undefined') {
-                new Notyf().success(result.message);
-            }
+            showToast(result.message || 'Password changed successfully!', 'success');
         } else {
             if (result.errors) {
                 showErrors('password-form', result.errors);
@@ -640,8 +732,17 @@ async function savePassword(e) {
 async function uploadPhoto(input) {
     if (!input.files || !input.files[0]) return;
 
+    const file = input.files[0];
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    if (!allowedTypes.includes(file.type)) {
+        input.value = '';
+        showToast('Unsupported format. Please upload a JPG, PNG, GIF, or WebP image.', 'error');
+        return;
+    }
+
     const formData = new FormData();
-    formData.append('photo', input.files[0]);
+    formData.append('photo', file);
 
     try {
         const response = await fetch('{{ route("settings.profile.photo") }}', {
@@ -656,37 +757,48 @@ async function uploadPhoto(input) {
         const result = await response.json();
 
         if (response.ok && result.success) {
-            location.reload();
+            showToast('Photo uploaded successfully!', 'success');
+            setTimeout(() => location.reload(), 500);
         } else {
-            if (typeof Notyf !== 'undefined') {
-                new Notyf().error(result.message || 'Failed to upload photo');
-            }
+            showToast(result.message || 'Failed to upload photo.', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
+        showToast('An error occurred while uploading.', 'error');
     }
 }
 
-async function removePhoto() {
-    if (!confirm('Are you sure you want to remove your profile photo?')) return;
+function removePhoto() {
+    showConfirmModal({
+        title: 'Remove Photo',
+        message: 'Are you sure you want to remove your profile photo?',
+        type: 'danger',
+        btnText: 'Remove',
+        btnIcon: 'icon-[tabler--trash]',
+        onConfirm: async function() {
+            try {
+                const response = await fetch('{{ route("settings.profile.photo.remove") }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                });
 
-    try {
-        const response = await fetch('{{ route("settings.profile.photo.remove") }}', {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-            },
-        });
+                const result = await response.json();
 
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            location.reload();
+                if (response.ok && result.success) {
+                    showToast('Photo removed successfully!', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showToast(result.message || 'Failed to remove photo.', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showToast('An error occurred. Please try again.', 'error');
+            }
         }
-    } catch (error) {
-        console.error('Error:', error);
-    }
+    });
 }
 
 function copyOverrideCode() {

@@ -1,5 +1,5 @@
 <template>
-    <div class="w-full max-w-[500px] mx-auto">
+    <div class="w-full">
         <!-- Loading state while fetching progress -->
         <div v-if="initialLoading" class="card w-full">
             <div class="card-body animate-pulse">
@@ -238,9 +238,11 @@ async function saveCurrentStep() {
             await api.post('/signup/studio', {
                 studio_name: fd.studio_name,
                 studio_categories: fd.studio_categories,
+                address: fd.address,
                 country: fd.country,
                 city: fd.city,
                 state: fd.state,
+                zipcode: fd.zipcode,
                 timezone: fd.timezone,
                 subdomain: fd.subdomain,
                 default_currency: fd.default_currency,
@@ -248,10 +250,6 @@ async function saveCurrentStep() {
             break
         case 5:
             await api.post('/signup/location', {
-                address: fd.address,
-                city: fd.city,
-                state: fd.state,
-                zipcode: fd.zipcode,
                 rooms: fd.rooms,
                 default_capacity: fd.default_capacity,
                 amenities: fd.amenities,

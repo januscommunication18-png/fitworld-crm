@@ -26,6 +26,69 @@ class DashboardController extends Controller
         $this->reportingService = $reportingService;
     }
 
+    /**
+     * Get Started page — setup checklist for new studio owners.
+     */
+    public function getStarted()
+    {
+        $user = Auth::user();
+
+        if (!$user->host || !$user->host->onboarding_completed_at) {
+            return redirect()->route('signup');
+        }
+
+        $host = $user->currentHost();
+
+        // If setup is already complete, go to dashboard
+        if ($host->setup_completed_at) {
+            return redirect()->route('dashboard');
+        }
+
+        // Only owners see the setup checklist
+        if (!$user->isOwner($host)) {
+            return redirect()->route('dashboard');
+        }
+
+        $checklist = $this->getSetupChecklist($user, $host);
+
+        $requiredItems = collect($checklist)->filter(fn($item) => !($item['optional'] ?? false));
+        $requiredCompletedCount = $requiredItems->where('completed', true)->count();
+        $requiredTotalCount = $requiredItems->count();
+
+        $completedCount = collect($checklist)->where('completed', true)->count();
+        $totalCount = count($checklist);
+        $progress = $requiredTotalCount > 0 ? round(($requiredCompletedCount / $requiredTotalCount) * 100) : 0;
+
+        // Auto-complete setup when all required items are done
+        if ($progress >= 100 && !$host->setup_completed_at) {
+            $host->update(['setup_completed_at' => now()]);
+            return redirect()->route('dashboard');
+        }
+
+        $teamMembers = $host->users()
+            ->with(['instructor' => fn($q) => $q->where('host_id', $host->id)])
+            ->get()
+            ->map(function ($member) use ($host) {
+                return [
+                    'id' => $member->id,
+                    'name' => $member->full_name,
+                    'email' => $member->email,
+                    'role' => $member->pivot->role ?? $member->role,
+                    'is_owner' => $member->isOwner($host),
+                    'status' => $member->status,
+                ];
+            });
+
+        return view('host.get-started', [
+            'host' => $host,
+            'checklist' => $checklist,
+            'completedCount' => $completedCount,
+            'totalCount' => $totalCount,
+            'progress' => $progress,
+            'teamMembers' => $teamMembers,
+        ]);
+    }
+
     public function index()
     {
         $user = Auth::user();
@@ -44,50 +107,18 @@ class DashboardController extends Controller
         $isStaff = $user->isStaff($host);
         $isInstructor = $user->hasInstructorRole($host);
 
-        // Check if setup checklist is complete (only for owner)
-        if ($user->isOwner($host)) {
+        // Redirect owner to Get Started if setup is not complete
+        if ($user->isOwner($host) && !$host->setup_completed_at) {
             $checklist = $this->getSetupChecklist($user, $host);
-
-            // Calculate progress based on required items only (exclude optional items)
             $requiredItems = collect($checklist)->filter(fn($item) => !($item['optional'] ?? false));
             $requiredCompletedCount = $requiredItems->where('completed', true)->count();
             $requiredTotalCount = $requiredItems->count();
-
-            // For display, show all items
-            $completedCount = collect($checklist)->where('completed', true)->count();
-            $totalCount = count($checklist);
             $progress = $requiredTotalCount > 0 ? round(($requiredCompletedCount / $requiredTotalCount) * 100) : 0;
 
-            // Auto-complete setup when all required items are done
-            if ($progress >= 100 && !$host->setup_completed_at) {
+            if ($progress >= 100) {
                 $host->update(['setup_completed_at' => now()]);
-            }
-
-            // Show setup checklist if not all required tasks are complete
-            if ($progress < 100 && !$host->setup_completed_at) {
-                // Get team members for staff section
-                $teamMembers = $host->users()
-                    ->with(['instructor' => fn($q) => $q->where('host_id', $host->id)])
-                    ->get()
-                    ->map(function ($member) use ($host) {
-                        return [
-                            'id' => $member->id,
-                            'name' => $member->full_name,
-                            'email' => $member->email,
-                            'role' => $member->pivot->role ?? $member->role,
-                            'is_owner' => $member->isOwner($host),
-                            'status' => $member->status,
-                        ];
-                    });
-
-                return view('host.dashboard.setup-checklist', [
-                    'host' => $host,
-                    'checklist' => $checklist,
-                    'completedCount' => $completedCount,
-                    'totalCount' => $totalCount,
-                    'progress' => $progress,
-                    'teamMembers' => $teamMembers,
-                ]);
+            } else {
+                return redirect()->route('get-started');
             }
         }
 

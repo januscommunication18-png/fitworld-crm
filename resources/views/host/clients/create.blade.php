@@ -65,9 +65,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
-                        <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
-                               class="input w-full" placeholder="+1 (555) 000-0000">
+                        <x-phone-input name="phone" :value="old('phone')" label="{{ $trans['field.phone'] ?? 'Phone' }}" id-suffix="client-create" />
                         @error('phone')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -238,9 +236,7 @@
             <div class="card-body pt-0">
                 <div class="space-y-4">
                     <div>
-                        <label class="label-text" for="secondary_phone">{{ $trans['field.secondary_phone'] ?? 'Secondary Phone' }}</label>
-                        <input type="tel" id="secondary_phone" name="secondary_phone" value="{{ old('secondary_phone') }}"
-                               class="input w-full" placeholder="{{ $trans['clients.alternative_number'] ?? 'Alternative number' }}">
+                        <x-phone-input name="secondary_phone" :value="old('secondary_phone')" label="{{ $trans['field.secondary_phone'] ?? 'Secondary Phone' }}" id-suffix="client-create-secondary" />
                     </div>
 
                     <div>
@@ -367,9 +363,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="emergency_contact_phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
-                        <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value="{{ old('emergency_contact_phone') }}"
-                               class="input w-full" placeholder="+1 (555) 000-0000">
+                        <x-phone-input name="emergency_contact_phone" :value="old('emergency_contact_phone')" label="{{ $trans['field.phone'] ?? 'Phone' }}" id-suffix="client-create-emergency" />
                     </div>
 
                     <div>

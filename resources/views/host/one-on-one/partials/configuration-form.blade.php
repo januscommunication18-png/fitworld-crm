@@ -104,11 +104,7 @@
                             </div>
                         </label>
                         <div id="phone_fields" class="mt-3 {{ in_array('phone', $selectedTypes) ? '' : 'hidden' }}">
-                            <label class="label-text" for="phone_number">Phone Number</label>
-                            <input type="tel" id="phone_number" name="phone_number"
-                                value="{{ old('phone_number', $profile->phone_number) }}"
-                                class="input w-full @error('phone_number') input-error @enderror"
-                                placeholder="+1 (555) 123-4567">
+                            <x-phone-input name="phone_number" :value="old('phone_number', $profile->phone_number)" label="Phone Number" id-suffix="1on1-config" />
                             @error('phone_number')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror

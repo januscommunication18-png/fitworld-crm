@@ -201,7 +201,7 @@
     {{-- Backdrop --}}
     <div id="drawer-backdrop" class="absolute inset-0 bg-black/50 opacity-0 transition-opacity duration-300" onclick="closeLocationDrawer()"></div>
     {{-- Drawer Panel --}}
-    <div id="drawer-panel" class="absolute top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl transform translate-x-full transition-transform duration-300">
+    <div id="drawer-panel" class="absolute top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl transform translate-x-full transition-transform duration-300">
         <div class="flex flex-col h-full">
             {{-- Header --}}
             <div class="flex items-center justify-between p-4 border-b border-base-200">

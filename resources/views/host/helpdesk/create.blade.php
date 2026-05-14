@@ -54,9 +54,7 @@
                                 @enderror
                             </div>
                             <div>
-                                <label class="label-text" for="phone">Phone</label>
-                                <input type="tel" id="phone" name="phone" value="{{ old('phone') }}"
-                                       class="input w-full @error('phone') input-error @enderror">
+                                <x-phone-input name="phone" :value="old('phone')" label="Phone" id-suffix="helpdesk" />
                                 @error('phone')
                                     <p class="text-error text-xs mt-1">{{ $message }}</p>
                                 @enderror

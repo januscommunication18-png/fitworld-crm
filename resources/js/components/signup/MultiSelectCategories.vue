@@ -72,7 +72,7 @@
         </div>
 
         <!-- Selected Tags (shown below input) -->
-        <div v-if="totalSelected > 0" class="flex flex-wrap gap-1">
+        <div v-if="totalSelected > 0" class="flex flex-wrap gap-1 min-w-0">
             <span
                 v-for="category in selectedPredefined"
                 :key="category"
@@ -95,10 +95,6 @@
             </span>
         </div>
 
-        <!-- Clear All -->
-        <div v-if="totalSelected > 0" class="flex justify-end">
-            <button type="button" class="text-xs link link-primary" @click="clearAll">Clear all</button>
-        </div>
 
         <!-- Others Textarea -->
         <div v-if="hasOthersSelected" class="space-y-2">
@@ -328,6 +324,8 @@ function clearAll() {
     customCategories.value = []
     customCategoriesText.value = ''
 }
+
+defineExpose({ clearAll })
 
 function toggleDropdown() {
     isOpen.value = !isOpen.value

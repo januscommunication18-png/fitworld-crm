@@ -233,7 +233,7 @@
 </div>
 
 {{-- Add Translation Drawer --}}
-<div id="add-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-2xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="add-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Add Translation</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('add-translation-drawer')">
@@ -320,7 +320,7 @@
 </div>
 
 {{-- Edit Translation Drawer --}}
-<div id="edit-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-2xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-translation-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Edit Translation</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-translation-drawer')">

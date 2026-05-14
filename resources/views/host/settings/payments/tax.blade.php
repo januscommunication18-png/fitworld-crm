@@ -310,7 +310,7 @@ $serviceTypes = [
 <div id="drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeAllDrawers()"></div>
 
 {{-- Add/Edit Tax Rate Drawer --}}
-<div id="add-rate-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="add-rate-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold" id="rate-drawer-title">Add Custom Tax Rate</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('add-rate-drawer')">
@@ -400,7 +400,7 @@ $serviceTypes = [
 </div>
 
 {{-- Override Rate Drawer --}}
-<div id="override-rate-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="override-rate-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Override Tax Rate</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('override-rate-drawer')">

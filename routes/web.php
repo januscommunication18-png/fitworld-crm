@@ -117,6 +117,39 @@ Route::post('/invite/accept/{token}', [InvitationController::class, 'accept'])->
 Route::get('/setup/invite/{token}', [InvitationController::class, 'show'])->name('invitation.setup.show');
 Route::post('/setup/invite/{token}', [InvitationController::class, 'accept'])->name('invitation.setup.accept');
 
+// Email Verification - must be outside auth middleware so links work in any browser
+Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
+    $user = \App\Models\User::findOrFail($id);
+
+    // Check if the hash matches
+    if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+        abort(403, 'Invalid verification link.');
+    }
+
+    // Mark as verified if not already
+    if (!$user->hasVerifiedEmail()) {
+        $user->markEmailAsVerified();
+        event(new \Illuminate\Auth\Events\Verified($user));
+    }
+
+    // Log the user in
+    \Illuminate\Support\Facades\Auth::login($user);
+
+    // Check if user is in onboarding (host exists but onboarding not complete)
+    $host = $user->host;
+
+    // Mark the host as verified/active if owner verifies email
+    if ($host && !$host->isVerified() && $user->role === 'owner') {
+        $host->markVerified();
+    }
+
+    if ($host && !$host->onboarding_completed_at) {
+        return redirect('/signup?verified=1');
+    }
+
+    return redirect('/dashboard')->with('verified', true);
+})->middleware('signed')->name('verification.verify');
+
 // Auth-required routes
 Route::middleware('auth')->group(function () {
     // Debug route (with auth)
@@ -168,41 +201,8 @@ Route::middleware('auth')->group(function () {
         ]);
     })->name('set-language');
 
-    // Email Verification
+    // Email Verification (notice & resend require auth)
     Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
-
-    Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
-        $user = \App\Models\User::findOrFail($id);
-
-        // Check if the hash matches
-        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-            abort(403, 'Invalid verification link.');
-        }
-
-        // Mark as verified if not already
-        if (!$user->hasVerifiedEmail()) {
-            $user->markEmailAsVerified();
-            event(new \Illuminate\Auth\Events\Verified($user));
-        }
-
-        // Log the user in
-        \Illuminate\Support\Facades\Auth::login($user);
-
-        // Check if user is in onboarding (host exists but onboarding not complete)
-        $host = $user->host;
-
-        // Mark the host as verified/active if owner verifies email
-        if ($host && !$host->isVerified() && $user->role === 'owner') {
-            $host->markVerified();
-        }
-
-        if ($host && !$host->onboarding_completed_at) {
-            return redirect('/signup?verified=1');
-        }
-
-        return redirect('/dashboard')->with('verified', true);
-    })->middleware('signed')->name('verification.verify');
-
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'resend'])->name('verification.send');
 
     // Phone Verification
@@ -212,6 +212,9 @@ Route::middleware('auth')->group(function () {
     // Studio Selection (for multi-studio users)
     Route::get('/select-studio', [AuthController::class, 'selectStudio'])->name('select-studio');
     Route::post('/switch-studio', [AuthController::class, 'switchStudio'])->name('switch-studio');
+
+    // Get Started (Setup Checklist)
+    Route::get('/get-started', [DashboardController::class, 'getStarted'])->name('get-started');
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -695,7 +698,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
 
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
+    Route::delete('/settings/studio/logo', [SettingsController::class, 'removeStudioLogo'])->name('settings.studio.logo.remove');
     Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
+    Route::delete('/settings/studio/cover', [SettingsController::class, 'removeStudioCover'])->name('settings.studio.cover.remove');
 
     // Gallery
     Route::post('/settings/studio/gallery', [SettingsController::class, 'uploadGalleryImage'])->name('settings.studio.gallery.upload');

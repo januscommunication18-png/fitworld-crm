@@ -1,24 +1,10 @@
 <template>
     <div class="card w-full">
         <div class="card-body">
-            <h2 class="text-2xl font-bold mb-1">Location &amp; Space</h2>
-            <p class="text-base-content/60 mb-6">Where is your studio and how is it set up?</p>
+            <h2 class="text-2xl font-bold mb-1">Space &amp; Amenities</h2>
+            <p class="text-base-content/60 mb-6">How is your studio set up?</p>
 
             <form @submit.prevent="handleSubmit" class="space-y-4">
-                <div>
-                    <label class="label-text" for="address">Studio Address <span class="text-error">*</span></label>
-                    <AddressAutocomplete
-                        v-model="localData.address"
-                        :smarty-key="smartyKey"
-                        input-id="address"
-                        :input-class="{ 'input-error': errors.address }"
-                        placeholder="Start typing your address..."
-                        :maxlength="255"
-                        @select="handleAddressSelect"
-                    />
-                    <p v-if="errors.address" class="text-error text-xs mt-1">{{ errors.address[0] }}</p>
-                </div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="rooms">Number of Rooms</label>
@@ -72,7 +58,6 @@
 
 <script setup>
 import { reactive, computed } from 'vue'
-import AddressAutocomplete from './AddressAutocomplete.vue'
 
 const props = defineProps({
     formData: { type: Object, required: true },
@@ -87,10 +72,6 @@ const emit = defineEmits(['next', 'prev', 'update'])
 const amenityOptions = ['Changing Rooms', 'Showers', 'Parking', 'Mat Rental', 'Towel Service', 'Water Station', 'Wi-Fi', 'Sound System']
 
 const localData = reactive({
-    address: props.formData.address,
-    city: props.formData.city || '',
-    state: props.formData.state || '',
-    zipcode: props.formData.zipcode || '',
     rooms: props.formData.rooms,
     default_capacity: props.formData.default_capacity,
     amenities: [...props.formData.amenities],
@@ -106,12 +87,6 @@ function toggleAllAmenities() {
     } else {
         localData.amenities = [...amenityOptions]
     }
-}
-
-function handleAddressSelect(addressData) {
-    localData.city = addressData.city
-    localData.state = addressData.state
-    localData.zipcode = addressData.zipcode
 }
 
 function handleSubmit() {

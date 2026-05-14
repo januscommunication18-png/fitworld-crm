@@ -86,15 +86,7 @@
                         </div>
 
                         <div class="form-control">
-                            <label class="label" for="phone">
-                                <span class="label-text font-medium">Phone Number</span>
-                            </label>
-                            <div class="relative">
-                                <span class="icon-[tabler--phone] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
-                                <input type="tel" id="phone" name="phone" class="input input-bordered w-full pl-10 @error('phone') input-error @enderror"
-                                       value="{{ old('phone', $user->phone ?? $instructor?->phone) }}" placeholder="+1 (555) 123-4567"
-                                       oninput="this.value = this.value.replace(/[^0-9+\-\(\)\s]/g, '')" />
-                            </div>
+                            <x-phone-input name="phone" :value="old('phone', $user->phone ?? $instructor?->phone)" label="Phone Number" id-suffix="team-edit" />
                         </div>
 
                         <div class="divider text-base-content/40 text-xs">ROLE</div>
@@ -417,7 +409,7 @@
     </div>
 
 {{-- User Certification Drawer --}}
-<div id="user-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="user-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold" id="user-cert-drawer-title">Add Certification</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeUserCertDrawer()">

@@ -215,9 +215,9 @@ class SettingsController extends Controller
             'studio_name' => 'required|string|max:255',
             'studio_structure' => 'required|in:solo,team',
             'subdomain' => 'nullable|string|max:100|alpha_dash',
-            'studio_categories' => 'required|array|min:1',
+            'studio_categories' => 'sometimes|required|array|min:1',
             'studio_categories.*' => 'string|max:255',
-            'short_description' => 'nullable|string|max:200',
+            'short_description' => 'nullable|string|max:500',
             'timezone' => 'nullable|string|max:100',
             'city' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
@@ -307,6 +307,34 @@ class SettingsController extends Controller
             'message' => 'Cover image uploaded successfully',
             'cover_url' => \Storage::disk(config('filesystems.uploads'))->url($path),
         ]);
+    }
+
+    public function removeStudioLogo()
+    {
+        $host = auth()->user()->host;
+
+        if ($host->logo_path) {
+            try {
+                \Storage::disk(config('filesystems.uploads'))->delete($host->logo_path);
+            } catch (\Exception $e) {}
+            $host->update(['logo_path' => null]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Logo removed successfully']);
+    }
+
+    public function removeStudioCover()
+    {
+        $host = auth()->user()->host;
+
+        if ($host->cover_image_path) {
+            try {
+                \Storage::disk(config('filesystems.uploads'))->delete($host->cover_image_path);
+            } catch (\Exception $e) {}
+            $host->update(['cover_image_path' => null]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Cover image removed successfully']);
     }
 
     public function updateStudioContact(Request $request)

@@ -123,12 +123,28 @@
         </div>
         @endif
 
+        {{-- Support --}}
+        @php
+            $navSupportCount = \App\Models\SupportRequest::where('host_id', auth()->user()->currentHost()?->id ?? auth()->user()->host_id)
+                ->whereIn('status', ['pending', 'in_progress'])->count();
+        @endphp
+        <a href="{{ route('support.requests.index') }}" class="btn btn-ghost btn-sm gap-0 px-2" aria-label="Support">
+            <span class="icon-[tabler--headset] size-5"></span>
+            @if($navSupportCount > 0)
+                <span class="badge badge-info badge-xs ml-0.5">{{ $navSupportCount }}</span>
+            @endif
+        </a>
+
         {{-- Alerts bell --}}
         <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="openDrawer('alerts', event)" aria-label="Notifications">
             <span class="icon-[tabler--bell] size-5"></span>
         </button>
 
         {{-- App grid --}}
+        @php
+            $navHost = auth()->user()->currentHost() ?? auth()->user()->host;
+            $navSetupIncomplete = auth()->user()->isOwner($navHost) && !$navHost->setup_completed_at;
+        @endphp
         <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="openDrawer('apps', event)" aria-label="Apps">
             <span class="icon-[tabler--grid-dots] size-5"></span>
         </button>
@@ -139,8 +155,8 @@
         </a> --}}
 
         {{-- Profile dropdown --}}
-        <div class="dropdown relative inline-flex [--auto-close:inside] [--placement:bottom-end]">
-            <button id="profile-dropdown" type="button" class="dropdown-toggle btn btn-ghost btn-circle btn-sm"
+        <div class="relative inline-flex" id="profile-dropdown-wrapper">
+            <button id="profile-dropdown-btn" type="button" class="btn btn-ghost btn-circle btn-sm"
                 aria-haspopup="menu" aria-expanded="false" aria-label="Profile menu">
                 <div class="avatar avatar-placeholder">
                     <div class="bg-neutral text-neutral-content size-8 rounded-full">
@@ -148,35 +164,39 @@
                     </div>
                 </div>
             </button>
-            <div class="dropdown-menu dropdown-open:opacity-100 hidden min-w-52"
-                role="menu" aria-orientation="vertical" aria-labelledby="profile-dropdown">
-                <div class="dropdown-header">
-                    <div class="text-sm font-semibold text-base-content">{{ Auth::user()->full_name }}</div>
-                    <div class="text-xs text-base-content/60">{{ Auth::user()->email }}</div>
-                </div>
-                <div><a class="dropdown-item" href="#">
-                    <span class="icon-[tabler--user] size-4"></span> My Profile
-                </a></div>
-                <div><a class="dropdown-item" href="#">
-                    <span class="icon-[tabler--lock] size-4"></span> Change Password
-                </a></div>
-                <div><a class="dropdown-item" href="#">
-                    <span class="icon-[tabler--activity] size-4"></span> My Activity
-                </a></div>
-                <div><a class="dropdown-item" href="#">
-                    <span class="icon-[tabler--settings] size-4"></span> Preferences
-                </a></div>
-                <div class="divider my-1"></div>
-                <div>
+            <div id="profile-dropdown-menu" class="absolute right-0 top-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg min-w-48 z-50 hidden"
+                role="menu" aria-orientation="vertical" aria-labelledby="profile-dropdown-btn">
+                <div class="p-3 flex items-center justify-between gap-3">
+                    <div>
+                        <div class="text-sm font-semibold text-base-content">{{ Auth::user()->full_name }}</div>
+                        <div class="text-xs text-base-content/60">{{ Auth::user()->email }}</div>
+                    </div>
                     <form method="POST" action="{{ url('/logout') }}">
                         @csrf
-                        <button type="submit" class="dropdown-item text-error w-full text-start">
-                            <span class="icon-[tabler--logout] size-4"></span> Log Off
+                        <button type="submit" class="btn btn-ghost btn-sm btn-square text-error" title="Sign Out">
+                            <span class="icon-[tabler--logout] size-5"></span>
                         </button>
                     </form>
                 </div>
             </div>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var btn = document.getElementById('profile-dropdown-btn');
+            var menu = document.getElementById('profile-dropdown-menu');
+            if (btn && menu) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    menu.classList.toggle('hidden');
+                });
+                document.addEventListener('click', function(e) {
+                    if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                        menu.classList.add('hidden');
+                    }
+                });
+            }
+        });
+        </script>
     </div>
 </div>
 

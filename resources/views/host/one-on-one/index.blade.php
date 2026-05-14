@@ -624,12 +624,12 @@
                 </div>
                 <p class="text-base-content/70">Are you sure you want to accept this booking request? The guest will receive a confirmation email.</p>
             </div>
-            <div class="flex justify-end gap-2 p-4 border-t border-base-200">
-                <button type="button" class="btn btn-ghost" onclick="closeAcceptModal()">Cancel</button>
+            <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
                 <button type="button" class="btn btn-success" id="confirm-accept-btn" onclick="confirmAccept()">
                     <span class="loading loading-spinner loading-sm hidden"></span>
                     Accept Booking
                 </button>
+                <button type="button" class="btn btn-ghost" onclick="closeAcceptModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -653,12 +653,12 @@
                     <textarea id="decline_reason" class="textarea textarea-bordered w-full" rows="3" placeholder="Provide a reason for declining..."></textarea>
                 </div>
             </div>
-            <div class="flex justify-end gap-2 p-4 border-t border-base-200">
-                <button type="button" class="btn btn-ghost" onclick="closeDeclineModal()">Cancel</button>
+            <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
                 <button type="button" class="btn btn-error" id="confirm-decline-btn" onclick="confirmDecline()">
                     <span class="loading loading-spinner loading-sm hidden"></span>
                     Decline Booking
                 </button>
+                <button type="button" class="btn btn-ghost" onclick="closeDeclineModal()">Cancel</button>
             </div>
         </div>
     </div>

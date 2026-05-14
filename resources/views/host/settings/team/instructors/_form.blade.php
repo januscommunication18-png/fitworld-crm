@@ -134,9 +134,7 @@
                 </div>
 
                 <div>
-                    <label class="label-text" for="phone">Phone</label>
-                    <input type="text" id="phone" name="phone" class="input w-full @error('phone') input-error @enderror"
-                        value="{{ old('phone', $instructor?->phone) }}" placeholder="+1 (555) 123-4567" />
+                    <x-phone-input name="phone" :value="old('phone', $instructor?->phone)" label="Phone" id-suffix="instructor-form" />
                     @error('phone')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -478,7 +476,7 @@
 
 @if($instructor)
 {{-- Instructor Certification Drawer --}}
-<div id="instructor-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="instructor-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold" id="instructor-cert-drawer-title">Add Certification</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeInstructorCertDrawer()">

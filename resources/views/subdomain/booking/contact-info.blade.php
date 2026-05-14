@@ -206,7 +206,7 @@
                                 <script>
                                 document.addEventListener('DOMContentLoaded', function() {
                                     var toast = document.createElement('div');
-                                    toast.className = 'fixed top-4 right-4 z-[100] alert alert-success shadow-lg max-w-sm transition-opacity duration-300';
+                                    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] alert alert-success shadow-lg max-w-sm transition-opacity duration-300';
                                     toast.innerHTML = '<span class="icon-[tabler--check] size-5"></span><span>Logged in as <strong>{{ $prefillData['first_name'] ?? '' }} {{ $prefillData['last_name'] ?? '' }}</strong></span>';
                                     document.body.appendChild(toast);
                                     setTimeout(function() {

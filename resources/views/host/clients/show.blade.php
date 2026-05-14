@@ -1865,12 +1865,12 @@
                         <textarea id="measurement_notes" name="notes" rows="2" class="textarea w-full" placeholder="Any notes about this measurement session..."></textarea>
                     </div>
                 </div>
-                <div class="flex justify-end gap-2 p-4 border-t border-base-200">
-                    <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-measurement-modal').classList.add('hidden')">Cancel</button>
+                <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
                     <button type="submit" class="btn btn-primary">
                         <span class="icon-[tabler--check] size-4"></span>
                         Save Measurement
                     </button>
+                    <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-measurement-modal').classList.add('hidden')">Cancel</button>
                 </div>
             </form>
         </div>
@@ -2071,7 +2071,7 @@
 @foreach($progressReports as $report)
 <div
     id="drawer-progress-report-{{ $report->id }}"
-    class="fixed top-0 right-0 h-full w-full max-w-4xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex flex-col"
+    class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden flex flex-col"
     role="dialog"
     tabindex="-1"
 >
@@ -2288,7 +2288,7 @@
 // Simple Toast Notification
 function showToast(message, type = 'success') {
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 z-[9999] alert alert-${type} shadow-lg max-w-sm animate-in slide-in-from-right`;
+    toast.className = `fixed top-4 left-1/2 -translate-x-1/2 z-[9999] alert alert-${type} shadow-lg max-w-sm`;
     toast.innerHTML = `
         <span class="icon-[tabler--${type === 'success' ? 'check' : 'x'}] size-5"></span>
         <span>${message}</span>

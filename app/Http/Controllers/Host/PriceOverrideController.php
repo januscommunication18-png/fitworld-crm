@@ -313,10 +313,11 @@ class PriceOverrideController extends Controller
             ]);
         }
 
+        $regenerate = request()->boolean('regenerate');
         $code = $user->getPersonalOverrideCode($host);
 
-        // If no code exists, generate one
-        if (!$code) {
+        // Generate a new code if none exists or regeneration requested
+        if (!$code || $regenerate) {
             $code = $this->priceOverrideService->assignPersonalCode($user, $host);
         }
 

@@ -114,12 +114,12 @@
         </div>
 
         {{-- Footer --}}
-        <div class="flex justify-end gap-2 p-4 border-t border-base-200 shrink-0 bg-base-100">
-            <button type="button" class="btn btn-ghost" onclick="closeConfirmDrawer()">Cancel</button>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
             <button type="submit" id="confirm-submit-btn" class="btn btn-success gap-1" {{ $hasReadToClient ? 'disabled' : '' }}>
                 <span class="icon-[tabler--check] size-4"></span>
                 Confirm Payment
             </button>
+            <button type="button" class="btn btn-ghost" onclick="closeConfirmDrawer()">Cancel</button>
         </div>
     </form>
 </div>
@@ -159,12 +159,12 @@
                                   required></textarea>
                     </div>
                 </div>
-                <div class="flex justify-end gap-2 p-4 border-t border-base-200">
-                    <button type="button" class="btn btn-ghost" onclick="closeCancelModal()">Back</button>
+                <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
                     <button type="submit" class="btn btn-error gap-1">
                         <span class="icon-[tabler--x] size-4"></span>
                         Cancel Transaction
                     </button>
+                    <button type="button" class="btn btn-ghost" onclick="closeCancelModal()">Back</button>
                 </div>
             </form>
         </div>

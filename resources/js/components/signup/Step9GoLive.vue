@@ -13,10 +13,11 @@
                 <div class="card-body text-left space-y-3">
                     <div class="flex items-center gap-3">
                         <span class="icon-[tabler--world] size-5 text-primary"></span>
-                        <div>
+                        <div class="flex-1">
                             <div class="text-xs text-base-content/50">Your booking page</div>
                             <div class="font-semibold">{{ formData.subdomain }}.fitcrm.app</div>
                         </div>
+                        <span class="badge badge-warning badge-sm">Pending Publish</span>
                     </div>
                     <div v-if="formData.class_name && !formData.skip_class_setup" class="flex items-center gap-3">
                         <span class="icon-[tabler--calendar] size-5 text-success"></span>

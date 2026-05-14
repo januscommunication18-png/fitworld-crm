@@ -67,8 +67,8 @@
                     <div class="mb-4">
                         <label class="label-text" for="email">Email</label>
                         <input type="email" id="email" name="email" value="{{ $invitation->email }}"
-                            class="input w-full bg-base-200 cursor-not-allowed"
-                            readonly disabled />
+                            class="input w-full"
+                            readonly />
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mb-4">

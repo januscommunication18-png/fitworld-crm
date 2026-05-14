@@ -758,7 +758,7 @@
 </div>
 
 {{-- User Certification Drawer --}}
-<div id="user-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="user-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold" id="user-cert-drawer-title">Add Certification</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeUserCertDrawer()">
@@ -1412,7 +1412,7 @@ function toggleSocialVisibility(checked) {
 
 {{-- Edit Bio Drawer --}}
 <div id="edit-bio-drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDrawer('edit-bio-drawer')"></div>
-<div id="edit-bio-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-bio-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold flex items-center gap-2">
             <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
@@ -1443,7 +1443,7 @@ function toggleSocialVisibility(checked) {
 
 {{-- Edit Social Links Drawer --}}
 <div id="edit-social-drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDrawer('edit-social-drawer')"></div>
-<div id="edit-social-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-social-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold flex items-center gap-2">
             <span class="icon-[tabler--share] size-5 text-primary"></span>

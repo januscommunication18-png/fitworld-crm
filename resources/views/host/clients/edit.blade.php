@@ -70,18 +70,14 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="phone">{{ $trans['field.phone'] ?? 'Phone' }}</label>
-                        <input type="tel" id="phone" name="phone" value="{{ old('phone', $client->phone) }}"
-                               class="input input-bordered w-full @error('phone') input-error @enderror">
+                        <x-phone-input name="phone" :value="old('phone', $client->phone)" label="{{ $trans['field.phone'] ?? 'Phone' }}" id-suffix="client-edit" />
                         @error('phone')
                             <span class="text-error text-sm">{{ $message }}</span>
                         @enderror
                     </div>
 
                     <div>
-                        <label class="label-text" for="secondary_phone">{{ $trans['field.secondary_phone'] ?? 'Secondary Phone' }}</label>
-                        <input type="tel" id="secondary_phone" name="secondary_phone" value="{{ old('secondary_phone', $client->secondary_phone) }}"
-                               class="input input-bordered w-full @error('secondary_phone') input-error @enderror">
+                        <x-phone-input name="secondary_phone" :value="old('secondary_phone', $client->secondary_phone)" label="{{ $trans['field.secondary_phone'] ?? 'Secondary Phone' }}" id-suffix="client-edit-secondary" />
                         @error('secondary_phone')
                             <span class="text-error text-sm">{{ $message }}</span>
                         @enderror
@@ -358,9 +354,7 @@
                     </div>
 
                     <div>
-                        <label class="label-text" for="emergency_contact_phone">{{ $trans['field.contact_phone'] ?? 'Contact Phone' }}</label>
-                        <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value="{{ old('emergency_contact_phone', $client->emergency_contact_phone) }}"
-                               class="input input-bordered w-full @error('emergency_contact_phone') input-error @enderror">
+                        <x-phone-input name="emergency_contact_phone" :value="old('emergency_contact_phone', $client->emergency_contact_phone)" label="{{ $trans['field.contact_phone'] ?? 'Contact Phone' }}" id-suffix="client-edit-emergency" />
                         @error('emergency_contact_phone')
                             <span class="text-error text-sm">{{ $message }}</span>
                         @enderror

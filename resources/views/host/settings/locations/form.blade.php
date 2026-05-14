@@ -450,7 +450,7 @@
             <button type="button" class="card-header cursor-pointer hover:bg-base-200/50 transition-colors section-toggle" data-section="contact">
                 <div class="flex items-center gap-3">
                     <span class="icon-[tabler--address-book] size-5 text-base-content/70"></span>
-                    <h3 class="card-title">Contact Information</h3>
+                    <h3 class="card-title">Studio Contact Information</h3>
                     <span class="badge badge-soft badge-neutral badge-sm">Optional</span>
                 </div>
                 <span class="section-chevron icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform"></span>
@@ -459,20 +459,12 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {{-- Phone --}}
                     <div>
-                        <label class="label-text" for="phone">Phone</label>
-                        <input
-                            id="phone"
-                            name="phone"
-                            type="tel"
-                            class="input w-full"
-                            placeholder="(555) 123-4567"
-                            value="{{ old('phone', $location->phone ?? '') }}"
-                        />
+                        <x-phone-input name="phone" :value="old('phone', $location->phone ?? '')" label="Studio Phone" id-suffix="location-form" />
                     </div>
 
                     {{-- Email --}}
                     <div>
-                        <label class="label-text" for="email">Email</label>
+                        <label class="label-text" for="email">Studio Email</label>
                         <input
                             id="email"
                             name="email"

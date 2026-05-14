@@ -789,7 +789,7 @@ function checkInBooking(bookingId) {
 {{-- Intake Form Drawers --}}
 @foreach($allBookings as $booking)
     @if($booking->questionnaireResponses->where('status', 'completed')->isNotEmpty())
-        <div id="drawer-intake-{{ $booking->id }}" class="fixed inset-y-0 right-0 w-full max-w-xl bg-base-100 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden overflow-y-auto">
+        <div id="drawer-intake-{{ $booking->id }}" class="fixed inset-y-0 right-0 w-full max-w-3xl bg-base-100 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out hidden overflow-y-auto">
             <div class="sticky top-0 bg-base-100 border-b border-base-200 p-4 flex items-center justify-between z-10">
                 <div>
                     <h3 class="text-lg font-semibold">{{ $trans['schedule.intake_form_responses'] ?? 'Intake Form Responses' }}</h3>

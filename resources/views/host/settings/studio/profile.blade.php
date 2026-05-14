@@ -66,10 +66,17 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
             </div>
 
             {{-- Required Fields Notice --}}
+            @php
+                $profileComplete = !empty($host->studio_name) && !empty($host->studio_structure) && !empty($host->subdomain)
+                    && !empty($host->studio_categories) && !empty($host->default_language_app)
+                    && !empty($host->default_currency) && isset($host->booking_settings['allow_cancellations']);
+            @endphp
+            @if(!$profileComplete)
             <div class="alert alert-info mb-4">
                 <span class="icon-[tabler--info-circle] size-5"></span>
                 <span class="text-sm">{{ $trans['settings.required_fields_notice'] ?? 'Complete all required fields below to finish your studio setup.' }}</span>
             </div>
+            @endif
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {{-- Studio Name (Required) --}}
@@ -138,7 +145,15 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
-    {{-- Required Settings Quick Links --}}
+    {{-- Required Settings Quick Links (hidden when all complete) --}}
+    @php
+        $reqCategories = !empty($host->studio_categories);
+        $reqLanguage = !empty($host->default_language_app);
+        $reqCurrency = !empty($host->default_currency);
+        $reqCancellation = isset($host->booking_settings['allow_cancellations']);
+        $allRequiredComplete = $reqCategories && $reqLanguage && $reqCurrency && $reqCancellation;
+    @endphp
+    @if(!$allRequiredComplete)
     <div class="card bg-warning/5 border border-warning/20">
         <div class="card-body py-4">
             <div class="flex items-center gap-2 mb-3">
@@ -200,6 +215,8 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
     </div>
 
+    @endif
+
     {{-- Section Divider: Optional Settings --}}
     <div class="divider text-base-content/40 text-sm">
         <span class="icon-[tabler--settings] size-4 mr-1"></span> {{ $trans['settings.optional_settings'] ?? 'Optional Settings' }}
@@ -228,9 +245,16 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                             @endif
                         </div>
                         <div>
-                            <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-logo-drawer')">
-                                <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_logo'] ?? 'Upload Logo' }}
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-logo-drawer')">
+                                    <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_logo'] ?? 'Upload Logo' }}
+                                </button>
+                                @if($host->logo_path)
+                                <button type="button" class="btn btn-ghost btn-sm text-error" onclick="removeStudioImage('logo')">
+                                    <span class="icon-[tabler--trash] size-4"></span> Remove
+                                </button>
+                                @endif
+                            </div>
                             <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.logo_size_hint'] ?? '400x400px, max 5MB' }}</p>
                         </div>
                     </div>
@@ -248,9 +272,16 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                             @endif
                         </div>
                         <div>
-                            <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-cover-drawer')">
-                                <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_cover'] ?? 'Upload Cover' }}
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-cover-drawer')">
+                                    <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_cover'] ?? 'Upload Cover' }}
+                                </button>
+                                @if($host->cover_image_path)
+                                <button type="button" class="btn btn-ghost btn-sm text-error" onclick="removeStudioImage('cover')">
+                                    <span class="icon-[tabler--trash] size-4"></span> Remove
+                                </button>
+                                @endif
+                            </div>
                             <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.cover_size_hint'] ?? '1200x400px, max 5MB' }}</p>
                         </div>
                     </div>
@@ -319,9 +350,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <button type="button" class="btn btn-circle btn-sm btn-ghost text-white gallery-drag-handle cursor-move" title="Drag to reorder">
                             <span class="icon-[tabler--grip-vertical] size-4"></span>
-                        </button>
-                        <button type="button" class="btn btn-circle btn-sm btn-ghost text-white" onclick="editGalleryImage({{ $image->id }}, '{{ addslashes($image->caption ?? '') }}')" title="Edit caption">
-                            <span class="icon-[tabler--edit] size-4"></span>
                         </button>
                         <button type="button" class="btn btn-circle btn-sm btn-ghost text-white hover:text-error" onclick="deleteGalleryImage({{ $image->id }})" title="Delete">
                             <span class="icon-[tabler--trash] size-4"></span>
@@ -790,7 +818,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 <div id="drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeAllDrawers()"></div>
 
 {{-- Edit Basic Info Drawer --}}
-<div id="edit-basic-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-basic-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Edit Basic Information</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-basic-drawer')">
@@ -821,7 +849,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 <div>
                     <label class="label-text" for="subdomain">Sub-domain Name <span class="text-error">*</span></label>
                     <div class="join w-full">
-                        <input id="subdomain" type="text" class="input join-item flex-1 {{ $host->subdomain ? 'input-disabled bg-base-200 cursor-not-allowed' : '' }}" value="{{ $host->subdomain ?? '' }}" {{ $host->subdomain ? 'readonly' : 'required' }} />
+                        <input id="subdomain" type="text" class="input join-item flex-1" value="{{ $host->subdomain ?? '' }}" {{ $host->subdomain ? 'readonly' : 'required' }} />
                         <span class="btn btn-soft join-item pointer-events-none">.{{ config('app.booking_domain', 'fitcrm.biz') }}</span>
                     </div>
                     @if($host->subdomain)
@@ -834,8 +862,8 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 {{-- Short Description (Optional) --}}
                 <div>
                     <label class="label-text" for="short_description">Short Description</label>
-                    <input id="short_description" type="text" class="input w-full" value="{{ $host->short_description ?? '' }}" maxlength="200" placeholder="A brief tagline for your studio" />
-                    <p class="text-xs text-base-content/50 mt-1">Shown in the hero section of your booking page (max 200 characters)</p>
+                    <textarea id="short_description" class="textarea textarea-bordered w-full" rows="3" maxlength="500" placeholder="A brief tagline for your studio">{{ $host->short_description ?? '' }}</textarea>
+                    <p class="text-xs text-base-content/50 mt-1">Shown in the hero section of your booking page (max 500 characters)</p>
                 </div>
 
                 {{-- Timezone --}}
@@ -867,7 +895,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Upload Logo Drawer --}}
-<div id="upload-logo-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="upload-logo-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Upload Studio Logo</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('upload-logo-drawer')">
@@ -904,7 +932,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Upload Cover Drawer --}}
-<div id="upload-cover-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="upload-cover-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Upload Cover Image</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('upload-cover-drawer')">
@@ -941,7 +969,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Contact Drawer --}}
-<div id="edit-contact-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-contact-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Edit Contact Information</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-contact-drawer')">
@@ -960,13 +988,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <input id="studio_email" type="email" class="input w-full" value="{{ $host->studio_email ?? '' }}" placeholder="hello@yourstudio.com" />
                 </div>
                 <div>
-                    <label class="label-text" for="phone">Studio Phone (Public)</label>
-                    <input id="phone" type="tel" class="input w-full" value="{{ $host->phone ?? '' }}" placeholder="(555) 123-4567" />
+                    <x-phone-input name="phone" :value="$host->phone ?? ''" label="Studio Phone (Public)" id-suffix="contact-drawer" />
                 </div>
                 <div class="divider text-xs text-base-content/50">Internal Use Only</div>
                 <div>
                     <label class="label-text" for="contact_name">Contact Name</label>
-                    <input id="contact_name" type="text" class="input w-full" value="{{ $host->contact_name ?? '' }}" placeholder="Studio Manager" />
+                    <input id="contact_name" type="text" class="input w-full" value="{{ $host->contact_name ?? '' }}" placeholder="Studio Manager" pattern="^[A-Za-z\s\-']+$" title="Name should only contain letters" oninput="this.value = this.value.replace(/[0-9]/g, '')" />
                     <p class="text-xs text-base-content/50 mt-1">For internal reference only</p>
                 </div>
                 <div>
@@ -987,7 +1014,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Social Links Drawer --}}
-<div id="edit-social-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-social-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Edit Social Links</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-social-drawer')">
@@ -1052,7 +1079,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Amenities Drawer --}}
-<div id="edit-amenities-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-amenities-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Edit Amenities</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-amenities-drawer')">
@@ -1082,7 +1109,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Countries Drawer --}}
-<div id="edit-countries-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-countries-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Countries of Operation</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-countries-drawer')">
@@ -1113,7 +1140,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Currency Drawer --}}
-<div id="edit-currency-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-currency-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Business Currencies</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-currency-drawer')">
@@ -1166,7 +1193,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Language Settings Drawer --}}
-<div id="edit-language-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-language-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Language Settings</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-language-drawer')">
@@ -1244,7 +1271,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Studio Categories Drawer --}}
-<div id="edit-categories-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-categories-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Studio Categories</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-categories-drawer')">
@@ -1390,7 +1417,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Edit Cancellation Policy Drawer --}}
-<div id="edit-cancellation-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="edit-cancellation-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Booking Cancellation Policy</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-cancellation-drawer')">
@@ -1457,7 +1484,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Add/Edit Certification Drawer --}}
-<div id="add-certification-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="add-certification-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold" id="certification-drawer-title">Add Certification</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('add-certification-drawer')">
@@ -1566,7 +1593,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 </div>
 
 {{-- Upload Gallery Image Drawer --}}
-<div id="upload-gallery-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+<div id="upload-gallery-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold">Add Gallery Image</h3>
         <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('upload-gallery-drawer')">
@@ -1629,24 +1656,6 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     </form>
 </dialog>
 
-{{-- Delete Gallery Confirmation Modal --}}
-<dialog id="delete-gallery-modal" class="modal">
-    <div class="modal-box">
-        <h3 class="font-bold text-lg">Delete Image?</h3>
-        <p class="py-4 text-base-content/70">This image will be permanently removed from your gallery. This action cannot be undone.</p>
-        <input type="hidden" id="delete-gallery-id" value="" />
-        <div class="modal-action">
-            <button type="button" class="btn btn-error" id="confirm-delete-gallery-btn">
-                <span class="loading loading-spinner loading-xs hidden" id="delete-gallery-spinner"></span>
-                Delete
-            </button>
-            <button type="button" class="btn btn-ghost" onclick="document.getElementById('delete-gallery-modal').close()">Cancel</button>
-        </div>
-    </div>
-    <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-    </form>
-</dialog>
 @endsection
 
 @push('scripts')
@@ -1686,7 +1695,7 @@ function captureDrawerData(id) {
         case 'edit-contact-drawer':
             originalDrawerData[id] = {
                 studioEmail: document.getElementById('studio_email')?.value || '',
-                phone: document.getElementById('phone')?.value || '',
+                phone: document.getElementById('phone_input_contact_drawer')?.value || '',
                 contactName: document.getElementById('contact_name')?.value || '',
                 supportEmail: document.getElementById('support_email')?.value || ''
             };
@@ -1756,7 +1765,7 @@ function resetDrawerData(id) {
             break;
         case 'edit-contact-drawer':
             if (document.getElementById('studio_email')) document.getElementById('studio_email').value = data.studioEmail;
-            if (document.getElementById('phone')) document.getElementById('phone').value = data.phone;
+            if (document.getElementById('phone_input_contact_drawer')) document.getElementById('phone_input_contact_drawer').value = data.phone;
             if (document.getElementById('contact_name')) document.getElementById('contact_name').value = data.contactName;
             if (document.getElementById('support_email')) document.getElementById('support_email').value = data.supportEmail;
             break;
@@ -1852,7 +1861,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-categories-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-countries-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-categories-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -1879,6 +1888,38 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Image upload handler
+function removeStudioImage(type) {
+    var title = type === 'logo' ? 'Remove Studio Logo' : 'Remove Cover Image';
+    var message = type === 'logo'
+        ? 'Are you sure you want to remove the studio logo?'
+        : 'Are you sure you want to remove the cover image?';
+    var url = type === 'logo' ? '{{ route("settings.studio.logo.remove") }}' : '{{ route("settings.studio.cover.remove") }}';
+
+    showConfirmModal({
+        title: title,
+        message: message,
+        type: 'danger',
+        btnText: 'Remove',
+        btnIcon: 'icon-[tabler--trash]',
+        onConfirm: function() {
+            fetch(url, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    showToast(result.message || 'Image removed!', 'success');
+                    setTimeout(function() { location.reload(); }, 500);
+                } else {
+                    showToast(result.message || 'Failed to remove', 'error');
+                }
+            })
+            .catch(function() { showToast('An error occurred', 'error'); });
+        }
+    });
+}
+
 function initImageUpload(type) {
     var dropZone = document.getElementById(type + '-drop-zone');
     var input = document.getElementById(type + '-input');
@@ -1919,12 +1960,6 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
     var studioStructure = document.getElementById('studio_structure').value;
     var subdomain = document.getElementById('subdomain').value;
 
-    // Collect selected studio categories
-    var selectedCategories = [];
-    document.querySelectorAll('.studio-category-checkbox:checked').forEach(function(cb) {
-        selectedCategories.push(cb.value);
-    });
-
     fetch('{{ route("settings.studio.profile.update") }}', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
@@ -1932,7 +1967,6 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
             studio_name: document.getElementById('studio_name').value,
             studio_structure: studioStructure,
             subdomain: subdomain,
-            studio_categories: selectedCategories,
             short_description: document.getElementById('short_description').value,
             timezone: document.getElementById('timezone').value
         })
@@ -1949,10 +1983,6 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
             // Update subdomain display
             var subdomainDisplay = subdomain ? subdomain + '.{{ config("app.booking_domain", "fitcrm.biz") }}' : 'Not set';
             document.getElementById('display-subdomain').textContent = subdomainDisplay;
-
-            // Update categories display - show as badges
-            var categoriesHtml = selectedCategories.length > 0 ? selectedCategories.map(function(c) { return '<span class="badge badge-primary badge-soft badge-sm">' + c + '</span>'; }).join('') : '<span class="text-base-content/50">Not set</span>';
-            document.getElementById('display-studio-categories').innerHTML = categoriesHtml;
 
             document.getElementById('display-short-description').textContent = document.getElementById('short_description').value || 'Not set';
             document.getElementById('display-timezone').textContent = document.getElementById('timezone').value || 'Not set';
@@ -1977,7 +2007,7 @@ document.getElementById('edit-contact-form').addEventListener('submit', function
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
         body: JSON.stringify({
             studio_email: document.getElementById('studio_email').value,
-            phone: document.getElementById('phone').value,
+            phone: (typeof PhoneInput_contact_drawer !== 'undefined') ? PhoneInput_contact_drawer.getFullNumber() : '',
             contact_name: document.getElementById('contact_name').value,
             support_email: document.getElementById('support_email').value
         })
@@ -1986,7 +2016,7 @@ document.getElementById('edit-contact-form').addEventListener('submit', function
     .then(function(result) {
         if (result.success) {
             document.getElementById('display-studio-email').textContent = document.getElementById('studio_email').value || 'Not set';
-            document.getElementById('display-phone').textContent = document.getElementById('phone').value || 'Not set';
+            document.getElementById('display-phone').textContent = (typeof PhoneInput_contact_drawer !== 'undefined') ? PhoneInput_contact_drawer.getFullNumber() || 'Not set' : 'Not set';
             document.getElementById('display-contact-name').textContent = document.getElementById('contact_name').value || 'Not set';
             document.getElementById('display-support-email').textContent = document.getElementById('support_email').value || 'Not set';
             closeDrawer('edit-contact-drawer');
@@ -2812,41 +2842,33 @@ document.getElementById('edit-gallery-form').addEventListener('submit', function
 
 // Delete gallery image
 function deleteGalleryImage(id) {
-    document.getElementById('delete-gallery-id').value = id;
-    document.getElementById('delete-gallery-modal').showModal();
-}
-
-document.getElementById('confirm-delete-gallery-btn').addEventListener('click', function() {
-    var btn = this;
-    var spinner = document.getElementById('delete-gallery-spinner');
-    var id = document.getElementById('delete-gallery-id').value;
-
-    btn.disabled = true;
-    spinner.classList.remove('hidden');
-
-    fetch('{{ url("settings/studio/gallery") }}/' + id, {
-        method: 'DELETE',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(result) {
-        if (result.success) {
-            var item = document.querySelector('.gallery-item[data-id="' + id + '"]');
-            if (item) item.remove();
-
-            // Update gallery count
-            galleryCurrentCount--;
-            updateGalleryCountDisplay();
-
-            document.getElementById('delete-gallery-modal').close();
-            showToast('Image deleted!');
-        } else {
-            showToast(result.message || 'Failed to delete', 'error');
+    showConfirmModal({
+        title: 'Delete Image',
+        message: 'This image will be permanently removed from your gallery. This action cannot be undone.',
+        type: 'danger',
+        btnText: 'Delete',
+        btnIcon: 'icon-[tabler--trash]',
+        onConfirm: function() {
+            fetch('{{ url("settings/studio/gallery") }}/' + id, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    var item = document.querySelector('.gallery-item[data-id="' + id + '"]');
+                    if (item) item.remove();
+                    galleryCurrentCount--;
+                    updateGalleryCountDisplay();
+                    showToast('Image deleted!');
+                } else {
+                    showToast(result.message || 'Failed to delete', 'error');
+                }
+            })
+            .catch(function() { showToast('An error occurred', 'error'); });
         }
-    })
-    .catch(function() { showToast('An error occurred', 'error'); })
-    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
-});
+    });
+}
 
 // Gallery sortable (drag to reorder)
 var gallerySortable = null;

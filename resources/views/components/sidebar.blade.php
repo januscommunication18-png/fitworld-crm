@@ -13,12 +13,12 @@
 
     // Check if setup checklist is complete (for owner/admin only)
     $isOwnerOrAdmin = $user->isOwner($host) || $user->isAdmin($host);
-    $setupComplete = true; // Default to true for non-owner/admin users
+    $setupComplete = true;
+    $setupCompletedCount = 0;
+    $setupTotalCount = 0;
     if ($isOwnerOrAdmin && !$host->setup_completed_at) {
-        // Calculate setup progress - check key items
         $hasVerifiedEmail = $user->hasVerifiedEmail();
 
-        // Studio Info check - all mandatory fields
         $bookingSettings = $host->booking_settings ?? [];
         $hasStudioInfo = !empty($host->studio_name)
             && !empty($host->studio_structure)
@@ -33,8 +33,13 @@
         $hasStaff = $host->instructors()->exists() && $host->instructors->contains(fn($i) => $i->isProfileComplete());
         $hasBookingPage = !empty($host->subdomain) && !empty($host->studio_name);
         $setupComplete = $hasVerifiedEmail && $hasStudioInfo && $hasLocation && $hasStaff && $hasBookingPage;
+
+        // Count for progress badge
+        $setupChecks = [$hasVerifiedEmail, $hasStudioInfo, $hasLocation, $hasStaff, $hasBookingPage];
+        $setupTotalCount = count($setupChecks);
+        $setupCompletedCount = count(array_filter($setupChecks));
     }
-    $sidebarDisabled = !$setupComplete;
+    $sidebarDisabled = $isOwnerOrAdmin && !$setupComplete;
 @endphp
 <aside id="main-sidebar" class="sticky top-0 h-screen bg-base-100 border-e border-base-content/10 flex flex-col">
 
@@ -51,22 +56,23 @@
 
     {{-- Sidebar body --}}
     <div class="flex-1 overflow-y-auto px-3 py-4">
-        {{-- Setup incomplete notice --}}
-        @if($sidebarDisabled)
-        <div class="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-lg">
-            <div class="flex items-center gap-2 text-warning text-xs font-medium">
-                <span class="icon-[tabler--alert-triangle] size-4"></span>
-                {{ $trans['nav.setup_required'] ?? 'Complete setup to unlock navigation' }}
-            </div>
-        </div>
-        @endif
-
         <ul class="menu space-y-0.5 p-0">
 
             {{-- Section: Main --}}
             <li class="menu-title sidebar-section-label">
                 <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">{{ $trans['nav.section.main'] ?? 'Main' }}</span>
             </li>
+
+            {{-- Get Started - Only for owners when setup is incomplete --}}
+            @if($isOwnerOrAdmin && !$setupComplete)
+            <li class="nav-item {{ request()->is('get-started*') ? 'active' : '' }}" data-nav="get-started">
+                <a href="{{ route('get-started') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors {{ request()->is('get-started*') ? 'bg-primary/10 text-primary font-medium' : '' }}">
+                    <span class="icon-[tabler--rocket] size-5 shrink-0"></span>
+                    <span class="sidebar-label flex-1 text-left">{{ $trans['nav.get_started'] ?? 'Get Started' }}</span>
+                    <span class="badge badge-primary badge-sm sidebar-label">{{ $setupCompletedCount }}/{{ $setupTotalCount }}</span>
+                </a>
+            </li>
+            @endif
 
             {{-- Dashboard - Everyone can see --}}
             <li class="nav-item {{ request()->is('dashboard*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="dashboard">
@@ -432,12 +438,23 @@
             $hasMultipleHosts = Auth::user()->hosts()->count() > 1;
         @endphp
 
+        @php
+            $sidebarAvatarUrl = $currentHost->logo_url ?? Auth::user()->profile_photo_url;
+        @endphp
         <div class="flex items-center gap-3 px-2">
+            @if($sidebarAvatarUrl)
+            <div class="avatar">
+                <div class="size-9 rounded-full">
+                    <img src="{{ $sidebarAvatarUrl }}" alt="{{ $currentHost->studio_name }}" />
+                </div>
+            </div>
+            @else
             <div class="avatar avatar-placeholder">
                 <div class="bg-primary text-primary-content size-9 rounded-full text-sm font-bold">
                     {{ strtoupper(substr($currentHost->studio_name ?? 'S', 0, 1)) }}
                 </div>
             </div>
+            @endif
             <div class="sidebar-footer-detail flex-1 min-w-0">
                 <div class="text-sm font-semibold truncate">{{ $currentHost->studio_name ?? 'My Studio' }}</div>
                 <div class="text-xs text-base-content/50 truncate">{{ $currentHost->subdomain ?? 'my-studio' }}.fitcrm.app</div>

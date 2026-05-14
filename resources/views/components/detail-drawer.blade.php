@@ -1,7 +1,7 @@
 @props([
     'id',
     'title' => 'Details',
-    'size' => 'lg', // sm, md, lg, xl, 2xl, 3xl, 4xl, 5xl, 6xl
+    'size' => '3xl', // sm, md, lg, xl, 2xl, 3xl, 4xl, 5xl, 6xl
     'showFooter' => true,
 ])
 
@@ -45,7 +45,7 @@ $maxWidth = $sizeClasses[$size] ?? $sizeClasses['lg'];
 
     {{-- Footer --}}
     @if($showFooter)
-    <div class="p-4 border-t border-base-200 flex justify-between gap-2">
+    <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
         @if(isset($footer))
             {{ $footer }}
         @else

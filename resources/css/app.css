@@ -13,6 +13,21 @@
 /* FitCRM Theme - Custom branding variables (edit fitcrm-theme.css to customize) */
 @import "./fitcrm-theme.css";
 
+/* ── Readonly input styling ───────────────────────────────── */
+input[readonly], textarea[readonly], select[disabled] {
+    background-color: #DADADA !important;
+    color: #7E7E7E !important;
+    cursor: not-allowed !important;
+}
+
+/* Exclude special inputs (flatpickr, date pickers) from readonly styling */
+input.flatpickr-input[readonly],
+input.flatpickr-input[readonly] + input {
+    background-color: inherit !important;
+    color: inherit !important;
+    cursor: pointer !important;
+}
+
 /* ── Avatar placeholder centering fix ─────────────────────── */
 .avatar.placeholder > div {
     display: flex;

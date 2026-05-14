@@ -1,8 +1,8 @@
 import { Notyf } from 'notyf'
 
 const notyf = new Notyf({
-    duration: 4000,
-    position: { x: 'right', y: 'top' },
+    duration: 6000,
+    position: { x: 'center', y: 'top' },
     dismissible: true,
     ripple: true,
     types: [

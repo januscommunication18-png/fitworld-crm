@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AddressController;
 use App\Http\Controllers\Api\SignupController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
 use App\Http\Controllers\Api\WalkInBookingController;
@@ -12,6 +13,15 @@ Route::prefix('v1')->group(function () {
     Route::post('/signup/register', [SignupController::class, 'register']);
     Route::get('/signup/subdomain-check', [SignupController::class, 'checkSubdomain']);
     Route::get('/signup/legal-pages', [SignupController::class, 'getLegalPages']);
+
+    // Address autocomplete & validation (public)
+    Route::prefix('address')->group(function () {
+        Route::get('/autocomplete', [AddressController::class, 'autocomplete']);
+        Route::post('/validate', [AddressController::class, 'validate']);
+        Route::get('/cities', [AddressController::class, 'searchCities']);
+        Route::get('/states', [AddressController::class, 'getStates']);
+        Route::get('/zips', [AddressController::class, 'getZips']);
+    });
 
     // Signup endpoints (authenticated — user registers at step 2, then continues)
     Route::middleware('auth:sanctum')->group(function () {

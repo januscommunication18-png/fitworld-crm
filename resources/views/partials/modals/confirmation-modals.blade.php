@@ -328,23 +328,23 @@ function showToast(message, type = 'info') {
     const bgClass = type === 'success' ? 'alert-success' : type === 'error' ? 'alert-error' : type === 'warning' ? 'alert-warning' : 'alert-info';
     const iconClass = type === 'success' ? 'icon-[tabler--check]' : type === 'error' ? 'icon-[tabler--x]' : type === 'warning' ? 'icon-[tabler--alert-triangle]' : 'icon-[tabler--info-circle]';
 
-    toast.className = `alert ${bgClass} fixed top-4 right-4 z-[10000] max-w-sm shadow-lg transition-all duration-300`;
-    toast.style.transform = 'translateX(100%)';
+    toast.className = `alert ${bgClass} fixed top-4 left-1/2 z-[10000] max-w-sm shadow-lg transition-all duration-300`;
+    toast.style.transform = 'translateX(-50%) translateY(-100%)';
     toast.style.opacity = '0';
     toast.innerHTML = `<span class="${iconClass} size-5"></span><span>${message}</span>`;
     document.body.appendChild(toast);
 
     // Slide in
     requestAnimationFrame(() => {
-        toast.style.transform = 'translateX(0)';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
         toast.style.opacity = '1';
     });
 
     // Slide out after delay
     setTimeout(() => {
-        toast.style.transform = 'translateX(100%)';
+        toast.style.transform = 'translateX(-50%) translateY(-100%)';
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
-    }, 4000);
+    }, 6000);
 }
 </script>

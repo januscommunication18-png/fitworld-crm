@@ -37,6 +37,7 @@ class Host extends Model
         'studio_categories',
         'city',
         'state',
+        'zipcode',
         'country',
         'operating_countries',
         'default_language_app',

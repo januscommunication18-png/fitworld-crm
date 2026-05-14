@@ -217,15 +217,25 @@ class SignupController extends Controller
 
         $defaultCurrency = $data['default_currency'] ?? 'USD';
 
+        // Map full country name to 2-letter code for DB storage
+        $countryMap = [
+            'United States' => 'US', 'Canada' => 'CA', 'United Kingdom' => 'GB',
+            'Germany' => 'DE', 'Australia' => 'AU', 'India' => 'IN',
+        ];
+        $countryRaw = $data['country'] ?? null;
+        $countryCode = $countryMap[$countryRaw] ?? (strlen($countryRaw ?? '') <= 2 ? $countryRaw : 'US');
+
         $host->update([
             'studio_name' => $data['studio_name'],
             'studio_categories' => $data['studio_categories'] ?? [],
-            'country' => $data['country'] ?? null,
+            'address' => $data['address'] ?? null,
+            'country' => $countryCode,
             'city' => $data['city'] ?? null,
             'state' => $data['state'] ?? null,
+            'zipcode' => $data['zipcode'] ?? null,
             'timezone' => $data['timezone'],
             'subdomain' => $data['subdomain'],
-            'operating_countries' => $data['country'] ? [$data['country']] : [],
+            'operating_countries' => $countryCode ? [$countryCode] : [],
             'default_currency' => $defaultCurrency,
             'currencies' => [$defaultCurrency],
             'onboarding_step' => max($host->onboarding_step ?? 4, 5),
@@ -244,23 +254,22 @@ class SignupController extends Controller
 
         // Update host record with legacy fields
         $host->update([
-            'address' => $data['address'] ?? null,
             'rooms' => $data['rooms'] ?? 1,
             'default_capacity' => $data['default_capacity'] ?? 20,
             'amenities' => $data['amenities'] ?? [],
             'onboarding_step' => max($host->onboarding_step ?? 5, 6),
         ]);
 
-        // Create or update the default location
+        // Create or update the default location (address saved in step 4)
         $location = $host->locations()->where('is_default', true)->first();
 
         $locationData = [
             'name' => $host->studio_name ?? 'Main Location',
             'location_type' => \App\Models\Location::TYPE_IN_PERSON,
-            'address_line_1' => $data['address'] ?? null,
-            'city' => $data['city'] ?? $host->city ?? null,
-            'state' => $data['state'] ?? $host->state ?? null,
-            'postal_code' => $data['zipcode'] ?? null,
+            'address_line_1' => $host->address ?? null,
+            'city' => $host->city ?? null,
+            'state' => $host->state ?? null,
+            'postal_code' => $host->zipcode ?? null,
             'country' => $host->country ?? null,
             'is_default' => true,
         ];

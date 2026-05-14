@@ -36,6 +36,8 @@ return [
     ],
 
     'smarty' => [
+        'auth_id' => env('SMARTY_AUTH_ID'),
+        'auth_token' => env('SMARTY_AUTH_TOKEN'),
         'website_key' => env('SMARTY_WEBSITE_KEY'),
     ],
 
