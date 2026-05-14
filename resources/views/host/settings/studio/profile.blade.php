@@ -1507,8 +1507,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                 </div>
 
                 <div>
-                    <label class="label-text font-medium" for="cert_expire_date">Expiration Date</label>
-                    <input type="date" id="cert_expire_date" name="expire_date" class="input w-full" />
+                    <x-date-picker
+                        name="expire_date"
+                        label="Expiration Date"
+                        placeholder="Select expiration date..."
+                        id-suffix="cert-expire"
+                    />
                     <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
                 </div>
 
@@ -2921,7 +2925,8 @@ function resetCertificationForm() {
     document.getElementById('certification-id').value = '';
     document.getElementById('cert_name').value = '';
     document.getElementById('cert_certification_name').value = '';
-    document.getElementById('cert_expire_date').value = '';
+    document.getElementById('datepicker_cert_expire').value = '';
+    document.getElementById('datepicker_value_cert_expire').value = '';
     document.getElementById('cert_reminder_days').value = '';
     document.getElementById('cert_notes').value = '';
     document.getElementById('cert_file').value = '';
@@ -2955,7 +2960,17 @@ function editCertification(id) {
             document.getElementById('certification-id').value = cert.id;
             document.getElementById('cert_name').value = cert.name || '';
             document.getElementById('cert_certification_name').value = cert.certification_name || '';
-            document.getElementById('cert_expire_date').value = cert.expire_date || '';
+            // Update date picker
+            var dpDisplay = document.getElementById('datepicker_cert_expire');
+            var dpValue = document.getElementById('datepicker_value_cert_expire');
+            if (cert.expire_date) {
+                dpValue.value = cert.expire_date;
+                dpDisplay.value = moment(cert.expire_date).format('MM/DD/YYYY');
+                jQuery(dpDisplay).data('daterangepicker').setStartDate(moment(cert.expire_date));
+            } else {
+                dpValue.value = '';
+                dpDisplay.value = '';
+            }
             document.getElementById('cert_reminder_days').value = cert.reminder_days || '';
             document.getElementById('cert_notes').value = cert.notes || '';
 

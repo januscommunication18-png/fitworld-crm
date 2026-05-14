@@ -22,7 +22,8 @@ input[readonly], textarea[readonly], select[disabled] {
 
 /* Exclude special inputs (flatpickr, date pickers) from readonly styling */
 input.flatpickr-input[readonly],
-input.flatpickr-input[readonly] + input {
+input.flatpickr-input[readonly] + input,
+input[id^="datepicker_"][readonly] {
     background-color: inherit !important;
     color: inherit !important;
     cursor: pointer !important;
