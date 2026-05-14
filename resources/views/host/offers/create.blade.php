@@ -87,16 +87,24 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="label-text" for="start_date">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" value="{{ old('start_date') }}"
-                               class="input w-full">
+                        <x-date-picker
+                            name="start_date"
+                            :value="old('start_date')"
+                            label="Start Date"
+                            placeholder="Select date..."
+                            id-suffix="start-date"
+                        />
                         <p class="text-xs text-base-content/60 mt-1">Leave blank for immediate start</p>
                     </div>
 
                     <div>
-                        <label class="label-text" for="end_date">End Date</label>
-                        <input type="date" id="end_date" name="end_date" value="{{ old('end_date') }}"
-                               class="input w-full">
+                        <x-date-picker
+                            name="end_date"
+                            :value="old('end_date')"
+                            label="End Date"
+                            placeholder="Select date..."
+                            id-suffix="end-date"
+                        />
                         <p class="text-xs text-base-content/60 mt-1">Leave blank for no end date</p>
                     </div>
                 </div>

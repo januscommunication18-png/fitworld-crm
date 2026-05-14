@@ -40,6 +40,7 @@ class Location extends Model
         'latitude',
         'longitude',
         'is_default',
+        'is_active',
         // Public location fields
         'public_location_notes',
         // Virtual location fields
@@ -133,7 +134,7 @@ class Location extends Model
 
     public function scopeActive($query)
     {
-        return $query; // All locations are considered active (no is_active column)
+        return $query->where('is_active', true);
     }
 
     // ========== Type Checkers ==========

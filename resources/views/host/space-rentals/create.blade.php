@@ -288,12 +288,15 @@
 
                             {{-- Date --}}
                             <div class="form-control">
-                                <label for="date" class="label">
-                                    <span class="label-text">{{ $trans['field.date'] ?? 'Date' }} <span class="text-error">*</span></span>
-                                </label>
-                                <input type="date" name="date" id="date" value="{{ old('date', today()->format('Y-m-d')) }}"
-                                    min="{{ today()->format('Y-m-d') }}"
-                                    class="input input-bordered @error('date') input-error @enderror" required>
+                                <x-date-picker
+                                    name="date"
+                                    :value="old('date', today()->format('Y-m-d'))"
+                                    :label="$trans['field.date'] ?? 'Date'"
+                                    placeholder="Select date..."
+                                    :required="true"
+                                    :min-date="today()->format('Y-m-d')"
+                                    id-suffix="date"
+                                />
                             </div>
 
                             {{-- Start Time --}}

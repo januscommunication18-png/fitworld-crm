@@ -126,9 +126,14 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="label-text" for="preferred_date">Preferred Date</label>
-                                <input type="date" id="preferred_date" name="preferred_date" value="{{ old('preferred_date') }}"
-                                       class="input w-full" min="{{ date('Y-m-d') }}">
+                                <x-date-picker
+                                    name="preferred_date"
+                                    :value="old('preferred_date')"
+                                    label="Preferred Date"
+                                    placeholder="Select date..."
+                                    :min-date="date('Y-m-d')"
+                                    id-suffix="preferred-date"
+                                />
                             </div>
                             <div>
                                 <label class="label-text" for="preferred_time">Preferred Time</label>

@@ -747,6 +747,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/locations/{location}', [LocationController::class, 'update'])->name('settings.locations.update');
     Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('settings.locations.destroy');
     Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
+    Route::post('/settings/locations/{location}/toggle-status', [LocationController::class, 'toggleStatus'])->name('settings.locations.toggle-status');
 
     // Settings - Team
     Route::get('/settings/team/users', [TeamController::class, 'users'])->name('settings.team.users');

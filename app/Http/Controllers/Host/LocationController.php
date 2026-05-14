@@ -15,7 +15,7 @@ class LocationController extends Controller
     public function index()
     {
         $host = auth()->user()->host;
-        $locations = $host->locations()->withCount('rooms')->orderBy('is_default', 'desc')->orderBy('name')->get();
+        $locations = $host->locations()->withCount('rooms')->orderBy('is_default', 'desc')->orderBy('created_at', 'desc')->get();
 
         // Pre-load managers for all locations
         $allManagerIds = $locations->pluck('manager_ids')->flatten()->filter()->unique()->values()->toArray();
@@ -264,6 +264,33 @@ class LocationController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Default location updated',
+        ]);
+    }
+
+    /**
+     * Toggle location active/inactive status
+     */
+    public function toggleStatus(Location $location)
+    {
+        $host = auth()->user()->host;
+
+        if ($location->host_id !== $host->id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // Cannot deactivate default location
+        if ($location->is_default) {
+            return response()->json(['success' => false, 'message' => 'Cannot deactivate the default location'], 422);
+        }
+
+        $location->update(['is_active' => !$location->is_active]);
+
+        $status = $location->is_active ? 'active' : 'inactive';
+
+        return response()->json([
+            'success' => true,
+            'message' => "Location marked as {$status}",
+            'is_active' => $location->is_active,
         ]);
     }
 

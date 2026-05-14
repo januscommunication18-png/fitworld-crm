@@ -1512,6 +1512,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         label="Expiration Date"
                         placeholder="Select expiration date..."
                         id-suffix="cert-expire"
+                        :min-date="now()->addDay()"
                     />
                     <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
                 </div>

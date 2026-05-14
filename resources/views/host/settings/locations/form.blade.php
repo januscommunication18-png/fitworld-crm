@@ -153,6 +153,25 @@
             <div id="in-person-content" class="card-body border-t border-base-200 space-y-4">
                 <p class="text-base-content/60 text-sm">Configure the physical address and details for your studio location.</p>
 
+                {{-- Smarty Address Search --}}
+                <div class="relative" id="location-address-search-wrapper">
+                    <label class="label-text font-medium">
+                        <span class="icon-[tabler--search] size-4 mr-1"></span>
+                        Quick Address Search
+                    </label>
+                    <div class="flex gap-2 mt-1">
+                        <div class="relative flex-1">
+                            <input type="text" id="location-address-search" class="input w-full pr-10" placeholder="Search address, city, or zip code..." autocomplete="off" />
+                            <span id="location-search-loading" class="loading loading-spinner loading-xs absolute top-1/2 right-3 -translate-y-1/2 text-primary hidden"></span>
+                        </div>
+                        <button type="button" id="location-validate-btn" class="btn btn-outline btn-primary shrink-0" onclick="validateLocationAddress()">
+                            <span class="icon-[tabler--check] size-4"></span> Validate
+                        </button>
+                    </div>
+                    <div id="location-address-suggestions" class="absolute z-50 w-full mt-1 bg-base-100 border border-base-300 rounded-lg shadow-lg max-h-72 overflow-y-auto hidden"></div>
+                    <div id="location-validation-msg" class="mt-2 hidden"></div>
+                </div>
+
                 {{-- Address Line 1 --}}
                 <div>
                     <label class="label-text" for="address_line_1">Street Address <span class="text-error">*</span></label>
@@ -637,6 +656,139 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial state
     updateFormFields();
+
+    // ===== SMARTY ADDRESS SEARCH =====
+    var searchInput = document.getElementById('location-address-search');
+    var suggestionsDiv = document.getElementById('location-address-suggestions');
+    var loadingEl = document.getElementById('location-search-loading');
+    var searchTimer;
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            var query = this.value.trim();
+
+            if (query.length < 3) {
+                suggestionsDiv.classList.add('hidden');
+                return;
+            }
+
+            loadingEl.classList.remove('hidden');
+
+            searchTimer = setTimeout(function() {
+                fetch('/api/v1/address/autocomplete?q=' + encodeURIComponent(query))
+                    .then(function(r) { return r.json(); })
+                    .then(function(results) {
+                        loadingEl.classList.add('hidden');
+
+                        if (!results || results.length === 0) {
+                            suggestionsDiv.innerHTML = '<div class="px-4 py-3 text-base-content/50 text-sm">No addresses found.</div>';
+                            suggestionsDiv.classList.remove('hidden');
+                            return;
+                        }
+
+                        suggestionsDiv.innerHTML = results.map(function(r, i) {
+                            return '<div class="location-sug px-4 py-3 hover:bg-base-200 cursor-pointer border-b border-base-200 last:border-b-0" data-idx="' + i + '">' +
+                                '<div class="font-medium text-sm">' + (r.label || r.street_line || '') + '</div>' +
+                                (r.street_line ? '<div class="text-xs text-base-content/60">' + r.city + ', ' + r.state + ' ' + r.zipcode + '</div>' : '') +
+                            '</div>';
+                        }).join('');
+                        suggestionsDiv.classList.remove('hidden');
+
+                        suggestionsDiv.querySelectorAll('.location-sug').forEach(function(item) {
+                            item.addEventListener('click', function() {
+                                var idx = parseInt(this.dataset.idx);
+                                var selected = results[idx];
+                                applyAddressResult(selected);
+                                searchInput.value = '';
+                                suggestionsDiv.classList.add('hidden');
+                                showToast('Address populated from search', 'success');
+                            });
+                        });
+                    })
+                    .catch(function() {
+                        loadingEl.classList.add('hidden');
+                        suggestionsDiv.classList.add('hidden');
+                    });
+            }, 300);
+        });
+
+        // Hide suggestions on click outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                suggestionsDiv.classList.add('hidden');
+            }
+        });
+    }
+
+    function applyAddressResult(result) {
+        if (result.street_line) document.getElementById('address_line_1').value = result.street_line;
+        if (result.city) document.getElementById('city').value = result.city;
+        if (result.state_name) document.getElementById('state').value = result.state_name;
+        else if (result.state) document.getElementById('state').value = result.state;
+        if (result.zipcode) document.getElementById('postal_code').value = result.zipcode;
+
+        // Set country to US for Smarty results
+        var countrySelect = document.getElementById('country');
+        if (countrySelect) countrySelect.value = 'US';
+    }
 });
+
+// Validate address via Smarty
+function validateLocationAddress() {
+    var street = (document.getElementById('address_line_1')?.value || '').trim();
+    var city = (document.getElementById('city')?.value || '').trim();
+    var state = (document.getElementById('state')?.value || '').trim();
+    var zipcode = (document.getElementById('postal_code')?.value || '').trim();
+    var msgDiv = document.getElementById('location-validation-msg');
+    var btn = document.getElementById('location-validate-btn');
+
+    if (!city && !zipcode) {
+        msgDiv.className = 'mt-2 text-sm text-warning';
+        msgDiv.textContent = 'Please enter at least a city or zip code to validate.';
+        msgDiv.classList.remove('hidden');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Validating...';
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    fetch('/api/v1/address/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({ street: street, city: city, state: state, zipcode: zipcode })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.valid) {
+            if (result.street) document.getElementById('address_line_1').value = result.street;
+            if (result.city) document.getElementById('city').value = result.city;
+            if (result.state_name) document.getElementById('state').value = result.state_name;
+            else if (result.state) document.getElementById('state').value = result.state;
+            if (result.zipcode) document.getElementById('postal_code').value = result.zipcode.replace(/-$/, '');
+            document.getElementById('country').value = 'US';
+
+            msgDiv.className = 'mt-2 text-sm text-success';
+            msgDiv.innerHTML = '<span class="icon-[tabler--circle-check] size-4 align-middle mr-1"></span>Valid address!' + (result.county ? ' County: ' + result.county : '');
+            msgDiv.classList.remove('hidden');
+            setTimeout(function() { msgDiv.classList.add('hidden'); }, 5000);
+        } else {
+            msgDiv.className = 'mt-2 text-sm text-error';
+            msgDiv.innerHTML = '<span class="icon-[tabler--alert-circle] size-4 align-middle mr-1"></span>' + (result.error || 'Could not validate this address.');
+            msgDiv.classList.remove('hidden');
+        }
+    })
+    .catch(function() {
+        msgDiv.className = 'mt-2 text-sm text-error';
+        msgDiv.textContent = 'Validation failed. Please try again.';
+        msgDiv.classList.remove('hidden');
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Validate';
+    });
+}
 </script>
 @endpush

@@ -363,12 +363,25 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="label-text" for="bulk_start_date">{{ $trans['field.start_date'] ?? 'Start Date' }}</label>
-                            <input type="date" id="bulk_start_date" name="start_date" class="input w-full" min="{{ now()->format('Y-m-d') }}" required>
+                            <x-date-picker
+                                name="start_date"
+                                :value="null"
+                                :label="$trans['field.start_date'] ?? 'Start Date'"
+                                placeholder="Select date..."
+                                :required="true"
+                                :min-date="now()->format('Y-m-d')"
+                                id-suffix="bulk-start-date"
+                            />
                         </div>
                         <div>
-                            <label class="label-text" for="bulk_end_date">{{ $trans['field.end_date'] ?? 'End Date' }}</label>
-                            <input type="date" id="bulk_end_date" name="end_date" class="input w-full" required>
+                            <x-date-picker
+                                name="end_date"
+                                :value="null"
+                                :label="$trans['field.end_date'] ?? 'End Date'"
+                                placeholder="Select date..."
+                                :required="true"
+                                id-suffix="bulk-end-date"
+                            />
                         </div>
                     </div>
 

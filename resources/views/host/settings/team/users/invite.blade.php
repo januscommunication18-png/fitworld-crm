@@ -690,8 +690,13 @@
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
-                                            <label class="label-text font-medium">Expiration Date</label>
-                                            <input type="date" name="certs[{{ $i }}][expire_date]" class="input input-bordered w-full" value="{{ $oldCert['expire_date'] ?? '' }}" />
+                                            <x-date-picker
+                                                name="certs[{{ $i }}][expire_date]"
+                                                :value="$oldCert['expire_date'] ?? ''"
+                                                label="Expiration Date"
+                                                placeholder="Select date..."
+                                                id-suffix="invite-cert-expire-{{ $i }}"
+                                            />
                                         </div>
                                         <div>
                                             <label class="label-text font-medium">Reminder</label>

@@ -332,10 +332,14 @@
                             {{ $trans['field.start_date'] ?? 'Start Date' }}
                         </h2>
                         <div class="form-control">
-                            <input type="date" name="start_date" id="start_date"
-                                   class="input input-bordered w-full max-w-xs"
-                                   value="{{ now()->format('Y-m-d') }}"
-                                   min="{{ now()->format('Y-m-d') }}">
+                            <x-date-picker
+                                name="start_date"
+                                :value="now()->format('Y-m-d')"
+                                label=""
+                                placeholder="Select date..."
+                                :min-date="now()->format('Y-m-d')"
+                                id-suffix="start-date"
+                            />
                             <p class="text-xs text-base-content/60 mt-1">{{ $trans['walk_in.membership_start_help'] ?? 'When should the membership start?' }}</p>
                         </div>
                     </div>

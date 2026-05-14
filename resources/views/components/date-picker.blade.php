@@ -54,6 +54,17 @@
 @once
 @push('styles')
 <link rel="stylesheet" href="{{ asset('vendor/daterangepicker/daterangepicker.css') }}">
+<style>
+    .daterangepicker select.yearselect,
+    .daterangepicker select.monthselect {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .daterangepicker select.yearselect option,
+    .daterangepicker select.monthselect option {
+        padding: 2px 4px;
+    }
+</style>
 @endpush
 @push('head')
 <script src="{{ asset('vendor/daterangepicker/jquery.min.js') }}"></script>
@@ -92,6 +103,8 @@ document.addEventListener('DOMContentLoaded', function() {
         singleDatePicker: true,
         showDropdowns: true,
         autoUpdateInput: false,
+        minYear: moment().year() - 5,
+        maxYear: moment().year() + 10,
         locale: {
             format: '{{ $format }}',
             cancelLabel: 'Clear'

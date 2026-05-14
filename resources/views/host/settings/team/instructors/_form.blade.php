@@ -499,8 +499,13 @@
                 </div>
 
                 <div>
-                    <label class="label-text font-medium" for="instr_cert_expire_date">Expiration Date</label>
-                    <input type="date" id="instr_cert_expire_date" name="expire_date" class="input w-full" />
+                    <x-date-picker
+                        name="expire_date"
+                        :value="null"
+                        label="Expiration Date"
+                        placeholder="Select date..."
+                        id-suffix="instr-cert-expire-date"
+                    />
                     <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
                 </div>
 

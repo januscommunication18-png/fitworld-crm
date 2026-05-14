@@ -779,8 +779,13 @@
                     <input type="text" id="user_cert_certification_name" name="certification_name" class="input w-full" placeholder="e.g., Red Cross Certified, License #12345" />
                 </div>
                 <div>
-                    <label class="label-text font-medium" for="user_cert_expire_date">Expiration Date</label>
-                    <input type="date" id="user_cert_expire_date" name="expire_date" class="input w-full" />
+                    <x-date-picker
+                        name="expire_date"
+                        :value="null"
+                        label="Expiration Date"
+                        placeholder="Select date..."
+                        id-suffix="user-cert-expire-date"
+                    />
                     <p class="text-xs text-base-content/50 mt-1">Leave blank if no expiration</p>
                 </div>
                 <div>

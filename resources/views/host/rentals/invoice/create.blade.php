@@ -144,20 +144,26 @@
                 <div class="card-body space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="label-text" for="rental_date">Rental Date <span class="text-error">*</span></label>
-                            <input type="date" id="rental_date" name="rental_date"
-                                value="{{ old('rental_date', date('Y-m-d')) }}"
-                                class="input w-full @error('rental_date') input-error @enderror"
-                                required>
+                            <x-date-picker
+                                name="rental_date"
+                                :value="old('rental_date', date('Y-m-d'))"
+                                label="Rental Date"
+                                placeholder="Select date..."
+                                :required="true"
+                                id-suffix="rental-date"
+                            />
                             @error('rental_date')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                         <div>
-                            <label class="label-text" for="due_date">Due Date</label>
-                            <input type="date" id="due_date" name="due_date"
-                                value="{{ old('due_date') }}"
-                                class="input w-full @error('due_date') input-error @enderror">
+                            <x-date-picker
+                                name="due_date"
+                                :value="old('due_date')"
+                                label="Due Date"
+                                placeholder="Select date..."
+                                id-suffix="due-date"
+                            />
                             <p class="text-xs text-base-content/60 mt-1">When items should be returned</p>
                             @error('due_date')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>

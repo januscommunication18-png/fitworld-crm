@@ -1737,8 +1737,14 @@
                 <div class="p-4 space-y-6">
                     {{-- Date --}}
                     <div>
-                        <label class="label-text" for="measured_at">Measurement Date</label>
-                        <input type="date" id="measured_at" name="measured_at" value="{{ date('Y-m-d') }}" class="input w-full" required>
+                        <x-date-picker
+                            name="measured_at"
+                            :value="date('Y-m-d')"
+                            label="Measurement Date"
+                            placeholder="Select date..."
+                            :required="true"
+                            id-suffix="measured-at"
+                        />
                     </div>
 
                     {{-- Weight & Body Fat --}}

@@ -84,6 +84,11 @@
                                 @if($location->is_default)
                                 <span class="badge badge-primary badge-sm">Default</span>
                                 @endif
+                                @if($location->is_active ?? true)
+                                <span class="badge badge-success badge-soft badge-sm">Active</span>
+                                @else
+                                <span class="badge badge-warning badge-soft badge-sm">Inactive</span>
+                                @endif
                             </div>
                             <p class="text-sm text-base-content/70 mt-1">{{ $location->full_address }}</p>
                             @if($location->phone || $location->email)
@@ -155,19 +160,25 @@
                                 <summary class="btn btn-ghost btn-sm btn-square list-none cursor-pointer">
                                     <span class="icon-[tabler--dots-vertical] size-5"></span>
                                 </summary>
-                                <ul class="dropdown-content menu bg-base-100 rounded-box w-40 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
+                                <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
                                     <li><a href="javascript:void(0)" onclick="viewLocation({{ $location->id }})">
                                         <span class="icon-[tabler--eye] size-4"></span> View
                                     </a></li>
                                     <li><a href="{{ route('settings.locations.edit', $location) }}">
                                         <span class="icon-[tabler--edit] size-4"></span> Edit
                                     </a></li>
+                                    @if(!$location->is_default)
                                     <li><a href="javascript:void(0)" onclick="toggleLocationStatus({{ $location->id }}, {{ $location->is_active ?? 1 }})">
-                                        <span class="icon-[tabler--eye-off] size-4"></span> Mark as Inactive
+                                        @if($location->is_active ?? true)
+                                            <span class="icon-[tabler--eye-off] size-4"></span> Mark as Inactive
+                                        @else
+                                            <span class="icon-[tabler--eye] size-4"></span> Mark as Active
+                                        @endif
                                     </a></li>
                                     <li><a href="javascript:void(0)" onclick="confirmDeleteLocation({{ $location->id }}, '{{ addslashes($location->name) }}', {{ $location->rooms_count ?? 0 }})" class="text-error">
                                         <span class="icon-[tabler--trash] size-4"></span> Delete
                                     </a></li>
+                                    @endif
                                 </ul>
                             </details>
                         </div>
@@ -584,8 +595,14 @@ function showToast(message, type) {
     }, 3000);
 }
 
+// Close all open dropdowns
+function closeAllDropdowns() {
+    document.querySelectorAll('details.dropdown[open]').forEach(function(d) { d.removeAttribute('open'); });
+}
+
 // Delete modal
 function confirmDeleteLocation(id, name, roomsCount) {
+    closeAllDropdowns();
     deleteLocationId = id;
     var message = 'Are you sure you want to delete <strong>"' + name + '"</strong>? This action cannot be undone.';
     if (roomsCount > 0) {
@@ -617,8 +634,37 @@ function closeDeleteModal() {
 
 // Toggle location status (active/inactive)
 function toggleLocationStatus(id, currentStatus) {
-    // TODO: Implement when is_active field is added
-    showToast('Status toggle coming soon', 'info');
+    closeAllDropdowns();
+    var action = currentStatus ? 'inactive' : 'active';
+    showConfirmModal({
+        title: 'Mark as ' + (currentStatus ? 'Inactive' : 'Active'),
+        message: currentStatus
+            ? 'This location will be hidden from booking pages and scheduling. Are you sure?'
+            : 'This location will be visible on booking pages and available for scheduling again.',
+        type: currentStatus ? 'warning' : 'success',
+        btnText: currentStatus ? 'Mark Inactive' : 'Mark Active',
+        btnIcon: currentStatus ? 'icon-[tabler--eye-off]' : 'icon-[tabler--eye]',
+        onConfirm: function() {
+            fetch('/settings/locations/' + id + '/toggle-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    showToast(result.message, 'success');
+                    setTimeout(function() { location.reload(); }, 500);
+                } else {
+                    showToast(result.message || 'Failed to update status', 'error');
+                }
+            })
+            .catch(function() { showToast('An error occurred', 'error'); });
+        }
+    });
 }
 
 // Delete location

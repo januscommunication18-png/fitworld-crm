@@ -478,20 +478,32 @@ function showToast(message, type) {
 
 // Toggle room status
 function toggleRoomStatus(id, currentStatus) {
-    fetch('/settings/locations/rooms/' + id + '/toggle-status', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(result) {
-        if (result.success) {
-            showToast(result.message);
-            location.reload();
-        } else {
-            showToast(result.message || 'Failed to update status', 'error');
+    document.querySelectorAll('details.dropdown[open]').forEach(function(d) { d.removeAttribute('open'); });
+    showConfirmModal({
+        title: currentStatus ? 'Deactivate Room' : 'Activate Room',
+        message: currentStatus
+            ? 'This room will no longer be available for scheduling. Are you sure?'
+            : 'This room will be available for scheduling again.',
+        type: currentStatus ? 'warning' : 'success',
+        btnText: currentStatus ? 'Deactivate' : 'Activate',
+        btnIcon: currentStatus ? 'icon-[tabler--eye-off]' : 'icon-[tabler--eye]',
+        onConfirm: function() {
+            fetch('/settings/locations/rooms/' + id + '/toggle-status', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    showToast(result.message);
+                    setTimeout(function() { location.reload(); }, 500);
+                } else {
+                    showToast(result.message || 'Failed to update status', 'error');
+                }
+            })
+            .catch(function() { showToast('An error occurred', 'error'); });
         }
-    })
-    .catch(function() { showToast('An error occurred', 'error'); });
+    });
 }
 
 // Delete modal
