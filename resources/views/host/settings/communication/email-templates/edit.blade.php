@@ -55,7 +55,7 @@
                 <h2 class="text-lg font-semibold">{{ $templateConfig['name'] }}</h2>
                 <p class="text-sm text-base-content/60 mt-1">{{ $templateConfig['description'] }}</p>
             </div>
-            <a href="{{ route('settings.communication.email-templates') }}" class="btn btn-ghost btn-sm">
+            <a href="{{ route('settings.communication.email-templates') }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span>
                 Back
             </a>

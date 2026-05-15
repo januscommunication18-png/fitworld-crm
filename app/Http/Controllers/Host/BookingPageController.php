@@ -30,84 +30,116 @@ class BookingPageController extends Controller
     }
 
     /**
-     * Update booking page settings
+     * Update booking page settings (section-based)
      */
     public function update(Request $request)
     {
         $host = auth()->user()->host;
+        $section = $request->input('section', 'all');
 
-        $validated = $request->validate([
-            // Page Status
-            'booking_page_status' => 'required|in:draft,published',
-            'show_address' => 'boolean',
-            'show_social_links' => 'boolean',
+        $rules = $this->sectionRules($section);
+        $validated = $request->validate($rules);
 
-            // Branding
-            'display_name' => 'nullable|string|max:255',
-            'primary_color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
-            'theme' => 'required|in:light,dark,auto',
-            'font' => 'required|string|max:50',
-
-            // Public Content
-            'about_text' => 'nullable|string|max:2000',
-            'show_instructors' => 'boolean',
-            'show_amenities' => 'boolean',
-            'location_display' => 'required|in:auto,single,multi',
-
-            // Booking UX
-            'default_view' => 'required|in:calendar,list',
-            'show_class_descriptions' => 'boolean',
-            'show_instructor_photos' => 'boolean',
-            'allow_waitlist' => 'boolean',
-            'require_account' => 'boolean',
-
-            // Filters
-            'filter_class_type' => 'boolean',
-            'filter_instructor' => 'boolean',
-            'filter_location' => 'boolean',
-        ]);
-
-        // Update host-level fields
-        $host->booking_page_status = $validated['booking_page_status'];
-        $host->show_address = $request->boolean('show_address');
-        $host->show_social_links = $request->boolean('show_social_links');
-
-        // Convert checkbox values to booleans for booking_settings
-        $booleanFields = [
-            'show_instructors', 'show_amenities',
-            'show_class_descriptions', 'show_instructor_photos',
-            'allow_waitlist', 'require_account',
-            'filter_class_type', 'filter_instructor', 'filter_location',
-        ];
-
-        // Sanitize about_text HTML — allow only safe tags from Quill
-        $aboutText = $validated['about_text'];
-        if ($aboutText) {
-            $aboutText = strip_tags($aboutText, '<p><br><strong><em><u><s><ol><ul><li><a><span><h1><h2><h3><h4><blockquote>');
-        }
-
-        // Prepare booking_settings array (exclude host-level fields)
-        $bookingSettings = [
-            'display_name' => $validated['display_name'],
-            'primary_color' => $validated['primary_color'],
-            'theme' => $validated['theme'],
-            'font' => $validated['font'],
-            'about_text' => $aboutText,
-            'location_display' => $validated['location_display'],
-            'default_view' => $validated['default_view'],
-        ];
-
-        foreach ($booleanFields as $field) {
-            $bookingSettings[$field] = $request->boolean($field);
-        }
-
-        // Merge with existing settings
         $currentSettings = $host->booking_settings ?? [];
-        $host->booking_settings = array_merge($currentSettings, $bookingSettings);
-        $host->save();
+
+        switch ($section) {
+            case 'publish_status':
+                $host->booking_page_status = $validated['booking_page_status'];
+                $host->save();
+                $label = 'Publish status';
+                break;
+
+            case 'branding':
+                $currentSettings['display_name'] = $validated['display_name'];
+                $currentSettings['primary_color'] = $validated['primary_color'];
+                $currentSettings['theme'] = $validated['theme'];
+                $currentSettings['font'] = $validated['font'];
+                $host->booking_settings = $currentSettings;
+                $host->save();
+                $label = 'Branding';
+                break;
+
+            case 'public_content':
+                $aboutText = $validated['about_text'] ?? null;
+                if ($aboutText) {
+                    $aboutText = strip_tags($aboutText, '<p><br><strong><em><u><s><ol><ul><li><a><span><h1><h2><h3><h4><blockquote>');
+                }
+                $host->show_address = $request->boolean('show_address');
+                $host->show_social_links = $request->boolean('show_social_links');
+                $currentSettings['about_text'] = $aboutText;
+                $currentSettings['show_instructors'] = $request->boolean('show_instructors');
+                $currentSettings['show_amenities'] = $request->boolean('show_amenities');
+                $currentSettings['location_display'] = $validated['location_display'];
+                $host->booking_settings = $currentSettings;
+                $host->save();
+                $label = 'Public content';
+                break;
+
+            case 'booking_ux':
+                $currentSettings['default_view'] = $validated['default_view'];
+                $currentSettings['show_class_descriptions'] = $request->boolean('show_class_descriptions');
+                $currentSettings['show_instructor_photos'] = $request->boolean('show_instructor_photos');
+                $currentSettings['allow_waitlist'] = $request->boolean('allow_waitlist');
+                $currentSettings['require_account'] = $request->boolean('require_account');
+                $host->booking_settings = $currentSettings;
+                $host->save();
+                $label = 'Booking experience';
+                break;
+
+            case 'filters':
+                $currentSettings['filter_class_type'] = $request->boolean('filter_class_type');
+                $currentSettings['filter_instructor'] = $request->boolean('filter_instructor');
+                $currentSettings['filter_location'] = $request->boolean('filter_location');
+                $host->booking_settings = $currentSettings;
+                $host->save();
+                $label = 'Filters';
+                break;
+
+            default:
+                $label = 'Settings';
+                break;
+        }
 
         return redirect()->route('settings.locations.booking-page')
-            ->with('success', 'Booking page settings updated successfully');
+            ->with('success', "{$label} updated successfully");
+    }
+
+    private function sectionRules(string $section): array
+    {
+        $base = ['section' => 'nullable|string'];
+
+        return match ($section) {
+            'publish_status' => $base + [
+                'booking_page_status' => 'required|in:draft,published',
+            ],
+            'branding' => $base + [
+                'display_name' => 'nullable|string|max:255',
+                'primary_color' => 'required|string|regex:/^#[0-9A-Fa-f]{6}$/',
+                'theme' => 'required|in:light,dark,auto',
+                'font' => 'required|string|max:50',
+            ],
+            'public_content' => $base + [
+                'about_text' => 'nullable|string|max:2000',
+                'show_address' => 'boolean',
+                'show_social_links' => 'boolean',
+                'show_instructors' => 'boolean',
+                'show_amenities' => 'boolean',
+                'location_display' => 'required|in:auto,single,multi',
+            ],
+            'booking_ux' => $base + [
+                'default_view' => 'required|in:calendar,list',
+                'show_class_descriptions' => 'boolean',
+                'show_instructor_photos' => 'boolean',
+                'allow_waitlist' => 'boolean',
+                'require_account' => 'boolean',
+            ],
+            'filters' => $base + [
+                'filter_class_type' => 'boolean',
+                'filter_instructor' => 'boolean',
+                'filter_location' => 'boolean',
+            ],
+            default => $base,
+        };
     }
 
     /**

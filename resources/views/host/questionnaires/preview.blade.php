@@ -19,9 +19,6 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
-            <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-2xl font-bold">Preview</h1>
@@ -45,6 +42,10 @@
             <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--edit] size-4"></span>
                 Edit
+            </a>
+            <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
             </a>
         </div>
     </div>

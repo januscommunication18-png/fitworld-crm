@@ -178,9 +178,7 @@
     <div class="tab-contents relative z-0">
         {{-- Overview Tab --}}
         <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {{-- Main Content --}}
-                <div class="lg:col-span-2 space-y-6">
+            <div class="space-y-6">
                     {{-- Profile Info --}}
                     <div class="card bg-base-100">
                         <div class="card-body">
@@ -188,7 +186,7 @@
                                 <span class="icon-[tabler--user] size-5"></span>
                                 Profile Information
                             </h2>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                                 <div>
                                     <label class="text-sm text-base-content/60">First Name</label>
                                     <p class="font-medium">{{ $user->first_name }}</p>
@@ -212,6 +210,40 @@
                                 <div>
                                     <label class="text-sm text-base-content/60">Status</label>
                                     <p class="font-medium">{{ $statusText }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Login Access</label>
+                                    <p class="font-medium">
+                                        @if($hasLogin)
+                                            <span class="text-success">Yes</span>
+                                        @else
+                                            <span class="text-base-content/50">No</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Email Verified</label>
+                                    <p class="font-medium">
+                                        @if($user->email_verified_at)
+                                            <span class="text-success">{{ $user->email_verified_at->format('M d, Y') }}</span>
+                                        @else
+                                            <span class="text-base-content/50">Not verified</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Last Login</label>
+                                    <p class="font-medium">
+                                        @if($user->last_login_at)
+                                            {{ $user->last_login_at->format('M d, Y g:i A') }}
+                                        @else
+                                            <span class="text-base-content/50">Never</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Member Since</label>
+                                    <p class="font-medium">{{ $user->created_at->format('M d, Y') }}</p>
                                 </div>
                             </div>
 
@@ -500,66 +532,14 @@
                     </details>
 
                     </div>{{-- end accordion card --}}
-                </div>
 
-                {{-- Sidebar --}}
-                <div class="space-y-6">
-                    {{-- Account Info --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">
-                                <span class="icon-[tabler--shield] size-5"></span>
-                                Account Info
-                            </h2>
-                            <div class="space-y-4 mt-4">
-                                <div>
-                                    <label class="text-sm text-base-content/60">Login Access</label>
-                                    <p class="font-medium">
-                                        @if($hasLogin)
-                                            <span class="text-success">Yes</span>
-                                        @else
-                                            <span class="text-base-content/50">No</span>
-                                        @endif
-                                    </p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Email Verified</label>
-                                    <p class="font-medium">
-                                        @if($user->email_verified_at)
-                                            <span class="text-success">{{ $user->email_verified_at->format('M d, Y') }}</span>
-                                        @else
-                                            <span class="text-base-content/50">Not verified</span>
-                                        @endif
-                                    </p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Last Login</label>
-                                    <p class="font-medium">
-                                        @if($user->last_login_at)
-                                            {{ $user->last_login_at->format('M d, Y g:i A') }}
-                                            <span class="text-sm text-base-content/60 block">{{ $user->last_login_at->diffForHumans() }}</span>
-                                        @else
-                                            <span class="text-base-content/50">Never</span>
-                                        @endif
-                                    </p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Member Since</label>
-                                    <p class="font-medium">{{ $user->created_at->format('M d, Y') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
             </div>
         </div>
 
         {{-- Notes Tab --}}
         <div class="tab-content {{ $tab === 'notes' ? 'active' : 'hidden' }}" data-content="notes">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="space-y-6">
                 {{-- Add Note Form --}}
-                <div class="lg:col-span-1">
                     <div class="card bg-base-100">
                         <div class="card-body">
                             <h2 class="card-title text-lg">
@@ -590,10 +570,8 @@
                             </form>
                         </div>
                     </div>
-                </div>
 
                 {{-- Notes List --}}
-                <div class="lg:col-span-2">
                     <div class="card bg-base-100">
                         <div class="card-body">
                             <h2 class="card-title text-lg">
@@ -637,7 +615,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
 
@@ -657,7 +634,7 @@
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="space-y-6">
                 {{-- Employment Summary --}}
                 <div class="card bg-base-100">
                     <div class="card-body">
@@ -706,7 +683,7 @@
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-base-content/60">Days Active</span>
-                                <span class="font-bold text-xl">{{ $user->created_at->diffInDays(now()) }}</span>
+                                <span class="font-bold text-xl">{{ (int) $user->created_at->diffInDays(now()) }}</span>
                             </div>
                         </div>
                     </div>

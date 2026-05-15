@@ -29,6 +29,15 @@
 
 @section('settings-content')
     <div class="space-y-6">
+        {{-- Header --}}
+        <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold">Edit {{ $user->full_name }}</h2>
+            <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+        </div>
+
         {{-- Flash Messages --}}
         @if(session('success'))
         <div class="alert alert-soft alert-success">

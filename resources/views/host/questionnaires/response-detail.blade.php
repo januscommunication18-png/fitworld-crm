@@ -19,19 +19,20 @@
 @section('settings-content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('questionnaires.responses', $questionnaire) }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
-            <div>
-                <h1 class="text-2xl font-bold">Response Details</h1>
-                <p class="text-base-content/60 mt-1">{{ $questionnaire->name }}</p>
-            </div>
+    <div class="flex items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold">Response Details</h1>
+            <p class="text-base-content/60 mt-1">{{ $questionnaire->name }}</p>
         </div>
-        <span class="badge {{ \App\Models\QuestionnaireResponse::getStatusBadgeClass($response->status) }} badge-lg">
-            {{ \App\Models\QuestionnaireResponse::getStatuses()[$response->status] ?? $response->status }}
-        </span>
+        <div class="flex items-center gap-2">
+            <span class="badge {{ \App\Models\QuestionnaireResponse::getStatusBadgeClass($response->status) }} badge-lg">
+                {{ \App\Models\QuestionnaireResponse::getStatuses()[$response->status] ?? $response->status }}
+            </span>
+            <a href="{{ route('questionnaires.responses', $questionnaire) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

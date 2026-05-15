@@ -22,8 +22,9 @@
             <h1 class="text-xl font-semibold">{{ $isEdit ? 'Edit Room' : 'Add Room' }}</h1>
             <p class="text-base-content/60 text-sm">{{ $isEdit ? 'Update room details' : 'Add a new room to your studio' }}</p>
         </div>
-        <a href="{{ route('settings.locations.rooms') }}" class="btn btn-ghost btn-sm">
-            <span class="icon-[tabler--arrow-left] size-4"></span> Back to Rooms
+        <a href="{{ route('settings.locations.rooms') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
         </a>
     </div>
 

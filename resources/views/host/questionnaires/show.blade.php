@@ -18,71 +18,64 @@
 <div class="space-y-6">
     {{-- Header --}}
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('questionnaires.index') }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
-            <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold">{{ $questionnaire->name }}</h1>
-                    <span class="badge {{ \App\Models\Questionnaire::getStatusBadgeClass($questionnaire->status) }}">
-                        {{ ucfirst($questionnaire->status) }}
-                    </span>
-                </div>
-                <p class="text-base-content/60 mt-1">
-                    {{ \App\Models\Questionnaire::getTypes()[$questionnaire->type] }}
-                    @if($questionnaire->estimated_minutes)
-                        &bull; ~{{ $questionnaire->estimated_minutes }} min
-                    @endif
-                </p>
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold">{{ $questionnaire->name }}</h1>
+                <span class="badge {{ \App\Models\Questionnaire::getStatusBadgeClass($questionnaire->status) }}">
+                    {{ ucfirst($questionnaire->status) }}
+                </span>
             </div>
+            <p class="text-base-content/60 mt-1">
+                {{ \App\Models\Questionnaire::getTypes()[$questionnaire->type] }}
+                @if($questionnaire->estimated_minutes)
+                    &bull; ~{{ $questionnaire->estimated_minutes }} min
+                @endif
+            </p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('questionnaires.preview', $questionnaire) }}" class="btn btn-ghost">
-                <span class="icon-[tabler--eye] size-5"></span>
-                Preview
+            <x-actions-dropdown>
+                <li><a href="{{ route('questionnaires.preview', $questionnaire) }}">
+                    <span class="icon-[tabler--eye] size-4"></span> Preview
+                </a></li>
+                <li><a href="{{ route('questionnaires.builder', $questionnaire) }}">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit Questions
+                </a></li>
+                <li><a href="{{ route('questionnaires.edit', $questionnaire) }}">
+                    <span class="icon-[tabler--settings] size-4"></span> Settings
+                </a></li>
+                @if($questionnaire->isDraft())
+                    <li class="menu-title text-xs uppercase text-base-content/40 pt-2">Status</li>
+                    <li>
+                        <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                <span class="icon-[tabler--rocket] size-4"></span> Publish
+                            </button>
+                        </form>
+                    </li>
+                @endif
+                <li class="menu-title text-xs uppercase text-base-content/40 pt-2">More</li>
+                <li>
+                    <form action="{{ route('questionnaires.duplicate', $questionnaire) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                            <span class="icon-[tabler--copy] size-4"></span> Duplicate
+                        </button>
+                    </form>
+                </li>
+                @if($questionnaire->isActive())
+                    <li><a href="javascript:void(0)" onclick="event.preventDefault(); this.closest('li').querySelector('form').submit();" class="text-warning">
+                        <span class="icon-[tabler--archive] size-4"></span> Archive
+                        <form action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="hidden">
+                            @csrf
+                        </form>
+                    </a></li>
+                @endif
+            </x-actions-dropdown>
+            <a href="{{ route('questionnaires.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
             </a>
-            <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-ghost">
-                <span class="icon-[tabler--edit] size-5"></span>
-                Edit Questions
-            </a>
-            @if($questionnaire->isDraft())
-                <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="inline">
-                    @csrf
-                    <button type="submit" class="btn btn-primary">
-                        <span class="icon-[tabler--rocket] size-5"></span>
-                        Publish
-                    </button>
-                </form>
-            @endif
-            <div class="relative">
-                <details class="dropdown dropdown-bottom dropdown-end">
-                    <summary class="btn btn-ghost btn-square list-none cursor-pointer">
-                        <span class="icon-[tabler--dots-vertical] size-5"></span>
-                    </summary>
-                    <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
-                        <li><a href="{{ route('questionnaires.edit', $questionnaire) }}">
-                            <span class="icon-[tabler--settings] size-4"></span> Settings
-                        </a></li>
-                        <li>
-                            <form action="{{ route('questionnaires.duplicate', $questionnaire) }}" method="POST">
-                                @csrf
-                                <button type="submit" class="w-full text-left flex items-center gap-2">
-                                    <span class="icon-[tabler--copy] size-4"></span> Duplicate
-                                </button>
-                            </form>
-                        </li>
-                        @if($questionnaire->isActive())
-                            <li><a href="javascript:void(0)" onclick="event.preventDefault(); this.closest('li').querySelector('form').submit();" class="text-warning">
-                                <span class="icon-[tabler--archive] size-4"></span> Archive
-                                <form action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="hidden">
-                                    @csrf
-                                </form>
-                            </a></li>
-                        @endif
-                    </ul>
-                </details>
-            </div>
         </div>
     </div>
 
