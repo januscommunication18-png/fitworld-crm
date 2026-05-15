@@ -16,6 +16,18 @@
 
 @section('settings-content')
 <div class="space-y-6">
+    {{-- Page Header --}}
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-lg font-semibold">Add Instructor</h2>
+            <p class="text-sm text-base-content/60">Create a new instructor profile</p>
+        </div>
+        <a href="{{ route('settings.team.instructors') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
+    </div>
+
     {{-- Flash Messages --}}
     @if(session('error'))
     <div class="alert alert-soft alert-error">

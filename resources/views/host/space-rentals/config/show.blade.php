@@ -15,11 +15,8 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-start gap-4">
+    <div class="flex flex-col md:flex-row md:items-start gap-4 justify-between">
         <div class="flex items-start gap-4 flex-1">
-            <a href="{{ route('catalog.index', ['tab' => 'rental-spaces']) }}" class="btn btn-ghost btn-sm btn-circle mt-1">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
             <div class="w-16 h-16 rounded-xl bg-secondary/10 flex items-center justify-center">
                 <span class="icon-[tabler--{{ $config->type_icon }}] size-8 text-secondary"></span>
             </div>
@@ -42,6 +39,10 @@
             <a href="{{ route('space-rentals.config.edit', $config) }}" class="btn btn-soft btn-sm">
                 <span class="icon-[tabler--edit] size-4"></span>
                 {{ $trans['btn.edit'] ?? 'Edit' }}
+            </a>
+            <a href="{{ route('catalog.index', ['tab' => 'rental-spaces']) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
             </a>
         </div>
     </div>

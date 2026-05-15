@@ -43,36 +43,36 @@
 <div class="space-y-6" id="questionnaire-builder" data-questionnaire-id="{{ $questionnaire->id }}" data-version-id="{{ $version->id }}">
     {{-- Header --}}
     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
-            <div>
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-bold">{{ $questionnaire->name }}</h1>
-                    <span class="badge badge-warning">Draft v{{ $version->version_number }}</span>
-                </div>
-                <p class="text-base-content/60 mt-1">
-                    {{ $questionnaire->isWizard() ? 'Multi-Step Wizard' : 'Single Page' }}
-                </p>
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold">{{ $questionnaire->name }}</h1>
+                <span class="badge badge-warning">Draft v{{ $version->version_number }}</span>
             </div>
+            <p class="text-base-content/60 mt-1">
+                {{ $questionnaire->isWizard() ? 'Multi-Step Wizard' : 'Single Page' }}
+            </p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('questionnaires.preview', $questionnaire) }}" class="btn btn-ghost" target="_blank">
-                <span class="icon-[tabler--eye] size-5"></span>
-                Preview
+            <x-actions-dropdown>
+                <li><a href="{{ route('questionnaires.preview', $questionnaire) }}" target="_blank">
+                    <span class="icon-[tabler--eye] size-4"></span> Preview
+                </a></li>
+                <li><a href="{{ route('questionnaires.edit', $questionnaire) }}">
+                    <span class="icon-[tabler--settings] size-4"></span> Settings
+                </a></li>
+                <li>
+                    <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                            <span class="icon-[tabler--rocket] size-4"></span> Publish
+                        </button>
+                    </form>
+                </li>
+            </x-actions-dropdown>
+            <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
             </a>
-            <a href="{{ route('questionnaires.edit', $questionnaire) }}" class="btn btn-ghost">
-                <span class="icon-[tabler--settings] size-5"></span>
-                Settings
-            </a>
-            <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="inline">
-                @csrf
-                <button type="submit" class="btn btn-primary">
-                    <span class="icon-[tabler--rocket] size-5"></span>
-                    Publish
-                </button>
-            </form>
         </div>
     </div>
 

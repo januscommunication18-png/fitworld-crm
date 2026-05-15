@@ -17,13 +17,23 @@
 @section('settings-content')
 <div class="max-w-2xl mx-auto space-y-6">
     {{-- Header --}}
-    <div class="flex items-center gap-4">
-        <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost btn-sm btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+    <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold">Questionnaire Settings</h1>
             <p class="text-base-content/60 mt-1">{{ $questionnaire->name }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <x-actions-dropdown>
+                <li>
+                    <a href="{{ route('questionnaires.builder', $questionnaire) }}">
+                        <span class="icon-[tabler--edit] size-4"></span> Edit Questions
+                    </a>
+                </li>
+            </x-actions-dropdown>
+            <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
         </div>
     </div>
 
@@ -133,16 +143,44 @@
                 @endif
             </div>
 
-            {{-- Submit --}}
-            <div class="flex items-center justify-between gap-3 pt-4 border-t border-base-content/10">
-                <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-ghost">
-                    <span class="icon-[tabler--edit] size-5"></span>
-                    Edit Questions
-                </a>
-                <div class="flex items-center gap-3">
-                    <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Save Settings</button>
+            <div class="divider"></div>
+
+            {{-- Status --}}
+            <div class="space-y-4">
+                <h3 class="font-semibold text-lg">Status</h3>
+                <div class="form-control">
+                    <label class="label" for="status-select">
+                        <span class="label-text font-medium">Current Status</span>
+                    </label>
+                    <select id="status-select" class="select select-bordered" onchange="submitStatusChange(this)">
+                        <option value="" selected>{{ $questionnaire->isDraft() ? 'Draft' : ($questionnaire->isActive() ? 'Published' : 'Archived') }}</option>
+                        @if(!$questionnaire->isActive())
+                            <option value="published">Published</option>
+                        @endif
+                        @if(!$questionnaire->isDraft())
+                            <option value="draft">Draft</option>
+                        @endif
+                        @if(!$questionnaire->isArchived())
+                            <option value="archived">Archived</option>
+                        @endif
+                    </select>
                 </div>
+                {{-- Hidden forms for status changes --}}
+                @if(!$questionnaire->isActive())
+                    <form id="status-form-published" action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="hidden">@csrf</form>
+                @endif
+                @if(!$questionnaire->isDraft())
+                    <form id="status-form-draft" action="{{ route('questionnaires.markAsDraft', $questionnaire) }}" method="POST" class="hidden">@csrf</form>
+                @endif
+                @if(!$questionnaire->isArchived())
+                    <form id="status-form-archived" action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="hidden">@csrf</form>
+                @endif
+            </div>
+
+            {{-- Submit --}}
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-base-content/10">
+                <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Settings</button>
             </div>
         </div>
     </form>
@@ -168,4 +206,13 @@
         </div>
     </div>
 </div>
+
+<script>
+function submitStatusChange(select) {
+    const value = select.value;
+    if (!value) return;
+    const form = document.getElementById('status-form-' + value);
+    if (form) form.submit();
+}
+</script>
 @endsection

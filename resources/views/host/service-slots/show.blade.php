@@ -18,9 +18,6 @@
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
             <div class="flex items-center gap-3 mb-2">
-                <a href="{{ route('service-slots.index') }}" class="btn btn-ghost btn-sm btn-circle">
-                    <span class="icon-[tabler--arrow-left] size-5"></span>
-                </a>
                 <h1 class="text-2xl font-bold">{{ $serviceSlot->title ?? $serviceSlot->servicePlan?->name ?? 'Service Slot' }}</h1>
                 @php
                     $badgeClass = match($serviceSlot->status) {
@@ -46,6 +43,10 @@
             <a href="{{ route('service-slots.edit', $serviceSlot) }}" class="btn btn-outline">
                 <span class="icon-[tabler--edit] size-5"></span>
                 Edit
+            </a>
+            <a href="{{ route('service-slots.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
             </a>
         </div>
     </div>

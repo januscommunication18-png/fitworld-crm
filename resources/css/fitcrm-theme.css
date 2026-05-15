@@ -207,6 +207,29 @@
    Add any custom CSS utilities that use your brand variables here.
    ========================================================================== */
 
+/* Ghost buttons: transparent bg, subtle hover */
+.btn-ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--fitcrm-base-content);
+}
+.btn-ghost:hover {
+  background-color: color-mix(in oklch, var(--color-base-content) 8%, transparent);
+}
+
+/* Active button in button groups: light bg instead of dark neutral */
+.btn-active:not(.btn-primary):not(.btn-secondary):not(.btn-accent):not(.btn-success):not(.btn-warning):not(.btn-error):not(.btn-info) {
+  background-color: var(--fitcrm-base-300);
+  color: var(--fitcrm-base-content);
+  border-color: var(--fitcrm-base-300);
+}
+
+/* Advance select: selected option background */
+.advance-select-option.select-active,
+.advance-select-option.selected {
+  background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+}
+
 /* Gradient using brand colors */
 .bg-fitcrm-gradient {
   background: linear-gradient(135deg, var(--fitcrm-brand-primary), var(--fitcrm-brand-accent));

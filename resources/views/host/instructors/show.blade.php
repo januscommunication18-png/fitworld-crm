@@ -38,9 +38,6 @@
             <div class="flex flex-col lg:flex-row lg:items-start gap-6">
                 {{-- Profile Photo & Basic Info --}}
                 <div class="flex items-start gap-4 flex-1">
-                    <a href="{{ request('ref') === 'team' ? route('settings.team.users') : route('instructors.index') }}" class="btn btn-ghost btn-sm btn-circle">
-                        <span class="icon-[tabler--arrow-left] size-5"></span>
-                    </a>
                     <div class="relative">
                         @if($instructor->photo_url)
                             <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
@@ -152,6 +149,10 @@
                             {{ $trans['btn.activate'] ?? 'Activate' }}
                         </button>
                     @endif
+                    <a href="{{ request('ref') === 'team' ? route('settings.team.users') : route('instructors.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+                        <span class="icon-[tabler--arrow-left] size-4"></span>
+                        Back
+                    </a>
                 </div>
             </div>
         </div>

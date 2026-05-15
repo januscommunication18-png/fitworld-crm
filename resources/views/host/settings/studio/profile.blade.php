@@ -1164,16 +1164,30 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 
             <div class="divider text-xs text-base-content/50">ACCEPTED CURRENCIES</div>
 
-            <p class="text-sm text-base-content/60 mb-4">Select all currencies you accept for payments. You'll need to set prices for each currency in your catalog.</p>
-            <div class="space-y-2">
-                @foreach($currencies as $code => $info)
-                <label class="custom-option flex flex-row items-center gap-3 px-3 py-2 cursor-pointer">
-                    <input type="checkbox" class="checkbox checkbox-primary checkbox-sm currency-checkbox" value="{{ $code }}" {{ in_array($code, $host->currencies ?? []) ? 'checked' : '' }} />
-                    <span class="text-lg font-bold text-primary w-6">{{ $info['symbol'] }}</span>
-                    <span class="label-text text-sm font-medium">{{ $code }}</span>
-                    <span class="label-text text-sm text-base-content/60">{{ $info['name'] }}</span>
-                </label>
-                @endforeach
+            <div class="mb-4">
+                <label class="label-text font-medium mb-2 block">Accepted Currencies</label>
+                <p class="text-sm text-base-content/60 mb-3">Select additional currencies you accept for payments. Your default currency is always included.</p>
+
+                {{-- Default currency (always checked, readonly) --}}
+                <div id="default-currency-row" class="flex items-center gap-3 px-3 py-2.5 mb-2 rounded-lg border border-primary/30 bg-primary/5">
+                    <span class="icon-[tabler--circle-check-filled] size-5 text-primary flex-shrink-0"></span>
+                    <span class="text-lg font-bold text-primary w-6" id="default-currency-symbol">{{ $currencies[$host->default_currency ?? 'USD']['symbol'] ?? '$' }}</span>
+                    <span class="text-sm font-medium" id="default-currency-code">{{ $host->default_currency ?? 'USD' }}</span>
+                    <span class="text-sm text-base-content/60" id="default-currency-name">{{ $currencies[$host->default_currency ?? 'USD']['name'] ?? 'US Dollar' }}</span>
+                    <span class="badge badge-primary badge-sm ml-auto">Default</span>
+                </div>
+
+                {{-- Other currencies --}}
+                <div class="space-y-1" id="other-currencies-list">
+                    @foreach($currencies as $code => $info)
+                        <label class="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-base-200 hover:bg-base-200/50 cursor-pointer has-[:checked]:border-primary/30 has-[:checked]:bg-primary/5 transition-colors currency-row" data-code="{{ $code }}" style="{{ $code === ($host->default_currency ?? 'USD') ? 'display:none' : '' }}">
+                            <input type="checkbox" class="checkbox checkbox-primary checkbox-sm currency-checkbox" value="{{ $code }}" {{ in_array($code, $host->currencies ?? []) ? 'checked' : '' }} />
+                            <span class="text-lg font-bold text-primary w-6">{{ $info['symbol'] }}</span>
+                            <span class="text-sm font-medium">{{ $code }}</span>
+                            <span class="text-sm text-base-content/60">{{ $info['name'] }}</span>
+                        </label>
+                    @endforeach
+                </div>
             </div>
             <div class="alert alert-soft alert-info mt-4">
                 <span class="icon-[tabler--info-circle] size-5"></span>
@@ -1183,7 +1197,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
             </div>
         </div>
         <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
-            <button type="submit" class="btn btn-primary" id="save-currency-btn">
+            <button type="submit" class="btn btn-primary" id="save-currency-btn" disabled>
                 <span class="loading loading-spinner loading-xs hidden" id="currency-spinner"></span>
                 Save Changes
             </button>
@@ -1794,10 +1808,14 @@ function resetDrawerData(id) {
             });
             break;
         case 'edit-currency-drawer':
-            if (document.getElementById('default-currency-select')) document.getElementById('default-currency-select').value = data.defaultCurrency;
+            if (document.getElementById('default-currency-select')) {
+                document.getElementById('default-currency-select').value = data.defaultCurrency;
+                document.getElementById('default-currency-select').dispatchEvent(new Event('change'));
+            }
             document.querySelectorAll('.currency-checkbox').forEach(function(cb) {
                 cb.checked = data.currencies.includes(cb.value);
             });
+            document.getElementById('save-currency-btn').disabled = true;
             break;
         case 'edit-language-drawer':
             document.querySelectorAll('.studio-language-checkbox').forEach(function(cb) {
@@ -2139,6 +2157,44 @@ document.getElementById('edit-countries-form').addEventListener('submit', functi
     .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
 });
 
+// Update default currency row and hide/show in other currencies list
+document.getElementById('default-currency-select').addEventListener('change', function() {
+    var code = this.value;
+    var info = currencies[code];
+    document.getElementById('default-currency-symbol').textContent = info.symbol;
+    document.getElementById('default-currency-code').textContent = code;
+    document.getElementById('default-currency-name').textContent = info.name;
+    document.getElementById('save-currency-btn').disabled = false;
+    // Show/hide rows: hide the new default from the list, show the old one
+    document.querySelectorAll('.currency-row').forEach(function(row) {
+        if (row.dataset.code === code) {
+            row.style.display = 'none';
+            var cb = row.querySelector('.currency-checkbox');
+            if (cb) cb.checked = false;
+        } else {
+            row.style.display = '';
+        }
+    });
+});
+
+// Enable save button when any currency checkbox is toggled
+document.querySelectorAll('#other-currencies-list .currency-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+        document.getElementById('save-currency-btn').disabled = false;
+    });
+    cb.addEventListener('click', function() {
+        document.getElementById('save-currency-btn').disabled = false;
+    });
+});
+// Also listen on the labels themselves
+document.querySelectorAll('#other-currencies-list .currency-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+        setTimeout(function() {
+            document.getElementById('save-currency-btn').disabled = false;
+        }, 0);
+    });
+});
+
 document.getElementById('edit-currency-form').addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = document.getElementById('save-currency-btn');
@@ -2150,12 +2206,9 @@ document.getElementById('edit-currency-form').addEventListener('submit', functio
 
     var defaultCurrency = document.getElementById('default-currency-select').value;
 
-    // Ensure default currency is in the selected currencies
+    // Always include default currency
     if (!selectedCurrencies.includes(defaultCurrency)) {
         selectedCurrencies.push(defaultCurrency);
-        // Also check the checkbox
-        var checkbox = document.querySelector('.currency-checkbox[value="' + defaultCurrency + '"]');
-        if (checkbox) checkbox.checked = true;
     }
 
     fetch('{{ route("settings.studio.currency.update") }}', {

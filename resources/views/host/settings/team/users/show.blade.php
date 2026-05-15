@@ -42,9 +42,6 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-start gap-4 relative z-50">
         <div class="flex items-start gap-4 flex-1">
-            <a href="{{ route('settings.team.users') }}" class="btn btn-ghost btn-sm btn-circle mt-1">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
             <div class="avatar placeholder">
                 @php
                     $bgColor = match($userRole) {
@@ -78,34 +75,55 @@
             </div>
         </div>
 
-        {{-- Quick Actions --}}
-        @if($user->id !== auth()->id() && $userRole !== 'owner')
-            <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2">
+            {{-- Actions Dropdown --}}
+            @if($user->id !== auth()->id() && $userRole !== 'owner')
+            <x-actions-dropdown width="w-52" label="Quick Actions">
+                <li><a href="{{ route('settings.team.users.edit', $user) }}">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                </a></li>
                 @if($hasLogin && $user->status === 'active')
-                    <button type="button" onclick="showResetPasswordModal()" class="btn btn-soft btn-sm">
-                        <span class="icon-[tabler--key] size-4"></span>
-                        Reset Password
-                    </button>
+                    <li><button type="button" onclick="showResetPasswordModal()" class="w-full text-left flex items-center gap-2">
+                        <span class="icon-[tabler--key] size-4"></span> Reset Password
+                    </button></li>
                 @endif
-
-                <a href="{{ route('settings.team.users.edit', $user) }}" class="btn btn-primary btn-sm">
-                    <span class="icon-[tabler--edit] size-4"></span>
-                    Edit
-                </a>
-
+                @if(!$hasLogin && $user->email && !str_contains($user->email, '@nologin.local'))
+                    <li>
+                        <form action="{{ route('settings.team.users.send-invite', $user) }}" method="POST" class="m-0">
+                            @csrf
+                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                <span class="icon-[tabler--mail] size-4"></span> Send Login Invitation
+                            </button>
+                        </form>
+                    </li>
+                @endif
+                @if($userRole === 'instructor' && $instructor)
+                    <li><a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}">
+                        <span class="icon-[tabler--user-star] size-4"></span> View Instructor Profile
+                    </a></li>
+                @endif
+                <li class="menu-title text-xs uppercase text-base-content/40 pt-2">Status</li>
                 @if($user->status === 'active')
-                    <button type="button" onclick="showSuspendModal()" class="btn btn-warning btn-sm">
-                        <span class="icon-[tabler--ban] size-4"></span>
-                        Suspend
-                    </button>
+                    <li><button type="button" onclick="showSuspendModal()" class="w-full text-left flex items-center gap-2 text-warning">
+                        <span class="icon-[tabler--ban] size-4"></span> Suspend
+                    </button></li>
                 @elseif($user->status === 'suspended' || $user->status === 'deactivated')
-                    <button type="button" onclick="showReactivateModal()" class="btn btn-success btn-sm">
-                        <span class="icon-[tabler--user-check] size-4"></span>
-                        Reactivate
-                    </button>
+                    <li><button type="button" onclick="showReactivateModal()" class="w-full text-left flex items-center gap-2 text-success">
+                        <span class="icon-[tabler--user-check] size-4"></span> Reactivate
+                    </button></li>
                 @endif
-            </div>
+                <li><button type="button" onclick="showRemoveModal()" class="w-full text-left flex items-center gap-2 text-error">
+                    <span class="icon-[tabler--trash] size-4"></span> Remove from Team
+                </button></li>
+            </x-actions-dropdown>
         @endif
+
+            {{-- Back link --}}
+            <a href="{{ route('settings.team.users') }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+        </div>
     </div>
 
     {{-- Instructor Link Alert --}}
@@ -160,9 +178,7 @@
     <div class="tab-contents relative z-0">
         {{-- Overview Tab --}}
         <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {{-- Main Content --}}
-                <div class="lg:col-span-2 space-y-6">
+            <div class="space-y-6">
                     {{-- Profile Info --}}
                     <div class="card bg-base-100">
                         <div class="card-body">
@@ -170,7 +186,7 @@
                                 <span class="icon-[tabler--user] size-5"></span>
                                 Profile Information
                             </h2>
-                            <div class="grid grid-cols-2 gap-4 mt-4">
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                                 <div>
                                     <label class="text-sm text-base-content/60">First Name</label>
                                     <p class="font-medium">{{ $user->first_name }}</p>
@@ -194,6 +210,40 @@
                                 <div>
                                     <label class="text-sm text-base-content/60">Status</label>
                                     <p class="font-medium">{{ $statusText }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Login Access</label>
+                                    <p class="font-medium">
+                                        @if($hasLogin)
+                                            <span class="text-success">Yes</span>
+                                        @else
+                                            <span class="text-base-content/50">No</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Email Verified</label>
+                                    <p class="font-medium">
+                                        @if($user->email_verified_at)
+                                            <span class="text-success">{{ $user->email_verified_at->format('M d, Y') }}</span>
+                                        @else
+                                            <span class="text-base-content/50">Not verified</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Last Login</label>
+                                    <p class="font-medium">
+                                        @if($user->last_login_at)
+                                            {{ $user->last_login_at->format('M d, Y g:i A') }}
+                                        @else
+                                            <span class="text-base-content/50">Never</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Member Since</label>
+                                    <p class="font-medium">{{ $user->created_at->format('M d, Y') }}</p>
                                 </div>
                             </div>
 
@@ -482,102 +532,14 @@
                     </details>
 
                     </div>{{-- end accordion card --}}
-                </div>
 
-                {{-- Sidebar --}}
-                <div class="space-y-6">
-                    {{-- Account Info --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">
-                                <span class="icon-[tabler--shield] size-5"></span>
-                                Account Info
-                            </h2>
-                            <div class="space-y-4 mt-4">
-                                <div>
-                                    <label class="text-sm text-base-content/60">Login Access</label>
-                                    <p class="font-medium">
-                                        @if($hasLogin)
-                                            <span class="text-success">Yes</span>
-                                        @else
-                                            <span class="text-base-content/50">No</span>
-                                        @endif
-                                    </p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Email Verified</label>
-                                    <p class="font-medium">
-                                        @if($user->email_verified_at)
-                                            <span class="text-success">{{ $user->email_verified_at->format('M d, Y') }}</span>
-                                        @else
-                                            <span class="text-base-content/50">Not verified</span>
-                                        @endif
-                                    </p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Last Login</label>
-                                    <p class="font-medium">
-                                        @if($user->last_login_at)
-                                            {{ $user->last_login_at->format('M d, Y g:i A') }}
-                                            <span class="text-sm text-base-content/60 block">{{ $user->last_login_at->diffForHumans() }}</span>
-                                        @else
-                                            <span class="text-base-content/50">Never</span>
-                                        @endif
-                                    </p>
-                                </div>
-                                <div>
-                                    <label class="text-sm text-base-content/60">Member Since</label>
-                                    <p class="font-medium">{{ $user->created_at->format('M d, Y') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Quick Actions --}}
-                    @if($user->id !== auth()->id() && $userRole !== 'owner')
-                        <div class="card bg-base-100">
-                            <div class="card-body">
-                                <h2 class="card-title text-lg">
-                                    <span class="icon-[tabler--bolt] size-5"></span>
-                                    Quick Actions
-                                </h2>
-                                <div class="space-y-2 mt-4">
-                                    @if(!$hasLogin && $user->email && !str_contains($user->email, '@nologin.local'))
-                                        <form action="{{ route('settings.team.users.send-invite', $user) }}" method="POST">
-                                            @csrf
-                                            <button type="submit" class="btn btn-soft btn-sm w-full justify-start">
-                                                <span class="icon-[tabler--mail] size-4"></span>
-                                                Send Login Invitation
-                                            </button>
-                                        </form>
-                                    @endif
-
-                                    @if($userRole === 'instructor' && $instructor)
-                                        <a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}" class="btn btn-soft btn-sm w-full justify-start">
-                                            <span class="icon-[tabler--user-star] size-4"></span>
-                                            View Instructor Profile
-                                        </a>
-                                    @endif
-
-                                    <div class="divider my-2"></div>
-
-                                    <button type="button" onclick="showRemoveModal()" class="btn btn-soft btn-error btn-sm w-full justify-start">
-                                        <span class="icon-[tabler--trash] size-4"></span>
-                                        Remove from Team
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-                </div>
             </div>
         </div>
 
         {{-- Notes Tab --}}
         <div class="tab-content {{ $tab === 'notes' ? 'active' : 'hidden' }}" data-content="notes">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="space-y-6">
                 {{-- Add Note Form --}}
-                <div class="lg:col-span-1">
                     <div class="card bg-base-100">
                         <div class="card-body">
                             <h2 class="card-title text-lg">
@@ -608,10 +570,8 @@
                             </form>
                         </div>
                     </div>
-                </div>
 
                 {{-- Notes List --}}
-                <div class="lg:col-span-2">
                     <div class="card bg-base-100">
                         <div class="card-body">
                             <h2 class="card-title text-lg">
@@ -655,7 +615,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
 
@@ -675,7 +634,7 @@
                 </div>
             @endif
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="space-y-6">
                 {{-- Employment Summary --}}
                 <div class="card bg-base-100">
                     <div class="card-body">
@@ -724,7 +683,7 @@
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-base-content/60">Days Active</span>
-                                <span class="font-bold text-xl">{{ $user->created_at->diffInDays(now()) }}</span>
+                                <span class="font-bold text-xl">{{ (int) $user->created_at->diffInDays(now()) }}</span>
                             </div>
                         </div>
                     </div>

@@ -14,14 +14,15 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex items-center gap-4">
-        <a href="{{ route('service-slots.index') }}" class="btn btn-ghost btn-sm btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+    <div class="flex items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold">Create Service Slot</h1>
             <p class="text-base-content/60 mt-1">Add a new available time slot for a service.</p>
         </div>
+        <a href="{{ route('service-slots.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
     </div>
 
     @if ($errors->any())

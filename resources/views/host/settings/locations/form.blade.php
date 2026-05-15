@@ -22,8 +22,9 @@
             <h1 class="text-xl font-semibold">{{ $isEdit ? 'Edit Location' : 'Add Location' }}</h1>
             <p class="text-base-content/60 text-sm">{{ $isEdit ? 'Update location details' : 'Add a new location for classes and services' }}</p>
         </div>
-        <a href="{{ route('settings.locations.index') }}" class="btn btn-ghost btn-sm">
-            Back to Locations
+        <a href="{{ route('settings.locations.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
         </a>
     </div>
 

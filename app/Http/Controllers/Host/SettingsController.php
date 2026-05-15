@@ -540,7 +540,8 @@ class SettingsController extends Controller
 
     public function policies()
     {
-        return view('host.settings.locations.policies');
+        $host = auth()->user()->host;
+        return view('host.settings.locations.policies', compact('host'));
     }
 
     // ─────────────────────────────────────────────────────────────

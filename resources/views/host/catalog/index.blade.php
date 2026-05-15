@@ -174,17 +174,23 @@
                     </div>
 
                     {{-- Actions --}}
-                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
-                        <a href="{{ route('class-plans.show', $classPlan) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                        </a>
-                        <a href="{{ route('class-plans.edit', $classPlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10 justify-end">
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('class-plans.show', $classPlan) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('class-plans.edit', $classPlan) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li><a href="{{ route('class-sessions.create', ['class_plan_id' => $classPlan->id]) }}">
+                                <span class="icon-[tabler--plus] size-4"></span> Schedule Session
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
                 </div>
             </div>
@@ -240,17 +246,22 @@
 
                     {{-- Actions --}}
                     <div class="card-actions justify-end mt-2">
-                        <a href="{{ route('class-plans.show', $classPlan) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                            {{ $trans['btn.view'] ?? 'View' }}
-                        </a>
-                        <a href="{{ route('class-plans.edit', $classPlan) }}" class="btn btn-sm btn-soft btn-primary">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('class-plans.show', $classPlan) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('class-plans.edit', $classPlan) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li><a href="{{ route('class-sessions.create', ['class_plan_id' => $classPlan->id]) }}">
+                                <span class="icon-[tabler--plus] size-4"></span> Schedule Session
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
                 </div>
             </div>

@@ -17,9 +17,6 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div class="flex items-center gap-4">
-            <a href="{{ route('helpdesk.index') }}" class="btn btn-ghost btn-sm">
-                <span class="icon-[tabler--arrow-left] size-4"></span>
-            </a>
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-2xl font-bold">{{ $ticket->subject ?? 'No Subject' }}</h1>
@@ -60,6 +57,10 @@
                     <span class="icon-[tabler--trash] size-4"></span>
                 </button>
             </form>
+            <a href="{{ route('helpdesk.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
         </div>
     </div>
 

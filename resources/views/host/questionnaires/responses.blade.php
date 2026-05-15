@@ -17,20 +17,21 @@
 @section('settings-content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
-            <div>
-                <h1 class="text-2xl font-bold">Responses</h1>
-                <p class="text-base-content/60 mt-1">{{ $questionnaire->name }}</p>
-            </div>
+    <div class="flex items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold">Responses</h1>
+            <p class="text-base-content/60 mt-1">{{ $questionnaire->name }}</p>
         </div>
-        <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('send-modal').showModal()">
-            <span class="icon-[tabler--send] size-4"></span>
-            Send to Client
-        </button>
+        <div class="flex items-center gap-2">
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('send-modal').showModal()">
+                <span class="icon-[tabler--send] size-4"></span>
+                Send to Client
+            </button>
+            <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+        </div>
     </div>
 
     {{-- Response URL Flash --}}

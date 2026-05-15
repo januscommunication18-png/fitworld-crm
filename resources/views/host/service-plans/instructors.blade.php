@@ -21,9 +21,9 @@
             <h1 class="text-2xl font-bold">Manage Instructors</h1>
             <p class="text-base-content/60 mt-1">Configure which instructors offer "{{ $servicePlan->name }}" and their pricing.</p>
         </div>
-        <a href="{{ route('catalog.index', ['tab' => 'services']) }}" class="btn btn-ghost">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-            Back to Services
+        <a href="{{ route('catalog.index', ['tab' => 'services']) }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
         </a>
     </div>
 

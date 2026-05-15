@@ -228,6 +228,8 @@ async function saveCurrentStep() {
             })
             // Set auth token for subsequent requests
             setAuthToken(res.data.data.token)
+            // Update navbar to show welcome + logout
+            showSignupNavbar(fd.first_name)
             toast.success('Account created!')
             break
         }
@@ -277,6 +279,17 @@ async function resendVerificationEmail() {
     } catch {
         toast.error('Could not resend email. Please try again.')
     }
+}
+
+function showSignupNavbar(firstName) {
+    const title = document.getElementById('navbar-title')
+    const welcome = document.getElementById('navbar-welcome')
+    const username = document.getElementById('navbar-username')
+    const logout = document.getElementById('navbar-logout')
+    if (title) title.classList.add('hidden')
+    if (welcome) { welcome.classList.remove('hidden'); }
+    if (username) username.textContent = firstName
+    if (logout) logout.classList.remove('hidden')
 }
 
 async function completeOnboarding() {

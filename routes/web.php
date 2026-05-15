@@ -451,6 +451,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/questionnaires/{questionnaire}/preview', [QuestionnaireController::class, 'preview'])->name('questionnaires.preview');
     Route::post('/questionnaires/{questionnaire}/publish', [QuestionnaireController::class, 'publish'])->name('questionnaires.publish');
     Route::post('/questionnaires/{questionnaire}/unpublish', [QuestionnaireController::class, 'unpublish'])->name('questionnaires.unpublish');
+    Route::post('/questionnaires/{questionnaire}/mark-as-draft', [QuestionnaireController::class, 'markAsDraft'])->name('questionnaires.markAsDraft');
     Route::post('/questionnaires/{questionnaire}/duplicate', [QuestionnaireController::class, 'duplicate'])->name('questionnaires.duplicate');
 
     // Questionnaire Responses

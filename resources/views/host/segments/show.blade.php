@@ -17,9 +17,6 @@
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
-            <a href="{{ route('segments.index') }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-lg flex items-center justify-center" style="background-color: {{ $segment->color }}20;">
                     @if($segment->type === 'static')
@@ -62,6 +59,10 @@
                     Edit
                 </a>
             @endif
+            <a href="{{ route('segments.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
         </div>
     </div>
 

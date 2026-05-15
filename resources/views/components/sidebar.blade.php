@@ -56,6 +56,11 @@
 
     {{-- Sidebar body --}}
     <div class="flex-1 overflow-y-auto px-3 py-4">
+
+        @if(request()->is('settings*') || request()->is('questionnaires*'))
+        {{-- Settings Navigation Mode --}}
+        @include('components.sidebar-settings')
+        @else
         <ul class="menu space-y-0.5 p-0">
 
             {{-- Section: Main --}}
@@ -429,6 +434,7 @@
                 </a>
             </li>
         </ul>
+        @endif
     </div>
 
     {{-- Sidebar footer --}}

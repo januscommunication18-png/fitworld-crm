@@ -67,7 +67,8 @@
                     <div class="join w-full">
                         <input id="subdomain" type="text" class="input join-item flex-1"
                             :class="{ 'input-error': errors.subdomain, 'input-success': subdomainAvailable === true }"
-                            v-model="localData.subdomain" placeholder="yourstudio" @input="handleSubdomainInput" />
+                            v-model="localData.subdomain" placeholder="yourstudio" @input="handleSubdomainInput"
+                            :readonly="subdomainLocked" />
                         <span class="btn btn-soft join-item pointer-events-none">.fitcrm.app</span>
                     </div>
                     <div class="flex items-center gap-1 mt-1">
@@ -83,6 +84,7 @@
                             <template v-else-if="checkingSubdomain">Checking availability...</template>
                             <template v-else-if="subdomainAvailable === true">This subdomain is available!</template>
                             <template v-else-if="subdomainAvailable === false">This subdomain is already taken.</template>
+                            <template v-else-if="subdomainLocked">Subdomain cannot be changed</template>
                             <template v-else>This will be your booking page URL</template>
                         </p>
                     </div>
@@ -106,6 +108,8 @@ import { debounce } from '../../utils/debounce.js'
 import SearchSelect from './SearchSelect.vue'
 import MultiSelectCategories from './MultiSelectCategories.vue'
 import AddressAutocomplete from './AddressAutocomplete.vue'
+
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps({
     formData: { type: Object, required: true },
@@ -159,9 +163,10 @@ const currencyOptions = computed(() => {
 })
 
 const categoriesRef = ref(null)
-const subdomainAvailable = ref(null)
+const subdomainLocked = !!props.formData.subdomain
+const subdomainAvailable = ref(props.formData.subdomain ? true : null)
 const checkingSubdomain = ref(false)
-const subdomainManuallyEdited = ref(false)
+const subdomainManuallyEdited = ref(!!props.formData.subdomain)
 
 const localData = reactive({
     studio_name: props.formData.studio_name,

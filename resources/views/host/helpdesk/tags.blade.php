@@ -15,14 +15,15 @@
 @section('content')
 <div class="max-w-2xl mx-auto space-y-6">
     {{-- Header --}}
-    <div class="flex items-center gap-4">
-        <a href="{{ route('helpdesk.index') }}" class="btn btn-ghost btn-sm">
-            <span class="icon-[tabler--arrow-left] size-4"></span>
-        </a>
+    <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold">Manage Tags</h1>
             <p class="text-base-content/60 mt-1">Create and manage tags for organizing tickets.</p>
         </div>
+        <a href="{{ route('helpdesk.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
     </div>
 
     @if(session('success'))

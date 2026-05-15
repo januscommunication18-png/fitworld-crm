@@ -15,6 +15,13 @@
 @endsection
 
 @section('settings-content')
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-semibold">Edit Permissions</h2>
+    <a href="{{ route('settings.team.permissions') }}" class="btn btn-ghost btn-sm gap-1.5">
+        <span class="icon-[tabler--arrow-left] size-4"></span>
+        Back
+    </a>
+</div>
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     {{-- Main Form Column --}}
     <div class="lg:col-span-2 space-y-6">

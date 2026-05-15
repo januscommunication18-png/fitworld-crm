@@ -24,6 +24,8 @@
 </template>
 
 <script setup>
+defineOptions({ inheritAttrs: false })
+
 defineProps({
     formData: { type: Object, required: true },
     csrfToken: { type: String, default: '' },

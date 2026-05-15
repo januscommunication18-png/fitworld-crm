@@ -171,160 +171,138 @@
             </div>
         </div>
     @else
-        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div class="space-y-4">
             @foreach($questionnaires as $questionnaire)
                 @php
                     $version = $questionnaire->activeVersion ?? $questionnaire->latestVersion;
                     $questionCount = $version ? $version->getTotalQuestionCount() : 0;
                     $isWizard = $questionnaire->isWizard();
                     $stepCount = $isWizard && $version ? $version->steps->count() : 0;
-                @endphp
-                <div class="card bg-base-100 group hover:shadow-xl hover:shadow-base-content/5 transition-all duration-300 border border-base-200 flex flex-col h-full">
-                    {{-- Status Indicator Bar --}}
-                    <div class="h-1 rounded-t-2xl {{ $questionnaire->isActive() ? 'bg-success' : ($questionnaire->isDraft() ? 'bg-warning' : 'bg-base-300') }}"></div>
 
-                    <div class="card-body p-5 flex-1">
-                        {{-- Header --}}
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-start gap-3 min-w-0">
-                                <div class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 {{ $isWizard ? 'bg-gradient-to-br from-violet-500/20 to-purple-500/10' : 'bg-gradient-to-br from-blue-500/20 to-cyan-500/10' }}">
-                                    <span class="{{ $isWizard ? 'icon-[tabler--list-numbers] text-violet-600' : 'icon-[tabler--file-text] text-blue-600' }} size-6"></span>
-                                </div>
-                                <div class="min-w-0">
-                                    <h3 class="font-bold text-base truncate">{{ $questionnaire->name }}</h3>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="badge badge-sm {{ $isWizard ? 'badge-ghost' : 'badge-ghost' }}">
-                                            {{ $isWizard ? 'Wizard' : 'Single Page' }}
-                                        </span>
+                @endphp
+                <div class="card bg-base-100 group hover:shadow-lg transition-all duration-300 border border-base-200">
+                    <div class="flex flex-col sm:flex-row">
+                        {{-- Left: Color accent + icon --}}
+                        <div class="hidden sm:flex w-20 flex-shrink-0 items-center justify-center {{ $questionnaire->isActive() ? 'bg-gradient-to-b from-success/15 to-success/5' : ($questionnaire->isDraft() ? 'bg-gradient-to-b from-warning/15 to-warning/5' : 'bg-gradient-to-b from-base-300/30 to-base-200/20') }}">
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center {{ $isWizard ? 'bg-gradient-to-br from-violet-500/20 to-purple-500/10' : 'bg-gradient-to-br from-blue-500/20 to-cyan-500/10' }}">
+                                <span class="{{ $isWizard ? 'icon-[tabler--list-numbers] text-violet-600' : 'icon-[tabler--file-text] text-blue-600' }} size-6"></span>
+                            </div>
+                        </div>
+
+                        {{-- Mobile: Top status bar --}}
+                        <div class="sm:hidden h-1 {{ $questionnaire->isActive() ? 'bg-success' : ($questionnaire->isDraft() ? 'bg-warning' : 'bg-base-300') }}"></div>
+
+                        {{-- Center: Main content --}}
+                        <div class="flex-1 min-w-0 p-4 sm:py-4 sm:px-5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div class="min-w-0 flex-1">
+                                    {{-- Title row --}}
+                                    <div class="flex items-center gap-2.5 flex-wrap">
+                                        {{-- Mobile icon --}}
+                                        <div class="sm:hidden w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 {{ $isWizard ? 'bg-gradient-to-br from-violet-500/20 to-purple-500/10' : 'bg-gradient-to-br from-blue-500/20 to-cyan-500/10' }}">
+                                            <span class="{{ $isWizard ? 'icon-[tabler--list-numbers] text-violet-600' : 'icon-[tabler--file-text] text-blue-600' }} size-5"></span>
+                                        </div>
+                                        <h3 class="font-bold text-base truncate">{{ $questionnaire->name }}</h3>
                                         <span class="badge badge-sm {{ \App\Models\Questionnaire::getStatusBadgeClass($questionnaire->status) }}">
                                             {{ ucfirst($questionnaire->status) }}
                                         </span>
+                                        <span class="badge badge-sm badge-ghost">
+                                            {{ $isWizard ? 'Wizard' : 'Single Page' }}
+                                        </span>
+                                    </div>
+
+                                    {{-- Description --}}
+                                    @if($questionnaire->description)
+                                        <p class="text-sm text-base-content/60 line-clamp-1 mt-1.5">{{ $questionnaire->description }}</p>
+                                    @endif
+
+                                    {{-- Stats row --}}
+                                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2.5 text-sm text-base-content/60">
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <span class="icon-[tabler--help-circle] size-4 text-primary/70"></span>
+                                            <span>{{ $questionCount }} {{ Str::plural('question', $questionCount) }}</span>
+                                        </span>
+                                        @if($isWizard && $stepCount > 0)
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <span class="icon-[tabler--list-numbers] size-4 text-violet-500/70"></span>
+                                                <span>{{ $stepCount }} {{ Str::plural('step', $stepCount) }}</span>
+                                            </span>
+                                        @endif
+                                        @if($questionnaire->estimated_minutes)
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <span class="icon-[tabler--clock] size-4 text-amber-500/70"></span>
+                                                <span>~{{ $questionnaire->estimated_minutes }} min</span>
+                                            </span>
+                                        @endif
                                     </div>
                                 </div>
-                            </div>
 
-                            {{-- Dropdown Menu --}}
-                            <div class="relative">
-                                <details class="dropdown dropdown-bottom dropdown-end">
-                                    <summary class="btn btn-ghost btn-sm btn-square list-none cursor-pointer">
-                                        <span class="icon-[tabler--dots-vertical] size-5"></span>
-                                    </summary>
-                                    <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999; position: absolute; right: 0; top: 100%;">
-                                        <li><a href="{{ route('questionnaires.builder', $questionnaire) }}">
-                                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['questionnaires.edit_builder'] ?? 'Edit Builder' }}
-                                        </a></li>
-                                        <li><a href="{{ route('questionnaires.preview', $questionnaire) }}">
-                                            <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.preview'] ?? 'Preview' }}
-                                        </a></li>
-                                        <li><a href="{{ route('questionnaires.show', $questionnaire) }}">
-                                            <span class="icon-[tabler--chart-bar] size-4"></span> {{ $trans['questionnaires.view_responses'] ?? 'View Responses' }}
-                                        </a></li>
-                                        <li><a href="{{ route('questionnaires.edit', $questionnaire) }}">
-                                            <span class="icon-[tabler--settings] size-4"></span> {{ $trans['nav.settings'] ?? 'Settings' }}
-                                        </a></li>
+                                {{-- Dropdown Menu --}}
+                                <x-actions-dropdown :hover-only="true">
+                                    <li><a href="{{ route('questionnaires.builder', $questionnaire) }}">
+                                        <span class="icon-[tabler--edit] size-4"></span> {{ $trans['questionnaires.edit_builder'] ?? 'Edit Builder' }}
+                                    </a></li>
+                                    <li><a href="{{ route('questionnaires.preview', $questionnaire) }}">
+                                        <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.preview'] ?? 'Preview' }}
+                                    </a></li>
+                                    <li><a href="{{ route('questionnaires.show', $questionnaire) }}">
+                                        <span class="icon-[tabler--chart-bar] size-4"></span> {{ $trans['questionnaires.view_responses'] ?? 'View Responses' }}
+                                    </a></li>
+                                    <li><a href="{{ route('questionnaires.edit', $questionnaire) }}">
+                                        <span class="icon-[tabler--settings] size-4"></span> {{ $trans['nav.settings'] ?? 'Settings' }}
+                                    </a></li>
+                                    <li>
+                                        <form action="{{ route('questionnaires.duplicate', $questionnaire) }}" method="POST" class="m-0">
+                                            @csrf
+                                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                                <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
+                                            </button>
+                                        </form>
+                                    </li>
+                                    <li class="menu-title text-xs uppercase text-base-content/40 pt-2">Status</li>
+                                    @if(!$questionnaire->isActive())
                                         <li>
-                                            <form action="{{ route('questionnaires.duplicate', $questionnaire) }}" method="POST" class="m-0">
+                                            <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="m-0">
                                                 @csrf
-                                                <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                    <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
+                                                <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
+                                                    <span class="icon-[tabler--rocket] size-4"></span> Mark as Published
                                                 </button>
                                             </form>
                                         </li>
-                                        @if($questionnaire->isDraft())
-                                            <li>
-                                                <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="m-0">
-                                                    @csrf
-                                                    <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
-                                                        <span class="icon-[tabler--rocket] size-4"></span> {{ $trans['btn.publish'] ?? 'Publish' }}
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        @elseif($questionnaire->isActive())
-                                            <li>
-                                                <form action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="m-0">
-                                                    @csrf
-                                                    <button type="submit" class="w-full text-left flex items-center gap-2 text-warning">
-                                                        <span class="icon-[tabler--archive] size-4"></span> {{ $trans['btn.archive'] ?? 'Archive' }}
-                                                    </button>
-                                                </form>
-                                            </li>
-                                        @endif
+                                    @endif
+                                    @if(!$questionnaire->isDraft())
                                         <li>
-                                            <form action="{{ route('questionnaires.destroy', $questionnaire) }}" method="POST" class="m-0" onsubmit="return confirm('{{ $trans['msg.confirm.delete_questionnaire'] ?? 'Are you sure you want to delete this questionnaire?' }}')">
+                                            <form action="{{ route('questionnaires.markAsDraft', $questionnaire) }}" method="POST" class="m-0">
                                                 @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                                <button type="submit" class="w-full text-left flex items-center gap-2 text-warning">
+                                                    <span class="icon-[tabler--pencil] size-4"></span> Mark as Draft
                                                 </button>
                                             </form>
                                         </li>
-                                    </ul>
-                                </details>
+                                    @endif
+                                    @if(!$questionnaire->isArchived())
+                                        <li>
+                                            <form action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="m-0">
+                                                @csrf
+                                                <button type="submit" class="w-full text-left flex items-center gap-2 text-base-content/60">
+                                                    <span class="icon-[tabler--archive] size-4"></span> Archive
+                                                </button>
+                                            </form>
+                                        </li>
+                                    @endif
+                                    <li>
+                                        <form action="{{ route('questionnaires.destroy', $questionnaire) }}" method="POST" class="m-0" onsubmit="return confirm('{{ $trans['msg.confirm.delete_questionnaire'] ?? 'Are you sure you want to delete this questionnaire?' }}')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                            </button>
+                                        </form>
+                                    </li>
+                                </x-actions-dropdown>
                             </div>
                         </div>
 
-                        {{-- Description --}}
-                        @if($questionnaire->description)
-                            <p class="text-sm text-base-content/60 line-clamp-2 mt-3">{{ $questionnaire->description }}</p>
-                        @endif
-
-                        {{-- Stats --}}
-                        <div class="flex flex-wrap items-center gap-2 mt-4">
-                            <div class="flex items-center gap-1.5 text-sm text-base-content/70 bg-base-200/50 px-2.5 py-1 rounded-lg">
-                                <span class="icon-[tabler--help-circle] size-4 text-primary"></span>
-                                <span class="font-medium">{{ $questionCount }}</span>
-                                <span class="text-base-content/50">{{ Str::plural('question', $questionCount) }}</span>
-                            </div>
-                            @if($isWizard && $stepCount > 0)
-                                <div class="flex items-center gap-1.5 text-sm text-base-content/70 bg-base-200/50 px-2.5 py-1 rounded-lg">
-                                    <span class="icon-[tabler--list-numbers] size-4 text-violet-500"></span>
-                                    <span class="font-medium">{{ $stepCount }}</span>
-                                    <span class="text-base-content/50">{{ Str::plural('step', $stepCount) }}</span>
-                                </div>
-                            @endif
-                            @if($questionnaire->estimated_minutes)
-                                <div class="flex items-center gap-1.5 text-sm text-base-content/70 bg-base-200/50 px-2.5 py-1 rounded-lg">
-                                    <span class="icon-[tabler--clock] size-4 text-amber-500"></span>
-                                    <span>~{{ $questionnaire->estimated_minutes }}m</span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Fixed Footer --}}
-                    <div class="card-footer bg-base-200/30 px-5 py-3 border-t border-base-200 mt-auto">
-                        <div class="flex items-center gap-2">
-                            <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-sm btn-primary flex-1 gap-2">
-                                <span class="icon-[tabler--edit] size-4"></span>
-                                {{ $trans['btn.edit'] ?? 'Edit' }}
-                            </a>
-                            <a href="{{ route('questionnaires.preview', $questionnaire) }}" class="btn btn-sm btn-ghost flex-1 gap-2">
-                                <span class="icon-[tabler--eye] size-4"></span>
-                                {{ $trans['btn.preview'] ?? 'Preview' }}
-                            </a>
-                            @if($questionnaire->isDraft())
-                                <form action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="m-0">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-success gap-2" title="{{ $trans['btn.publish'] ?? 'Publish' }}">
-                                        <span class="icon-[tabler--rocket] size-4"></span>
-                                        {{ $trans['btn.publish'] ?? 'Publish' }}
-                                    </button>
-                                </form>
-                            @elseif($questionnaire->isActive())
-                                <form action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="m-0">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-warning gap-2" title="{{ $trans['btn.archive'] ?? 'Unpublish / Archive' }}">
-                                        <span class="icon-[tabler--archive] size-4"></span>
-                                        {{ $trans['btn.archive'] ?? 'Archive' }}
-                                    </button>
-                                </form>
-                            @else
-                                <a href="{{ route('questionnaires.show', $questionnaire) }}" class="btn btn-sm btn-ghost gap-2" title="{{ $trans['questionnaires.view_responses'] ?? 'View Responses' }}">
-                                    <span class="icon-[tabler--chart-bar] size-4"></span>
-                                    {{ $trans['questionnaires.responses'] ?? 'Responses' }}
-                                </a>
-                            @endif
-                        </div>
                     </div>
                 </div>
             @endforeach
