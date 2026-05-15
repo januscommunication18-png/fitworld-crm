@@ -105,6 +105,8 @@
 import { reactive, computed, ref } from 'vue'
 import PasswordStrength from './PasswordStrength.vue'
 
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps({
     formData: { type: Object, required: true },
     csrfToken: { type: String, default: '' },

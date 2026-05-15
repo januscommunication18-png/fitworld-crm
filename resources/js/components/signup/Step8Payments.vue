@@ -48,6 +48,8 @@
 <script setup>
 import { reactive } from 'vue'
 
+defineOptions({ inheritAttrs: false })
+
 const props = defineProps({
     formData: { type: Object, required: true },
     csrfToken: { type: String, default: '' },

@@ -23,47 +23,15 @@ class PoliciesController extends Controller
     }
 
     /**
-     * Update policies settings
+     * Update policies settings (section-based)
      */
     public function update(Request $request)
     {
         $host = auth()->user()->host;
+        $section = $request->input('section', 'all');
 
-        $validated = $request->validate([
-            // Cancellation Policy
-            'allow_cancellations' => 'boolean',
-            'cancellation_window_hours' => 'required|integer|min:0|max:168',
-            'cancellation_fee' => 'nullable|numeric|min:0',
-            'late_cancellation_handling' => 'required|in:mark_late,charge_fee,deduct_credit',
-
-            // No-Show Policy
-            'no_show_fee' => 'nullable|numeric|min:0',
-            'no_show_handling' => 'required|in:no_action,charge_fee,deduct_credit,strike',
-            'no_show_grace_period_minutes' => 'required|integer|min:0|max:60',
-
-            // Waitlist Policy
-            'enable_waitlist' => 'boolean',
-            'waitlist_auto_promote' => 'boolean',
-            'waitlist_promotion_window_minutes' => 'required|integer|min:0|max:1440',
-            'waitlist_notify_on_promotion' => 'boolean',
-            'waitlist_hold_spot_minutes' => 'required|integer|min:0|max:60',
-
-            // Booking Limits
-            'max_bookings_per_class' => 'required|integer|min:1|max:10',
-            'max_active_bookings' => 'nullable|integer|min:1|max:100',
-            'allow_booking_without_payment' => 'boolean',
-            'booking_earliest_days' => 'required|integer|min:1|max:365',
-            'booking_latest_minutes' => 'required|integer|min:0|max:1440',
-
-            // Studio Rules
-            'house_rules' => 'nullable|string|max:5000',
-            'liability_waiver_url' => 'nullable|url|max:500',
-            'arrival_instructions' => 'nullable|string|max:2000',
-
-            // Legal Pages (stored separately, not in policies JSON)
-            'terms_of_service' => 'nullable|string|max:100000',
-            'privacy_policy' => 'nullable|string|max:100000',
-        ]);
+        $rules = $this->validationRules($section);
+        $validated = $request->validate($rules);
 
         // Convert checkbox values to booleans
         $booleanFields = [
@@ -75,24 +43,82 @@ class PoliciesController extends Controller
         ];
 
         foreach ($booleanFields as $field) {
-            $validated[$field] = $request->boolean($field);
+            if (array_key_exists($field, $rules)) {
+                $validated[$field] = $request->boolean($field);
+            }
         }
 
-        // Extract legal pages (stored separately)
-        $termsOfService = $validated['terms_of_service'] ?? null;
-        $privacyPolicy = $validated['privacy_policy'] ?? null;
-        unset($validated['terms_of_service'], $validated['privacy_policy']);
+        // Handle legal pages (stored as separate columns)
+        if ($section === 'legal') {
+            $host->terms_of_service = $validated['terms_of_service'] ?? null;
+            $host->privacy_policy = $validated['privacy_policy'] ?? null;
+            $host->save();
+        } else {
+            // Remove non-policy fields
+            unset($validated['section']);
 
-        // Merge with existing policies (excluding legal pages)
-        $currentPolicies = $host->policies ?? [];
-        $host->policies = array_merge($currentPolicies, $validated);
+            $currentPolicies = $host->policies ?? [];
+            $host->policies = array_merge($currentPolicies, $validated);
+            $host->save();
+        }
 
-        // Save legal pages as separate columns
-        $host->terms_of_service = $termsOfService;
-        $host->privacy_policy = $privacyPolicy;
-        $host->save();
+        $sectionLabels = [
+            'cancellation' => 'Cancellation policy',
+            'noshow' => 'No-show policy',
+            'waitlist' => 'Waitlist policy',
+            'booking_limits' => 'Booking limits',
+            'legal' => 'Legal pages',
+            'rules' => 'Studio rules',
+        ];
+
+        $label = $sectionLabels[$section] ?? 'Policies';
 
         return redirect()->route('settings.locations.policies')
-            ->with('success', 'Policies updated successfully');
+            ->with('success', "{$label} updated successfully");
+    }
+
+    private function validationRules(string $section): array
+    {
+        $rules = ['section' => 'nullable|string'];
+
+        return match ($section) {
+            'cancellation' => $rules + [
+                'allow_cancellations' => 'boolean',
+                'cancellation_window_hours' => 'required|integer|min:0|max:168',
+                'cancellation_fees' => 'nullable|array',
+                'cancellation_fees.*' => 'nullable|numeric|min:0',
+                'late_cancellation_handling' => 'required|in:mark_late,charge_fee,deduct_credit',
+            ],
+            'noshow' => $rules + [
+                'no_show_fees' => 'nullable|array',
+                'no_show_fees.*' => 'nullable|numeric|min:0',
+                'no_show_handling' => 'required|in:no_action,charge_fee,deduct_credit,strike',
+                'no_show_grace_period_minutes' => 'required|integer|min:0|max:60',
+            ],
+            'waitlist' => $rules + [
+                'enable_waitlist' => 'boolean',
+                'waitlist_auto_promote' => 'boolean',
+                'waitlist_promotion_window_minutes' => 'required|integer|min:0|max:1440',
+                'waitlist_notify_on_promotion' => 'boolean',
+                'waitlist_hold_spot_minutes' => 'required|integer|min:0|max:60',
+            ],
+            'booking_limits' => $rules + [
+                'max_bookings_per_class' => 'required|integer|min:1|max:10',
+                'max_active_bookings' => 'nullable|integer|min:1|max:100',
+                'allow_booking_without_payment' => 'boolean',
+                'booking_earliest_days' => 'required|integer|min:1|max:365',
+                'booking_latest_minutes' => 'required|integer|min:0|max:1440',
+            ],
+            'legal' => $rules + [
+                'terms_of_service' => 'nullable|string|max:100000',
+                'privacy_policy' => 'nullable|string|max:100000',
+            ],
+            'rules' => $rules + [
+                'house_rules' => 'nullable|string|max:5000',
+                'liability_waiver_url' => 'nullable|url|max:500',
+                'arrival_instructions' => 'nullable|string|max:2000',
+            ],
+            default => $rules,
+        };
     }
 }

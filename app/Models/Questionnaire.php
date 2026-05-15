@@ -152,6 +152,11 @@ class Questionnaire extends Model
         return $this->update(['status' => self::STATUS_ACTIVE]);
     }
 
+    public function markAsDraft(): bool
+    {
+        return $this->update(['status' => self::STATUS_DRAFT]);
+    }
+
     public function archive(): bool
     {
         return $this->update(['status' => self::STATUS_ARCHIVED]);

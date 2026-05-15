@@ -133,6 +133,40 @@
                 @endif
             </div>
 
+            <div class="divider"></div>
+
+            {{-- Status --}}
+            <div class="space-y-4">
+                <h3 class="font-semibold text-lg">Status</h3>
+                <div class="form-control">
+                    <label class="label" for="status-select">
+                        <span class="label-text font-medium">Current Status</span>
+                    </label>
+                    <select id="status-select" class="select select-bordered" onchange="submitStatusChange(this)">
+                        <option value="" selected>{{ $questionnaire->isDraft() ? 'Draft' : ($questionnaire->isActive() ? 'Published' : 'Archived') }}</option>
+                        @if(!$questionnaire->isActive())
+                            <option value="published">Published</option>
+                        @endif
+                        @if(!$questionnaire->isDraft())
+                            <option value="draft">Draft</option>
+                        @endif
+                        @if(!$questionnaire->isArchived())
+                            <option value="archived">Archived</option>
+                        @endif
+                    </select>
+                </div>
+                {{-- Hidden forms for status changes --}}
+                @if(!$questionnaire->isActive())
+                    <form id="status-form-published" action="{{ route('questionnaires.publish', $questionnaire) }}" method="POST" class="hidden">@csrf</form>
+                @endif
+                @if(!$questionnaire->isDraft())
+                    <form id="status-form-draft" action="{{ route('questionnaires.markAsDraft', $questionnaire) }}" method="POST" class="hidden">@csrf</form>
+                @endif
+                @if(!$questionnaire->isArchived())
+                    <form id="status-form-archived" action="{{ route('questionnaires.unpublish', $questionnaire) }}" method="POST" class="hidden">@csrf</form>
+                @endif
+            </div>
+
             {{-- Submit --}}
             <div class="flex items-center justify-between gap-3 pt-4 border-t border-base-content/10">
                 <a href="{{ route('questionnaires.builder', $questionnaire) }}" class="btn btn-ghost">
@@ -168,4 +202,13 @@
         </div>
     </div>
 </div>
+
+<script>
+function submitStatusChange(select) {
+    const value = select.value;
+    if (!value) return;
+    const form = document.getElementById('status-form-' + value);
+    if (form) form.submit();
+}
+</script>
 @endsection

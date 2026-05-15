@@ -238,22 +238,21 @@ class QuestionnaireController extends Controller
 
         $draftVersion = $questionnaire->draftVersion;
 
-        if (!$draftVersion) {
-            return redirect()->route('questionnaires.builder', $questionnaire)
-                ->with('error', 'No draft version to publish.');
+        if ($draftVersion) {
+            // Check if there are any questions
+            $questionCount = $draftVersion->blocks->sum(fn($b) => $b->questions->count());
+
+            if ($questionCount === 0) {
+                return redirect()->route('questionnaires.builder', $questionnaire)
+                    ->with('error', 'Cannot publish a questionnaire with no questions.');
+            }
+
+            $draftVersion->publish();
         }
 
-        // Check if there are any questions
-        $questionCount = $draftVersion->blocks->sum(fn($b) => $b->questions->count());
+        $questionnaire->activate();
 
-        if ($questionCount === 0) {
-            return redirect()->route('questionnaires.builder', $questionnaire)
-                ->with('error', 'Cannot publish a questionnaire with no questions.');
-        }
-
-        $draftVersion->publish();
-
-        return redirect()->route('questionnaires.show', $questionnaire)
+        return redirect()->back()
             ->with('success', 'Questionnaire published successfully!');
     }
 
@@ -266,8 +265,21 @@ class QuestionnaireController extends Controller
 
         $questionnaire->archive();
 
-        return redirect()->route('questionnaires.index')
-            ->with('success', 'Questionnaire unpublished.');
+        return redirect()->back()
+            ->with('success', 'Questionnaire archived.');
+    }
+
+    /**
+     * Mark the questionnaire as draft.
+     */
+    public function markAsDraft(Questionnaire $questionnaire)
+    {
+        $this->authorizeHost($questionnaire);
+
+        $questionnaire->markAsDraft();
+
+        return redirect()->back()
+            ->with('success', 'Questionnaire moved to drafts.');
     }
 
     /**
