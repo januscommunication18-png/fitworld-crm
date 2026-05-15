@@ -15,14 +15,15 @@
 @section('content')
 <div class="max-w-4xl mx-auto">
     {{-- Header --}}
-    <div class="mb-8 flex items-center gap-4">
-        <a href="{{ route('instructors.index') }}" class="btn btn-ghost btn-sm btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+    <div class="mb-8 flex items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold mb-2">{{ $trans['instructors.add_new_instructor'] ?? 'Add New Instructor' }}</h1>
             <p class="text-base-content/60">{{ $trans['instructors.create_description'] ?? 'Create a new instructor profile or link an existing team member.' }}</p>
         </div>
+        <a href="{{ route('instructors.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
     </div>
 
     {{-- Flash Messages --}}

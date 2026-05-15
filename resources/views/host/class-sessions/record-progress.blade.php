@@ -23,17 +23,8 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex items-center gap-4">
-        @if(isset($singleClientMode) && $singleClientMode && isset($singleClient))
-            <a href="{{ route('clients.show', $singleClient) }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
-        @else
-            <a href="{{ route('class-sessions.show', $classSession) }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
-        @endif
-        <div class="flex-1">
+    <div class="flex items-center justify-between">
+        <div>
             <div class="flex items-center gap-3">
                 <span class="icon-[tabler--{{ $progressTemplate->icon ?? 'chart-line' }}] size-6 text-primary"></span>
                 <h1 class="text-2xl font-bold">Record Progress: {{ $progressTemplate->name }}</h1>
@@ -46,6 +37,17 @@
                 @endif
             </p>
         </div>
+        @if(isset($singleClientMode) && $singleClientMode && isset($singleClient))
+            <a href="{{ route('clients.show', $singleClient) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+        @else
+            <a href="{{ route('class-sessions.show', $classSession) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
+        @endif
     </div>
 
     @if($bookings->isEmpty())

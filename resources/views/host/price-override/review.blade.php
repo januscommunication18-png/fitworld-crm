@@ -5,14 +5,15 @@
 @section('content')
 <div class="max-w-2xl mx-auto">
     {{-- Header --}}
-    <div class="flex items-center gap-4 mb-6">
-        <a href="{{ route('price-override.index') }}" class="btn btn-ghost btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+    <div class="flex items-center justify-between mb-6">
         <div>
             <h1 class="text-2xl font-bold">Review Price Override</h1>
             <p class="text-base-content/60">Confirmation Code: <span class="font-mono font-bold text-primary">{{ $request->confirmation_code }}</span></p>
         </div>
+        <a href="{{ route('price-override.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
     </div>
 
     {{-- Alerts --}}

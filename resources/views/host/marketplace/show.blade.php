@@ -22,6 +22,12 @@
 {{-- Special Layout for 1:1 Meeting Feature --}}
 @if($feature->slug === 'online-1on1-meeting')
 <div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex justify-end">
+        <a href="{{ route('marketplace.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
+    </div>
     {{-- Hero Header --}}
     <div class="card bg-gradient-to-br from-primary via-primary to-secondary text-primary-content overflow-hidden">
         <div class="card-body p-8 relative">
@@ -358,18 +364,18 @@
         </div>
     </div>
 
-    {{-- Back Link --}}
-    <div>
-        <a href="{{ route('marketplace.index') }}" class="btn btn-ghost">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-            Back to Marketplace
-        </a>
-    </div>
+
 </div>
 
 @elseif($feature->slug === 'fitnearyou-sync')
 {{-- FitNearYou Sync Feature Layout --}}
 <div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex justify-end">
+        <a href="{{ route('marketplace.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
+    </div>
     {{-- Hero Header --}}
     <div class="card bg-base-100 overflow-hidden">
         <div class="card-body p-8">
@@ -737,13 +743,7 @@
         </div>
     </div>
 
-    {{-- Back Link --}}
-    <div>
-        <a href="{{ route('marketplace.index') }}" class="btn btn-ghost">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-            Back to Marketplace
-        </a>
-    </div>
+
 </div>
 
 {{-- Verification Code Modal --}}
@@ -809,6 +809,12 @@
 @else
 {{-- Default Layout for Other Features --}}
 <div class="max-w-3xl mx-auto space-y-6">
+    <div class="flex justify-end">
+        <a href="{{ route('marketplace.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
+    </div>
     {{-- Feature Header Card --}}
     <div class="card bg-base-100">
         <div class="card-body">
@@ -976,13 +982,7 @@
     </div>
     @endif
 
-    {{-- Back Link --}}
-    <div>
-        <a href="{{ route('marketplace.index') }}" class="btn btn-ghost">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-            Back to Marketplace
-        </a>
-    </div>
+
 </div>
 @endif
 

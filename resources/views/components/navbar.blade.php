@@ -158,11 +158,19 @@
         <div class="relative inline-flex" id="profile-dropdown-wrapper">
             <button id="profile-dropdown-btn" type="button" class="btn btn-ghost btn-circle btn-sm"
                 aria-haspopup="menu" aria-expanded="false" aria-label="Profile menu">
-                <div class="avatar avatar-placeholder">
-                    <div class="bg-neutral text-neutral-content size-8 rounded-full">
-                        <span class="icon-[tabler--user] size-4"></span>
+                @if(Auth::user()->profile_photo_url)
+                    <div class="avatar">
+                        <div class="size-8 rounded-full">
+                            <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()->full_name }}" />
+                        </div>
                     </div>
-                </div>
+                @else
+                    <div class="avatar avatar-placeholder">
+                        <div class="bg-neutral text-neutral-content size-8 rounded-full text-xs font-bold">
+                            {{ strtoupper(substr(Auth::user()->first_name, 0, 1) . substr(Auth::user()->last_name, 0, 1)) }}
+                        </div>
+                    </div>
+                @endif
             </button>
             <div id="profile-dropdown-menu" class="absolute right-0 top-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg min-w-48 z-50 hidden"
                 role="menu" aria-orientation="vertical" aria-labelledby="profile-dropdown-btn">

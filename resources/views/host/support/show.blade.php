@@ -13,9 +13,9 @@
             </h1>
             <p class="text-base-content/60 text-sm">Submitted {{ $supportRequest->created_at->format('F d, Y \a\t h:i A') }}</p>
         </div>
-        <a href="{{ route('support.requests.index') }}" class="btn btn-ghost btn-sm">
+        <a href="{{ route('support.requests.index') }}" class="btn btn-ghost btn-sm gap-1.5">
             <span class="icon-[tabler--arrow-left] size-4"></span>
-            Back to Requests
+            Back
         </a>
     </div>
 

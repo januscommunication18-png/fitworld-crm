@@ -57,14 +57,15 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="flex items-center gap-4">
-        <a href="{{ route('schedule.calendar') }}" class="btn btn-ghost btn-sm btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+    <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold">{{ ($editMode ?? false) ? 'Edit' : 'Create' }} Membership Schedule</h1>
             <p class="text-base-content/60 mt-1">{{ ($editMode ?? false) ? 'Update this scheduled membership session.' : 'Create recurring class sessions for membership holders with auto-enrollment.' }}</p>
         </div>
+        <a href="{{ route('schedule.calendar') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            Back
+        </a>
     </div>
 
     @if($membershipPlans->isEmpty())

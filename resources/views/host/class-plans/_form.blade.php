@@ -3,9 +3,7 @@
     $assignedStaffMemberIds = $assignedStaffMemberIds ?? [];
 @endphp
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {{-- Main Form --}}
-    <div class="lg:col-span-2 space-y-6">
+<div class="space-y-6">
         {{-- Basic Info --}}
         <div class="card bg-base-100">
             <div class="card-header">
@@ -13,12 +11,13 @@
             </div>
             <div class="card-body space-y-4">
                 <div>
-                    <label class="label-text" for="name">Class Name</label>
+                    <label class="label-text" for="name">Class Name <span class="text-error">*</span></label>
                     <input type="text" id="name" name="name"
                         value="{{ old('name', $classPlan?->name) }}"
-                        class="input w-full @error('name') input-error @enderror"
+                        class="input w-full @error('name') is-invalid @enderror"
                         placeholder="e.g., Vinyasa Flow Yoga"
-                        required>
+                        required minlength="2" maxlength="255">
+                    <span class="error-message text-error text-sm mt-1 hidden">Please enter a class name (min 2 characters)</span>
                     @error('name')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -27,7 +26,7 @@
                 <div>
                     <label class="label-text" for="description">Description</label>
                     <textarea id="description" name="description" rows="3"
-                        class="textarea w-full @error('description') input-error @enderror"
+                        class="textarea w-full @error('description') is-invalid @enderror"
                         placeholder="Describe what participants can expect from this class...">{{ old('description', $classPlan?->description) }}</textarea>
                     @error('description')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -36,35 +35,38 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="label-text" for="category">Category</label>
-                        <select id="category" name="category" class="select w-full @error('category') input-error @enderror" required>
+                        <label class="label-text" for="category">Category <span class="text-error">*</span></label>
+                        <select id="category" name="category" class="select w-full @error('category') is-invalid @enderror" required>
                             <option value="">Select a category...</option>
                             @foreach($categories as $value => $label)
                                 <option value="{{ $value }}" {{ old('category', $classPlan?->category) === $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
+                        <span class="error-message text-error text-sm mt-1 hidden">Please select a category</span>
                         @error('category')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <label class="label-text" for="type">Type</label>
-                        <select id="type" name="type" class="select w-full @error('type') input-error @enderror" required>
+                        <label class="label-text" for="type">Type <span class="text-error">*</span></label>
+                        <select id="type" name="type" class="select w-full @error('type') is-invalid @enderror" required>
                             @foreach($types as $value => $label)
                                 <option value="{{ $value }}" {{ old('type', $classPlan?->type) === $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
+                        <span class="error-message text-error text-sm mt-1 hidden">Please select a type</span>
                         @error('type')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <label class="label-text" for="difficulty_level">Difficulty</label>
-                        <select id="difficulty_level" name="difficulty_level" class="select w-full @error('difficulty_level') input-error @enderror" required>
+                        <label class="label-text" for="difficulty_level">Difficulty <span class="text-error">*</span></label>
+                        <select id="difficulty_level" name="difficulty_level" class="select w-full @error('difficulty_level') is-invalid @enderror" required>
                             @foreach($difficultyLevels as $value => $label)
                                 <option value="{{ $value }}" {{ old('difficulty_level', $classPlan?->difficulty_level ?? 'all_levels') === $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
+                        <span class="error-message text-error text-sm mt-1 hidden">Please select a difficulty level</span>
                         @error('difficulty_level')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -81,21 +83,23 @@
             <div class="card-body space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label class="label-text" for="default_duration_minutes">Duration (minutes)</label>
+                        <label class="label-text" for="default_duration_minutes">Duration (minutes) <span class="text-error">*</span></label>
                         <input type="number" id="default_duration_minutes" name="default_duration_minutes"
                             value="{{ old('default_duration_minutes', $classPlan?->default_duration_minutes ?? 60) }}"
-                            class="input w-full @error('default_duration_minutes') input-error @enderror"
+                            class="input w-full @error('default_duration_minutes') is-invalid @enderror"
                             min="15" max="480" required>
+                        <span class="error-message text-error text-sm mt-1 hidden">Duration must be between 15-480 minutes</span>
                         @error('default_duration_minutes')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <label class="label-text" for="default_capacity">Max Capacity</label>
+                        <label class="label-text" for="default_capacity">Max Capacity <span class="text-error">*</span></label>
                         <input type="number" id="default_capacity" name="default_capacity"
                             value="{{ old('default_capacity', $classPlan?->default_capacity ?? 20) }}"
-                            class="input w-full @error('default_capacity') input-error @enderror"
+                            class="input w-full @error('default_capacity') is-invalid @enderror"
                             min="1" max="500" required>
+                        <span class="error-message text-error text-sm mt-1 hidden">Capacity must be between 1-500</span>
                         @error('default_capacity')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -104,7 +108,7 @@
                         <label class="label-text" for="min_capacity">Min Capacity</label>
                         <input type="number" id="min_capacity" name="min_capacity"
                             value="{{ old('min_capacity', $classPlan?->min_capacity ?? 1) }}"
-                            class="input w-full @error('min_capacity') input-error @enderror"
+                            class="input w-full @error('min_capacity') is-invalid @enderror"
                             min="0" max="500">
                         <p class="text-xs text-base-content/60 mt-1">Set to 0 for no minimum</p>
                         @error('min_capacity')
@@ -116,172 +120,68 @@
         </div>
 
         {{-- Pricing --}}
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <h3 class="card-title">Pricing</h3>
-            </div>
-            <div class="card-body">
-                <p class="text-sm text-base-content/60 mb-4">Leave empty for free classes. New member prices are shown on public booking (subdomain).</p>
-
-                <div class="overflow-x-auto">
-                    <table class="table table-zebra">
-                        <thead>
-                            <tr>
-                                <th class="w-48">Price Type</th>
-                                @foreach($hostCurrencies as $currency)
-                                    <th class="text-center">
-                                        {{ $currency }}
-                                        @if($currency === $defaultCurrency)
-                                            <span class="badge badge-primary badge-xs ms-1">Default</span>
-                                        @endif
-                                    </th>
-                                @endforeach
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{-- New Member Pricing Section --}}
-                            <tr class="bg-info/5">
-                                <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                    <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
-                                    New Member Pricing
-                                    <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <label class="label-text" for="new_member_prices_{{ $hostCurrencies[0] }}">Price</label>
-                                </td>
-                                @foreach($hostCurrencies as $currency)
-                                    <td>
-                                        <label class="input input-bordered input-sm flex items-center gap-1">
-                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                            <input type="number" id="new_member_prices_{{ $currency }}" name="new_member_prices[{{ $currency }}]" step="0.01" min="0"
-                                                   value="{{ old('new_member_prices.' . $currency, $classPlan?->new_member_prices[$currency] ?? '') }}"
-                                                   class="grow w-full min-w-20" placeholder="0.00">
-                                        </label>
-                                    </td>
-                                @endforeach
-                            </tr>
-                            <tr>
-                                <td>
-                                    <label class="label-text" for="new_member_drop_in_prices_{{ $hostCurrencies[0] }}">Drop-in Price</label>
-                                </td>
-                                @foreach($hostCurrencies as $currency)
-                                    <td>
-                                        <label class="input input-bordered input-sm flex items-center gap-1">
-                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                            <input type="number" id="new_member_drop_in_prices_{{ $currency }}" name="new_member_drop_in_prices[{{ $currency }}]" step="0.01" min="0"
-                                                   value="{{ old('new_member_drop_in_prices.' . $currency, $classPlan?->new_member_drop_in_prices[$currency] ?? '') }}"
-                                                   class="grow w-full min-w-20" placeholder="0.00">
-                                        </label>
-                                    </td>
-                                @endforeach
-                            </tr>
-
-                            {{-- Existing Member Pricing Section --}}
-                            <tr class="bg-base-200/50">
-                                <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                    <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
-                                    Existing Member Pricing
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <label class="label-text" for="prices_{{ $hostCurrencies[0] }}">Price</label>
-                                </td>
-                                @foreach($hostCurrencies as $currency)
-                                    <td>
-                                        <label class="input input-bordered input-sm flex items-center gap-1">
-                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                            <input type="number" id="prices_{{ $currency }}" name="prices[{{ $currency }}]" step="0.01" min="0"
-                                                   value="{{ old('prices.' . $currency, $classPlan?->prices[$currency] ?? '') }}"
-                                                   class="grow w-full min-w-20" placeholder="0.00">
-                                        </label>
-                                    </td>
-                                @endforeach
-                            </tr>
-                            <tr>
-                                <td>
-                                    <label class="label-text" for="drop_in_prices_{{ $hostCurrencies[0] }}">Drop-in Price</label>
-                                </td>
-                                @foreach($hostCurrencies as $currency)
-                                    <td>
-                                        <label class="input input-bordered input-sm flex items-center gap-1">
-                                            <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                            <input type="number" id="drop_in_prices_{{ $currency }}" name="drop_in_prices[{{ $currency }}]" step="0.01" min="0"
-                                                   value="{{ old('drop_in_prices.' . $currency, $classPlan?->drop_in_prices[$currency] ?? '') }}"
-                                                   class="grow w-full min-w-20" placeholder="0.00">
-                                        </label>
-                                    </td>
-                                @endforeach
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <x-studio-pricing-table
+            title="Pricing"
+            help="Leave empty for free classes. New member prices are shown on public booking (subdomain)."
+            :rows="[
+                ['section' => 'New Member Pricing', 'section_icon' => 'icon-[tabler--user-plus]', 'section_badge' => 'Public Booking', 'section_bg' => 'bg-info/5'],
+                ['name' => 'new_member_prices', 'label' => 'Price', 'values' => $classPlan?->new_member_prices ?? []],
+                ['name' => 'new_member_drop_in_prices', 'label' => 'Drop-in Price', 'values' => $classPlan?->new_member_drop_in_prices ?? []],
+                ['section' => 'Existing Member Pricing', 'section_icon' => 'icon-[tabler--users]', 'section_bg' => 'bg-base-200/50'],
+                ['name' => 'prices', 'label' => 'Price', 'values' => $classPlan?->prices ?? []],
+                ['name' => 'drop_in_prices', 'label' => 'Drop-in Price', 'values' => $classPlan?->drop_in_prices ?? []],
+            ]"
+        />
 
         {{-- Billing Discounts --}}
+        <x-studio-pricing-table
+            title="Billing Period Discounts"
+            help="Set the total amount for each billing period per currency. Client pays this amount upfront for the entire period."
+            :rows="[
+                ['name' => 'billing_discounts_1mo', 'label' => '1 Month', 'values' => $classPlan?->billing_discounts['1'] ?? []],
+                ['name' => 'billing_discounts_3mo', 'label' => '3 Months', 'values' => $classPlan?->billing_discounts['3'] ?? []],
+                ['name' => 'billing_discounts_6mo', 'label' => '6 Months', 'values' => $classPlan?->billing_discounts['6'] ?? []],
+                ['name' => 'billing_discounts_9mo', 'label' => '9 Months', 'values' => $classPlan?->billing_discounts['9'] ?? []],
+                ['name' => 'billing_discounts_12mo', 'label' => '12 Months', 'values' => $classPlan?->billing_discounts['12'] ?? []],
+            ]"
+        >
+            <div class="mt-4">
+                <p class="text-xs text-base-content/50">
+                    <span class="icon-[tabler--info-circle] size-3 align-middle"></span>
+                    Example: Base price $100/month, set 6 Months to $540 — client pays $540 total ($90/mo) instead of $600
+                </p>
+            </div>
+        </x-studio-pricing-table>
+
+        {{-- Fees & Cancellation --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Billing Period Discounts</h3>
+                <h3 class="card-title">Fees & Cancellation Policy</h3>
             </div>
             <div class="card-body">
-                <p class="text-sm text-base-content/60 mb-4">Set the total amount for each billing period. Client pays this amount upfront for the entire period.</p>
+                <div class="space-y-4">
+                    <x-studio-currency-inputs
+                        name="registration_fees"
+                        :values="$classPlan?->registration_fees ?? []"
+                        label="Registration Fee"
+                        help="One-time fee when purchasing a billing period"
+                    />
 
-                @php
-                    $billingPeriods = ['1' => '1 Mo', '3' => '3 Mo', '6' => '6 Mo', '9' => '9 Mo', '12' => '12 Mo'];
-                    $defaultDiscounts = ['1' => 0, '3' => 0, '6' => 0, '9' => 0, '12' => 0];
-                @endphp
-                <div class="flex items-end gap-2">
-                    @foreach($billingPeriods as $months => $label)
-                    <div class="flex-1 min-w-0">
-                        <label class="label-text text-xs text-center block mb-1" for="billing_discounts_{{ $months }}">{{ $label }}</label>
-                        <label class="input input-bordered input-sm flex items-center gap-0.5">
-                            <span class="text-base-content/50 text-xs">$</span>
-                            <input type="number" id="billing_discounts_{{ $months }}" name="billing_discounts[{{ $months }}]" step="0.01" min="0"
-                                   value="{{ old('billing_discounts.' . $months, $classPlan?->billing_discounts[$months] ?? $defaultDiscounts[$months]) }}"
-                                   class="grow w-full text-center" placeholder="0">
-                        </label>
-                    </div>
-                    @endforeach
-                </div>
-                <p class="text-xs text-base-content/50 mt-3">
-                    <span class="icon-[tabler--info-circle] size-3 align-middle"></span>
-                    Example: Base price $100/month, set 6 Mo to $540 — client pays $540 total ($90/mo) instead of $600
-                </p>
+                    <x-studio-currency-inputs
+                        name="cancellation_fees"
+                        :values="$classPlan?->cancellation_fees ?? []"
+                        label="Cancellation Fee"
+                        help="Fee charged for early cancellation"
+                    />
 
-                <div class="divider text-base-content/40 text-xs mt-6 mb-4">FEES & CANCELLATION POLICY</div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="label-text text-sm" for="registration_fee">Registration Fee</label>
-                        <label class="input input-bordered input-sm flex items-center gap-0.5 mt-1">
-                            <span class="text-base-content/50 text-xs">$</span>
-                            <input type="number" id="registration_fee" name="registration_fee" step="0.01" min="0"
-                                   value="{{ old('registration_fee', $classPlan?->registration_fee ?? '') }}"
-                                   class="grow w-full" placeholder="0.00">
-                        </label>
-                        <p class="text-xs text-base-content/50 mt-1">One-time fee when purchasing a billing period</p>
-                    </div>
-                    <div>
-                        <label class="label-text text-sm" for="cancellation_fee">Cancellation Fee</label>
-                        <label class="input input-bordered input-sm flex items-center gap-0.5 mt-1">
-                            <span class="text-base-content/50 text-xs">$</span>
-                            <input type="number" id="cancellation_fee" name="cancellation_fee" step="0.01" min="0"
-                                   value="{{ old('cancellation_fee', $classPlan?->cancellation_fee ?? '') }}"
-                                   class="grow w-full" placeholder="0.00">
-                        </label>
-                        <p class="text-xs text-base-content/50 mt-1">Fee charged for early cancellation</p>
-                    </div>
                     <div>
                         <label class="label-text text-sm" for="cancellation_grace_hours">Grace Period</label>
-                        <label class="input input-bordered input-sm flex items-center gap-0.5 mt-1">
+                        <div class="flex items-center gap-2 mt-1">
                             <input type="number" id="cancellation_grace_hours" name="cancellation_grace_hours" step="1" min="0" max="720"
                                    value="{{ old('cancellation_grace_hours', $classPlan?->cancellation_grace_hours ?? 48) }}"
-                                   class="grow w-full" placeholder="48">
-                            <span class="text-base-content/50 text-xs">hrs</span>
-                        </label>
+                                   class="input input-sm w-28" placeholder="48">
+                            <span class="text-sm text-base-content/60">hours</span>
+                        </div>
                         <p class="text-xs text-base-content/50 mt-1">Full refund window after purchase</p>
                     </div>
                 </div>
@@ -323,10 +223,6 @@
                 'attachments' => $classPlan?->progressTemplateAttachments ?? collect()
             ])
         @endif
-    </div>
-
-    {{-- Sidebar --}}
-    <div class="space-y-6">
         {{-- Image --}}
         <div class="card bg-base-100">
             <div class="card-header">
@@ -392,116 +288,40 @@
             </div>
         </div>
 
+        <x-studio-members
+            :selected-staff="$assignedStaffMemberIds"
+            :selected-instructors="$assignedInstructorIds ?? []"
+        />
+
         {{-- Status --}}
         <div class="card bg-base-100">
             <div class="card-header">
                 <h3 class="card-title">Status</h3>
             </div>
             <div class="card-body space-y-4">
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="is_active" value="1"
-                        class="toggle toggle-primary"
-                        {{ old('is_active', $classPlan?->is_active ?? true) ? 'checked' : '' }}>
+                <div class="flex items-center justify-between">
                     <div>
                         <span class="font-medium">Active</span>
                         <p class="text-xs text-base-content/60">Class can be scheduled</p>
                     </div>
-                </label>
+                    <label class="switch switch-primary">
+                        <input type="checkbox" name="is_active" value="1"
+                            {{ old('is_active', $classPlan?->is_active ?? true) ? 'checked' : '' }} />
+                        <span class="switch-indicator"></span>
+                    </label>
+                </div>
 
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="is_visible_on_booking_page" value="1"
-                        class="toggle toggle-primary"
-                        {{ old('is_visible_on_booking_page', $classPlan?->is_visible_on_booking_page ?? true) ? 'checked' : '' }}>
+                <div class="flex items-center justify-between">
                     <div>
                         <span class="font-medium">Visible on Booking Page</span>
                         <p class="text-xs text-base-content/60">Show this class to customers on the public booking page</p>
                     </div>
-                </label>
-            </div>
-        </div>
-
-        {{-- Staff Members --}}
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <h3 class="card-title">Assigned Staff & Instructors</h3>
-            </div>
-            <div class="card-body">
-                @if($staffMembers->isEmpty())
-                <p class="text-base-content/60 text-sm">No team members available. <a href="{{ route('settings.team.users') }}" class="link link-primary">Add team members</a> first.</p>
-                @else
-                <p class="text-sm text-base-content/60 mb-3">Select staff members who can teach this class.</p>
-
-                {{-- Search and Selection Info --}}
-                <div class="flex flex-col gap-2 mb-3">
-                    <div class="relative">
-                        <span class="icon-[tabler--search] absolute left-3 top-1/2 -translate-y-1/2 size-4 text-base-content/50"></span>
-                        <input type="text" id="class-staff-search" placeholder="Search..."
-                            class="input input-sm w-full pl-9" autocomplete="off">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span id="class-staff-selected-count" class="badge badge-primary badge-xs">0 selected</span>
-                        <button type="button" id="class-staff-clear-all" class="btn btn-ghost btn-xs hidden">Clear</button>
-                    </div>
-                </div>
-
-                {{-- Staff Members List --}}
-                <div id="class-staff-members-list" class="space-y-2 max-h-64 overflow-y-auto">
-                    @foreach($staffMembers as $member)
-                    <label class="class-staff-member-item flex items-center gap-2 p-2 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200"
-                        data-name="{{ strtolower($member->name) }}" data-email="{{ strtolower($member->email) }}" data-role="{{ strtolower($member->pivot->role ?? $member->role) }}">
-                        <input type="checkbox" name="staff_member_ids[]" value="{{ $member->id }}"
-                            class="checkbox checkbox-primary checkbox-sm class-staff-checkbox"
-                            {{ in_array($member->id, old('staff_member_ids', $assignedStaffMemberIds)) ? 'checked' : '' }}>
-                        <div class="flex items-center gap-2 flex-1 min-w-0">
-                            @if($member->profile_photo_url)
-                            <img src="{{ $member->profile_photo_url }}" alt="{{ $member->name }}" class="w-8 h-8 rounded-full object-cover shrink-0">
-                            @else
-                            <div class="avatar avatar-placeholder shrink-0">
-                                <div class="bg-primary text-primary-content w-8 h-8 rounded-full font-bold text-xs">
-                                    {{ strtoupper(substr($member->name, 0, 2)) }}
-                                </div>
-                            </div>
-                            @endif
-                            <div class="min-w-0">
-                                <div class="font-medium text-sm truncate">{{ $member->name }}</div>
-                                <div class="text-xs text-base-content/60">{{ ucfirst($member->pivot->role ?? $member->role) }}</div>
-                            </div>
-                        </div>
+                    <label class="switch switch-primary">
+                        <input type="checkbox" name="is_visible_on_booking_page" value="1"
+                            {{ old('is_visible_on_booking_page', $classPlan?->is_visible_on_booking_page ?? true) ? 'checked' : '' }} />
+                        <span class="switch-indicator"></span>
                     </label>
-                    @endforeach
-
-                    {{-- Standalone Instructors (without login accounts) --}}
-                    @if(isset($standaloneInstructors) && $standaloneInstructors->isNotEmpty())
-                    <div class="border-t border-base-content/10 pt-2 mt-2">
-                        <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider px-2 mb-2">Instructors</div>
-                        @foreach($standaloneInstructors as $instructor)
-                        <label class="class-staff-member-item flex items-center gap-2 p-2 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200"
-                            data-name="{{ strtolower($instructor->name) }}" data-email="{{ strtolower($instructor->email ?? '') }}" data-role="instructor">
-                            <input type="checkbox" name="instructor_ids[]" value="{{ $instructor->id }}"
-                                class="checkbox checkbox-primary checkbox-sm class-staff-checkbox"
-                                {{ in_array($instructor->id, old('instructor_ids', $assignedInstructorIds ?? [])) ? 'checked' : '' }}>
-                            <div class="flex items-center gap-2 flex-1 min-w-0">
-                                @if($instructor->photo_url)
-                                <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}" class="w-8 h-8 rounded-full object-cover shrink-0">
-                                @else
-                                <div class="avatar avatar-placeholder shrink-0">
-                                    <div class="bg-accent text-accent-content w-8 h-8 rounded-full font-bold text-xs">
-                                        {{ $instructor->initials }}
-                                    </div>
-                                </div>
-                                @endif
-                                <div class="min-w-0">
-                                    <div class="font-medium text-sm truncate">{{ $instructor->name }}</div>
-                                    <div class="text-xs text-base-content/60">Instructor</div>
-                                </div>
-                            </div>
-                        </label>
-                        @endforeach
-                    </div>
-                    @endif
                 </div>
-                <p id="class-staff-no-results" class="text-base-content/50 text-sm py-2 text-center hidden">No staff found.</p>
-                @endif
             </div>
         </div>
 
@@ -517,7 +337,6 @@
                 </a>
             </div>
         </div>
-    </div>
 </div>
 
 @push('scripts')
@@ -624,5 +443,6 @@
         // Initial count
         updateSelectedCount();
     })();
+
 </script>
 @endpush

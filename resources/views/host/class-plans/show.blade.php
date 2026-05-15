@@ -19,9 +19,6 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-start gap-4">
         <div class="flex items-start gap-4 flex-1">
-            <a href="{{ route('catalog.index', ['tab' => 'classes']) }}" class="btn btn-ghost btn-sm btn-circle mt-1">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
             @if($classPlan->image_url)
                 <img src="{{ $classPlan->image_url }}" alt="{{ $classPlan->name }}"
                      class="w-24 h-24 rounded-lg object-cover">
@@ -63,6 +60,10 @@
                 <span class="icon-[tabler--plus] size-4"></span>
                 Schedule Class
             </a>
+            <a href="{{ route('catalog.index', ['tab' => 'classes']) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
+            </a>
         </div>
     </div>
 
@@ -86,9 +87,7 @@
     <div class="tab-contents">
         {{-- Overview Tab --}}
         <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- Main Content --}}
-        <div class="lg:col-span-2 space-y-6">
+            <div class="space-y-6">
             {{-- Description --}}
             @if($classPlan->description)
                 <div class="card bg-base-100">
@@ -231,60 +230,64 @@
                         <span class="icon-[tabler--discount] size-5"></span>
                         Billing Period Discounts
                     </h2>
-                    <p class="text-sm text-base-content/60 mt-1">Discounted monthly rates for longer billing commitments.</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
-                        @php
-                            $billingPeriods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months'];
-                            $basePrice = $classPlan->prices[$defaultCurrency] ?? 0;
-                            $symbol = $currencySymbols[$defaultCurrency] ?? $defaultCurrency;
-                        @endphp
-                        @foreach($billingPeriods as $months => $label)
-                            @php
-                                $totalForPeriod = (float) ($classPlan->billing_discounts[$months] ?? 0);
-                                $hasDiscount = $totalForPeriod > 0;
-                                $m = (int) $months;
-                                $monthlyRate = $m > 0 ? $totalForPeriod / $m : 0;
-                                $totalWithout = $basePrice * $m;
-                                $savings = $hasDiscount ? $totalWithout - $totalForPeriod : 0;
-                            @endphp
-                            <div class="text-center p-3 rounded-lg {{ $hasDiscount ? 'bg-success/10' : 'bg-base-200/50' }}">
-                                <div class="text-sm text-base-content/60">{{ $label }}</div>
-                                <div class="text-xl font-bold {{ $hasDiscount ? 'text-success' : 'text-base-content/40' }}">
-                                    {{ $symbol }}{{ $hasDiscount ? number_format($totalForPeriod, 2) : number_format($totalWithout, 2) }}
-                                </div>
-                                @if($hasDiscount)
-                                    <div class="text-xs text-base-content/50">{{ $symbol }}{{ number_format($monthlyRate, 2) }}/mo</div>
-                                @endif
-                                @if($savings > 0)
-                                    <div class="text-xs text-success mt-0.5">Save {{ $symbol }}{{ number_format($savings, 2) }}</div>
-                                @elseif(!$hasDiscount)
-                                    <div class="text-xs text-base-content/40 mt-0.5">Base price</div>
-                                @endif
-                            </div>
-                        @endforeach
+                    <p class="text-sm text-base-content/60 mt-1">Total amount per billing period per currency.</p>
+                    @php
+                        $billingPeriods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months'];
+                    @endphp
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table table-zebra table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">{{ $currency }}</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($billingPeriods as $months => $label)
+                                    @php $periodData = $classPlan->billing_discounts[$months] ?? []; @endphp
+                                    <tr>
+                                        <td class="font-medium">{{ $label }}</td>
+                                        @foreach($hostCurrencies as $currency)
+                                            @php
+                                                $amount = is_array($periodData) ? ($periodData[$currency] ?? 0) : (float)$periodData;
+                                            @endphp
+                                            <td class="text-center {{ $amount > 0 ? 'text-success font-medium' : 'text-base-content/40' }}">
+                                                {{ $amount > 0 ? ($currencySymbols[$currency] ?? $currency) . number_format($amount, 2) : '-' }}
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
+            @endif
 
-                    @if(($classPlan->registration_fee && $classPlan->registration_fee > 0) || ($classPlan->cancellation_fee && $classPlan->cancellation_fee > 0))
-                    <div class="divider my-4"></div>
-                    <div class="flex flex-wrap gap-6 text-sm">
-                        @if($classPlan->registration_fee > 0)
+            {{-- Fees & Cancellation --}}
+            @if(($classPlan->registration_fee && $classPlan->registration_fee > 0) || ($classPlan->cancellation_fee && $classPlan->cancellation_fee > 0) || $classPlan->cancellation_grace_hours)
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--receipt] size-5"></span>
+                        Fees & Cancellation
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
                         <div>
-                            <span class="text-base-content/60">Registration Fee</span>
-                            <div class="font-semibold">{{ $symbol }}{{ number_format($classPlan->registration_fee, 2) }}</div>
+                            <label class="text-sm text-base-content/60">Registration Fee</label>
+                            <p class="font-medium">{{ $classPlan->registration_fee > 0 ? ($currencySymbols[$defaultCurrency] ?? '') . number_format($classPlan->registration_fee, 2) : 'None' }}</p>
                         </div>
-                        @endif
-                        @if($classPlan->cancellation_fee > 0)
                         <div>
-                            <span class="text-base-content/60">Cancellation Fee</span>
-                            <div class="font-semibold text-error">{{ $symbol }}{{ number_format($classPlan->cancellation_fee, 2) }}</div>
+                            <label class="text-sm text-base-content/60">Cancellation Fee</label>
+                            <p class="font-medium {{ $classPlan->cancellation_fee > 0 ? 'text-error' : '' }}">{{ $classPlan->cancellation_fee > 0 ? ($currencySymbols[$defaultCurrency] ?? '') . number_format($classPlan->cancellation_fee, 2) : 'None' }}</p>
                         </div>
-                        @endif
                         <div>
-                            <span class="text-base-content/60">Grace Period</span>
-                            <div class="font-semibold">{{ $classPlan->cancellation_grace_hours ?? 48 }} hours</div>
+                            <label class="text-sm text-base-content/60">Grace Period</label>
+                            <p class="font-medium">{{ $classPlan->cancellation_grace_hours ?? 48 }} hours</p>
                         </div>
                     </div>
-                    @endif
                 </div>
             </div>
             @endif
@@ -377,100 +380,71 @@
                     @endif
                 </div>
             </div>
-        </div>
-
-        {{-- Sidebar --}}
-        <div class="space-y-6">
-            {{-- Quick Stats --}}
+            {{-- Stats, Settings & Info --}}
             <div class="card bg-base-100">
                 <div class="card-body">
                     <h2 class="card-title text-lg">
                         <span class="icon-[tabler--chart-bar] size-5"></span>
-                        Stats
+                        Stats & Settings
                     </h2>
                     @php
                         $totalSessions = $classPlan->sessions()->count();
                         $upcomingCount = $classPlan->sessions()->where('start_time', '>', now())->where('status', '!=', 'cancelled')->count();
                         $completedCount = $classPlan->sessions()->where('start_time', '<', now())->where('status', 'published')->count();
                     @endphp
-                    <div class="space-y-3 mt-4">
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Total Sessions</span>
-                            <span class="font-bold">{{ $totalSessions }}</span>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div>
+                            <label class="text-sm text-base-content/60">Total Sessions</label>
+                            <p class="font-bold text-lg">{{ $totalSessions }}</p>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Upcoming</span>
-                            <span class="font-bold text-primary">{{ $upcomingCount }}</span>
+                        <div>
+                            <label class="text-sm text-base-content/60">Upcoming</label>
+                            <p class="font-bold text-lg text-primary">{{ $upcomingCount }}</p>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Completed</span>
-                            <span class="font-bold text-success">{{ $completedCount }}</span>
+                        <div>
+                            <label class="text-sm text-base-content/60">Completed</label>
+                            <p class="font-bold text-lg text-success">{{ $completedCount }}</p>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Display Settings --}}
-            <div class="card bg-base-100">
-                <div class="card-body">
-                    <h2 class="card-title text-lg">
-                        <span class="icon-[tabler--settings] size-5"></span>
-                        Settings
-                    </h2>
-                    <div class="space-y-3 mt-4">
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Status</span>
-                            @if($classPlan->is_active)
-                                <span class="badge badge-soft badge-success badge-sm">Active</span>
-                            @else
-                                <span class="badge badge-soft badge-neutral badge-sm">Inactive</span>
-                            @endif
+                        <div>
+                            <label class="text-sm text-base-content/60">Status</label>
+                            <p class="mt-0.5">
+                                @if($classPlan->is_active)
+                                    <span class="badge badge-soft badge-success badge-sm">Active</span>
+                                @else
+                                    <span class="badge badge-soft badge-neutral badge-sm">Inactive</span>
+                                @endif
+                            </p>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Booking Page</span>
-                            @if($classPlan->is_visible_on_booking_page)
-                                <span class="badge badge-soft badge-info badge-sm">Visible</span>
-                            @else
-                                <span class="badge badge-soft badge-neutral badge-sm">Hidden</span>
-                            @endif
+                        <div>
+                            <label class="text-sm text-base-content/60">Booking Page</label>
+                            <p class="mt-0.5">
+                                @if($classPlan->is_visible_on_booking_page)
+                                    <span class="badge badge-soft badge-info badge-sm">Visible</span>
+                                @else
+                                    <span class="badge badge-soft badge-neutral badge-sm">Hidden</span>
+                                @endif
+                            </p>
                         </div>
                         @if($classPlan->color)
-                            <div class="flex items-center justify-between">
-                                <span class="text-base-content/60">Color</span>
-                                <div class="flex items-center gap-2">
-                                    <span class="w-4 h-4 rounded-full" style="background-color: {{ $classPlan->color }}"></span>
-                                    <span class="text-sm">{{ $classPlan->color }}</span>
-                                </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Color</label>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="w-4 h-4 rounded-full" style="background-color: {{ $classPlan->color }}"></span>
+                                <span class="text-sm">{{ $classPlan->color }}</span>
                             </div>
+                        </div>
                         @endif
-                    </div>
-                </div>
-            </div>
-
-            {{-- Meta Info --}}
-            <div class="card bg-base-100">
-                <div class="card-body">
-                    <h2 class="card-title text-lg">
-                        <span class="icon-[tabler--info-square] size-5"></span>
-                        Info
-                    </h2>
-                    <div class="space-y-3 mt-4 text-sm">
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Created</span>
-                            <span>{{ $classPlan->created_at->format('M d, Y') }}</span>
+                        <div>
+                            <label class="text-sm text-base-content/60">Created</label>
+                            <p class="font-medium">{{ $classPlan->created_at->format('M d, Y') }}</p>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Updated</span>
-                            <span>{{ $classPlan->updated_at->format('M d, Y') }}</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Slug</span>
-                            <span class="font-mono text-xs">{{ $classPlan->slug }}</span>
+                        <div>
+                            <label class="text-sm text-base-content/60">Slug</label>
+                            <p class="font-mono text-xs mt-0.5">{{ $classPlan->slug }}</p>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
             </div>
         </div>
 
