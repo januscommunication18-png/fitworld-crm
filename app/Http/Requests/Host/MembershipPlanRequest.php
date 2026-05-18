@@ -20,18 +20,25 @@ class MembershipPlanRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string'],
             'type' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getTypes()))],
-            'price' => ['nullable', 'numeric', 'min:0', 'max:99999.99'], // Legacy field, kept for compatibility
-            'prices' => ['nullable', 'array'],
-            'prices.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
-            'prices.' . $defaultCurrency => ['required', 'numeric', 'min:0', 'max:99999.99'],
             'new_member_prices' => ['nullable', 'array'],
             'new_member_prices.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
-            'billing_discounts' => ['nullable', 'array'],
-            'billing_discounts.*' => ['nullable', 'numeric', 'min:0'],
-            'registration_fee' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
-            'cancellation_fee' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
+            'billing_discounts_1mo' => ['required', 'array'],
+            'billing_discounts_1mo.' . $defaultCurrency => ['required', 'numeric', 'min:0', 'max:99999.99'],
+            'billing_discounts_1mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_3mo' => ['nullable', 'array'],
+            'billing_discounts_3mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_6mo' => ['nullable', 'array'],
+            'billing_discounts_6mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_9mo' => ['nullable', 'array'],
+            'billing_discounts_9mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_12mo' => ['nullable', 'array'],
+            'billing_discounts_12mo.*' => ['nullable', 'numeric', 'min:0'],
+            'registration_fees' => ['nullable', 'array'],
+            'registration_fees.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
+            'cancellation_fees' => ['nullable', 'array'],
+            'cancellation_fees.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'cancellation_grace_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
             'interval' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getIntervals()))],
             'credits_per_cycle' => ['nullable', 'integer', 'min:1', 'max:999', 'required_if:type,credits'],
@@ -49,12 +56,19 @@ class MembershipPlanRequest extends FormRequest
             'visibility_public' => ['nullable', 'boolean'],
             'status' => ['required', 'string', Rule::in(array_keys(MembershipPlan::getStatuses()))],
             'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'file_attachments' => ['nullable', 'array'],
+            'file_attachments.*' => ['file', 'max:10240'],
         ];
     }
 
     public function messages(): array
     {
+        $host = auth()->user()->host;
+        $defaultCurrency = $host->default_currency ?? 'USD';
+
         return [
+            'billing_discounts_1mo.' . $defaultCurrency . '.required' => 'The 1 Month base price (' . $defaultCurrency . ') is required.',
             'color.regex' => 'The color must be a valid hex color code (e.g., #10b981).',
             'credits_per_cycle.required_if' => 'Credits per cycle is required for credit-based memberships.',
         ];

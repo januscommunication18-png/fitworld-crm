@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class MembershipPlan extends Model
@@ -47,7 +48,9 @@ class MembershipPlan extends Model
         'new_member_prices',
         'billing_discounts',
         'registration_fee',
+        'registration_fees',
         'cancellation_fee',
+        'cancellation_fees',
         'cancellation_grace_hours',
         'interval',
         'credits_per_cycle',
@@ -62,6 +65,8 @@ class MembershipPlan extends Model
         'stripe_product_id',
         'stripe_price_id',
         'color',
+        'image_path',
+        'file_attachments',
         'sort_order',
     ];
 
@@ -73,7 +78,9 @@ class MembershipPlan extends Model
             'new_member_prices' => 'array',
             'billing_discounts' => 'array',
             'registration_fee' => 'decimal:2',
+            'registration_fees' => 'array',
             'cancellation_fee' => 'decimal:2',
+            'cancellation_fees' => 'array',
             'cancellation_grace_hours' => 'integer',
             'has_scheduled_class' => 'boolean',
             'addon_members' => 'integer',
@@ -81,6 +88,7 @@ class MembershipPlan extends Model
             'free_rental_ids' => 'array',
             'location_ids' => 'array',
             'visibility_public' => 'boolean',
+            'file_attachments' => 'array',
         ];
     }
 
@@ -93,6 +101,17 @@ class MembershipPlan extends Model
                 $plan->slug = Str::slug($plan->name);
             }
         });
+    }
+
+    /**
+     * Get image URL
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if ($this->image_path) {
+            return Storage::disk(config('filesystems.uploads'))->url($this->image_path);
+        }
+        return null;
     }
 
     /**

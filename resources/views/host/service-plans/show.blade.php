@@ -529,6 +529,9 @@
                     </div>
                 </div>
             </div>
+            {{-- File Attachments --}}
+            @include('host.partials._file-attachments-show', ['fileAttachments' => $servicePlan->file_attachments])
+
             </div>
         </div>
 

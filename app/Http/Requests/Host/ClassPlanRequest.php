@@ -17,7 +17,7 @@ class ClassPlanRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string'],
             'category' => ['required', 'string', 'max:255'],
             'type' => ['required', 'string', Rule::in(array_keys(ClassPlan::getTypes()))],
             'default_duration_minutes' => ['required', 'integer', 'min:15', 'max:480'],
@@ -37,6 +37,8 @@ class ClassPlanRequest extends FormRequest
             'difficulty_level' => ['required', 'string', Rule::in(array_keys(ClassPlan::getDifficultyLevels()))],
             'equipment_needed' => ['nullable', 'string', 'max:500'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'file_attachments' => ['nullable', 'array'],
+            'file_attachments.*' => ['file', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
             'is_visible_on_booking_page' => ['nullable', 'boolean'],
             'staff_member_ids' => ['nullable', 'array'],

@@ -252,6 +252,16 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         }
         $defaultServicePlanCategories = \App\Models\ServicePlan::getCategories();
 
+        $customRentalItemCategories = $host->custom_rental_item_categories ?? [];
+        if (is_string($customRentalItemCategories)) {
+            $customRentalItemCategories = json_decode($customRentalItemCategories, true) ?? [];
+        }
+        $disabledRentalItemCategories = $host->disabled_rental_item_categories ?? [];
+        if (is_string($disabledRentalItemCategories)) {
+            $disabledRentalItemCategories = json_decode($disabledRentalItemCategories, true) ?? [];
+        }
+        $defaultRentalItemCategories = \App\Models\RentalItem::getCategories();
+
         $supportedLanguages = [
             'en' => ['name' => 'English'],
             'fr' => ['name' => 'French'],
@@ -721,6 +731,56 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         </div>
                     </div>
 
+                </div>
+            </div>
+        </div>
+
+        {{-- Rental Item Categories --}}
+        <div class="accordion-item" id="rental-item-categories-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="rental-item-categories-content" aria-expanded="false">
+                <span class="icon-[tabler--package] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">Rental Item Categories</span>
+                    <span class="text-base-content/60 text-sm block font-normal">Manage default and custom categories for rental items</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="rental-item-categories-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-rental-item-categories-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> Edit
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        {{-- Default Categories --}}
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">Default Categories</label>
+                            <div class="flex flex-wrap gap-2" id="display-default-rental-item-categories">
+                                @foreach($defaultRentalItemCategories as $key => $label)
+                                    @if(in_array($key, $disabledRentalItemCategories))
+                                        <span class="badge badge-soft badge-sm line-through opacity-50">{{ $label }}</span>
+                                    @else
+                                        <span class="badge badge-soft badge-sm">{{ $label }}</span>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Custom Categories --}}
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">Custom Categories</label>
+                            <div class="flex flex-wrap gap-2" id="display-custom-rental-item-categories">
+                                @if(count($customRentalItemCategories) > 0)
+                                    @foreach($customRentalItemCategories as $category)
+                                        <span class="badge badge-soft badge-primary">{{ $category }}</span>
+                                    @endforeach
+                                @else
+                                    <span class="text-base-content/50 text-sm">No custom categories added</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1668,6 +1728,58 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     </form>
 </div>
 
+{{-- Edit Rental Item Categories Drawer --}}
+<div id="edit-rental-item-categories-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Rental Item Categories</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-rental-item-categories-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="edit-rental-item-categories-form" class="flex flex-col flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-sm text-base-content/60 mb-4">Enable or disable default categories and add your own custom categories.</p>
+
+            {{-- Default Categories (checkboxes) --}}
+            <div class="mb-5">
+                <label class="label-text text-sm font-medium">Default Categories</label>
+                <p class="text-xs text-base-content/50 mb-2">Uncheck to disable a default category</p>
+                <div class="border border-base-200 rounded-lg p-2 space-y-1">
+                    @foreach($defaultRentalItemCategories as $key => $label)
+                    <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-base-200 rounded-lg">
+                        <input type="checkbox" name="ric_default_categories[]" value="{{ $key }}" class="checkbox checkbox-primary checkbox-sm ric-default-checkbox" {{ !in_array($key, $disabledRentalItemCategories) ? 'checked' : '' }} />
+                        <span class="text-sm">{{ $label }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Custom Categories --}}
+            <div class="border-t border-base-200 pt-4">
+                <label class="label-text text-sm font-medium" for="ric_custom_textarea">Custom Categories</label>
+                <p class="text-xs text-base-content/50 mb-2">Add your own categories, one per line</p>
+                <textarea id="ric_custom_textarea" class="textarea textarea-bordered w-full" rows="4" placeholder="Enter custom categories, one per line...&#10;e.g.&#10;Yoga Props&#10;Resistance Bands&#10;Recovery Tools">{{ implode("\n", $customRentalItemCategories) }}</textarea>
+
+                {{-- Current custom tags preview --}}
+                <div class="mt-2">
+                    <div class="flex flex-wrap gap-1" id="ric-custom-tags">
+                        @foreach($customRentalItemCategories as $cat)
+                            <span class="badge badge-primary badge-sm">{{ $cat }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-rental-item-categories-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="rental-item-categories-spinner"></span>
+                Save Changes
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-rental-item-categories-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
 {{-- Add/Edit Certification Drawer --}}
 <div id="add-certification-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
@@ -2055,7 +2167,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-countries-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-categories-drawer', 'edit-service-plan-categories-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-countries-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-categories-drawer', 'edit-service-plan-categories-drawer', 'edit-rental-item-categories-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -2737,6 +2849,62 @@ document.getElementById('edit-service-plan-categories-form').addEventListener('s
             }
             closeDrawer('edit-service-plan-categories-drawer');
             setTimeout(function() { showToast('Service plan categories updated!'); }, 350);
+        } else { showToast(result.message || 'Failed to update', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Rental Item Categories
+var ricDefaultCategoryMap = @json($defaultRentalItemCategories);
+
+document.getElementById('edit-rental-item-categories-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-rental-item-categories-btn');
+    var spinner = document.getElementById('rental-item-categories-spinner');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    var customLines = document.getElementById('ric_custom_textarea').value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+
+    var allDefaultKeys = Object.keys(ricDefaultCategoryMap);
+    var checkedKeys = [];
+    document.querySelectorAll('.ric-default-checkbox:checked').forEach(function(cb) { checkedKeys.push(cb.value); });
+    var disabledKeys = allDefaultKeys.filter(function(k) { return checkedKeys.indexOf(k) === -1; });
+
+    fetch('{{ route("settings.studio.rental-item-categories.update") }}', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({
+            custom_rental_item_categories: customLines,
+            disabled_rental_item_categories: disabledKeys
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            var customEl = document.getElementById('display-custom-rental-item-categories');
+            if (customEl) {
+                if (customLines.length > 0) {
+                    customEl.innerHTML = customLines.map(function(l) { return '<span class="badge badge-soft badge-primary">' + l.replace(/</g, '&lt;') + '</span>'; }).join('');
+                } else {
+                    customEl.innerHTML = '<span class="text-base-content/50 text-sm">No custom categories added</span>';
+                }
+            }
+            var defaultEl = document.getElementById('display-default-rental-item-categories');
+            if (defaultEl) {
+                var html = '';
+                for (var key in ricDefaultCategoryMap) {
+                    var label = ricDefaultCategoryMap[key];
+                    if (disabledKeys.indexOf(key) !== -1) {
+                        html += '<span class="badge badge-soft badge-sm line-through opacity-50">' + label + '</span>';
+                    } else {
+                        html += '<span class="badge badge-soft badge-sm">' + label + '</span>';
+                    }
+                }
+                defaultEl.innerHTML = html;
+            }
+            closeDrawer('edit-rental-item-categories-drawer');
+            setTimeout(function() { showToast('Rental item categories updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })

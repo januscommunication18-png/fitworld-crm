@@ -529,6 +529,32 @@ class SettingsController extends Controller
         ]);
     }
 
+    public function updateRentalItemCategories(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'custom_rental_item_categories' => 'nullable|array',
+            'custom_rental_item_categories.*' => 'string|max:255',
+            'disabled_rental_item_categories' => 'nullable|array',
+            'disabled_rental_item_categories.*' => 'string|max:255',
+        ]);
+
+        $host->update([
+            'custom_rental_item_categories' => $validated['custom_rental_item_categories'] ?? [],
+            'disabled_rental_item_categories' => $validated['disabled_rental_item_categories'] ?? [],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rental item categories updated successfully',
+            'data' => [
+                'custom_rental_item_categories' => $host->custom_rental_item_categories,
+                'disabled_rental_item_categories' => $host->disabled_rental_item_categories,
+            ],
+        ]);
+    }
+
     public function updateStudioCancellation(Request $request)
     {
         $host = auth()->user()->host;

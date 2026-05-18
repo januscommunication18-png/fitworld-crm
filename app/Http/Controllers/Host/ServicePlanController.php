@@ -146,6 +146,20 @@ class ServicePlanController extends Controller
             $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('service-plans'), config('filesystems.uploads'));
         }
 
+        // Handle file attachments
+        if ($request->hasFile('file_attachments')) {
+            $attachments = [];
+            foreach ($request->file('file_attachments') as $file) {
+                $attachments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('service-plans/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $attachments;
+        }
+
         // Set default sort order
         $data['sort_order'] = $host->servicePlans()->max('sort_order') + 1;
 
@@ -323,6 +337,20 @@ class ServicePlanController extends Controller
                 }
             }
             $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('service-plans'), config('filesystems.uploads'));
+        }
+
+        // Handle file attachments (append to existing)
+        if ($request->hasFile('file_attachments')) {
+            $existing = $servicePlan->file_attachments ?? [];
+            foreach ($request->file('file_attachments') as $file) {
+                $existing[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('service-plans/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $existing;
         }
 
         // Handle checkboxes

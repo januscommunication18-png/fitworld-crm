@@ -77,19 +77,21 @@
             </div>
             <div class="card-body">
                 <div class="space-y-4">
-                    <x-studio-currency-inputs
-                        name="registration_fees"
-                        :values="$classPass?->registration_fees ?? []"
-                        label="Registration Fee"
-                        help="One-time fee when purchasing a billing period"
-                    />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <x-studio-currency-inputs
+                            name="registration_fees"
+                            :values="$classPass?->registration_fees ?? []"
+                            label="Registration Fee"
+                            help="One-time fee when purchasing a billing period"
+                        />
 
-                    <x-studio-currency-inputs
-                        name="cancellation_fees"
-                        :values="$classPass?->cancellation_fees ?? []"
-                        label="Cancellation Fee"
-                        help="Fee charged for early cancellation"
-                    />
+                        <x-studio-currency-inputs
+                            name="cancellation_fees"
+                            :values="$classPass?->cancellation_fees ?? []"
+                            label="Cancellation Fee"
+                            help="Fee charged for early cancellation"
+                        />
+                    </div>
 
                     <div>
                         <label class="label-text text-sm" for="cancellation_grace_hours">Grace Period</label>
@@ -114,11 +116,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="validity_type">Validity Type <span class="text-error">*</span></label>
-                        <select id="validity_type" name="validity_type" class="select w-full @error('validity_type') input-error @enderror" required>
-                            @foreach($validityTypes as $value => $label)
-                                <option value="{{ $value }}" {{ old('validity_type', $classPass?->validity_type ?? 'days') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
+                        <x-studio-select name="validity_type" :options="$validityTypes" :selected="$classPass?->validity_type ?? 'days'" placeholder="Select validity..." :required="true" />
                         @error('validity_type')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -153,11 +151,7 @@
 
                 <div>
                     <label class="label-text" for="activation_type">When Does Pass Start? <span class="text-error">*</span></label>
-                    <select id="activation_type" name="activation_type" class="select w-full @error('activation_type') input-error @enderror" required>
-                        @foreach($activationTypes as $value => $label)
-                            <option value="{{ $value }}" {{ old('activation_type', $classPass?->activation_type ?? 'on_purchase') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
+                    <x-studio-select name="activation_type" :options="$activationTypes" :selected="$classPass?->activation_type ?? 'on_purchase'" placeholder="Select..." :required="true" />
                     <p class="text-xs text-base-content/60 mt-1">Controls when the validity period begins</p>
                     @error('activation_type')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -186,13 +180,7 @@
                     <div id="recurring-options" class="{{ old('is_recurring', $classPass?->is_recurring) ? '' : 'hidden' }} mt-3 space-y-3">
                         <div>
                             <label class="label-text" for="renewal_interval">Renewal Interval</label>
-                            <select id="renewal_interval" name="renewal_interval" class="select w-full max-w-xs @error('renewal_interval') input-error @enderror">
-                                <option value="">Select interval...</option>
-                                @foreach($renewalIntervals as $value => $label)
-                                    <option value="{{ $value }}" data-days="{{ $value === 'weekly' ? 7 : ($value === 'bi_weekly' ? 14 : 30) }}"
-                                        {{ old('renewal_interval', $classPass?->renewal_interval) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
+                            <x-studio-select name="renewal_interval" :options="$renewalIntervals" :selected="$classPass?->renewal_interval" placeholder="Select interval..." />
                             @error('renewal_interval')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -235,22 +223,7 @@
             <div class="card-body space-y-4">
                 <div>
                     <label class="label-text" for="eligibility_type">Which Classes Can Be Booked? <span class="text-error">*</span></label>
-                    <select id="eligibility_type" name="eligibility_type" class="hidden" required
-                        data-select='{
-                            "hasSearch": true,
-                            "searchPlaceholder": "Search eligibility types...",
-                            "placeholder": "Select eligibility...",
-                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                            "toggleClasses": "advance-select-toggle",
-                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                            "optionClasses": "advance-select-option selected:select-active",
-                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                        }'>
-                        @foreach($eligibilityTypes as $value => $label)
-                            <option value="{{ $value }}" {{ old('eligibility_type', $classPass?->eligibility_type ?? 'all') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
+                    <x-studio-select name="eligibility_type" :options="$eligibilityTypes" :selected="$classPass?->eligibility_type ?? 'all'" placeholder="Select eligibility..." :required="true" />
                     @error('eligibility_type')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -512,6 +485,14 @@
             </div>
         </div>
 
+        {{-- File Attachments --}}
+        <x-studio-file-upload
+            name="file_attachments"
+            :files="$classPass?->file_attachments ?? []"
+            title="File Attachments"
+            help="Upload PDFs, documents, or images to attach to this class pass."
+        />
+
         {{-- Image --}}
         <div class="card bg-base-100">
             <div class="card-header">
@@ -561,11 +542,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="status">Status <span class="text-error">*</span></label>
-                    <select id="status" name="status" class="select w-full @error('status') input-error @enderror" required>
-                        @foreach($statuses as $value => $label)
-                            <option value="{{ $value }}" {{ old('status', $classPass?->status ?? 'draft') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
+                    <x-studio-select name="status" :options="$statuses" :selected="$classPass?->status ?? 'draft'" placeholder="Select status..." :required="true" />
                         <p class="text-xs text-base-content/60 mt-1">Only active passes can be purchased</p>
                         @error('status')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>

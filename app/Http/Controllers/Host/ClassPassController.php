@@ -154,6 +154,20 @@ class ClassPassController extends Controller
             $data['image_path'] = $path;
         }
 
+        // Handle file attachments
+        if ($request->hasFile('file_attachments')) {
+            $attachments = [];
+            foreach ($request->file('file_attachments') as $file) {
+                $attachments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('class-passes/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $attachments;
+        }
+
         // Set expires_after_days for backward compatibility
         if ($data['validity_type'] === ClassPass::VALIDITY_DAYS) {
             $data['expires_after_days'] = $data['validity_value'];
@@ -346,6 +360,20 @@ class ClassPassController extends Controller
         if ($request->boolean('remove_image') && $classPass->image_path) {
             Storage::disk(config('filesystems.uploads'))->delete($classPass->image_path);
             $data['image_path'] = null;
+        }
+
+        // Handle file attachments (append to existing)
+        if ($request->hasFile('file_attachments')) {
+            $existing = $classPass->file_attachments ?? [];
+            foreach ($request->file('file_attachments') as $file) {
+                $existing[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('class-passes/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $existing;
         }
 
         // Set expires_after_days for backward compatibility

@@ -6,7 +6,9 @@
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('catalog.index', ['tab' => 'rental-spaces']) }}"><span class="icon-[tabler--layout-grid] me-1 size-4"></span> {{ $trans['nav.classes_services'] ?? 'Classes & Services' }}</a></li>
+        <li><a href="{{ route('catalog.index') }}"><span class="icon-[tabler--layout-grid] size-4"></span> Classes & Services</a></li>
+        <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
+        <li><a href="{{ route('catalog.index', ['tab' => 'rental-spaces']) }}">Rental Spaces</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">{{ $config->name }}</li>
     </ol>
@@ -15,31 +17,46 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-start gap-4 justify-between">
+    <div class="flex flex-col md:flex-row md:items-start gap-4">
         <div class="flex items-start gap-4 flex-1">
-            <div class="w-16 h-16 rounded-xl bg-secondary/10 flex items-center justify-center">
-                <span class="icon-[tabler--{{ $config->type_icon }}] size-8 text-secondary"></span>
+            <div class="w-24 h-24 rounded-lg bg-secondary/10 flex items-center justify-center">
+                <span class="icon-[tabler--{{ $config->type_icon }}] size-10 text-secondary"></span>
             </div>
             <div>
                 <h1 class="text-2xl font-bold">{{ $config->name }}</h1>
                 <div class="flex flex-wrap items-center gap-2 mt-2">
-                    <span class="badge {{ $config->is_active ? 'badge-success' : 'badge-neutral' }} badge-soft badge-sm">
+                    <span class="badge {{ $config->is_active ? 'badge-success' : 'badge-neutral' }} badge-soft">
                         {{ $config->is_active ? ($trans['common.active'] ?? 'Active') : ($trans['common.inactive'] ?? 'Inactive') }}
                     </span>
-                    <span class="badge badge-ghost badge-sm">{{ $config->space_name }}</span>
-                    <span class="badge badge-soft badge-secondary badge-sm capitalize">{{ $config->rentable_type }}</span>
+                    <span class="badge badge-soft badge-secondary capitalize">{{ $config->rentable_type }}</span>
+                    @if($config->location)
+                        <span class="badge badge-ghost badge-sm">{{ $config->space_name }}</span>
+                    @endif
                 </div>
             </div>
         </div>
+
+        {{-- Actions --}}
         <div class="flex items-center gap-2">
-            <a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}" class="btn btn-primary btn-sm">
-                <span class="icon-[tabler--calendar-plus] size-4"></span>
-                {{ $trans['space_rentals.new_booking'] ?? 'New Booking' }}
-            </a>
-            <a href="{{ route('space-rentals.config.edit', $config) }}" class="btn btn-soft btn-sm">
+            <a href="{{ route('space-rentals.config.edit', $config) }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--edit] size-4"></span>
-                {{ $trans['btn.edit'] ?? 'Edit' }}
+                Edit
             </a>
+            <x-actions-dropdown>
+                <li><a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}">
+                    <span class="icon-[tabler--calendar-plus] size-4"></span> New Booking
+                </a></li>
+                <li>
+                    <form action="{{ route('space-rentals.config.destroy', $config) }}" method="POST"
+                        onsubmit="return confirm('Are you sure you want to delete this rentable space?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                            <span class="icon-[tabler--trash] size-4"></span> Delete Space
+                        </button>
+                    </form>
+                </li>
+            </x-actions-dropdown>
             <a href="{{ route('catalog.index', ['tab' => 'rental-spaces']) }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span>
                 Back
@@ -50,10 +67,10 @@
     {{-- Main Tabs --}}
     <div class="tabs tabs-bordered" role="tablist">
         <button class="tab {{ $tab === 'overview' ? 'tab-active' : '' }}" data-tab="overview" role="tab">
-            <span class="icon-[tabler--info-circle] size-4 mr-2"></span>{{ $trans['common.overview'] ?? 'Overview' }}
+            <span class="icon-[tabler--info-circle] size-4 mr-2"></span>Overview
         </button>
         <button class="tab {{ $tab === 'schedule' ? 'tab-active' : '' }}" data-tab="schedule" role="tab">
-            <span class="icon-[tabler--calendar] size-4 mr-2"></span>{{ $trans['common.schedule'] ?? 'Schedule' }}
+            <span class="icon-[tabler--calendar] size-4 mr-2"></span>Schedule
             @if($upcomingRentals->count() > 0)
                 <span class="badge badge-sm badge-primary ml-1">{{ $upcomingRentals->count() }}</span>
             @endif
@@ -64,209 +81,189 @@
     <div class="tab-contents">
         {{-- Overview Tab --}}
         <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {{-- Main Info --}}
-                <div class="lg:col-span-2 space-y-6">
-                    {{-- Details Card --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">{{ $trans['space_rentals.details'] ?? 'Space Details' }}</h2>
+            <div class="space-y-6">
 
-                            @if($config->description)
-                            <p class="text-base-content/70 mt-2">{{ $config->description }}</p>
-                            @endif
+            {{-- Description --}}
+            @if($config->description)
+                <div class="card bg-base-100">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg">
+                            <span class="icon-[tabler--file-description] size-5"></span>
+                            Description
+                        </h2>
+                        <p class="mt-2 whitespace-pre-line">{{ $config->description }}</p>
+                    </div>
+                </div>
+            @endif
 
-                            <div class="grid grid-cols-2 gap-4 mt-4">
-                                <div class="bg-base-200/50 rounded-lg p-4">
-                                    <div class="text-sm text-base-content/60 mb-1">{{ $trans['field.hourly_rate'] ?? 'Hourly Rate' }}</div>
-                                    <div class="text-lg font-semibold">{{ $config->getFormattedHourlyRateForCurrency() }}</div>
-                                </div>
-                                <div class="bg-base-200/50 rounded-lg p-4">
-                                    <div class="text-sm text-base-content/60 mb-1">{{ $trans['space_rentals.deposit'] ?? 'Security Deposit' }}</div>
-                                    <div class="text-lg font-semibold">{{ $config->getFormattedDepositForCurrency() }}</div>
-                                </div>
-                                <div class="bg-base-200/50 rounded-lg p-4">
-                                    <div class="text-sm text-base-content/60 mb-1">{{ $trans['space_rentals.min_hours'] ?? 'Minimum Hours' }}</div>
-                                    <div class="text-lg font-semibold">{{ $config->minimum_hours }} {{ $trans['common.hours'] ?? 'hours' }}</div>
-                                </div>
-                                <div class="bg-base-200/50 rounded-lg p-4">
-                                    <div class="text-sm text-base-content/60 mb-1">{{ $trans['space_rentals.max_hours'] ?? 'Maximum Hours' }}</div>
-                                    <div class="text-lg font-semibold">{{ $config->maximum_hours ? $config->maximum_hours . ' ' . ($trans['common.hours'] ?? 'hours') : ($trans['common.no_limit'] ?? 'No limit') }}</div>
-                                </div>
-                            </div>
-
-                            {{-- Buffer times --}}
-                            @if($config->setup_time_minutes > 0 || $config->cleanup_time_minutes > 0)
-                            <div class="flex items-center gap-4 mt-4 pt-4 border-t border-base-200">
-                                @if($config->setup_time_minutes > 0)
-                                <div class="flex items-center gap-2 text-sm text-base-content/60">
-                                    <span class="icon-[tabler--clock-play] size-4"></span>
-                                    {{ $config->setup_time_minutes }} {{ $trans['common.min'] ?? 'min' }} {{ $trans['space_rentals.setup'] ?? 'setup' }}
-                                </div>
-                                @endif
-                                @if($config->cleanup_time_minutes > 0)
-                                <div class="flex items-center gap-2 text-sm text-base-content/60">
-                                    <span class="icon-[tabler--clock-pause] size-4"></span>
-                                    {{ $config->cleanup_time_minutes }} {{ $trans['common.min'] ?? 'min' }} {{ $trans['space_rentals.cleanup'] ?? 'cleanup' }}
-                                </div>
-                                @endif
-                            </div>
-                            @endif
+            {{-- Space Details --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        Space Details
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div>
+                            <label class="text-sm text-base-content/60">Location</label>
+                            <p class="font-medium">{{ $config->location?->name ?? '-' }}</p>
+                        </div>
+                        @if($config->room)
+                        <div>
+                            <label class="text-sm text-base-content/60">Room</label>
+                            <p class="font-medium">{{ $config->room->name }}</p>
+                        </div>
+                        @endif
+                        <div>
+                            <label class="text-sm text-base-content/60">Minimum Hours</label>
+                            <p class="font-medium">{{ $config->minimum_hours }} hours</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Maximum Hours</label>
+                            <p class="font-medium">{{ $config->maximum_hours ? $config->maximum_hours . ' hours' : 'No limit' }}</p>
                         </div>
                     </div>
 
-                    {{-- Allowed Purposes --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">{{ $trans['space_rentals.allowed_purposes'] ?? 'Allowed Purposes' }}</h2>
-                            <div class="flex flex-wrap gap-2 mt-2">
-                                @php $allPurposes = \App\Models\SpaceRentalConfig::getPurposes(); @endphp
-                                @if(empty($config->allowed_purposes))
-                                    <span class="badge badge-success badge-soft">{{ $trans['space_rentals.all_purposes'] ?? 'All purposes allowed' }}</span>
-                                @else
-                                    @foreach($config->allowed_purposes as $purpose)
-                                    <div class="flex items-center gap-2 px-3 py-2 bg-base-200/50 rounded-lg">
-                                        <span class="icon-[tabler--{{ \App\Models\SpaceRentalConfig::getPurposeIcon($purpose) }}] size-4 text-primary"></span>
-                                        <span class="text-sm">{{ $allPurposes[$purpose] ?? $purpose }}</span>
-                                    </div>
+                    @if($config->setup_time_minutes > 0 || $config->cleanup_time_minutes > 0)
+                    <div class="flex items-center gap-4 mt-4 pt-4 border-t border-base-200">
+                        @if($config->setup_time_minutes > 0)
+                        <div class="flex items-center gap-2 text-sm text-base-content/60">
+                            <span class="icon-[tabler--clock-play] size-4"></span>
+                            {{ $config->setup_time_minutes }} min setup
+                        </div>
+                        @endif
+                        @if($config->cleanup_time_minutes > 0)
+                        <div class="flex items-center gap-2 text-sm text-base-content/60">
+                            <span class="icon-[tabler--clock-pause] size-4"></span>
+                            {{ $config->cleanup_time_minutes }} min cleanup
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Pricing --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--currency-dollar] size-5"></span>
+                        Pricing
+                    </h2>
+                    @php
+                        $host = auth()->user()->host;
+                        $hostCurrencies = $host->currencies ?? ['USD'];
+                        $currencySymbols = ['USD' => '$', 'CAD' => 'C$', 'GBP' => '£', 'EUR' => '€', 'AUD' => 'A$', 'INR' => '₹'];
+                    @endphp
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table table-zebra table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fee Type</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">{{ $currency }}</th>
                                     @endforeach
-                                @endif
-                            </div>
-                        </div>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-base-content/70">Hourly Rate</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium">
+                                            @if(!empty($config->hourly_rates[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($config->hourly_rates[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Security Deposit</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium">
+                                            @if(!empty($config->deposit_rates[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($config->deposit_rates[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
 
-                    {{-- Rules --}}
-                    @if($config->rules)
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h2 class="card-title text-lg">{{ $trans['space_rentals.rules'] ?? 'Rules & Guidelines' }}</h2>
-                            <div class="prose prose-sm mt-2 text-base-content/70">
-                                {!! nl2br(e($config->rules)) !!}
-                            </div>
-                        </div>
+            {{-- Allowed Purposes --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--target] size-5"></span>
+                        Allowed Purposes
+                    </h2>
+                    @php $allPurposes = \App\Models\SpaceRentalConfig::getPurposes(); @endphp
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        @if(empty($config->allowed_purposes))
+                            <span class="badge badge-success badge-soft">All purposes allowed</span>
+                        @else
+                            @foreach($config->allowed_purposes as $purpose)
+                            <span class="badge badge-soft badge-primary">
+                                <span class="icon-[tabler--{{ \App\Models\SpaceRentalConfig::getPurposeIcon($purpose) }}] size-3.5 me-1"></span>
+                                {{ $allPurposes[$purpose] ?? $purpose }}
+                            </span>
+                            @endforeach
+                        @endif
                     </div>
-                    @endif
+                </div>
+            </div>
 
-                    {{-- Upcoming Rentals --}}
-                    @if($upcomingRentals->isNotEmpty())
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <div class="flex items-center justify-between">
-                                <h2 class="card-title text-lg">{{ $trans['space_rentals.upcoming'] ?? 'Upcoming Rentals' }}</h2>
-                                <button class="btn btn-ghost btn-sm" data-tab="schedule" onclick="switchToScheduleTab()">
-                                    {{ $trans['btn.view_all'] ?? 'View All' }}
-                                </button>
+            {{-- Waiver --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--file-certificate] size-5"></span>
+                        Waiver
+                    </h2>
+                    <div class="mt-3">
+                        @if($config->requires_waiver)
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--alert-triangle] size-5 text-warning"></span>
+                                <span class="text-sm font-medium">Waiver required before rental</span>
                             </div>
-                            <div class="space-y-3 mt-4">
-                                @foreach($upcomingRentals as $rental)
-                                <a href="{{ route('space-rentals.show', $rental) }}" class="flex items-center gap-4 p-3 rounded-lg bg-base-200/50 hover:bg-base-200 transition-colors">
-                                    <div class="w-12 h-12 rounded-lg bg-primary/10 flex flex-col items-center justify-center">
-                                        <span class="text-xs font-medium text-primary">{{ $rental->start_time->format('M') }}</span>
-                                        <span class="text-lg font-bold text-primary leading-none">{{ $rental->start_time->format('j') }}</span>
-                                    </div>
-                                    <div class="flex-1">
-                                        <div class="font-medium">{{ $rental->client_name }}</div>
-                                        <div class="text-sm text-base-content/60">{{ $rental->formatted_time_range }}</div>
-                                    </div>
-                                    <span class="badge {{ $rental->status_badge_class }} badge-soft badge-sm">{{ $rental->formatted_status }}</span>
+                            @if($config->waiver_document_path)
+                            <div class="flex items-center gap-3 p-3 bg-base-200/50 rounded-lg mt-3">
+                                <span class="icon-[tabler--file-type-pdf] size-6 text-base-content/60 shrink-0"></span>
+                                <span class="text-sm flex-1 truncate">{{ basename($config->waiver_document_path) }}</span>
+                                <a href="{{ Storage::disk(config('filesystems.uploads'))->url($config->waiver_document_path) }}" target="_blank" download class="btn btn-ghost btn-sm btn-circle">
+                                    <span class="icon-[tabler--download] size-5"></span>
                                 </a>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-
-                {{-- Sidebar --}}
-                <div class="space-y-6">
-                    {{-- Quick Stats --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h3 class="font-semibold mb-4">{{ $trans['common.statistics'] ?? 'Statistics' }}</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60">{{ $trans['space_rentals.total_bookings'] ?? 'Total Bookings' }}</span>
-                                    <span class="font-semibold">{{ $recentRentals->count() }}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60">{{ $trans['space_rentals.upcoming_count'] ?? 'Upcoming' }}</span>
-                                    <span class="font-semibold">{{ $upcomingRentals->count() }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Waiver Status --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h3 class="font-semibold mb-4">{{ $trans['space_rentals.waiver_status'] ?? 'Waiver' }}</h3>
-                            @if($config->requires_waiver)
-                                <div class="flex items-center gap-3 text-warning">
-                                    <span class="icon-[tabler--file-certificate] size-5"></span>
-                                    <span class="text-sm">{{ $trans['space_rentals.waiver_required'] ?? 'Waiver Required' }}</span>
-                                </div>
-                                @if($config->waiver_document_path)
-                                <div class="mt-3 pt-3 border-t border-base-200">
-                                    <a href="{{ Storage::disk(config('filesystems.uploads'))->url($config->waiver_document_path) }}" target="_blank" class="btn btn-ghost btn-sm w-full">
-                                        <span class="icon-[tabler--download] size-4"></span>
-                                        {{ $trans['space_rentals.download_waiver'] ?? 'Download Waiver' }}
-                                    </a>
-                                </div>
-                                @endif
-                            @else
-                                <div class="flex items-center gap-3 text-base-content/60">
-                                    <span class="icon-[tabler--file-off] size-5"></span>
-                                    <span class="text-sm">{{ $trans['space_rentals.no_waiver'] ?? 'No waiver required' }}</span>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Location Info --}}
-                    <div class="card bg-base-100">
-                        <div class="card-body">
-                            <h3 class="font-semibold mb-4">{{ $trans['field.location'] ?? 'Location' }}</h3>
-                            @if($config->location)
-                            <div class="flex items-start gap-3">
-                                <span class="icon-[tabler--map-pin] size-5 text-primary mt-0.5"></span>
-                                <div>
-                                    <div class="font-medium">{{ $config->location->name }}</div>
-                                    @if($config->location->full_address)
-                                    <div class="text-sm text-base-content/60 mt-1">{{ $config->location->full_address }}</div>
-                                    @endif
-                                </div>
                             </div>
                             @endif
-                            @if($config->room)
-                            <div class="flex items-start gap-3 mt-3 pt-3 border-t border-base-200">
-                                <span class="icon-[tabler--door] size-5 text-primary mt-0.5"></span>
-                                <div>
-                                    <div class="font-medium">{{ $config->room->name }}</div>
-                                    @if($config->room->capacity)
-                                    <div class="text-sm text-base-content/60">{{ $trans['field.capacity'] ?? 'Capacity' }}: {{ $config->room->capacity }}</div>
-                                    @endif
-                                </div>
+                        @else
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--check-circle] size-5 text-success"></span>
+                                <span class="text-sm">No waiver required</span>
                             </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Danger Zone --}}
-                    <div class="card bg-base-100 border border-error/20">
-                        <div class="card-body">
-                            <h3 class="font-semibold text-error mb-4">{{ $trans['common.danger_zone'] ?? 'Danger Zone' }}</h3>
-                            <form action="{{ route('space-rentals.config.destroy', $config) }}" method="POST"
-                                onsubmit="return confirm('{{ $trans['msg.confirm.delete_space'] ?? 'Are you sure you want to delete this rentable space? This cannot be undone.' }}')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-error btn-outline btn-sm w-full">
-                                    <span class="icon-[tabler--trash] size-4"></span>
-                                    {{ $trans['btn.delete'] ?? 'Delete' }}
-                                </button>
-                            </form>
-                        </div>
+                        @endif
                     </div>
                 </div>
+            </div>
+
+            {{-- Rules --}}
+            @if($config->rules)
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--list-check] size-5"></span>
+                        Rules & Guidelines
+                    </h2>
+                    <div class="mt-2 whitespace-pre-line text-base-content/70">{{ $config->rules }}</div>
+                </div>
+            </div>
+            @endif
+
             </div>
         </div>
 
@@ -276,26 +273,24 @@
                 <div class="card bg-base-100">
                     <div class="card-body text-center py-12">
                         <span class="icon-[tabler--calendar-off] size-16 text-base-content/20 mx-auto mb-4"></span>
-                        <h3 class="text-lg font-semibold mb-2">{{ $trans['space_rentals.no_rentals'] ?? 'No Rentals Yet' }}</h3>
-                        <p class="text-base-content/60 mb-4">{{ $trans['space_rentals.no_rentals_desc'] ?? 'No rental bookings have been made for this space.' }}</p>
+                        <h3 class="text-lg font-semibold mb-2">No Rentals Yet</h3>
+                        <p class="text-base-content/60 mb-4">No rental bookings have been made for this space.</p>
                         <a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}" class="btn btn-primary">
                             <span class="icon-[tabler--plus] size-5"></span>
-                            {{ $trans['space_rentals.create_first'] ?? 'Create First Booking' }}
+                            Create First Booking
                         </a>
                     </div>
                 </div>
             @elseif($tab === 'schedule')
                 {{-- Status Filter --}}
                 <div class="flex justify-between items-center mb-6">
-                    <div class="flex items-center gap-2">
-                        <a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}" class="btn btn-primary btn-sm">
-                            <span class="icon-[tabler--plus] size-4"></span>
-                            {{ $trans['space_rentals.new_booking'] ?? 'New Booking' }}
-                        </a>
-                    </div>
+                    <a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--plus] size-4"></span>
+                        New Booking
+                    </a>
                     <div class="form-control w-48">
                         <select id="status-filter" class="select select-bordered select-sm">
-                            <option value="all">{{ $trans['common.all'] ?? 'All' }} ({{ $allRentals->count() }})</option>
+                            <option value="all">All ({{ $allRentals->count() }})</option>
                             @foreach($statuses as $statusKey => $statusLabel)
                                 @php $count = $allRentals->where('status', $statusKey)->count(); @endphp
                                 @if($count > 0)
@@ -313,12 +308,12 @@
                             <table class="table">
                                 <thead>
                                     <tr>
-                                        <th>{{ $trans['space_rentals.date_time'] ?? 'Date & Time' }}</th>
-                                        <th>{{ $trans['field.client'] ?? 'Client' }}</th>
-                                        <th>{{ $trans['space_rentals.purpose'] ?? 'Purpose' }}</th>
-                                        <th>{{ $trans['field.total'] ?? 'Total' }}</th>
-                                        <th>{{ $trans['common.status'] ?? 'Status' }}</th>
-                                        <th class="text-right">{{ $trans['common.actions'] ?? 'Actions' }}</th>
+                                        <th>Date & Time</th>
+                                        <th>Client</th>
+                                        <th>Purpose</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th class="text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="rentals-tbody">
@@ -345,7 +340,7 @@
                                             <div class="flex flex-col gap-1">
                                                 <span class="badge {{ $rental->status_badge_class }} badge-soft badge-sm">{{ $rental->formatted_status }}</span>
                                                 @if($rental->isWaiverPending())
-                                                    <span class="badge badge-warning badge-outline badge-xs">{{ $trans['space_rentals.waiver_pending'] ?? 'Waiver Pending' }}</span>
+                                                    <span class="badge badge-warning badge-outline badge-xs">Waiver Pending</span>
                                                 @endif
                                             </div>
                                         </td>
@@ -367,11 +362,10 @@
                     </div>
                 </div>
             @else
-                {{-- Placeholder for when overview tab is active --}}
                 <div class="card bg-base-100">
                     <div class="card-body text-center py-8">
                         <span class="loading loading-spinner loading-lg"></span>
-                        <p class="text-base-content/60 mt-2">{{ $trans['common.loading'] ?? 'Loading...' }}</p>
+                        <p class="text-base-content/60 mt-2">Loading...</p>
                     </div>
                 </div>
             @endif
@@ -393,7 +387,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const url = new URL(window.location);
             url.searchParams.set('tab', targetTab);
 
-            // If switching to schedule tab, reload to fetch data
             if (targetTab === 'schedule') {
                 window.location.href = url.toString();
                 return;
@@ -418,22 +411,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (statusFilter) {
         statusFilter.addEventListener('change', function() {
             const selectedStatus = this.value;
-
             rentalsRows.forEach(row => {
-                if (selectedStatus === 'all' || row.dataset.status === selectedStatus) {
-                    row.classList.remove('hidden');
-                } else {
-                    row.classList.add('hidden');
-                }
+                row.classList.toggle('hidden', selectedStatus !== 'all' && row.dataset.status !== selectedStatus);
             });
         });
     }
 });
-
-function switchToScheduleTab() {
-    const url = new URL(window.location);
-    url.searchParams.set('tab', 'schedule');
-    window.location.href = url.toString();
-}
 </script>
 @endpush

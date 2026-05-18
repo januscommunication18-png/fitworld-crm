@@ -636,6 +636,9 @@
                     </div>
                 </div>
             @endif
+            {{-- File Attachments --}}
+            @include('host.partials._file-attachments-show', ['fileAttachments' => $classPass->file_attachments])
+
         </div>
     </div>
 </div>

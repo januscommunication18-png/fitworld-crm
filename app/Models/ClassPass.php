@@ -98,6 +98,7 @@ class ClassPass extends Model
         'max_rollover_periods',
         'color',
         'image_path',
+        'file_attachments',
         'stripe_product_id',
         'stripe_price_id',
         'status',
@@ -146,6 +147,7 @@ class ClassPass extends Model
             'rollover_enabled' => 'boolean',
             'max_rollover_credits' => 'integer',
             'max_rollover_periods' => 'integer',
+            'file_attachments' => 'array',
             'visibility_public' => 'boolean',
             'sort_order' => 'integer',
         ];

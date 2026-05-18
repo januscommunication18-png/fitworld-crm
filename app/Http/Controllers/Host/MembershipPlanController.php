@@ -7,6 +7,7 @@ use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Http\Requests\Host\MembershipPlanRequest;
 use App\Models\MembershipPlan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class MembershipPlanController extends Controller
@@ -88,18 +89,59 @@ class MembershipPlanController extends Controller
             $data['credits_per_cycle'] = null;
         }
 
-        // Handle multi-currency prices
-        if (isset($data['prices'])) {
-            // Filter out null/empty prices and keep only numeric values
-            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
-            // Set legacy price field to default currency price
-            $defaultCurrency = $host->default_currency ?? 'USD';
-            $data['price'] = $data['prices'][$defaultCurrency] ?? 0;
-        }
+        $defaultCurrency = $host->default_currency ?? 'USD';
 
         // Handle new member prices
         if (isset($data['new_member_prices'])) {
             $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        // Handle billing discounts from multi-currency inputs
+        // The 1-month row is the base price — derive prices from it
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Derive prices from the 1-month billing discount (base price)
+        if (!empty($billingDiscounts['1'])) {
+            $data['prices'] = $billingDiscounts['1'];
+            $data['price'] = $billingDiscounts['1'][$defaultCurrency] ?? 0;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
+        }
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('membership-plans'), config('filesystems.uploads'));
+        }
+
+        // Handle file attachments
+        if ($request->hasFile('file_attachments')) {
+            $attachments = [];
+            foreach ($request->file('file_attachments') as $file) {
+                $attachments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('membership-plans/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $attachments;
         }
 
         $membershipPlan = $host->membershipPlans()->create($data);
@@ -222,18 +264,63 @@ class MembershipPlanController extends Controller
             $data['credits_per_cycle'] = null;
         }
 
-        // Handle multi-currency prices
-        if (isset($data['prices'])) {
-            // Filter out null/empty prices and keep only numeric values
-            $data['prices'] = array_filter($data['prices'], fn($price) => $price !== null && $price !== '');
-            // Set legacy price field to default currency price
-            $defaultCurrency = $host->default_currency ?? 'USD';
-            $data['price'] = $data['prices'][$defaultCurrency] ?? 0;
-        }
+        $defaultCurrency = $host->default_currency ?? 'USD';
 
         // Handle new member prices
         if (isset($data['new_member_prices'])) {
             $data['new_member_prices'] = array_filter($data['new_member_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        // Handle billing discounts from multi-currency inputs
+        // The 1-month row is the base price — derive prices from it
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Derive prices from the 1-month billing discount (base price)
+        if (!empty($billingDiscounts['1'])) {
+            $data['prices'] = $billingDiscounts['1'];
+            $data['price'] = $billingDiscounts['1'][$defaultCurrency] ?? 0;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
+        }
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($membershipPlan->image_path) {
+                Storage::disk(config('filesystems.uploads'))->delete($membershipPlan->image_path);
+            }
+            $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('membership-plans'), config('filesystems.uploads'));
+        }
+
+        // Handle file attachments (append to existing)
+        if ($request->hasFile('file_attachments')) {
+            $existing = $membershipPlan->file_attachments ?? [];
+            foreach ($request->file('file_attachments') as $file) {
+                $existing[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('membership-plans/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $existing;
         }
 
         $membershipPlan->update($data);

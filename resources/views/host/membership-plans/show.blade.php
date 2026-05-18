@@ -17,36 +17,70 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <div class="w-16 h-16 rounded-lg flex items-center justify-center" style="background-color: {{ $membershipPlan->color }}20;">
-                <span class="icon-[tabler--id-badge-2] size-8" style="color: {{ $membershipPlan->color }};"></span>
+    <div class="flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex items-start gap-4 flex-1">
+            <div class="w-24 h-24 rounded-lg flex items-center justify-center" style="background-color: {{ $membershipPlan->color }}20;">
+                <span class="icon-[tabler--id-badge-2] size-10" style="color: {{ $membershipPlan->color }};"></span>
             </div>
             <div>
                 <h1 class="text-2xl font-bold">{{ $membershipPlan->name }}</h1>
-                <div class="flex items-center gap-2 mt-1">
+                <div class="flex flex-wrap items-center gap-2 mt-2">
                     <span class="badge badge-soft {{ $membershipPlan->status_badge_class }}">{{ ucfirst($membershipPlan->status) }}</span>
                     <span class="badge badge-soft {{ $membershipPlan->type_badge_class }}">{{ $membershipPlan->formatted_type }}</span>
                     @if($membershipPlan->visibility_public)
-                        <span class="badge badge-soft badge-info">Public</span>
-                    @else
-                        <span class="badge badge-soft badge-neutral">Hidden</span>
+                        <span class="badge badge-soft badge-info badge-sm">Visible on Booking</span>
                     @endif
                 </div>
             </div>
         </div>
+
+        {{-- Actions --}}
         <div class="flex items-center gap-2">
-            <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-primary">
-                <span class="icon-[tabler--edit] size-5"></span>
-                Edit Plan
+            <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-primary btn-sm">
+                <span class="icon-[tabler--edit] size-4"></span>
+                Edit
             </a>
-            <form action="{{ route('membership-plans.destroy', $membershipPlan) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this membership plan?')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-soft btn-error">
-                    <span class="icon-[tabler--trash] size-5"></span>
-                </button>
-            </form>
+            <x-actions-dropdown>
+                @if($membershipPlan->status === 'draft')
+                    <li>
+                        <form action="{{ route('membership-plans.toggle-status', $membershipPlan) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                <span class="icon-[tabler--check] size-4 text-success"></span> Publish Plan
+                            </button>
+                        </form>
+                    </li>
+                @elseif($membershipPlan->status === 'active')
+                    <li>
+                        <form action="{{ route('membership-plans.toggle-status', $membershipPlan) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                <span class="icon-[tabler--eye-off] size-4 text-warning"></span> Unpublish Plan
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="{{ route('membership-plans.archive', $membershipPlan) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                <span class="icon-[tabler--archive] size-4"></span> Archive Plan
+                            </button>
+                        </form>
+                    </li>
+                @endif
+                <li>
+                    <form action="{{ route('membership-plans.destroy', $membershipPlan) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this membership plan?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                            <span class="icon-[tabler--trash] size-4"></span> Delete Plan
+                        </button>
+                    </form>
+                </li>
+            </x-actions-dropdown>
             <a href="{{ route('catalog.index', ['tab' => 'memberships']) }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span>
                 Back
@@ -74,52 +108,71 @@
     <div class="tab-contents">
         {{-- Overview Tab --}}
         <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {{-- Main Content --}}
-        <div class="lg:col-span-2 space-y-6">
-            {{-- Pricing & Details --}}
-            <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Plan Details</h3>
+            <div class="space-y-6">
+
+            {{-- Description --}}
+            @if($membershipPlan->description)
+                <div class="card bg-base-100">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg">
+                            <span class="icon-[tabler--file-description] size-5"></span>
+                            Description
+                        </h2>
+                        <p class="mt-2 whitespace-pre-line">{{ $membershipPlan->description }}</p>
+                    </div>
                 </div>
+            @endif
+
+            {{-- Plan Details --}}
+            <div class="card bg-base-100">
                 <div class="card-body">
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        Plan Details
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                         <div>
-                            <p class="text-sm text-base-content/60">Type</p>
+                            <label class="text-sm text-base-content/60">Type</label>
                             <p class="font-medium">{{ $membershipPlan->formatted_type }}</p>
                         </div>
                         <div>
-                            <p class="text-sm text-base-content/60">Billing</p>
+                            <label class="text-sm text-base-content/60">Billing</label>
                             <p class="font-medium">{{ ucfirst($membershipPlan->interval) }}</p>
                         </div>
                         @if($membershipPlan->isCredits())
                         <div>
-                            <p class="text-sm text-base-content/60">Credits/Cycle</p>
+                            <label class="text-sm text-base-content/60">Credits/Cycle</label>
                             <p class="font-medium">{{ $membershipPlan->credits_per_cycle }}</p>
                         </div>
                         @endif
+                        <div>
+                            <label class="text-sm text-base-content/60">Addon Members</label>
+                            <p class="font-medium">{{ $membershipPlan->addon_members > 0 ? '+' . $membershipPlan->addon_members . ' Guest(s)' : 'Individual' }}</p>
+                        </div>
                     </div>
-
-                    @if($membershipPlan->description)
-                    <div class="mt-4 pt-4 border-t border-base-content/10">
-                        <p class="text-sm text-base-content/60 mb-1">Description</p>
-                        <p class="text-base-content">{{ $membershipPlan->description }}</p>
-                    </div>
-                    @endif
                 </div>
             </div>
 
             {{-- Pricing --}}
+            @php
+                $symbol = $currencySymbols[$defaultCurrency] ?? $defaultCurrency;
+                $basePrice = $membershipPlan->prices[$defaultCurrency] ?? 0;
+                $billingPeriods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months'];
+            @endphp
             <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Pricing</h3>
-                </div>
                 <div class="card-body">
-                    <div class="overflow-x-auto">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--currency-dollar] size-5"></span>
+                        Pricing
+                    </h2>
+
+                    {{-- Multi-currency pricing table --}}
+                    @if(count($hostCurrencies) > 1)
+                    <div class="overflow-x-auto mt-4">
                         <table class="table table-zebra">
                             <thead>
                                 <tr>
-                                    <th class="w-48">Price Type</th>
+                                    <th class="w-48">Period</th>
                                     @foreach($hostCurrencies as $currency)
                                         <th class="text-center">
                                             {{ $currency }}
@@ -131,40 +184,113 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {{-- New Member Pricing Section --}}
-                                <tr class="bg-info/5">
-                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                        <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
-                                        New Member Pricing
-                                        <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
-                                    </td>
-                                </tr>
+                                @foreach($billingPeriods as $months => $label)
+                                    @php
+                                        $periodPrices = $membershipPlan->billing_discounts[$months] ?? [];
+                                        if (!is_array($periodPrices)) $periodPrices = [];
+                                        $hasAny = count(array_filter($periodPrices)) > 0;
+                                    @endphp
+                                    <tr class="{{ $months === '1' ? 'bg-primary/5' : '' }}">
+                                        <td class="font-medium">
+                                            {{ $label }}
+                                            @if($months === '1')
+                                                <span class="badge badge-primary badge-xs ms-1">Base</span>
+                                            @endif
+                                        </td>
+                                        @foreach($hostCurrencies as $currency)
+                                            <td class="text-center font-medium {{ $hasAny ? 'text-success' : 'text-base-content/40' }}">
+                                                @if(!empty($periodPrices[$currency]))
+                                                    {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($periodPrices[$currency], 2) }}
+                                                @else
+                                                    <span class="text-base-content/30">—</span>
+                                                @endif
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    @endif
+
+                    {{-- Visual pricing cards (default currency) --}}
+                    <div class="mt-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                            @foreach($billingPeriods as $months => $label)
+                                @php
+                                    $periodPrices = $membershipPlan->billing_discounts[$months] ?? [];
+                                    if (is_array($periodPrices)) {
+                                        $totalForPeriod = (float) ($periodPrices[$defaultCurrency] ?? 0);
+                                    } else {
+                                        $totalForPeriod = (float) $periodPrices;
+                                    }
+                                    $hasValue = $totalForPeriod > 0;
+                                    $m = (int) $months;
+                                    $monthlyRate = $m > 0 ? $totalForPeriod / $m : 0;
+                                    $totalWithout = $basePrice * $m;
+                                    $savings = $hasValue && $m > 1 ? $totalWithout - $totalForPeriod : 0;
+                                @endphp
+                                <div class="text-center p-3 rounded-lg {{ $hasValue ? ($months === '1' ? 'bg-primary/10 ring-1 ring-primary/20' : 'bg-success/10') : 'bg-base-200/50' }}">
+                                    <div class="text-sm text-base-content/60">{{ $label }}</div>
+                                    @if($hasValue)
+                                        <div class="text-xl font-bold {{ $months === '1' ? 'text-primary' : 'text-success' }}">
+                                            {{ $symbol }}{{ number_format($totalForPeriod, 2) }}
+                                        </div>
+                                        @if($m > 1)
+                                            <div class="text-xs text-base-content/50">{{ $symbol }}{{ number_format($monthlyRate, 2) }}/mo</div>
+                                        @else
+                                            <div class="text-xs text-base-content/50">Base price</div>
+                                        @endif
+                                        @if($savings > 0)
+                                            <div class="text-xs text-success mt-0.5">Save {{ $symbol }}{{ number_format($savings, 2) }}</div>
+                                        @endif
+                                    @else
+                                        <div class="text-xl font-bold text-base-content/30">—</div>
+                                        <div class="text-xs text-base-content/40">Not set</div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Fees & Cancellation --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--receipt] size-5"></span>
+                        Fees & Cancellation
+                    </h2>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table table-zebra table-sm">
+                            <thead>
                                 <tr>
-                                    <td class="text-base-content/70">Price{{ $membershipPlan->formatted_interval }}</td>
+                                    <th>Fee Type</th>
                                     @foreach($hostCurrencies as $currency)
-                                        <td class="text-center font-medium text-success">
-                                            @if(!empty($membershipPlan->new_member_prices[$currency]))
-                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($membershipPlan->new_member_prices[$currency], 2) }}
+                                        <th class="text-center">{{ $currency }}</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-base-content/70">Registration Fee</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium">
+                                            @if(!empty($membershipPlan->registration_fees[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($membershipPlan->registration_fees[$currency], 2) }}
                                             @else
                                                 <span class="text-base-content/40">-</span>
                                             @endif
                                         </td>
                                     @endforeach
                                 </tr>
-
-                                {{-- Existing Member Pricing Section --}}
-                                <tr class="bg-base-200/50">
-                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                        <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
-                                        Existing Member Pricing
-                                    </td>
-                                </tr>
                                 <tr>
-                                    <td class="text-base-content/70">Price{{ $membershipPlan->formatted_interval }}</td>
+                                    <td class="text-base-content/70">Cancellation Fee</td>
                                     @foreach($hostCurrencies as $currency)
-                                        <td class="text-center font-medium text-success">
-                                            @if(!empty($membershipPlan->prices[$currency]))
-                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($membershipPlan->prices[$currency], 2) }}
+                                        <td class="text-center font-medium {{ !empty($membershipPlan->cancellation_fees[$currency]) ? 'text-error' : '' }}">
+                                            @if(!empty($membershipPlan->cancellation_fees[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($membershipPlan->cancellation_fees[$currency], 2) }}
                                             @else
                                                 <span class="text-base-content/40">-</span>
                                             @endif
@@ -174,81 +300,21 @@
                             </tbody>
                         </table>
                     </div>
+                    <div class="mt-4">
+                        <label class="text-sm text-base-content/60">Grace Period</label>
+                        <p class="font-medium">{{ $membershipPlan->cancellation_grace_hours ?? 48 }} hours</p>
+                    </div>
                 </div>
             </div>
 
-            {{-- Billing Period Discounts --}}
-            @if($membershipPlan->billing_discounts && count(array_filter($membershipPlan->billing_discounts)) > 0)
+            {{-- Class Eligibility --}}
             <div class="card bg-base-100">
                 <div class="card-body">
                     <h2 class="card-title text-lg">
-                        <span class="icon-[tabler--discount] size-5"></span>
-                        Billing Period Discounts
+                        <span class="icon-[tabler--yoga] size-5"></span>
+                        Class Eligibility
                     </h2>
-                    <p class="text-sm text-base-content/60 mt-1">Discounted monthly rates for longer billing commitments.</p>
-                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mt-4">
-                        @php
-                            $billingPeriods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months'];
-                            $basePrice = $membershipPlan->prices[$defaultCurrency] ?? 0;
-                            $symbol = $currencySymbols[$defaultCurrency] ?? $defaultCurrency;
-                        @endphp
-                        @foreach($billingPeriods as $months => $label)
-                            @php
-                                $totalForPeriod = (float) ($membershipPlan->billing_discounts[$months] ?? 0);
-                                $hasDiscount = $totalForPeriod > 0;
-                                $m = (int) $months;
-                                $monthlyRate = $m > 0 ? $totalForPeriod / $m : 0;
-                                $totalWithout = $basePrice * $m;
-                                $savings = $hasDiscount ? $totalWithout - $totalForPeriod : 0;
-                            @endphp
-                            <div class="text-center p-3 rounded-lg {{ $hasDiscount ? 'bg-success/10' : 'bg-base-200/50' }}">
-                                <div class="text-sm text-base-content/60">{{ $label }}</div>
-                                <div class="text-xl font-bold {{ $hasDiscount ? 'text-success' : 'text-base-content/40' }}">
-                                    {{ $symbol }}{{ $hasDiscount ? number_format($totalForPeriod, 2) : number_format($totalWithout, 2) }}
-                                </div>
-                                @if($hasDiscount)
-                                    <div class="text-xs text-base-content/50">{{ $symbol }}{{ number_format($monthlyRate, 2) }}/mo</div>
-                                @endif
-                                @if($savings > 0)
-                                    <div class="text-xs text-success mt-0.5">Save {{ $symbol }}{{ number_format($savings, 2) }}</div>
-                                @elseif(!$hasDiscount)
-                                    <div class="text-xs text-base-content/40 mt-0.5">Base price</div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-
-                    @if(($membershipPlan->registration_fee && $membershipPlan->registration_fee > 0) || ($membershipPlan->cancellation_fee && $membershipPlan->cancellation_fee > 0))
-                    <div class="divider my-4"></div>
-                    <div class="flex flex-wrap gap-6 text-sm">
-                        @if($membershipPlan->registration_fee > 0)
-                        <div>
-                            <span class="text-base-content/60">Registration Fee</span>
-                            <div class="font-semibold">{{ $symbol }}{{ number_format($membershipPlan->registration_fee, 2) }}</div>
-                        </div>
-                        @endif
-                        @if($membershipPlan->cancellation_fee > 0)
-                        <div>
-                            <span class="text-base-content/60">Cancellation Fee</span>
-                            <div class="font-semibold text-error">{{ $symbol }}{{ number_format($membershipPlan->cancellation_fee, 2) }}</div>
-                        </div>
-                        @endif
-                        <div>
-                            <span class="text-base-content/60">Grace Period</span>
-                            <div class="font-semibold">{{ $membershipPlan->cancellation_grace_hours ?? 48 }} hours</div>
-                        </div>
-                    </div>
-                    @endif
-                </div>
-            </div>
-            @endif
-
-            {{-- Eligibility --}}
-            <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Class Eligibility</h3>
-                </div>
-                <div class="card-body">
+                    <div class="mt-3">
                     @if($membershipPlan->coversAllClasses())
                         <div class="flex items-center gap-3">
                             <span class="icon-[tabler--check-circle] size-6 text-success"></span>
@@ -258,7 +324,6 @@
                             </div>
                         </div>
                     @else
-                        <p class="text-sm text-base-content/60 mb-3">This membership covers the following class plans:</p>
                         @if($membershipPlan->classPlans->isEmpty())
                             <p class="text-warning">No class plans selected. Members won't be able to book any classes.</p>
                         @else
@@ -272,15 +337,18 @@
                             </div>
                         @endif
                     @endif
+                    </div>
                 </div>
             </div>
 
             {{-- Location Access --}}
             <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Location Access</h3>
-                </div>
                 <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--map-pin] size-5"></span>
+                        Location Access
+                    </h2>
+                    <div class="mt-3">
                     @if($membershipPlan->location_scope_type === 'all')
                         <div class="flex items-center gap-3">
                             <span class="icon-[tabler--check-circle] size-6 text-success"></span>
@@ -290,99 +358,63 @@
                             </div>
                         </div>
                     @else
-                        <p class="text-sm text-base-content/60 mb-3">This membership is valid at these locations:</p>
                         @if(empty($membershipPlan->location_ids))
                             <p class="text-warning">No locations selected.</p>
                         @else
                             <p class="text-base-content">{{ count($membershipPlan->location_ids) }} location(s) selected</p>
                         @endif
                     @endif
-                </div>
-            </div>
-        </div>
-
-        {{-- Sidebar --}}
-        <div class="space-y-6">
-            {{-- Stats (placeholder for future) --}}
-            <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Statistics</h3>
-                </div>
-                <div class="card-body">
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Active Members</span>
-                            <span class="font-bold text-lg">0</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-base-content/60">Monthly Revenue</span>
-                            <span class="font-bold text-lg">$0.00</span>
-                        </div>
                     </div>
-                    <p class="text-xs text-base-content/50 mt-4">Customer memberships coming soon</p>
                 </div>
             </div>
 
-            {{-- Stripe Integration --}}
+            {{-- Free Amenities --}}
+            @if($membershipPlan->free_amenities && count($membershipPlan->free_amenities) > 0)
             <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Stripe Integration</h3>
-                </div>
                 <div class="card-body">
-                    @if($membershipPlan->stripe_product_id)
-                        <div class="space-y-2 text-sm">
-                            <div class="flex items-center gap-2">
-                                <span class="icon-[tabler--check] size-4 text-success"></span>
-                                <span>Connected to Stripe</span>
-                            </div>
-                            <p class="text-base-content/60 text-xs">Product ID: {{ $membershipPlan->stripe_product_id }}</p>
-                        </div>
-                    @else
-                        <div class="flex items-center gap-2 text-base-content/60">
-                            <span class="icon-[tabler--link-off] size-4"></span>
-                            <span>Not connected to Stripe</span>
-                        </div>
-                        <p class="text-xs text-base-content/50 mt-2">Stripe integration will be configured when customer purchases are enabled.</p>
-                    @endif
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--star] size-5"></span>
+                        Free Amenities
+                    </h2>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        @foreach($membershipPlan->free_amenities as $amenity)
+                            <span class="badge badge-soft badge-primary">{{ $amenity }}</span>
+                        @endforeach
+                    </div>
                 </div>
             </div>
+            @endif
 
-            {{-- Quick Actions --}}
+            {{-- Free Rentals --}}
+            @if($membershipPlan->free_rental_ids && count($membershipPlan->free_rental_ids) > 0)
+            @php
+                $freeRentals = \App\Models\RentalItem::whereIn('id', $membershipPlan->free_rental_ids)->get();
+            @endphp
+            @if($freeRentals->isNotEmpty())
             <div class="card bg-base-100">
-                <div class="card-header">
-                    <h3 class="card-title">Quick Actions</h3>
-                </div>
-                <div class="card-body space-y-2">
-                    @if($membershipPlan->status === 'draft')
-                        <form action="{{ route('membership-plans.toggle-status', $membershipPlan) }}" method="POST">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-success btn-sm w-full">
-                                <span class="icon-[tabler--check] size-4"></span>
-                                Publish Plan
-                            </button>
-                        </form>
-                    @elseif($membershipPlan->status === 'active')
-                        <form action="{{ route('membership-plans.toggle-status', $membershipPlan) }}" method="POST">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-warning btn-sm w-full">
-                                <span class="icon-[tabler--eye-off] size-4"></span>
-                                Unpublish Plan
-                            </button>
-                        </form>
-                        <form action="{{ route('membership-plans.archive', $membershipPlan) }}" method="POST">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-ghost btn-sm w-full">
-                                <span class="icon-[tabler--archive] size-4"></span>
-                                Archive Plan
-                            </button>
-                        </form>
-                    @endif
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--package] size-5"></span>
+                        Free Rentals
+                    </h2>
+                    <div class="flex flex-wrap gap-2 mt-3">
+                        @foreach($freeRentals as $rental)
+                            <span class="badge badge-soft badge-primary">
+                                {{ $rental->name }}
+                                @if($rental->category)
+                                    <span class="badge badge-ghost badge-xs ml-1">{{ $rental->formatted_category }}</span>
+                                @endif
+                            </span>
+                        @endforeach
+                    </div>
                 </div>
             </div>
-        </div>
+            @endif
+            @endif
+
+            {{-- File Attachments --}}
+            @include('host.partials._file-attachments-show', ['fileAttachments' => $membershipPlan->file_attachments])
+
             </div>
         </div>
 

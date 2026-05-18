@@ -28,7 +28,7 @@ class ServicePlanRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string'],
             'category' => ['required', 'string', Rule::in($validKeys)],
             'duration_minutes' => ['required', 'integer', 'min:15', 'max:480'],
             'buffer_minutes' => ['nullable', 'integer', 'min:0', 'max:120'],
@@ -45,6 +45,8 @@ class ServicePlanRequest extends FormRequest
             'location_type' => ['required', 'string', Rule::in(array_keys(ServicePlan::getLocationTypes()))],
             'max_participants' => ['required', 'integer', 'min:1', 'max:20'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'file_attachments' => ['nullable', 'array'],
+            'file_attachments.*' => ['file', 'max:10240'],
             'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'booking_notice_hours' => ['nullable', 'integer', 'min:0', 'max:168'], // max 1 week
             'cancellation_hours' => ['nullable', 'integer', 'min:0', 'max:168'],

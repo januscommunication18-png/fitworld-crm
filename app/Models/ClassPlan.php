@@ -57,6 +57,7 @@ class ClassPlan extends Model
         'difficulty_level',
         'equipment_needed',
         'image_path',
+        'file_attachments',
         'is_active',
         'is_visible_on_booking_page',
         'sort_order',
@@ -66,6 +67,7 @@ class ClassPlan extends Model
     {
         return [
             'equipment_needed' => 'array',
+            'file_attachments' => 'array',
             'default_price' => 'decimal:2',
             'drop_in_price' => 'decimal:2',
             'prices' => 'array',

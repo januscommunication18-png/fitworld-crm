@@ -36,45 +36,14 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="category">Category <span class="text-error">*</span></label>
-                        <select id="category" name="category" class="hidden" required
-                            data-select='{
-                                "hasSearch": true,
-                                "searchPlaceholder": "Search categories...",
-                                "placeholder": "Select a category...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
-                            <option value="">Select a category...</option>
-                            @foreach($categories as $value => $label)
-                                <option value="{{ $value }}" {{ old('category', $servicePlan?->category) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <span class="error-message text-error text-sm mt-1 hidden">Please select a category</span>
+                        <x-studio-select name="category" :options="$categories" :selected="$servicePlan?->category" placeholder="Select a category..." :required="true" />
                         @error('category')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="label-text" for="location_type">Location Type <span class="text-error">*</span></label>
-                        <select id="location_type" name="location_type" class="hidden" required
-                            data-select='{
-                                "placeholder": "Select location type...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
-                            @foreach($locationTypes as $value => $label)
-                                <option value="{{ $value }}" {{ old('location_type', $servicePlan?->location_type) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <span class="error-message text-error text-sm mt-1 hidden">Please select a location type</span>
+                        <x-studio-select name="location_type" :options="$locationTypes" :selected="$servicePlan?->location_type" placeholder="Select location type..." :required="true" />
                         @error('location_type')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -193,19 +162,21 @@
             </div>
             <div class="card-body">
                 <div class="space-y-4">
-                    <x-studio-currency-inputs
-                        name="registration_fees"
-                        :values="$servicePlan?->registration_fees ?? []"
-                        label="Registration Fee"
-                        help="One-time fee when purchasing a billing period"
-                    />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <x-studio-currency-inputs
+                            name="registration_fees"
+                            :values="$servicePlan?->registration_fees ?? []"
+                            label="Registration Fee"
+                            help="One-time fee when purchasing a billing period"
+                        />
 
-                    <x-studio-currency-inputs
-                        name="cancellation_fees"
-                        :values="$servicePlan?->cancellation_fees ?? []"
-                        label="Cancellation Fee"
-                        help="Fee charged for early cancellation"
-                    />
+                        <x-studio-currency-inputs
+                            name="cancellation_fees"
+                            :values="$servicePlan?->cancellation_fees ?? []"
+                            label="Cancellation Fee"
+                            help="Fee charged for early cancellation"
+                        />
+                    </div>
 
                     <div>
                         <label class="label-text text-sm" for="cancellation_grace_hours">Grace Period</label>
@@ -228,6 +199,14 @@
                 'attachments' => $servicePlan?->questionnaireAttachments ?? collect()
             ])
         @endif
+
+        {{-- File Attachments --}}
+        <x-studio-file-upload
+            name="file_attachments"
+            :files="$servicePlan?->file_attachments ?? []"
+            title="File Attachments"
+            help="Upload PDFs, documents, or images to attach to this service plan."
+        />
 
         {{-- Image --}}
         <div class="card bg-base-100">

@@ -17,9 +17,9 @@ class RentalItemRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string'],
             'sku' => ['nullable', 'string', 'max:100'],
-            'category' => ['nullable', 'string', Rule::in(array_keys(RentalItem::getCategories()))],
+            'category' => ['nullable', 'string', 'max:255'],
             'prices' => ['nullable', 'array'],
             'prices.*' => ['nullable', 'numeric', 'min:0'],
             'deposit_prices' => ['nullable', 'array'],
@@ -32,6 +32,8 @@ class RentalItemRequest extends FormRequest
             'images.*' => ['image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'delete_images' => ['nullable', 'array'],
             'delete_images.*' => ['string'],
+            'file_attachments' => ['nullable', 'array'],
+            'file_attachments.*' => ['file', 'max:10240'],
             'class_plan_ids' => ['nullable', 'array'],
             'class_plan_ids.*' => ['exists:class_plans,id'],
             'required_class_plan_ids' => ['nullable', 'array'],

@@ -139,6 +139,14 @@ document.addEventListener('DOMContentLoaded', function() {
             el.className = 'text-error text-sm mt-1';
             el.style.display = 'none';
 
+            // For inputs inside table cells, append error to the td
+            var td = field.closest('td');
+            if (td) {
+                td.appendChild(el);
+                errorElements[key] = el;
+                return el;
+            }
+
             // For selects with data-select (advance-select), find the outer div that has the label
             var parent = field.closest('div');
             if (field.tagName === 'SELECT' && field.hasAttribute('data-select')) {

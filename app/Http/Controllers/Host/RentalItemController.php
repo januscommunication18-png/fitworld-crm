@@ -12,32 +12,15 @@ use Illuminate\Support\Facades\Storage;
 
 class RentalItemController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $host = auth()->user()->host;
-        $category = $request->get('category');
-        $status = $request->get('status');
-
-        $rentalItems = $host->rentalItems()
-            ->withCount('bookings')
-            ->when($category, fn($q) => $q->where('category', $category))
-            ->when($status === 'active', fn($q) => $q->where('is_active', true))
-            ->when($status === 'inactive', fn($q) => $q->where('is_active', false))
-            ->when($status === 'low_stock', fn($q) => $q->where('available_inventory', '<=', 5)->where('available_inventory', '>', 0))
-            ->when($status === 'out_of_stock', fn($q) => $q->where('available_inventory', '<=', 0))
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-
-        $categories = RentalItem::getCategories();
-
-        return view('host.rentals.index', compact('rentalItems', 'category', 'status', 'categories'));
+        return redirect()->route('catalog.index', ['tab' => 'item-rentals', 'view' => 'list']);
     }
 
     public function create()
     {
         $host = auth()->user()->host;
-        $categories = RentalItem::getCategories();
+        $categories = $this->getMergedCategories($host);
         $classPlans = $host->classPlans()->active()->orderBy('name')->get();
         $membershipPlans = $host->membershipPlans()->active()->orderBy('name')->get();
         $classPacks = $host->classPacks()->where('status', 'active')->orderBy('name')->get();
@@ -87,6 +70,20 @@ class RentalItemController extends Controller
         // Handle image uploads
         $data['images'] = $this->handleImageUploads($request, $host);
 
+        // Handle file attachments
+        if ($request->hasFile('file_attachments')) {
+            $attachments = [];
+            foreach ($request->file('file_attachments') as $file) {
+                $attachments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('rentals/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $attachments;
+        }
+
         $rentalItem = $host->rentalItems()->create($data);
 
         // Sync class plans if provided
@@ -115,7 +112,7 @@ class RentalItemController extends Controller
             ]);
         }
 
-        return redirect()->route('rentals.index')
+        return redirect()->route('catalog.index', ['tab' => 'item-rentals', 'view' => 'list'])
             ->with('success', 'Rental item created successfully.');
     }
 
@@ -144,7 +141,7 @@ class RentalItemController extends Controller
         $this->authorizeHost($rental);
 
         $host = auth()->user()->host;
-        $categories = RentalItem::getCategories();
+        $categories = $this->getMergedCategories($host);
         $classPlans = $host->classPlans()->active()->orderBy('name')->get();
         $membershipPlans = $host->membershipPlans()->active()->orderBy('name')->get();
         $classPacks = $host->classPacks()->where('status', 'active')->orderBy('name')->get();
@@ -228,6 +225,20 @@ class RentalItemController extends Controller
             }
         }
 
+        // Handle file attachments (append to existing)
+        if ($request->hasFile('file_attachments')) {
+            $existing = $rental->file_attachments ?? [];
+            foreach ($request->file('file_attachments') as $file) {
+                $existing[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('rentals/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $existing;
+        }
+
         $rental->update($data);
 
         // Sync class plans
@@ -246,7 +257,7 @@ class RentalItemController extends Controller
         // Handle eligibility
         $this->syncEligibility($rental, $request);
 
-        return redirect()->route('rentals.index')
+        return redirect()->route('catalog.index', ['tab' => 'item-rentals', 'view' => 'list'])
             ->with('success', 'Rental item updated successfully.');
     }
 
@@ -268,7 +279,7 @@ class RentalItemController extends Controller
 
         $rental->delete();
 
-        return redirect()->route('rentals.index')
+        return redirect()->route('catalog.index', ['tab' => 'item-rentals', 'view' => 'list'])
             ->with('success', 'Rental item deleted successfully.');
     }
 
@@ -313,6 +324,24 @@ class RentalItemController extends Controller
         ]);
 
         return back()->with('success', 'Inventory adjusted successfully.');
+    }
+
+    private function getMergedCategories($host): array
+    {
+        $defaults = RentalItem::getCategories();
+        $disabled = $host->disabled_rental_item_categories ?? [];
+        $custom = $host->custom_rental_item_categories ?? [];
+
+        // Remove disabled defaults
+        $categories = array_filter($defaults, fn($key) => !in_array($key, $disabled), ARRAY_FILTER_USE_KEY);
+
+        // Add custom categories (key = slug, value = label)
+        foreach ($custom as $label) {
+            $key = \Illuminate\Support\Str::slug($label, '_');
+            $categories[$key] = $label;
+        }
+
+        return $categories;
     }
 
     private function authorizeHost(RentalItem $rental): void

@@ -335,6 +335,9 @@
                 </div>
             @endif
 
+            {{-- File Attachments --}}
+            @include('host.partials._file-attachments-show', ['fileAttachments' => $classPlan->file_attachments])
+
             {{-- Upcoming Sessions --}}
             <div class="card bg-base-100">
                 <div class="card-body">

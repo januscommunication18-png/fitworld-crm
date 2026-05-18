@@ -202,21 +202,18 @@
             @foreach($classPlans as $classPlan)
             <div class="card bg-base-100 card-side {{ !$classPlan->is_active ? 'opacity-60' : '' }}">
                 @if($classPlan->image_path)
-                <figure class="w-32 shrink-0">
-                    <img src="{{ $classPlan->image_url }}" alt="{{ $classPlan->name }}" class="w-full h-full object-cover">
+                <figure class="w-32 shrink-0 overflow-hidden relative">
+                    <img src="{{ $classPlan->image_url }}" alt="{{ $classPlan->name }}" class="absolute inset-0 w-full h-full object-cover">
                 </figure>
                 @else
-                <div class="w-32 shrink-0 flex items-center justify-center" style="background-color: {{ $classPlan->color }}20;">
+                <div class="w-32 shrink-0 flex items-center justify-center rounded-s-xl" style="background-color: {{ $classPlan->color }}20;">
                     <span class="icon-[tabler--yoga] size-10" style="color: {{ $classPlan->color }};"></span>
                 </div>
                 @endif
-                <div class="card-body py-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="card-title text-base">{{ $classPlan->name }}</h3>
-                            <p class="text-sm text-base-content/60 capitalize">{{ $classPlan->category }} &bull; {{ $classPlan->formatted_duration }}</p>
-                        </div>
+                <div class="card-body py-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
+                            <a href="{{ route('class-plans.show', $classPlan) }}" class="card-title text-base hover:text-primary">{{ $classPlan->name }}</a>
                             @if($classPlan->is_active)
                                 <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
@@ -224,28 +221,6 @@
                             @endif
                             <span class="badge {{ $classPlan->getDifficultyBadgeClass() }} badge-soft badge-sm capitalize">{{ str_replace('_', ' ', $classPlan->difficulty_level) }}</span>
                         </div>
-                    </div>
-
-                    <div class="flex items-center gap-6 text-sm mt-2 flex-wrap">
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $classPlan->formatted_price }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $classPlan->default_capacity }} {{ $trans['common.max'] ?? 'max' }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--user] size-4 text-base-content/60"></span>
-                            <span>{{ $classPlan->active_staff_members_count }} staff</span>
-                        </div>
-                        @if($classPlan->description)
-                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $classPlan->description }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="card-actions justify-end mt-2">
                         <x-actions-dropdown>
                             <li><a href="{{ route('class-plans.show', $classPlan) }}">
                                 <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
@@ -262,6 +237,13 @@
                                 </button>
                             </li>
                         </x-actions-dropdown>
+                    </div>
+
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--currency-dollar] size-3.5 me-1"></span>{{ $classPlan->formatted_price }}</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--users] size-3.5 me-1"></span>{{ $classPlan->default_capacity }} max</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--user] size-3.5 me-1"></span>{{ $classPlan->active_staff_members_count }} staff</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--clock] size-3.5 me-1"></span>{{ $classPlan->formatted_duration }}</span>
                     </div>
                 </div>
             </div>
@@ -358,21 +340,18 @@
             @foreach($servicePlans as $servicePlan)
             <div class="card bg-base-100 card-side {{ !$servicePlan->is_active ? 'opacity-60' : '' }}">
                 @if($servicePlan->image_path)
-                <figure class="w-32 shrink-0">
-                    <img src="{{ $servicePlan->image_url }}" alt="{{ $servicePlan->name }}" class="w-full h-full object-cover">
+                <figure class="w-32 shrink-0 overflow-hidden relative">
+                    <img src="{{ $servicePlan->image_url }}" alt="{{ $servicePlan->name }}" class="absolute inset-0 w-full h-full object-cover">
                 </figure>
                 @else
-                <div class="w-32 shrink-0 flex items-center justify-center" style="background-color: {{ $servicePlan->color }}20;">
+                <div class="w-32 shrink-0 flex items-center justify-center rounded-s-xl" style="background-color: {{ $servicePlan->color }}20;">
                     <span class="icon-[tabler--user-check] size-10" style="color: {{ $servicePlan->color }};"></span>
                 </div>
                 @endif
-                <div class="card-body py-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="card-title text-base">{{ $servicePlan->name }}</h3>
-                            <p class="text-sm text-base-content/60 capitalize">{{ str_replace('_', ' ', $servicePlan->category) }} &bull; {{ $servicePlan->formatted_duration }}</p>
-                        </div>
+                <div class="card-body py-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
+                            <a href="{{ route('service-plans.show', $servicePlan) }}" class="card-title text-base hover:text-primary">{{ $servicePlan->name }}</a>
                             @if($servicePlan->is_active)
                                 <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
@@ -380,28 +359,6 @@
                             @endif
                             <span class="badge badge-soft badge-neutral badge-sm capitalize">{{ str_replace('_', ' ', $servicePlan->location_type) }}</span>
                         </div>
-                    </div>
-
-                    <div class="flex items-center gap-6 text-sm mt-2 flex-wrap">
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $servicePlan->formatted_price }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->max_participants }} {{ $trans['common.max'] ?? 'max' }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--user] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->active_staff_members_count }} staff</span>
-                        </div>
-                        @if($servicePlan->description)
-                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $servicePlan->description }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="card-actions justify-end mt-2">
                         <x-actions-dropdown>
                             <li><a href="{{ route('service-plans.show', $servicePlan) }}">
                                 <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
@@ -415,6 +372,13 @@
                                 </button>
                             </li>
                         </x-actions-dropdown>
+                    </div>
+
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--currency-dollar] size-3.5 me-1"></span>{{ $servicePlan->formatted_price }}</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--users] size-3.5 me-1"></span>{{ $servicePlan->max_participants }} max</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--user] size-3.5 me-1"></span>{{ $servicePlan->active_staff_members_count }} staff</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--clock] size-3.5 me-1"></span>{{ $servicePlan->formatted_duration }}</span>
                     </div>
                 </div>
             </div>
@@ -442,23 +406,31 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             @foreach($membershipPlans as $membershipPlan)
             <div class="card bg-base-100 {{ $membershipPlan->status !== 'active' ? 'opacity-60' : '' }}">
+                @if($membershipPlan->image_path)
+                <figure class="h-32">
+                    <img src="{{ $membershipPlan->image_url }}" alt="{{ $membershipPlan->name }}" class="w-full h-full object-cover">
+                </figure>
+                @else
                 <div class="h-32 flex items-center justify-center" style="background-color: {{ $membershipPlan->color }}20;">
                     <span class="icon-[tabler--id-badge-2] size-12" style="color: {{ $membershipPlan->color }};"></span>
                 </div>
+                @endif
                 <div class="card-body">
                     <div class="flex items-start justify-between">
                         <div>
                             <h3 class="card-title">{{ $membershipPlan->name }}</h3>
                             <p class="text-sm text-base-content/60">{{ $membershipPlan->formatted_type }} &bull; {{ ucfirst($membershipPlan->interval) }}</p>
                         </div>
-                        <span class="badge badge-soft {{ $membershipPlan->status_badge_class }} badge-sm">{{ ucfirst($membershipPlan->status) }}</span>
+                        <div class="flex items-center gap-1">
+                            <span class="badge badge-soft {{ $membershipPlan->status_badge_class }} badge-sm">{{ ucfirst($membershipPlan->status) }}</span>
+                        </div>
                     </div>
 
                     @if($membershipPlan->description)
                     <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $membershipPlan->description }}</p>
                     @endif
 
-                    <div class="mt-4 flex items-center gap-4 text-sm">
+                    <div class="mt-4 flex items-center gap-4 text-sm flex-wrap">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
                             <span class="font-medium">{{ $membershipPlan->formatted_price_with_interval }}</span>
@@ -473,17 +445,20 @@
                     </div>
 
                     {{-- Actions --}}
-                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
-                        <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                        </a>
-                        <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10 justify-end">
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('membership-plans.show', $membershipPlan) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('membership-plans.edit', $membershipPlan) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
                 </div>
             </div>
@@ -494,55 +469,47 @@
         <div class="space-y-4">
             @foreach($membershipPlans as $membershipPlan)
             <div class="card bg-base-100 card-side {{ $membershipPlan->status !== 'active' ? 'opacity-60' : '' }}">
-                <div class="w-32 shrink-0 flex items-center justify-center" style="background-color: {{ $membershipPlan->color }}20;">
+                @if($membershipPlan->image_path)
+                <figure class="w-32 shrink-0 overflow-hidden relative">
+                    <img src="{{ $membershipPlan->image_url }}" alt="{{ $membershipPlan->name }}" class="absolute inset-0 w-full h-full object-cover">
+                </figure>
+                @else
+                <div class="w-32 shrink-0 flex items-center justify-center rounded-s-xl" style="background-color: {{ $membershipPlan->color }}20;">
                     <span class="icon-[tabler--id-badge-2] size-10" style="color: {{ $membershipPlan->color }};"></span>
                 </div>
-                <div class="card-body py-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="card-title text-base">{{ $membershipPlan->name }}</h3>
-                            <p class="text-sm text-base-content/60">{{ $membershipPlan->formatted_type }} &bull; {{ ucfirst($membershipPlan->interval) }}</p>
-                        </div>
+                @endif
+                <div class="card-body py-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
+                            <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="card-title text-base hover:text-primary">{{ $membershipPlan->name }}</a>
                             <span class="badge badge-soft {{ $membershipPlan->status_badge_class }} badge-sm">{{ ucfirst($membershipPlan->status) }}</span>
                             <span class="badge {{ $membershipPlan->type_badge_class }} badge-soft badge-sm">{{ $membershipPlan->formatted_type }}</span>
                         </div>
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('membership-plans.show', $membershipPlan) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('membership-plans.edit', $membershipPlan) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
 
-                    <div class="flex items-center gap-6 text-sm mt-2">
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $membershipPlan->formatted_price_with_interval }}</span>
-                        </div>
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--currency-dollar] size-3.5 me-1"></span>{{ $membershipPlan->formatted_price_with_interval }}</span>
                         @if($membershipPlan->isCredits())
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
-                            <span>{{ $membershipPlan->credits_per_cycle }} {{ $trans['common.credits_per_cycle'] ?? 'credits/cycle' }}</span>
-                        </div>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--ticket] size-3.5 me-1"></span>{{ $membershipPlan->credits_per_cycle }} credits/cycle</span>
                         @endif
                         @if($membershipPlan->coversAllClasses())
-                        <span class="text-base-content/60">{{ $trans['common.all_classes'] ?? 'All Classes' }}</span>
+                        <span class="badge badge-soft badge-success badge-sm"><span class="icon-[tabler--check] size-3.5 me-1"></span>All Classes</span>
                         @else
-                        <span class="text-base-content/60">{{ $membershipPlan->class_plans_count }} {{ $trans['common.class_plans'] ?? 'class plan(s)' }}</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--yoga] size-3.5 me-1"></span>{{ $membershipPlan->class_plans_count }} class plan(s)</span>
                         @endif
-                        @if($membershipPlan->description)
-                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $membershipPlan->description }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="card-actions justify-end mt-2">
-                        <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                            {{ $trans['btn.view'] ?? 'View' }}
-                        </a>
-                        <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-sm btn-soft btn-primary">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('membership-plans.destroy', $membershipPlan) }}', '{{ $membershipPlan->name }}', '{{ $trans['catalog.membership_plan'] ?? 'membership plan' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -653,24 +620,18 @@
             @foreach($classPasses as $classPass)
             <div class="card bg-base-100 card-side {{ $classPass->status !== 'active' ? 'opacity-60' : '' }}">
                 @if($classPass->image_path)
-                <figure class="w-32 shrink-0">
-                    <img src="{{ $classPass->image_url }}" alt="{{ $classPass->name }}" class="w-full h-full object-cover">
+                <figure class="w-32 shrink-0 overflow-hidden relative">
+                    <img src="{{ $classPass->image_url }}" alt="{{ $classPass->name }}" class="absolute inset-0 w-full h-full object-cover">
                 </figure>
                 @else
-                <div class="w-32 shrink-0 flex items-center justify-center" style="background-color: {{ $classPass->color ?? '#6366f1' }}20;">
+                <div class="w-32 shrink-0 flex items-center justify-center rounded-s-xl" style="background-color: {{ $classPass->color ?? '#6366f1' }}20;">
                     <span class="icon-[tabler--ticket] size-10" style="color: {{ $classPass->color ?? '#6366f1' }};"></span>
                 </div>
                 @endif
-                <div class="card-body py-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="card-title text-base">{{ $classPass->name }}</h3>
-                            <p class="text-sm text-base-content/60">
-                                {{ $classPass->class_count }} {{ $trans['common.credits'] ?? 'credits' }}
-                                &bull; {{ $classPass->formatted_validity }}
-                            </p>
-                        </div>
+                <div class="card-body py-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
+                            <a href="{{ route('class-passes.show', $classPass) }}" class="card-title text-base hover:text-primary">{{ $classPass->name }}</a>
                             <span class="badge badge-soft {{ $classPass->status === 'active' ? 'badge-success' : ($classPass->status === 'draft' ? 'badge-warning' : 'badge-neutral') }} badge-sm">
                                 {{ ucfirst($classPass->status) }}
                             </span>
@@ -680,31 +641,6 @@
                                 <span class="badge badge-soft badge-secondary badge-sm capitalize">{{ str_replace('_', ' ', $classPass->eligibility_type) }}</span>
                             @endif
                         </div>
-                    </div>
-
-                    <div class="flex items-center gap-6 text-sm mt-2 flex-wrap">
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
-                            <span>{{ $classPass->class_count }} {{ $trans['common.credits'] ?? 'credits' }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $classPass->purchases_count }} {{ $trans['common.sold'] ?? 'sold' }}</span>
-                        </div>
-                        @if($classPass->is_recurring)
-                        <span class="badge badge-soft badge-info badge-sm">{{ ucfirst($classPass->renewal_interval) }}</span>
-                        @endif
-                        @if($classPass->description)
-                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $classPass->description }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="card-actions justify-end mt-2">
                         <x-actions-dropdown>
                             <li><a href="{{ route('class-passes.show', $classPass) }}">
                                 <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
@@ -726,6 +662,16 @@
                                 </button>
                             </li>
                         </x-actions-dropdown>
+                    </div>
+
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--currency-dollar] size-3.5 me-1"></span>{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--ticket] size-3.5 me-1"></span>{{ $classPass->class_count }} credits</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--users] size-3.5 me-1"></span>{{ $classPass->purchases_count }} sold</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--calendar] size-3.5 me-1"></span>{{ $classPass->formatted_validity }}</span>
+                        @if($classPass->is_recurring)
+                        <span class="badge badge-soft badge-info badge-sm">{{ ucfirst($classPass->renewal_interval) }}</span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -817,21 +763,13 @@
         <div class="space-y-4">
             @foreach($spaceRentalConfigs as $config)
             <div class="card bg-base-100 card-side {{ !$config->is_active ? 'opacity-60' : '' }}">
-                <div class="w-32 shrink-0 flex items-center justify-center bg-secondary/10">
+                <div class="w-32 shrink-0 flex items-center justify-center bg-secondary/10 rounded-s-xl">
                     <span class="icon-[tabler--{{ $config->type_icon }}] size-10 text-secondary"></span>
                 </div>
-                <div class="card-body py-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="card-title text-base">{{ $config->name }}</h3>
-                            <p class="text-sm text-base-content/60">
-                                {{ $config->location?->name ?? 'No location' }}
-                                @if($config->room)
-                                    &bull; {{ $config->room->name }}
-                                @endif
-                            </p>
-                        </div>
+                <div class="card-body py-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
+                            <a href="{{ route('space-rentals.config.show', $config) }}" class="card-title text-base hover:text-primary">{{ $config->name }}</a>
                             @if($config->is_active)
                                 <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
@@ -839,49 +777,31 @@
                             @endif
                             <span class="badge badge-soft badge-secondary badge-sm capitalize">{{ $config->rentable_type }}</span>
                         </div>
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('space-rentals.config.show', $config) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('space-rentals.config.edit', $config) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li><a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}">
+                                <span class="icon-[tabler--calendar-plus] size-4"></span> {{ $trans['space_rentals.new_booking'] ?? 'New Booking' }}
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('space-rentals.config.destroy', $config) }}', '{{ $config->name }}', '{{ $trans['catalog.rental_space'] ?? 'rental space' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
 
-                    <div class="flex items-center gap-6 text-sm mt-2">
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $config->getFormattedHourlyRateForCurrency() }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--clock] size-4 text-base-content/60"></span>
-                            <span>{{ $config->minimum_hours }}h {{ $trans['common.min'] ?? 'min' }}</span>
-                        </div>
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--currency-dollar] size-3.5 me-1"></span>{{ $config->getFormattedHourlyRateForCurrency() }}</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--clock] size-3.5 me-1"></span>{{ $config->minimum_hours }}h min</span>
                         @if($config->getDepositForCurrency() > 0)
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--cash] size-4 text-base-content/60"></span>
-                            <span>{{ $config->getFormattedDepositForCurrency() }} {{ $trans['space_rentals.deposit'] ?? 'deposit' }}</span>
-                        </div>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--cash] size-3.5 me-1"></span>{{ $config->getFormattedDepositForCurrency() }} deposit</span>
                         @endif
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--calendar-event] size-4 text-base-content/60"></span>
-                            <span>{{ $config->rentals_count }} {{ $trans['common.bookings'] ?? 'bookings' }}</span>
-                        </div>
-                        @if($config->description)
-                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $config->description }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="card-actions justify-end mt-2">
-                        <a href="{{ route('space-rentals.config.show', $config) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                            {{ $trans['btn.view'] ?? 'View' }}
-                        </a>
-                        <a href="{{ route('space-rentals.config.edit', $config) }}" class="btn btn-sm btn-soft btn-primary">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <a href="{{ route('space-rentals.create', ['config_id' => $config->id]) }}" class="btn btn-sm btn-soft btn-info">
-                            <span class="icon-[tabler--calendar-plus] size-4"></span>
-                            {{ $trans['space_rentals.new_booking'] ?? 'New Booking' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('space-rentals.config.destroy', $config) }}', '{{ $config->name }}', '{{ $trans['catalog.rental_space'] ?? 'rental space' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--calendar-event] size-3.5 me-1"></span>{{ $config->rentals_count }} bookings</span>
                     </div>
                 </div>
             </div>
@@ -977,21 +897,18 @@
             @foreach($rentalItems as $item)
             <div class="card bg-base-100 card-side {{ !$item->is_active ? 'opacity-60' : '' }}">
                 @if($item->primary_image)
-                <figure class="w-32 shrink-0">
-                    <img src="{{ Storage::url($item->primary_image) }}" alt="{{ $item->name }}" class="w-full h-full object-cover">
+                <figure class="w-32 shrink-0 overflow-hidden relative">
+                    <img src="{{ Storage::url($item->primary_image) }}" alt="{{ $item->name }}" class="absolute inset-0 w-full h-full object-cover">
                 </figure>
                 @else
-                <div class="w-32 shrink-0 flex items-center justify-center bg-primary/10">
+                <div class="w-32 shrink-0 flex items-center justify-center bg-primary/10 rounded-s-xl">
                     <span class="icon-[tabler--{{ $item->category_icon }}] size-10 text-primary"></span>
                 </div>
                 @endif
-                <div class="card-body py-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="card-title text-base">{{ $item->name }}</h3>
-                            <p class="text-sm text-base-content/60">{{ $item->formatted_category }}</p>
-                        </div>
+                <div class="card-body py-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
+                            <a href="{{ route('rentals.show', $item) }}" class="card-title text-base hover:text-primary">{{ $item->name }}</a>
                             @if($item->is_active)
                                 <span class="badge badge-soft badge-success badge-sm">{{ $trans['common.active'] ?? 'Active' }}</span>
                             @else
@@ -1003,49 +920,31 @@
                                 <span class="badge badge-soft badge-warning badge-sm">{{ $trans['rentals.low_stock'] ?? 'Low Stock' }}</span>
                             @endif
                         </div>
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('rentals.show', $item) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('rentals.edit', $item) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li><a href="{{ route('rentals.invoice.create') }}">
+                                <span class="icon-[tabler--receipt] size-4"></span> {{ $trans['rentals.new_rental'] ?? 'New Rental' }}
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('rentals.destroy', $item) }}', '{{ $item->name }}', '{{ $trans['catalog.rental_item'] ?? 'rental item' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
 
-                    <div class="flex items-center gap-6 text-sm mt-2">
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
-                            <span class="font-medium">{{ $item->getFormattedPriceForCurrency() }}</span>
-                        </div>
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--currency-dollar] size-3.5 me-1"></span>{{ $item->getFormattedPriceForCurrency() }}</span>
                         @if($item->getDepositForCurrency() > 0)
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--cash] size-4 text-base-content/60"></span>
-                            <span>{{ $item->getFormattedDepositForCurrency() }} {{ $trans['rentals.deposit'] ?? 'deposit' }}</span>
-                        </div>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--cash] size-3.5 me-1"></span>{{ $item->getFormattedDepositForCurrency() }} deposit</span>
                         @endif
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--box] size-4 text-base-content/60"></span>
-                            <span>{{ $item->available_inventory }}/{{ $item->total_inventory }} {{ $trans['rentals.available'] ?? 'available' }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--calendar-event] size-4 text-base-content/60"></span>
-                            <span>{{ $item->bookings_count }} {{ $trans['common.rentals'] ?? 'rentals' }}</span>
-                        </div>
-                        @if($item->description)
-                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $item->description }}</p>
-                        @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="card-actions justify-end mt-2">
-                        <a href="{{ route('rentals.show', $item) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                            {{ $trans['btn.view'] ?? 'View' }}
-                        </a>
-                        <a href="{{ route('rentals.edit', $item) }}" class="btn btn-sm btn-soft btn-primary">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <a href="{{ route('rentals.invoice.create') }}" class="btn btn-sm btn-soft btn-info">
-                            <span class="icon-[tabler--receipt] size-4"></span>
-                            {{ $trans['rentals.new_rental'] ?? 'New Rental' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('rentals.destroy', $item) }}', '{{ $item->name }}', '{{ $trans['catalog.rental_item'] ?? 'rental item' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                        <span class="badge badge-soft badge-sm {{ $item->available_inventory <= 0 ? 'badge-error' : ($item->isLowStock() ? 'badge-warning' : '') }}"><span class="icon-[tabler--box] size-3.5 me-1"></span>{{ $item->available_inventory }}/{{ $item->total_inventory }} available</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--calendar-event] size-3.5 me-1"></span>{{ $item->bookings_count }} rentals</span>
                     </div>
                 </div>
             </div>
@@ -1165,7 +1064,7 @@
                     <img src="{{ $event->cover_image }}" alt="{{ $event->title }}" class="w-full h-full object-cover">
                 </figure>
                 @else
-                <div class="w-32 shrink-0 flex items-center justify-center bg-primary/10">
+                <div class="w-32 shrink-0 flex items-center justify-center bg-primary/10 rounded-s-xl">
                     <div class="text-center">
                         <div class="text-xs font-medium text-primary uppercase">{{ $event->start_datetime->format('M') }}</div>
                         <div class="text-2xl font-bold">{{ $event->start_datetime->format('d') }}</div>

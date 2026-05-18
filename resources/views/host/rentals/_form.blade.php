@@ -4,9 +4,7 @@
     $requiredClassPlanIds = $requiredClassPlanIds ?? [];
 @endphp
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {{-- Main Form --}}
-    <div class="lg:col-span-2 space-y-6">
+<div class="space-y-6">
         {{-- Basic Info --}}
         <div class="card bg-base-100">
             <div class="card-header">
@@ -17,9 +15,10 @@
                     <label class="label-text" for="name">Item Name <span class="text-error">*</span></label>
                     <input type="text" id="name" name="name"
                         value="{{ old('name', $rental?->name) }}"
-                        class="input w-full @error('name') input-error @enderror"
+                        class="input w-full @error('name') is-invalid @enderror"
                         placeholder="e.g., Premium Yoga Mat"
-                        required>
+                        required minlength="2" maxlength="255">
+                    <span class="error-message text-error text-sm mt-1 hidden">Please enter an item name (min 2 characters)</span>
                     @error('name')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -28,7 +27,7 @@
                 <div>
                     <label class="label-text" for="description">Description</label>
                     <textarea id="description" name="description" rows="3"
-                        class="textarea w-full @error('description') input-error @enderror"
+                        class="textarea w-full @error('description') is-invalid @enderror"
                         placeholder="Describe the rental item...">{{ old('description', $rental?->description) }}</textarea>
                     @error('description')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -38,12 +37,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="category">Category</label>
-                        <select id="category" name="category" class="select w-full @error('category') input-error @enderror">
-                            <option value="">Select Category</option>
-                            @foreach($categories as $key => $label)
-                                <option value="{{ $key }}" {{ old('category', $rental?->category) === $key ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
+                        <x-studio-select name="category" :options="$categories" :selected="$rental?->category" placeholder="Select Category" />
                         @error('category')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -73,7 +67,7 @@
                         <label class="label-text" for="total_inventory">Total Quantity <span class="text-error">*</span></label>
                         <input type="number" id="total_inventory" name="total_inventory"
                             value="{{ old('total_inventory', $rental?->total_inventory ?? 1) }}"
-                            class="input w-full @error('total_inventory') input-error @enderror"
+                            class="input w-full @error('total_inventory') is-invalid @enderror"
                             min="0" required>
                         @error('total_inventory')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -116,47 +110,22 @@
             <div class="card-header">
                 <h3 class="card-title">Pricing</h3>
             </div>
-            <div class="card-body space-y-4">
-                {{-- Rental Price --}}
-                <div>
-                    <label class="label-text font-medium">Rental Price</label>
-                    <p class="text-xs text-base-content/60 mb-2">Price charged per rental period</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        @foreach($hostCurrencies as $currency)
-                            <div>
-                                <label class="text-xs text-base-content/60 flex items-center gap-1 mb-1">
-                                    {{ $currency }}
-                                    @if($currency === $defaultCurrency)
-                                        <span class="badge badge-primary badge-xs">Default</span>
-                                    @endif
-                                </label>
-                                <label class="input input-bordered flex items-center gap-2">
-                                    <span class="text-base-content/60">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                    <input type="number" name="prices[{{ $currency }}]" step="0.01" min="0"
-                                           value="{{ old('prices.' . $currency, $rental?->prices[$currency] ?? '') }}"
-                                           class="grow w-full" placeholder="0.00">
-                                </label>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <x-studio-currency-inputs
+                            name="prices"
+                            :values="$rental?->prices ?? []"
+                            label="Rental Price"
+                            help="Price charged per rental period"
+                        />
 
-                {{-- Security Deposit --}}
-                <div>
-                    <label class="label-text font-medium">Security Deposit</label>
-                    <p class="text-xs text-base-content/60 mb-2">Refundable deposit collected at checkout</p>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        @foreach($hostCurrencies as $currency)
-                            <div>
-                                <label class="text-xs text-base-content/60 mb-1 block">{{ $currency }}</label>
-                                <label class="input input-bordered flex items-center gap-2">
-                                    <span class="text-base-content/60">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                    <input type="number" name="deposit_prices[{{ $currency }}]" step="0.01" min="0"
-                                           value="{{ old('deposit_prices.' . $currency, $rental?->deposit_prices[$currency] ?? '') }}"
-                                           class="grow w-full" placeholder="0.00">
-                                </label>
-                            </div>
-                        @endforeach
+                        <x-studio-currency-inputs
+                            name="deposit_prices"
+                            :values="$rental?->deposit_prices ?? []"
+                            label="Security Deposit"
+                            help="Refundable deposit collected at checkout"
+                        />
                     </div>
                 </div>
             </div>
@@ -169,17 +138,15 @@
                 <h3 class="card-title">Associated Classes</h3>
             </div>
             <div class="card-body">
-                <p class="text-sm text-base-content/60 mb-4">Select classes where this item is suggested or required during booking.</p>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <p class="text-sm text-base-content/60 mb-3">Select classes where this item is suggested or required during booking.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     @foreach($classPlans as $classPlan)
-                    <label class="flex items-center gap-3 p-3 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200">
+                    <label class="custom-option flex flex-row items-center gap-3 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
                         <input type="checkbox" name="class_plan_ids[]" value="{{ $classPlan->id }}"
                             class="checkbox checkbox-primary checkbox-sm class-plan-checkbox"
                             data-id="{{ $classPlan->id }}"
                             {{ in_array($classPlan->id, old('class_plan_ids', $selectedClassPlanIds)) ? 'checked' : '' }}>
-                        <div class="flex-1 min-w-0">
-                            <div class="font-medium">{{ $classPlan->name }}</div>
-                        </div>
+                        <span class="flex-1 label-text font-medium">{{ $classPlan->name }}</span>
                         <label class="flex items-center gap-1 text-xs">
                             <input type="checkbox" name="required_class_plan_ids[]" value="{{ $classPlan->id }}"
                                 class="checkbox checkbox-warning checkbox-xs required-checkbox"
@@ -223,14 +190,14 @@
 
                 <div class="ml-8 space-y-2 hidden" id="membership_options">
                     @foreach($membershipPlans as $plan)
-                        <label class="flex items-center gap-3 p-3 rounded-lg border border-base-content/10 cursor-pointer hover:bg-base-200">
+                        <label class="custom-option flex flex-row items-center gap-3 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
                             <input type="checkbox" name="eligible_membership_ids[]" value="{{ $plan->id }}"
                                 class="checkbox checkbox-primary checkbox-sm">
-                            <span class="flex-1">{{ $plan->name }}</span>
-                            <label class="flex items-center gap-1 text-xs text-success">
+                            <span class="flex-1 label-text">{{ $plan->name }}</span>
+                            <label class="flex items-center gap-1 text-xs">
                                 <input type="checkbox" name="free_membership_ids[]" value="{{ $plan->id }}"
                                     class="checkbox checkbox-success checkbox-xs">
-                                <span class="font-medium">Free</span>
+                                <span class="text-success font-medium">Free</span>
                             </label>
                         </label>
                     @endforeach
@@ -238,18 +205,23 @@
                 @endif
             </div>
         </div>
-    </div>
 
-    {{-- Sidebar --}}
-    <div class="space-y-6">
+        {{-- File Attachments --}}
+        <x-studio-file-upload
+            name="file_attachments"
+            :files="$rental?->file_attachments ?? []"
+            title="File Attachments"
+            help="Upload PDFs, documents, or images to attach to this rental item."
+        />
+
         {{-- Image --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Image</h3>
+                <h3 class="card-title">Images</h3>
             </div>
             <div class="card-body">
                 @if($rental && !empty($rental->images))
-                <div class="grid grid-cols-2 gap-2 mb-4">
+                <div class="grid grid-cols-4 gap-2 mb-4">
                     @foreach($rental->images as $image)
                         <div class="relative group">
                             <img src="{{ Storage::url($image) }}" alt="" class="w-full aspect-square object-cover rounded-lg">
@@ -261,11 +233,15 @@
                     @endforeach
                 </div>
                 @endif
-                <input type="file" id="images" name="images[]"
-                    class="file-input file-input-bordered w-full @error('images') input-error @enderror"
-                    accept="image/jpeg,image/png,image/jpg,image/webp"
-                    multiple>
-                <p class="text-xs text-base-content/60 mt-1">JPG, PNG or WebP. Max 2MB each.</p>
+
+                <input type="file" id="images" name="images[]" class="hidden"
+                    accept="image/jpeg,image/png,image/jpg,image/webp" multiple>
+                <div class="border-2 border-dashed border-base-content/20 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                     onclick="document.getElementById('images').click()">
+                    <span class="icon-[tabler--photo-up] size-8 text-base-content/30 mx-auto block mb-2"></span>
+                    <p class="text-sm font-medium text-base-content/70">Click to upload or drag & drop</p>
+                    <p class="text-xs text-base-content/50 mt-1">JPG, PNG or WebP. Max 2MB each. Multiple files allowed.</p>
+                </div>
                 @error('images')
                     <p class="text-error text-sm mt-1">{{ $message }}</p>
                 @enderror
@@ -277,16 +253,18 @@
             <div class="card-header">
                 <h3 class="card-title">Status</h3>
             </div>
-            <div class="card-body space-y-4">
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="is_active" value="1"
-                        class="toggle toggle-success"
-                        {{ old('is_active', $rental?->is_active ?? true) ? 'checked' : '' }}>
+            <div class="card-body">
+                <div class="flex items-center justify-between">
                     <div>
                         <span class="font-medium">Active</span>
                         <p class="text-xs text-base-content/60">Item is available for rent</p>
                     </div>
-                </label>
+                    <label class="switch switch-primary">
+                        <input type="checkbox" name="is_active" value="1"
+                            {{ old('is_active', $rental?->is_active ?? true) ? 'checked' : '' }} />
+                        <span class="switch-indicator"></span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -295,14 +273,13 @@
             <div class="card-body space-y-2">
                 <button type="submit" class="btn btn-primary w-full">
                     <span class="icon-[tabler--check] size-5"></span>
-                    {{ $rental ? 'Update Item' : 'Create Item' }}
+                    {{ $rental ? 'Update Rental Item' : 'Create Rental Item' }}
                 </button>
-                <a href="{{ route('rentals.index') }}" class="btn btn-ghost w-full">
+                <a href="{{ route('catalog.index', ['tab' => 'item-rentals']) }}" class="btn btn-ghost w-full">
                     Cancel
                 </a>
             </div>
         </div>
-    </div>
 </div>
 
 @push('scripts')

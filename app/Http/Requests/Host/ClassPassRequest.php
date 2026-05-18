@@ -21,7 +21,7 @@ class ClassPassRequest extends FormRequest
         return [
             // Basic Details
             'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
+            'description' => ['nullable', 'string'],
             'class_count' => ['required', 'integer', 'min:1', 'max:999'],
 
             // Pricing (Multi-currency)
@@ -147,6 +147,8 @@ class ClassPassRequest extends FormRequest
             // Appearance & Display
             'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'file_attachments' => ['nullable', 'array'],
+            'file_attachments.*' => ['file', 'max:10240'],
             'remove_image' => ['nullable', 'boolean'],
 
             // Status

@@ -29,6 +29,7 @@ class RentalItem extends Model
         'sku',
         'category',
         'images',
+        'file_attachments',
         'prices',
         'deposit_amount',
         'deposit_prices',
@@ -44,6 +45,7 @@ class RentalItem extends Model
     {
         return [
             'images' => 'array',
+            'file_attachments' => 'array',
             'prices' => 'array',
             'deposit_prices' => 'array',
             'deposit_amount' => 'decimal:2',

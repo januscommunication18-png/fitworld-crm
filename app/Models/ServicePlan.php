@@ -41,6 +41,7 @@ class ServicePlan extends Model
         'location_type',
         'max_participants',
         'image_path',
+        'file_attachments',
         'color',
         'booking_notice_hours',
         'cancellation_hours',
@@ -70,6 +71,7 @@ class ServicePlan extends Model
             'cancellation_fee' => 'decimal:2',
             'cancellation_fees' => 'array',
             'cancellation_grace_hours' => 'integer',
+            'file_attachments' => 'array',
             'is_active' => 'boolean',
             'is_visible_on_booking_page' => 'boolean',
         ];

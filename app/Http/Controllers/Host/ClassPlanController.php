@@ -148,6 +148,20 @@ class ClassPlanController extends Controller
             $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('class-plans'), config('filesystems.uploads'));
         }
 
+        // Handle file attachments
+        if ($request->hasFile('file_attachments')) {
+            $attachments = [];
+            foreach ($request->file('file_attachments') as $file) {
+                $attachments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('class-plans/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $attachments;
+        }
+
         // Set default sort order
         $data['sort_order'] = $host->classPlans()->max('sort_order') + 1;
 
@@ -352,6 +366,20 @@ class ClassPlanController extends Controller
                 }
             }
             $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('class-plans'), config('filesystems.uploads'));
+        }
+
+        // Handle file attachments (append to existing)
+        if ($request->hasFile('file_attachments')) {
+            $existing = $classPlan->file_attachments ?? [];
+            foreach ($request->file('file_attachments') as $file) {
+                $existing[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('class-plans/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $data['file_attachments'] = $existing;
         }
 
         // Handle checkbox for is_active and is_visible

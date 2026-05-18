@@ -698,6 +698,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/studio/categories', [SettingsController::class, 'updateStudioCategories'])->name('settings.studio.categories.update');
     Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
     Route::put('/settings/studio/service-plan-categories', [SettingsController::class, 'updateServicePlanCategories'])->name('settings.studio.service-plan-categories.update');
+    Route::put('/settings/studio/rental-item-categories', [SettingsController::class, 'updateRentalItemCategories'])->name('settings.studio.rental-item-categories.update');
 
     Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
     Route::delete('/settings/studio/logo', [SettingsController::class, 'removeStudioLogo'])->name('settings.studio.logo.remove');

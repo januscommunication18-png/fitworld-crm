@@ -36,68 +36,21 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="label-text" for="category">Category <span class="text-error">*</span></label>
-                        <select id="category" name="category" class="hidden" required
-                            data-select='{
-                                "hasSearch": true,
-                                "searchPlaceholder": "Search categories...",
-                                "placeholder": "Select a category...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
-                            <option value="">Select a category...</option>
-                            @foreach($categories as $value => $label)
-                                <option value="{{ $value }}" {{ old('category', $classPlan?->category) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <span class="error-message text-error text-sm mt-1 hidden">Please select a category</span>
+                        <x-studio-select name="category" :options="$categories" :selected="$classPlan?->category" placeholder="Select a category..." :required="true" />
                         @error('category')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="label-text" for="type">Type <span class="text-error">*</span></label>
-                        <select id="type" name="type" class="hidden" required
-                            data-select='{
-                                "placeholder": "Select a type...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
-                            <option value="">Select a type...</option>
-                            @foreach($types as $value => $label)
-                                <option value="{{ $value }}" {{ old('type', $classPlan?->type) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <span class="error-message text-error text-sm mt-1 hidden">Please select a type</span>
+                        <x-studio-select name="type" :options="$types" :selected="$classPlan?->type" placeholder="Select a type..." :required="true" />
                         @error('type')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label class="label-text" for="difficulty_level">Difficulty <span class="text-error">*</span></label>
-                        <select id="difficulty_level" name="difficulty_level" class="hidden" required
-                            data-select='{
-                                "placeholder": "Select difficulty...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
-                            <option value="">Select difficulty...</option>
-                            @foreach($difficultyLevels as $value => $label)
-                                <option value="{{ $value }}" {{ old('difficulty_level', $classPlan?->difficulty_level ?? 'all_levels') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <span class="error-message text-error text-sm mt-1 hidden">Please select a difficulty level</span>
+                        <x-studio-select name="difficulty_level" :options="$difficultyLevels" :selected="$classPlan?->difficulty_level ?? 'all_levels'" placeholder="Select difficulty..." :required="true" />
                         @error('difficulty_level')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -191,19 +144,21 @@
             </div>
             <div class="card-body">
                 <div class="space-y-4">
-                    <x-studio-currency-inputs
-                        name="registration_fees"
-                        :values="$classPlan?->registration_fees ?? []"
-                        label="Registration Fee"
-                        help="One-time fee when purchasing a billing period"
-                    />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <x-studio-currency-inputs
+                            name="registration_fees"
+                            :values="$classPlan?->registration_fees ?? []"
+                            label="Registration Fee"
+                            help="One-time fee when purchasing a billing period"
+                        />
 
-                    <x-studio-currency-inputs
-                        name="cancellation_fees"
-                        :values="$classPlan?->cancellation_fees ?? []"
-                        label="Cancellation Fee"
-                        help="Fee charged for early cancellation"
-                    />
+                        <x-studio-currency-inputs
+                            name="cancellation_fees"
+                            :values="$classPlan?->cancellation_fees ?? []"
+                            label="Cancellation Fee"
+                            help="Fee charged for early cancellation"
+                        />
+                    </div>
 
                     <div>
                         <label class="label-text text-sm" for="cancellation_grace_hours">Grace Period</label>
@@ -254,6 +209,15 @@
                 'attachments' => $classPlan?->progressTemplateAttachments ?? collect()
             ])
         @endif
+
+        {{-- File Attachments --}}
+        <x-studio-file-upload
+            name="file_attachments"
+            :files="$classPlan?->file_attachments ?? []"
+            title="File Attachments"
+            help="Upload PDFs, documents, or images to attach to this class plan."
+        />
+
         {{-- Image --}}
         <div class="card bg-base-100">
             <div class="card-header">
