@@ -30,6 +30,19 @@ class ServicePlanController extends Controller
 
         $categories = ServicePlan::getCategories();
 
+        // Remove disabled default categories
+        $disabledCategories = $host->disabled_service_plan_categories ?? [];
+        foreach ($disabledCategories as $disabledKey) {
+            unset($categories[$disabledKey]);
+        }
+
+        // Merge host's custom service plan categories
+        $customCategories = $host->custom_service_plan_categories ?? [];
+        foreach ($customCategories as $custom) {
+            $key = Str::slug($custom, '_');
+            $categories[$key] = $custom;
+        }
+
         return view('host.service-plans.index', compact('servicePlans', 'category', 'categories'));
     }
 
@@ -37,6 +50,20 @@ class ServicePlanController extends Controller
     {
         $host = auth()->user()->host;
         $categories = ServicePlan::getCategories();
+
+        // Remove disabled default categories
+        $disabledCategories = $host->disabled_service_plan_categories ?? [];
+        foreach ($disabledCategories as $disabledKey) {
+            unset($categories[$disabledKey]);
+        }
+
+        // Merge host's custom service plan categories
+        $customCategories = $host->custom_service_plan_categories ?? [];
+        foreach ($customCategories as $custom) {
+            $key = Str::slug($custom, '_');
+            $categories[$key] = $custom;
+        }
+
         $locationTypes = ServicePlan::getLocationTypes();
         $staffMembers = $host->getAllTeamMembers();
         $questionnaires = $this->getPublishedQuestionnaires();
@@ -89,6 +116,29 @@ class ServicePlanController extends Controller
 
         if (isset($data['new_member_deposit_prices'])) {
             $data['new_member_deposit_prices'] = array_filter($data['new_member_deposit_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        // Handle billing discounts from multi-currency inputs
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
         }
 
         // Handle image upload
@@ -163,6 +213,20 @@ class ServicePlanController extends Controller
 
         $host = auth()->user()->host;
         $categories = ServicePlan::getCategories();
+
+        // Remove disabled default categories
+        $disabledCategories = $host->disabled_service_plan_categories ?? [];
+        foreach ($disabledCategories as $disabledKey) {
+            unset($categories[$disabledKey]);
+        }
+
+        // Merge host's custom service plan categories
+        $customCategories = $host->custom_service_plan_categories ?? [];
+        foreach ($customCategories as $custom) {
+            $key = Str::slug($custom, '_');
+            $categories[$key] = $custom;
+        }
+
         $locationTypes = ServicePlan::getLocationTypes();
         $staffMembers = $host->getAllTeamMembers();
         $assignedStaffMemberIds = $servicePlan->staffMembers->pluck('id')->toArray();
@@ -223,6 +287,29 @@ class ServicePlanController extends Controller
 
         if (isset($data['new_member_deposit_prices'])) {
             $data['new_member_deposit_prices'] = array_filter($data['new_member_deposit_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        // Handle billing discounts from multi-currency inputs
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
         }
 
         // Handle image upload

@@ -267,30 +267,56 @@
             @endif
 
             {{-- Fees & Cancellation --}}
-            @if(($classPlan->registration_fee && $classPlan->registration_fee > 0) || ($classPlan->cancellation_fee && $classPlan->cancellation_fee > 0) || $classPlan->cancellation_grace_hours)
             <div class="card bg-base-100">
                 <div class="card-body">
                     <h2 class="card-title text-lg">
                         <span class="icon-[tabler--receipt] size-5"></span>
                         Fees & Cancellation
                     </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
-                        <div>
-                            <label class="text-sm text-base-content/60">Registration Fee</label>
-                            <p class="font-medium">{{ $classPlan->registration_fee > 0 ? ($currencySymbols[$defaultCurrency] ?? '') . number_format($classPlan->registration_fee, 2) : 'None' }}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-base-content/60">Cancellation Fee</label>
-                            <p class="font-medium {{ $classPlan->cancellation_fee > 0 ? 'text-error' : '' }}">{{ $classPlan->cancellation_fee > 0 ? ($currencySymbols[$defaultCurrency] ?? '') . number_format($classPlan->cancellation_fee, 2) : 'None' }}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-base-content/60">Grace Period</label>
-                            <p class="font-medium">{{ $classPlan->cancellation_grace_hours ?? 48 }} hours</p>
-                        </div>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table table-zebra table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fee Type</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">{{ $currency }}</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-base-content/70">Registration Fee</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium">
+                                            @if(!empty($classPlan->registration_fees[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPlan->registration_fees[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Cancellation Fee</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium {{ !empty($classPlan->cancellation_fees[$currency]) ? 'text-error' : '' }}">
+                                            @if(!empty($classPlan->cancellation_fees[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPlan->cancellation_fees[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4">
+                        <label class="text-sm text-base-content/60">Grace Period</label>
+                        <p class="font-medium">{{ $classPlan->cancellation_grace_hours ?? 48 }} hours</p>
                     </div>
                 </div>
             </div>
-            @endif
 
             {{-- Equipment Needed --}}
             @if($classPlan->equipment_needed && count($classPlan->equipment_needed) > 0)

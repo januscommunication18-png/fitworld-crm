@@ -58,6 +58,12 @@ class ClassPass extends Model
         'price',
         'prices',
         'new_member_prices',
+        'billing_discounts',
+        'registration_fee',
+        'registration_fees',
+        'cancellation_fee',
+        'cancellation_fees',
+        'cancellation_grace_hours',
         'expires_after_days',
         'activation_type',
         'eligibility_type',
@@ -106,6 +112,12 @@ class ClassPass extends Model
             'price' => 'decimal:2',
             'prices' => 'array',
             'new_member_prices' => 'array',
+            'billing_discounts' => 'array',
+            'registration_fee' => 'decimal:2',
+            'registration_fees' => 'array',
+            'cancellation_fee' => 'decimal:2',
+            'cancellation_fees' => 'array',
+            'cancellation_grace_hours' => 'integer',
             'expires_after_days' => 'integer',
             'eligible_class_plan_ids' => 'array',
             'eligible_categories' => 'array',
@@ -117,8 +129,8 @@ class ClassPass extends Model
             'credit_rules' => 'array',
             'peak_time_multiplier' => 'decimal:2',
             'peak_time_days' => 'array',
-            'peak_time_start' => 'datetime:H:i',
-            'peak_time_end' => 'datetime:H:i',
+            'peak_time_start' => 'string',
+            'peak_time_end' => 'string',
             'validity_value' => 'integer',
             'grace_period_days' => 'integer',
             'allow_admin_extension' => 'boolean',
@@ -320,6 +332,7 @@ class ClassPass extends Model
 
         return \Illuminate\Support\Facades\Storage::disk(config('filesystems.uploads'))->url($this->image_path);
     }
+
 
     public function getValidityDisplayAttribute(): string
     {

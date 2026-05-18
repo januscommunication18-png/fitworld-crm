@@ -122,6 +122,29 @@ class ClassPassController extends Controller
             $data['reactivation_fee'] = $data['reactivation_fee_prices'][$defaultCurrency] ?? 0;
         }
 
+        // Handle billing discounts from multi-currency inputs
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
+        }
+
         // Handle image upload
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store(
@@ -280,6 +303,29 @@ class ClassPassController extends Controller
             $data['reactivation_fee_prices'] = array_filter($data['reactivation_fee_prices'], fn($price) => $price !== null && $price !== '');
             $defaultCurrency = $host->default_currency ?? 'USD';
             $data['reactivation_fee'] = $data['reactivation_fee_prices'][$defaultCurrency] ?? 0;
+        }
+
+        // Handle billing discounts from multi-currency inputs
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
         }
 
         // Handle image upload

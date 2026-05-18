@@ -32,6 +32,29 @@ class ClassPassRequest extends FormRequest
             'new_member_prices' => ['nullable', 'array'],
             'new_member_prices.*' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
 
+            // Billing Discounts (multi-currency)
+            'billing_discounts' => ['nullable', 'array'],
+            'billing_discounts.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_1mo' => ['nullable', 'array'],
+            'billing_discounts_1mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_3mo' => ['nullable', 'array'],
+            'billing_discounts_3mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_6mo' => ['nullable', 'array'],
+            'billing_discounts_6mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_9mo' => ['nullable', 'array'],
+            'billing_discounts_9mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_12mo' => ['nullable', 'array'],
+            'billing_discounts_12mo.*' => ['nullable', 'numeric', 'min:0'],
+
+            // Fees
+            'registration_fee' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'registration_fees' => ['nullable', 'array'],
+            'registration_fees.*' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'cancellation_fee' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'cancellation_fees' => ['nullable', 'array'],
+            'cancellation_fees.*' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'cancellation_grace_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
+
             // Validity & Activation
             'validity_type' => ['required', 'string', Rule::in(array_keys(ClassPass::getValidityTypes()))],
             'validity_value' => [
@@ -93,7 +116,7 @@ class ClassPassRequest extends FormRequest
             'peak_time_days' => ['nullable', 'array'],
             'peak_time_days.*' => ['integer', 'min:0', 'max:6'],
             'peak_time_start' => ['nullable', 'date_format:H:i'],
-            'peak_time_end' => ['nullable', 'date_format:H:i', 'after:peak_time_start'],
+            'peak_time_end' => ['nullable', 'date_format:H:i'],
 
             // Expiry & Extension Rules
             'allow_admin_extension' => ['nullable', 'boolean'],

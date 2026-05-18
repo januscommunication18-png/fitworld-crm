@@ -17,56 +17,93 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('catalog.index', ['tab' => 'class-passes']) }}" class="btn btn-ghost btn-sm btn-circle">
-                <span class="icon-[tabler--arrow-left] size-5"></span>
-            </a>
-            <div class="w-16 h-16 rounded-lg flex items-center justify-center" style="background-color: {{ $classPass->color ?? '#6366f1' }}20;">
-                <span class="icon-[tabler--ticket] size-8" style="color: {{ $classPass->color ?? '#6366f1' }};"></span>
-            </div>
+    <div class="flex flex-col md:flex-row md:items-start gap-4">
+        <div class="flex items-start gap-4 flex-1">
+            @if($classPass->image_url)
+                <img src="{{ $classPass->image_url }}" alt="{{ $classPass->name }}"
+                     class="w-24 h-24 rounded-lg object-cover">
+            @else
+                <div class="w-24 h-24 rounded-lg flex items-center justify-center" style="background-color: {{ $classPass->color ?? '#6366f1' }}20;">
+                    <span class="icon-[tabler--ticket] size-10" style="color: {{ $classPass->color ?? '#6366f1' }};"></span>
+                </div>
+            @endif
             <div>
                 <h1 class="text-2xl font-bold">{{ $classPass->name }}</h1>
-                <div class="flex items-center gap-2 mt-1">
+                <div class="flex flex-wrap items-center gap-2 mt-2">
                     <span class="badge badge-soft {{ $classPass->status === 'active' ? 'badge-success' : ($classPass->status === 'draft' ? 'badge-warning' : 'badge-neutral') }}">
                         {{ ucfirst($classPass->status) }}
                     </span>
-                    <span class="badge badge-soft badge-primary">{{ $classPass->class_count }} Credits</span>
                     @if($classPass->visibility_public)
-                        <span class="badge badge-soft badge-info">Public</span>
-                    @else
-                        <span class="badge badge-soft badge-neutral">Hidden</span>
+                        <span class="badge badge-soft badge-info badge-sm">Visible on Booking</span>
                     @endif
+                    <span class="badge badge-soft badge-primary badge-sm">{{ $classPass->class_count }} Credits</span>
                     @if($classPass->is_recurring)
-                        <span class="badge badge-soft badge-secondary">Recurring</span>
+                        <span class="badge badge-soft badge-secondary badge-sm">Recurring</span>
                     @endif
                 </div>
             </div>
         </div>
+
+        {{-- Actions --}}
         <div class="flex items-center gap-2">
             @if($classPass->status === 'active')
-            <a href="{{ route('class-passes.sell-form', $classPass) }}" class="btn btn-success">
-                <span class="icon-[tabler--shopping-cart] size-5"></span>
+            <a href="{{ route('class-passes.sell-form', $classPass) }}" class="btn btn-success btn-sm">
+                <span class="icon-[tabler--shopping-cart] size-4"></span>
                 Sell Pass
             </a>
             @endif
-            <a href="{{ route('class-passes.edit', $classPass) }}" class="btn btn-primary">
-                <span class="icon-[tabler--edit] size-5"></span>
-                Edit Pass
+            <x-actions-dropdown>
+                <li><a href="{{ route('class-passes.edit', $classPass) }}">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                </a></li>
+                <li>
+                    <form action="{{ route('class-passes.duplicate', $classPass) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                            <span class="icon-[tabler--copy] size-4"></span> Duplicate
+                        </button>
+                    </form>
+                </li>
+                @if($classPass->status === 'draft')
+                    <li>
+                        <form action="{{ route('class-passes.toggle-status', $classPass) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
+                                <span class="icon-[tabler--check] size-4"></span> Publish
+                            </button>
+                        </form>
+                    </li>
+                @elseif($classPass->status === 'active')
+                    <li>
+                        <form action="{{ route('class-passes.toggle-status', $classPass) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full text-left flex items-center gap-2 text-warning">
+                                <span class="icon-[tabler--eye-off] size-4"></span> Unpublish
+                            </button>
+                        </form>
+                    </li>
+                    <li>
+                        <form action="{{ route('class-passes.archive', $classPass) }}" method="POST">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                <span class="icon-[tabler--archive] size-4"></span> Archive
+                            </button>
+                        </form>
+                    </li>
+                @endif
+                <li>
+                    <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('class-passes.destroy', $classPass) }}', '{{ $classPass->name }}', 'class pass')">
+                        <span class="icon-[tabler--trash] size-4"></span> Delete
+                    </button>
+                </li>
+            </x-actions-dropdown>
+            <a href="{{ route('catalog.index', ['tab' => 'class-passes']) }}" class="btn btn-ghost btn-sm gap-1.5">
+                <span class="icon-[tabler--arrow-left] size-4"></span>
+                Back
             </a>
-            <form action="{{ route('class-passes.duplicate', $classPass) }}" method="POST" class="inline">
-                @csrf
-                <button type="submit" class="btn btn-soft btn-secondary">
-                    <span class="icon-[tabler--copy] size-5"></span>
-                </button>
-            </form>
-            <form action="{{ route('class-passes.destroy', $classPass) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this class pass?')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-soft btn-error">
-                    <span class="icon-[tabler--trash] size-5"></span>
-                </button>
-            </form>
         </div>
     </div>
 
@@ -87,384 +124,406 @@
     <div class="tab-contents">
         {{-- Overview Tab --}}
         <div class="tab-content {{ $tab === 'overview' ? 'active' : 'hidden' }}" data-content="overview">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {{-- Main Content --}}
-                <div class="lg:col-span-2 space-y-6">
-                    {{-- Pass Details --}}
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Pass Details</h3>
+            <div class="space-y-6">
+            {{-- Description --}}
+            @if($classPass->description)
+                <div class="card bg-base-100">
+                    <div class="card-body">
+                        <h2 class="card-title text-lg">
+                            <span class="icon-[tabler--file-description] size-5"></span>
+                            Description
+                        </h2>
+                        <p class="mt-2 whitespace-pre-line">{{ $classPass->description }}</p>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Pass Details --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        Pass Details
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div>
+                            <label class="text-sm text-base-content/60">Credits</label>
+                            <p class="font-medium">{{ $classPass->class_count }}</p>
                         </div>
-                        <div class="card-body">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="text-sm text-base-content/60">Credits/Class</label>
+                            <p class="font-medium">{{ $classPass->default_credits_per_class }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Validity</label>
+                            <p class="font-medium">{{ $classPass->formatted_validity }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Activation</label>
+                            <p class="font-medium capitalize">{{ str_replace('_', ' ', $classPass->activation_type) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Pricing --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--currency-dollar] size-5"></span>
+                        Pricing
+                    </h2>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table table-zebra">
+                            <thead>
+                                <tr>
+                                    <th class="w-48">Price Type</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">
+                                            {{ $currency }}
+                                            @if($currency === $defaultCurrency)
+                                                <span class="badge badge-primary badge-xs ms-1">Default</span>
+                                            @endif
+                                        </th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-info/5">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
+                                        New Member Pricing
+                                        <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Price</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($classPass->new_member_prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPass->new_member_prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                                <tr class="bg-base-200/50">
+                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
+                                        <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
+                                        Standard Pricing
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Price</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium text-success">
+                                            @if(!empty($classPass->prices[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPass->prices[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Fees & Cancellation --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--receipt] size-5"></span>
+                        Fees & Cancellation
+                    </h2>
+                    <div class="overflow-x-auto mt-4">
+                        <table class="table table-zebra table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fee Type</th>
+                                    @foreach($hostCurrencies as $currency)
+                                        <th class="text-center">{{ $currency }}</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-base-content/70">Registration Fee</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium">
+                                            @if(!empty($classPass->registration_fees[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPass->registration_fees[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                                <tr>
+                                    <td class="text-base-content/70">Cancellation Fee</td>
+                                    @foreach($hostCurrencies as $currency)
+                                        <td class="text-center font-medium {{ !empty($classPass->cancellation_fees[$currency]) ? 'text-error' : '' }}">
+                                            @if(!empty($classPass->cancellation_fees[$currency]))
+                                                {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPass->cancellation_fees[$currency], 2) }}
+                                            @else
+                                                <span class="text-base-content/40">-</span>
+                                            @endif
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4">
+                        <label class="text-sm text-base-content/60">Grace Period</label>
+                        <p class="font-medium">{{ $classPass->cancellation_grace_hours ?? 48 }} hours</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Class Eligibility --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--list-check] size-5"></span>
+                        Class Eligibility
+                    </h2>
+                    <div class="mt-4">
+                        @if($classPass->eligibility_type === 'all')
+                            <div class="flex items-center gap-3">
+                                <span class="icon-[tabler--check-circle] size-6 text-success"></span>
                                 <div>
-                                    <p class="text-sm text-base-content/60">Credits</p>
-                                    <p class="font-medium text-lg">{{ $classPass->class_count }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-base-content/60">Credits/Class</p>
-                                    <p class="font-medium text-lg">{{ $classPass->default_credits_per_class }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-base-content/60">Validity</p>
-                                    <p class="font-medium text-lg">{{ $classPass->formatted_validity }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-base-content/60">Activation</p>
-                                    <p class="font-medium text-lg capitalize">{{ str_replace('_', ' ', $classPass->activation_type) }}</p>
+                                    <p class="font-medium">All Classes</p>
+                                    <p class="text-sm text-base-content/60">This pass can be used for any class</p>
                                 </div>
                             </div>
+                        @elseif($classPass->eligibility_type === 'class_plans')
+                            <p class="text-sm text-base-content/60 mb-3">This pass covers the following class plans:</p>
+                            @php $eligiblePlans = \App\Models\ClassPlan::whereIn('id', $classPass->eligible_class_plan_ids ?? [])->get(); @endphp
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($eligiblePlans as $plan)
+                                    <span class="badge badge-soft badge-primary">
+                                        <span class="w-2 h-2 rounded-full mr-1" style="background-color: {{ $plan->color }}"></span>
+                                        {{ $plan->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @elseif($classPass->eligibility_type === 'categories')
+                            <p class="text-sm text-base-content/60 mb-3">This pass covers the following categories:</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($classPass->eligible_categories ?? [] as $category)
+                                    <span class="badge badge-soft badge-secondary capitalize">{{ $category }}</span>
+                                @endforeach
+                            </div>
+                        @elseif($classPass->eligibility_type === 'instructors')
+                            <p class="text-sm text-base-content/60 mb-3">This pass covers classes by these instructors:</p>
+                            @php $eligibleInstructors = \App\Models\Instructor::whereIn('id', $classPass->eligible_instructor_ids ?? [])->get(); @endphp
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($eligibleInstructors as $instructor)
+                                    <span class="badge badge-soft badge-secondary">{{ $instructor->name }}</span>
+                                @endforeach
+                            </div>
+                        @elseif($classPass->eligibility_type === 'locations')
+                            <p class="text-sm text-base-content/60 mb-3">This pass covers classes at these locations:</p>
+                            @php $eligibleLocations = \App\Models\Location::whereIn('id', $classPass->eligible_location_ids ?? [])->get(); @endphp
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($eligibleLocations as $location)
+                                    <span class="badge badge-soft badge-secondary">{{ $location->name }}</span>
+                                @endforeach
+                            </div>
+                        @endif
 
-                            @if($classPass->description)
+                        @if(!empty($classPass->excluded_class_types))
                             <div class="mt-4 pt-4 border-t border-base-content/10">
-                                <p class="text-sm text-base-content/60 mb-1">Description</p>
-                                <p class="text-base-content">{{ $classPass->description }}</p>
+                                <p class="text-sm text-base-content/60 mb-2">Excluded class types:</p>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach($classPass->excluded_class_types as $type)
+                                        <span class="badge badge-soft badge-error">{{ ucfirst(str_replace('_', ' ', $type)) }}</span>
+                                    @endforeach
+                                </div>
                             </div>
-                            @endif
-                        </div>
+                        @endif
                     </div>
+                </div>
+            </div>
 
-                    {{-- Pricing --}}
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Pricing</h3>
+            {{-- Peak Time Settings --}}
+            @if($classPass->peak_time_multiplier)
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--clock-bolt] size-5"></span>
+                        Peak Time Credit Multiplier
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div>
+                            <label class="text-sm text-base-content/60">Multiplier</label>
+                            <p class="font-medium">{{ $classPass->peak_time_multiplier }}x</p>
                         </div>
-                        <div class="card-body">
-                            <div class="overflow-x-auto">
-                                <table class="table table-zebra">
-                                    <thead>
-                                        <tr>
-                                            <th class="w-48">Price Type</th>
-                                            @foreach($hostCurrencies as $currency)
-                                                <th class="text-center">
-                                                    {{ $currency }}
-                                                    @if($currency === $defaultCurrency)
-                                                        <span class="badge badge-primary badge-xs ms-1">Default</span>
-                                                    @endif
-                                                </th>
-                                            @endforeach
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {{-- New Member Pricing --}}
-                                        <tr class="bg-info/5">
-                                            <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                                <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
-                                                New Member Pricing
-                                                <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-base-content/70">Price</td>
-                                            @foreach($hostCurrencies as $currency)
-                                                <td class="text-center font-medium text-success">
-                                                    @if(!empty($classPass->new_member_prices[$currency]))
-                                                        {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPass->new_member_prices[$currency], 2) }}
-                                                    @else
-                                                        <span class="text-base-content/40">-</span>
-                                                    @endif
-                                                </td>
-                                            @endforeach
-                                        </tr>
-
-                                        {{-- Standard Pricing --}}
-                                        <tr class="bg-base-200/50">
-                                            <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                                <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
-                                                Standard Pricing
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-base-content/70">Price</td>
-                                            @foreach($hostCurrencies as $currency)
-                                                <td class="text-center font-medium text-success">
-                                                    @if(!empty($classPass->prices[$currency]))
-                                                        {{ $currencySymbols[$currency] ?? $currency }}{{ number_format($classPass->prices[$currency], 2) }}
-                                                    @else
-                                                        <span class="text-base-content/40">-</span>
-                                                    @endif
-                                                </td>
-                                            @endforeach
-                                        </tr>
-                                    </tbody>
-                                </table>
+                        <div>
+                            <label class="text-sm text-base-content/60">Time Range</label>
+                            @php
+                                $tf = auth()->user()->host->time_format ?? '12h';
+                                $fmt = $tf === '24h' ? 'H:i' : 'g:i A';
+                                $startFormatted = $classPass->peak_time_start ? \Carbon\Carbon::parse($classPass->peak_time_start)->format($fmt) : '-';
+                                $endFormatted = $classPass->peak_time_end ? \Carbon\Carbon::parse($classPass->peak_time_end)->format($fmt) : '-';
+                            @endphp
+                            <p class="font-medium">{{ $startFormatted }} - {{ $endFormatted }}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="text-sm text-base-content/60">Peak Days</label>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                @php $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; @endphp
+                                @foreach($classPass->peak_time_days ?? [] as $day)
+                                    <span class="badge badge-warning badge-sm">{{ $dayNames[$day] ?? $day }}</span>
+                                @endforeach
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            @endif
 
-                    {{-- Class Eligibility --}}
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Class Eligibility</h3>
-                        </div>
-                        <div class="card-body">
-                            @if($classPass->eligibility_type === 'all')
-                                <div class="flex items-center gap-3">
-                                    <span class="icon-[tabler--check-circle] size-6 text-success"></span>
-                                    <div>
-                                        <p class="font-medium">All Classes</p>
-                                        <p class="text-sm text-base-content/60">This pass can be used for any class</p>
-                                    </div>
-                                </div>
-                            @elseif($classPass->eligibility_type === 'class_plans')
-                                <p class="text-sm text-base-content/60 mb-3">This pass covers the following class plans:</p>
-                                @if(empty($classPass->eligible_class_plan_ids))
-                                    <p class="text-warning">No class plans selected.</p>
-                                @else
-                                    <div class="flex flex-wrap gap-2">
-                                        @php
-                                            $eligiblePlans = \App\Models\ClassPlan::whereIn('id', $classPass->eligible_class_plan_ids)->get();
-                                        @endphp
-                                        @foreach($eligiblePlans as $plan)
-                                            <span class="badge badge-soft badge-primary">
-                                                <span class="w-2 h-2 rounded-full mr-1" style="background-color: {{ $plan->color }}"></span>
-                                                {{ $plan->name }}
-                                            </span>
-                                        @endforeach
-                                    </div>
-                                @endif
-                            @elseif($classPass->eligibility_type === 'categories')
-                                <p class="text-sm text-base-content/60 mb-3">This pass covers the following categories:</p>
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach($classPass->eligible_categories ?? [] as $category)
-                                        <span class="badge badge-soft badge-secondary capitalize">{{ $category }}</span>
-                                    @endforeach
-                                </div>
-                            @elseif($classPass->eligibility_type === 'instructors')
-                                <p class="text-sm text-base-content/60 mb-3">This pass covers classes by these instructors:</p>
-                                @php
-                                    $eligibleInstructors = \App\Models\Instructor::whereIn('id', $classPass->eligible_instructor_ids ?? [])->get();
-                                @endphp
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach($eligibleInstructors as $instructor)
-                                        <span class="badge badge-soft badge-secondary">{{ $instructor->name }}</span>
-                                    @endforeach
-                                </div>
-                            @elseif($classPass->eligibility_type === 'locations')
-                                <p class="text-sm text-base-content/60 mb-3">This pass covers classes at these locations:</p>
-                                @php
-                                    $eligibleLocations = \App\Models\Location::whereIn('id', $classPass->eligible_location_ids ?? [])->get();
-                                @endphp
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach($eligibleLocations as $location)
-                                        <span class="badge badge-soft badge-secondary">{{ $location->name }}</span>
-                                    @endforeach
-                                </div>
+            {{-- Features & Options --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--settings] size-5"></span>
+                        Features & Options
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                        <div class="flex items-center gap-2">
+                            @if($classPass->allow_admin_extension)
+                                <span class="icon-[tabler--check] size-5 text-success"></span>
+                            @else
+                                <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
                             @endif
-
-                            @if(!empty($classPass->excluded_class_types))
-                                <div class="mt-4 pt-4 border-t border-base-content/10">
-                                    <p class="text-sm text-base-content/60 mb-2">Excluded class types:</p>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($classPass->excluded_class_types as $type)
-                                            <span class="badge badge-soft badge-error">{{ ucfirst(str_replace('_', ' ', $type)) }}</span>
-                                        @endforeach
-                                    </div>
-                                </div>
+                            <span class="{{ $classPass->allow_admin_extension ? '' : 'text-base-content/50' }}">Admin Extension</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($classPass->allow_freeze)
+                                <span class="icon-[tabler--check] size-5 text-success"></span>
+                                <span>Freeze ({{ $classPass->max_freeze_days }} days)</span>
+                            @else
+                                <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
+                                <span class="text-base-content/50">Freeze</span>
+                            @endif
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($classPass->allow_transfer)
+                                <span class="icon-[tabler--check] size-5 text-success"></span>
+                            @else
+                                <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
+                            @endif
+                            <span class="{{ $classPass->allow_transfer ? '' : 'text-base-content/50' }}">Transfer</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($classPass->allow_family_sharing)
+                                <span class="icon-[tabler--check] size-5 text-success"></span>
+                                <span>Family Sharing ({{ $classPass->max_family_members }} members)</span>
+                            @else
+                                <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
+                                <span class="text-base-content/50">Family Sharing</span>
+                            @endif
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($classPass->allow_gifting)
+                                <span class="icon-[tabler--check] size-5 text-success"></span>
+                            @else
+                                <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
+                            @endif
+                            <span class="{{ $classPass->allow_gifting ? '' : 'text-base-content/50' }}">Gifting</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($classPass->is_recurring)
+                                <span class="icon-[tabler--check] size-5 text-success"></span>
+                                <span>Auto-Renewal ({{ ucfirst($classPass->renewal_interval) }})</span>
+                            @else
+                                <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
+                                <span class="text-base-content/50">Auto-Renewal</span>
                             @endif
                         </div>
                     </div>
 
-                    {{-- Peak Time Settings --}}
-                    @if($classPass->peak_time_multiplier)
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Peak Time Credit Multiplier</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                    <p class="text-sm text-base-content/60">Multiplier</p>
-                                    <p class="font-medium text-lg">{{ $classPass->peak_time_multiplier }}x</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-base-content/60">Time Range</p>
-                                    <p class="font-medium">{{ $classPass->peak_time_start }} - {{ $classPass->peak_time_end }}</p>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <p class="text-sm text-base-content/60">Peak Days</p>
-                                    <div class="flex flex-wrap gap-1 mt-1">
-                                        @php
-                                            $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                                        @endphp
-                                        @foreach($classPass->peak_time_days ?? [] as $day)
-                                            <span class="badge badge-warning badge-sm">{{ $dayNames[$day] ?? $day }}</span>
-                                        @endforeach
-                                    </div>
-                                </div>
+                    @if($classPass->is_recurring && $classPass->rollover_enabled)
+                    <div class="mt-4 pt-4 border-t border-base-content/10">
+                        <p class="text-sm text-base-content/60 mb-2">Credit Rollover Settings</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm text-base-content/60">Max Rollover Credits</label>
+                                <p class="font-medium">{{ $classPass->max_rollover_credits }}</p>
+                            </div>
+                            <div>
+                                <label class="text-sm text-base-content/60">Max Rollover Periods</label>
+                                <p class="font-medium">{{ $classPass->max_rollover_periods }}</p>
                             </div>
                         </div>
                     </div>
                     @endif
+                </div>
+            </div>
 
-                    {{-- Advanced Features --}}
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Features & Options</h3>
+            {{-- Stats & Settings --}}
+            <div class="card bg-base-100">
+                <div class="card-body">
+                    <h2 class="card-title text-lg">
+                        <span class="icon-[tabler--chart-bar] size-5"></span>
+                        Stats & Settings
+                    </h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                        <div>
+                            <label class="text-sm text-base-content/60">Total Purchases</label>
+                            <p class="font-bold text-lg">{{ $stats['total_purchases'] }}</p>
                         </div>
-                        <div class="card-body">
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                <div class="flex items-center gap-2">
-                                    @if($classPass->allow_admin_extension)
-                                        <span class="icon-[tabler--check] size-5 text-success"></span>
-                                    @else
-                                        <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
-                                    @endif
-                                    <span class="{{ $classPass->allow_admin_extension ? '' : 'text-base-content/50' }}">Admin Extension</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    @if($classPass->allow_freeze)
-                                        <span class="icon-[tabler--check] size-5 text-success"></span>
-                                        <span>Freeze ({{ $classPass->max_freeze_days }} days)</span>
-                                    @else
-                                        <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
-                                        <span class="text-base-content/50">Freeze</span>
-                                    @endif
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    @if($classPass->allow_transfer)
-                                        <span class="icon-[tabler--check] size-5 text-success"></span>
-                                    @else
-                                        <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
-                                    @endif
-                                    <span class="{{ $classPass->allow_transfer ? '' : 'text-base-content/50' }}">Transfer</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    @if($classPass->allow_family_sharing)
-                                        <span class="icon-[tabler--check] size-5 text-success"></span>
-                                        <span>Family Sharing ({{ $classPass->max_family_members }} members)</span>
-                                    @else
-                                        <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
-                                        <span class="text-base-content/50">Family Sharing</span>
-                                    @endif
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    @if($classPass->allow_gifting)
-                                        <span class="icon-[tabler--check] size-5 text-success"></span>
-                                    @else
-                                        <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
-                                    @endif
-                                    <span class="{{ $classPass->allow_gifting ? '' : 'text-base-content/50' }}">Gifting</span>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    @if($classPass->is_recurring)
-                                        <span class="icon-[tabler--check] size-5 text-success"></span>
-                                        <span>Auto-Renewal ({{ ucfirst($classPass->renewal_interval) }})</span>
-                                    @else
-                                        <span class="icon-[tabler--x] size-5 text-base-content/30"></span>
-                                        <span class="text-base-content/50">Auto-Renewal</span>
-                                    @endif
-                                </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Active</label>
+                            <p class="font-bold text-lg text-success">{{ $stats['active_purchases'] }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Credits Remaining</label>
+                            <p class="font-bold text-lg">{{ $stats['total_credits_remaining'] }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Est. Revenue</label>
+                            <p class="font-bold text-lg text-success">${{ number_format($stats['total_revenue'], 2) }}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Status</label>
+                            <p class="mt-0.5">
+                                <span class="badge badge-soft {{ $classPass->status === 'active' ? 'badge-success' : ($classPass->status === 'draft' ? 'badge-warning' : 'badge-neutral') }} badge-sm">
+                                    {{ ucfirst($classPass->status) }}
+                                </span>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-base-content/60">Booking Page</label>
+                            <p class="mt-0.5">
+                                @if($classPass->visibility_public)
+                                    <span class="badge badge-soft badge-info badge-sm">Visible</span>
+                                @else
+                                    <span class="badge badge-soft badge-neutral badge-sm">Hidden</span>
+                                @endif
+                            </p>
+                        </div>
+                        @if($classPass->color)
+                        <div>
+                            <label class="text-sm text-base-content/60">Color</label>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="w-4 h-4 rounded-full" style="background-color: {{ $classPass->color }}"></span>
+                                <span class="text-sm">{{ $classPass->color }}</span>
                             </div>
-
-                            @if($classPass->is_recurring && $classPass->rollover_enabled)
-                            <div class="mt-4 pt-4 border-t border-base-content/10">
-                                <p class="text-sm text-base-content/60 mb-2">Credit Rollover Settings</p>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <p class="text-sm text-base-content/60">Max Rollover Credits</p>
-                                        <p class="font-medium">{{ $classPass->max_rollover_credits }}</p>
-                                    </div>
-                                    <div>
-                                        <p class="text-sm text-base-content/60">Max Rollover Periods</p>
-                                        <p class="font-medium">{{ $classPass->max_rollover_periods }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            @endif
+                        </div>
+                        @endif
+                        <div>
+                            <label class="text-sm text-base-content/60">Created</label>
+                            <p class="font-medium">{{ $classPass->created_at->format('M d, Y') }}</p>
                         </div>
                     </div>
                 </div>
-
-                {{-- Sidebar --}}
-                <div class="space-y-6">
-                    {{-- Stats --}}
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Statistics</h3>
-                        </div>
-                        <div class="card-body">
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60">Total Purchases</span>
-                                    <span class="font-bold text-lg">{{ $stats['total_purchases'] }}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60">Active Purchases</span>
-                                    <span class="font-bold text-lg text-success">{{ $stats['active_purchases'] }}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60">Credits Remaining</span>
-                                    <span class="font-bold text-lg">{{ $stats['total_credits_remaining'] }}</span>
-                                </div>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-base-content/60">Est. Revenue</span>
-                                    <span class="font-bold text-lg text-success">${{ number_format($stats['total_revenue'], 2) }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Stripe Integration --}}
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Stripe Integration</h3>
-                        </div>
-                        <div class="card-body">
-                            @if($classPass->stripe_product_id)
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex items-center gap-2">
-                                        <span class="icon-[tabler--check] size-4 text-success"></span>
-                                        <span>Connected to Stripe</span>
-                                    </div>
-                                    <p class="text-base-content/60 text-xs">Product ID: {{ $classPass->stripe_product_id }}</p>
-                                </div>
-                            @else
-                                <div class="flex items-center gap-2 text-base-content/60">
-                                    <span class="icon-[tabler--link-off] size-4"></span>
-                                    <span>Not connected to Stripe</span>
-                                </div>
-                                <p class="text-xs text-base-content/50 mt-2">Stripe product will be created when first purchase is made.</p>
-                            @endif
-                        </div>
-                    </div>
-
-                    {{-- Quick Actions --}}
-                    <div class="card bg-base-100">
-                        <div class="card-header">
-                            <h3 class="card-title">Quick Actions</h3>
-                        </div>
-                        <div class="card-body space-y-2">
-                            @if($classPass->status === 'draft')
-                                <form action="{{ route('class-passes.toggle-status', $classPass) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-success btn-sm w-full">
-                                        <span class="icon-[tabler--check] size-4"></span>
-                                        Publish Pass
-                                    </button>
-                                </form>
-                            @elseif($classPass->status === 'active')
-                                <form action="{{ route('class-passes.toggle-status', $classPass) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-warning btn-sm w-full">
-                                        <span class="icon-[tabler--eye-off] size-4"></span>
-                                        Unpublish Pass
-                                    </button>
-                                </form>
-                                <form action="{{ route('class-passes.archive', $classPass) }}" method="POST">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" class="btn btn-ghost btn-sm w-full">
-                                        <span class="icon-[tabler--archive] size-4"></span>
-                                        Archive Pass
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-                </div>
+            </div>
             </div>
         </div>
 

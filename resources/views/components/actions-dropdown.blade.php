@@ -35,7 +35,7 @@
 ])
 
 <div class="relative flex-shrink-0">
-    <details class="dropdown dropdown-bottom dropdown-{{ $align }}">
+    <details class="dropdown dropdown-bottom dropdown-{{ $align }}" onclick="event.stopPropagation()">
         <summary class="btn btn-ghost btn-{{ $size }} {{ $label ? 'gap-1.5' : 'btn-square' }} list-none cursor-pointer {{ $hoverOnly ? 'opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity' : '' }}">
             <span class="{{ $icon }} size-5"></span>
             @if($label)<span>{{ $label }}</span>@endif
@@ -45,3 +45,17 @@
         </ul>
     </details>
 </div>
+
+@once
+@push('scripts')
+<script>
+document.addEventListener('click', function(e) {
+    document.querySelectorAll('details.dropdown[open]').forEach(function(d) {
+        if (!d.contains(e.target)) {
+            d.removeAttribute('open');
+        }
+    });
+});
+</script>
+@endpush
+@endonce
