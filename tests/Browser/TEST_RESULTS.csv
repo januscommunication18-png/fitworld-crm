@@ -1,0 +1,30 @@
+Test File,Test Name,Status,Duration,Assertions,Date,Failure Reason,Solution
+SignupOnboardingTest.php,test_signup_page_loads,PASS,9.09s,,16/05/2026,,
+SignupOnboardingTest.php,test_step1_welcome_shows_get_started_button,PASS,0.48s,,16/05/2026,,
+SignupOnboardingTest.php,test_step1_has_login_link,PASS,0.45s,,16/05/2026,,
+SignupOnboardingTest.php,test_step1_advances_to_step2,PASS,1.01s,,16/05/2026,,
+SignupOnboardingTest.php,test_step2_account_form_has_required_fields,PASS,0.88s,,16/05/2026,,
+SignupOnboardingTest.php,test_step2_back_button_returns_to_step1,PASS,1.44s,,16/05/2026,,
+SignupOnboardingTest.php,test_step2_continue_disabled_without_valid_input,PASS,0.89s,,16/05/2026,,
+SignupOnboardingTest.php,test_signup_step1_to_step3_flow,PASS,4.54s,,16/05/2026,,
+SignupOnboardingTest.php,test_step3_email_verification_has_continue_and_resend,PASS,3.75s,,16/05/2026,,
+SignupOnboardingTest.php,test_step3_continues_to_step4_studio_basics,PASS,4.37s,,16/05/2026,,
+SignupOnboardingTest.php,test_step4_studio_basics_has_required_fields,PASS,4.41s,,16/05/2026,,
+SignupOnboardingTest.php,test_step4_subdomain_autogenerates_from_studio_name,PASS,5.49s,,16/05/2026,,
+SignupOnboardingTest.php,test_authenticated_user_redirected_from_signup,PASS,1.14s,,16/05/2026,,
+SignupOnboardingTest.php,test_get_started_page_loads,PASS,0.77s,,16/05/2026,,
+SignupOnboardingTest.php,test_guest_cannot_access_get_started,PASS,0.34s,,16/05/2026,,
+ClassPlanTest.php,test_catalog_index_loads_with_classes_tab,PASS,9.60s,,16/05/2026,,
+ClassPlanTest.php,test_create_class_plan_page_loads,PASS,0.97s,,16/05/2026,,
+ClassPlanTest.php,test_create_class_plan_with_required_fields,FAIL,13.52s,,16/05/2026,select() uses hardcoded 'yoga' but host's actual categories are full strings like 'Pilates (Mat / Reformer)'. Category never gets selected so client-side validation blocks form submission.,Dynamically fetch host->studio_categories[0] and use that value in select()
+ClassPlanTest.php,test_create_class_plan_with_all_fields,FAIL,13.89s,,16/05/2026,select() uses hardcoded 'pilates' but host's actual categories are full strings like 'Pilates (Mat / Reformer)'. Category never gets selected so client-side validation blocks form submission.,Dynamically fetch host->studio_categories[0] and use that value in select()
+ClassPlanTest.php,test_create_class_plan_validation_errors,PASS,1.32s,,16/05/2026,,
+ClassPlanTest.php,test_view_class_plan,PASS,0.67s,,16/05/2026,,
+ClassPlanTest.php,test_edit_class_plan,PASS,0.82s,,16/05/2026,,
+ClassPlanTest.php,test_update_class_plan,FAIL,13.31s,,16/05/2026,ClassPlan::create() uses 'category' => 'yoga' which is not a valid category. The edit form re-renders with an invalid category causing validation to fail on submit.,Use host->studio_categories[0] or array_key_first(ClassPlan::getCategories()) when creating seed data
+ClassPlanTest.php,test_delete_class_plan,PASS,1.20s,,16/05/2026,,
+ClassPlanTest.php,test_toggle_class_plan_active,PASS,0.76s,,16/05/2026,,
+ClassPlanTest.php,test_guest_cannot_access_class_plans,FAIL,2.01s,,16/05/2026,Dusk reuses browser session across tests. Previous tests call loginAs() leaving the session cookie active so the browser stays authenticated instead of redirecting to /login.,Call ->logout() before visiting the page in guest tests
+ClassPlanTest.php,test_guest_cannot_access_catalog,FAIL,1.87s,,16/05/2026,Dusk reuses browser session across tests. Previous tests call loginAs() leaving the session cookie active so the browser stays authenticated instead of redirecting to /login.,Call ->logout() before visiting the page in guest tests
+ClassPlanTest.php,test_show_page_displays_class_plan_details,PASS,0.90s,,16/05/2026,,
+ClassPlanTest.php,test_create_and_edit_class_plan_e2e,FAIL,13.35s,,16/05/2026,select() uses hardcoded 'yoga' but host's actual categories are full strings. Also assertEquals('yoga') will fail even once fixed since stored value is the full category string.,Use dynamic category from host->studio_categories[0] in both select() and assertEquals()
