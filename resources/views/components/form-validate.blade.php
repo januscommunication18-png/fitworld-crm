@@ -17,7 +17,7 @@
     With file upload:
     <x-form-validate action="/submit" method="POST" :has-files="true">
         ...
-    </x-form-validate>
+    </x-form-validate>11
 
     With PUT method:
     <x-form-validate action="/submit" method="PUT">
@@ -82,45 +82,112 @@
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('form[data-validate]').forEach(function(form) {
 
-        function findErrorMsg(field) {
-            // Look for .error-message in same parent div
-            var parent = field.parentElement;
-            var msg = parent ? parent.querySelector('.error-message') : null;
-            if (!msg) {
-                var wrapper = field.closest('div');
-                msg = wrapper ? wrapper.querySelector('.error-message') : null;
+        function getFieldLabel(field) {
+            if (field.id) {
+                var label = form.querySelector('label[for="' + field.id + '"]');
+                if (label) return label.textContent.replace(/\*/, '').trim();
             }
-            return msg;
+            var div = field.closest('div');
+            if (div) {
+                var lt = div.querySelector('.label-text');
+                if (lt) return lt.textContent.replace(/\*/, '').trim();
+            }
+            var name = field.getAttribute('name') || 'Field';
+            return name.replace(/[_\[\]]/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); }).trim();
+        }
+
+        function buildErrorText(field) {
+            var label = getFieldLabel(field);
+            var val = field.value ? field.value.trim() : '';
+
+            if (field.hasAttribute('required') && !val) {
+                return label + ' is required';
+            }
+            if (field.type === 'email' && !field.checkValidity()) {
+                return 'Please enter a valid email address';
+            }
+            if (field.type === 'url' && !field.checkValidity()) {
+                return 'Please enter a valid URL';
+            }
+            if (field.hasAttribute('minlength') && val.length < parseInt(field.getAttribute('minlength'))) {
+                return label + ' must be at least ' + field.getAttribute('minlength') + ' characters';
+            }
+            if (field.hasAttribute('maxlength') && val.length > parseInt(field.getAttribute('maxlength'))) {
+                return label + ' must be no more than ' + field.getAttribute('maxlength') + ' characters';
+            }
+            if (field.hasAttribute('min') && parseFloat(val) < parseFloat(field.getAttribute('min'))) {
+                return label + ' must be at least ' + field.getAttribute('min');
+            }
+            if (field.hasAttribute('max') && parseFloat(val) > parseFloat(field.getAttribute('max'))) {
+                return label + ' must be no more than ' + field.getAttribute('max');
+            }
+            if (field.hasAttribute('pattern') && !field.checkValidity()) {
+                return label + ' format is invalid';
+            }
+            return label + ' is invalid';
+        }
+
+        // Each field gets its own error <p> keyed by field name/id
+        var errorElements = {};
+
+        function getErrorEl(field) {
+            var key = field.id || field.name;
+            if (errorElements[key]) return errorElements[key];
+
+            // Create a new error element
+            var el = document.createElement('p');
+            el.className = 'text-error text-sm mt-1';
+            el.style.display = 'none';
+
+            // For selects with data-select (advance-select), find the outer div that has the label
+            var parent = field.closest('div');
+            if (field.tagName === 'SELECT' && field.hasAttribute('data-select')) {
+                var outer = field.closest('div:has(> .label-text)') || field.closest('div:has(> label)');
+                if (outer) parent = outer;
+            }
+
+            if (parent) {
+                parent.appendChild(el);
+            } else {
+                field.parentNode.insertBefore(el, field.nextSibling);
+            }
+
+            errorElements[key] = el;
+            return el;
+        }
+
+        function showFieldError(field, text) {
+            field.setAttribute('data-has-error', '');
+            var el = getErrorEl(field);
+            el.textContent = text;
+            el.style.display = 'block';
+        }
+
+        function clearFieldError(field) {
+            field.removeAttribute('data-has-error');
+            var el = getErrorEl(field);
+            el.textContent = '';
+            el.style.display = 'none';
         }
 
         function validateField(field) {
-            var errorMsg = findErrorMsg(field);
-            var isEmpty = !field.value || !field.value.trim();
+            var val = field.value ? field.value.trim() : '';
+            var isEmpty = !val;
             var isInvalid = !field.checkValidity();
 
-            if (field.hasAttribute('required') && isEmpty) {
-                field.classList.add('is-invalid');
-                field.classList.remove('is-valid');
-                if (errorMsg) errorMsg.classList.remove('hidden');
+            if ((field.hasAttribute('required') && isEmpty) || (!isEmpty && isInvalid)) {
+                showFieldError(field, buildErrorText(field));
                 return false;
             }
 
-            if (!isEmpty && isInvalid) {
-                field.classList.add('is-invalid');
-                field.classList.remove('is-valid');
-                if (errorMsg) errorMsg.classList.remove('hidden');
-                return false;
-            }
-
-            if (!isEmpty) {
-                field.classList.remove('is-invalid');
-                field.classList.add('is-valid');
-            } else {
-                field.classList.remove('is-invalid', 'is-valid');
-            }
-            if (errorMsg) errorMsg.classList.add('hidden');
+            clearFieldError(field);
             return true;
         }
+
+        // Hide old hardcoded .error-message spans (we use our own now)
+        form.querySelectorAll('.error-message').forEach(function(el) {
+            el.style.display = 'none';
+        });
 
         // Submit validation
         form.addEventListener('submit', function(e) {
@@ -134,7 +201,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!isValid) {
                 e.preventDefault();
-                var firstError = form.querySelector('.is-invalid');
+                // Scroll to first field with a visible error
+                var firstError = form.querySelector('[data-has-error]');
                 if (firstError) {
                     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     firstError.focus();
@@ -154,14 +222,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
-            // Clear error on input
+            // Clear error as user types valid input
             if (field.tagName !== 'SELECT') {
                 field.addEventListener('input', function() {
-                    if (field.classList.contains('is-invalid') && field.value.trim() && field.checkValidity()) {
-                        field.classList.remove('is-invalid');
-                        field.classList.add('is-valid');
-                        var errorMsg = findErrorMsg(field);
-                        if (errorMsg) errorMsg.classList.add('hidden');
+                    if (field.hasAttribute('data-has-error') && field.value.trim() && field.checkValidity()) {
+                        clearFieldError(field);
                     }
                 });
             }

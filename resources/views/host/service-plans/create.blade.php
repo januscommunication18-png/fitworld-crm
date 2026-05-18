@@ -27,9 +27,8 @@
         </a>
     </div>
 
-    <form action="{{ route('service-plans.store') }}" method="POST" enctype="multipart/form-data">
-        @csrf
+    <x-form-validate action="{{ route('service-plans.store') }}" :has-files="true">
         @include('host.service-plans._form')
-    </form>
+    </x-form-validate>
 </div>
 @endsection

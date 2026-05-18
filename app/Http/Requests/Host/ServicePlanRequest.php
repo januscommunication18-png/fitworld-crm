@@ -4,6 +4,7 @@ namespace App\Http\Requests\Host;
 
 use App\Models\ServicePlan;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ServicePlanRequest extends FormRequest
@@ -15,10 +16,20 @@ class ServicePlanRequest extends FormRequest
 
     public function rules(): array
     {
+        // Build valid category keys: enabled defaults + custom
+        $host = auth()->user()->host;
+        $validKeys = array_keys(ServicePlan::getCategories());
+        $disabledCategories = $host->disabled_service_plan_categories ?? [];
+        $validKeys = array_diff($validKeys, $disabledCategories);
+        $customCategories = $host->custom_service_plan_categories ?? [];
+        foreach ($customCategories as $custom) {
+            $validKeys[] = Str::slug($custom, '_');
+        }
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'category' => ['required', 'string', Rule::in(array_keys(ServicePlan::getCategories()))],
+            'category' => ['required', 'string', Rule::in($validKeys)],
             'duration_minutes' => ['required', 'integer', 'min:15', 'max:480'],
             'buffer_minutes' => ['nullable', 'integer', 'min:0', 'max:120'],
             'price' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
@@ -43,8 +54,22 @@ class ServicePlanRequest extends FormRequest
             'staff_member_ids.*' => ['exists:users,id'],
             'billing_discounts' => ['nullable', 'array'],
             'billing_discounts.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_1mo' => ['nullable', 'array'],
+            'billing_discounts_1mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_3mo' => ['nullable', 'array'],
+            'billing_discounts_3mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_6mo' => ['nullable', 'array'],
+            'billing_discounts_6mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_9mo' => ['nullable', 'array'],
+            'billing_discounts_9mo.*' => ['nullable', 'numeric', 'min:0'],
+            'billing_discounts_12mo' => ['nullable', 'array'],
+            'billing_discounts_12mo.*' => ['nullable', 'numeric', 'min:0'],
             'registration_fee' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'registration_fees' => ['nullable', 'array'],
+            'registration_fees.*' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'cancellation_fee' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
+            'cancellation_fees' => ['nullable', 'array'],
+            'cancellation_fees.*' => ['nullable', 'numeric', 'min:0', 'max:9999.99'],
             'cancellation_grace_hours' => ['nullable', 'integer', 'min:0', 'max:720'],
         ];
     }

@@ -119,6 +119,12 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                     <label class="text-sm text-base-content/60">{{ $trans['settings.timezone'] ?? 'Timezone' }}</label>
                     <p class="font-medium" id="display-timezone">{{ $host->timezone ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
                 </div>
+
+                {{-- Time Format --}}
+                <div class="space-y-1">
+                    <label class="text-sm text-base-content/60">{{ $trans['settings.time_format'] ?? 'Time Format' }}</label>
+                    <p class="font-medium" id="display-time-format">{{ ($host->time_format ?? '12h') === '24h' ? '24-hour (14:00)' : '12-hour (2:00 PM)' }}</p>
+                </div>
             </div>
 
             {{-- Optional: Short Description --}}
@@ -217,357 +223,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
 
     @endif
 
-    {{-- Section Divider: Optional Settings --}}
-    <div class="divider text-base-content/40 text-sm">
-        <span class="icon-[tabler--settings] size-4 mr-1"></span> {{ $trans['settings.optional_settings'] ?? 'Optional Settings' }}
-    </div>
-
-    {{-- Branding Card --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.branding'] ?? 'Branding' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.branding_desc'] ?? 'Logo and cover image for your booking page' }}</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {{-- Logo --}}
-                <div class="space-y-3">
-                    <label class="text-sm font-medium">{{ $trans['settings.studio_logo'] ?? 'Studio Logo' }}</label>
-                    <div class="flex items-center gap-4">
-                        <div id="logo-preview" class="w-20 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
-                            @if($host->logo_path)
-                                <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->logo_path) }}" alt="Studio Logo" class="w-full h-full object-cover" />
-                            @else
-                                <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
-                            @endif
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-logo-drawer')">
-                                    <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_logo'] ?? 'Upload Logo' }}
-                                </button>
-                                @if($host->logo_path)
-                                <button type="button" class="btn btn-ghost btn-sm text-error" onclick="removeStudioImage('logo')">
-                                    <span class="icon-[tabler--trash] size-4"></span> Remove
-                                </button>
-                                @endif
-                            </div>
-                            <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.logo_size_hint'] ?? '400x400px, max 5MB' }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Cover Image --}}
-                <div class="space-y-3">
-                    <label class="text-sm font-medium">{{ $trans['settings.cover_image'] ?? 'Cover Image' }}</label>
-                    <div class="flex items-center gap-4">
-                        <div id="cover-preview" class="w-32 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
-                            @if($host->cover_image_path)
-                                <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->cover_image_path) }}" alt="Cover Image" class="w-full h-full object-cover" />
-                            @else
-                                <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
-                            @endif
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-cover-drawer')">
-                                    <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_cover'] ?? 'Upload Cover' }}
-                                </button>
-                                @if($host->cover_image_path)
-                                <button type="button" class="btn btn-ghost btn-sm text-error" onclick="removeStudioImage('cover')">
-                                    <span class="icon-[tabler--trash] size-4"></span> Remove
-                                </button>
-                                @endif
-                            </div>
-                            <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.cover_size_hint'] ?? '1200x400px, max 5MB' }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- About Card with Inline Edit --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.about_studio'] ?? 'About Your Studio' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.about_studio_desc'] ?? 'Description shown on your public booking page' }}</p>
-                </div>
-                <button type="button" class="btn btn-soft btn-sm" id="about-edit-btn" onclick="toggleAboutEdit()">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            {{-- Display Mode --}}
-            <div id="about-display" class="prose prose-sm max-w-none text-base-content/80">
-                @if($host->about)
-                    {!! $host->about !!}
-                @else
-                    <p class="text-base-content/50 italic">{{ $trans['settings.no_description'] ?? 'No description set. Click Edit to add a description.' }}</p>
-                @endif
-            </div>
-
-            {{-- Edit Mode --}}
-            <div id="about-edit-container" class="hidden">
-                <div id="about-editor" class="bg-base-100 border border-base-content/20 rounded-lg min-h-[200px]"></div>
-                <p class="text-xs text-base-content/50 mt-2">This appears on your public booking page</p>
-                <div class="flex items-center gap-2 mt-4">
-                    <button type="button" class="btn btn-primary btn-sm" id="save-about-inline-btn" onclick="saveAbout()">
-                        <span class="loading loading-spinner loading-xs hidden" id="about-inline-spinner"></span>
-                        Save
-                    </button>
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="cancelAboutEdit()">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Studio Gallery Card --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.studio_gallery'] ?? 'Studio Gallery' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.gallery_desc'] ?? 'Showcase your studio with photos (displays on booking page)' }} <span class="text-base-content/40">(<span id="gallery-current-count">{{ $galleryCount }}</span>/{{ $galleryMaxTotal }})</span></p>
-                </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('upload-gallery-drawer')" @if($galleryCount >= $galleryMaxTotal) disabled @endif>
-                    <span class="icon-[tabler--plus] size-4"></span> {{ $trans['settings.add_image'] ?? 'Add Image' }}
-                </button>
-            </div>
-
-            {{-- Gallery Grid --}}
-            <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                @foreach($host->galleryImages as $image)
-                <div class="gallery-item relative group aspect-video bg-base-200 rounded-lg overflow-hidden" data-id="{{ $image->id }}">
-                    <img src="{{ $image->image_url }}" alt="{{ $image->caption ?? 'Gallery image' }}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                        <button type="button" class="btn btn-circle btn-sm btn-ghost text-white gallery-drag-handle cursor-move" title="Drag to reorder">
-                            <span class="icon-[tabler--grip-vertical] size-4"></span>
-                        </button>
-                        <button type="button" class="btn btn-circle btn-sm btn-ghost text-white hover:text-error" onclick="deleteGalleryImage({{ $image->id }})" title="Delete">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
-                    </div>
-                    @if($image->caption)
-                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1">
-                        <p class="text-white text-xs truncate">{{ $image->caption }}</p>
-                    </div>
-                    @endif
-                </div>
-                @endforeach
-
-                {{-- Add More Card - Always visible --}}
-                <button type="button" id="gallery-add-more-btn" onclick="openDrawer('upload-gallery-drawer')" class="aspect-video bg-base-200 hover:bg-base-300 border-2 border-dashed border-base-content/20 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer">
-                    <span class="icon-[tabler--plus] size-8 text-base-content/40"></span>
-                    <span class="text-sm text-base-content/50">{{ $trans['settings.add_images'] ?? 'Add Images' }}</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    {{-- Contact Information Card --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.contact_info'] ?? 'Contact Information' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.contact_info_desc'] ?? 'Public and internal contact details' }}</p>
-                </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-contact-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_email'] ?? 'Studio Email (Public)' }}</label>
-                    <p class="font-medium" id="display-studio-email">{{ $host->studio_email ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_phone'] ?? 'Studio Phone (Public)' }}</label>
-                    <p class="font-medium" id="display-phone">{{ $host->phone ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.contact_name'] ?? 'Contact Name (Internal)' }}</label>
-                    <p class="font-medium" id="display-contact-name">{{ $host->contact_name ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.support_email'] ?? 'Support Email (Automated)' }}</label>
-                    <p class="font-medium" id="display-support-email">{{ $host->support_email ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Social Links Card --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.social_links'] ?? 'Social Links' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.social_links_desc'] ?? 'Connect your social media profiles' }}</p>
-                </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-social-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            <div class="space-y-3">
-                <div class="flex items-center gap-2">
-                    <span class="icon-[tabler--brand-instagram] size-5 text-pink-500"></span>
-                    <span id="display-instagram" class="text-sm">{{ $host->social_links['instagram'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="icon-[tabler--brand-facebook] size-5 text-blue-600"></span>
-                    <span id="display-facebook" class="text-sm">{{ $host->social_links['facebook'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="icon-[tabler--world] size-5 text-base-content/70"></span>
-                    <span id="display-website" class="text-sm">{{ $host->social_links['website'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="icon-[tabler--brand-tiktok] size-5 text-base-content"></span>
-                    <span id="display-tiktok" class="text-sm">{{ $host->social_links['tiktok'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="icon-[tabler--brand-youtube] size-5 text-red-600"></span>
-                    <span id="display-youtube" class="text-sm">{{ $host->social_links['youtube'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="icon-[tabler--brand-bluesky] size-5 text-sky-500"></span>
-                    <span id="display-bluesky" class="text-sm">{{ $host->social_links['bluesky'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="icon-[tabler--link] size-5 text-base-content/70"></span>
-                    <span id="display-other" class="text-sm">{{ $host->social_links['other'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Amenities Card --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.amenities'] ?? 'Amenities' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.amenities_desc'] ?? 'Facilities available at your studio' }}</p>
-                </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-amenities-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            <div class="flex flex-wrap gap-2" id="display-amenities">
-                @if($host->amenities && count($host->amenities) > 0)
-                    @foreach($host->amenities as $amenity)
-                        <span class="badge badge-soft badge-sm">{{ $amenity }}</span>
-                    @endforeach
-                @else
-                    <span class="text-base-content/50 text-sm">{{ $trans['settings.no_amenities'] ?? 'No amenities selected' }}</span>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    {{-- Country of Operation Card --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold">{{ $trans['settings.countries_operation'] ?? 'Countries of Operation' }}</h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.countries_desc'] ?? 'Where your studio operates and serves clients' }}</p>
-                </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('edit-countries-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            <div class="flex flex-wrap gap-2" id="display-operating-countries">
-                @if($host->operating_countries && count($host->operating_countries) > 0)
-                    @foreach($host->operating_countries as $countryCode)
-                        @if(isset($operatingCountriesList[$countryCode]))
-                            <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">
-                                <span class="text-lg">{{ $operatingCountriesList[$countryCode]['flag'] }}</span>
-                                <span class="text-sm font-medium">{{ $operatingCountriesList[$countryCode]['name'] }}</span>
-                            </div>
-                        @endif
-                    @endforeach
-                @else
-                    <span class="text-base-content/50 text-sm">{{ $trans['settings.no_countries'] ?? 'No countries selected' }}</span>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    {{-- Currency Card (Required) --}}
-    <div id="currency-settings" class="card bg-base-100 scroll-mt-20">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        {{ $trans['settings.business_currencies'] ?? 'Business Currencies' }}
-                        <span class="badge badge-error badge-sm">Required</span>
-                    </h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.currencies_desc'] ?? 'Currencies accepted for pricing and transactions' }}</p>
-                </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-currency-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            {{-- Default Currency --}}
-            <div class="mb-4">
-                <label class="text-sm text-base-content/60">{{ $trans['settings.default_currency'] ?? 'Default Currency' }}</label>
-                <p class="font-medium text-lg" id="display-default-currency">
-                    @php $defaultCurrency = $host->default_currency ?? 'USD'; @endphp
-                    @if(isset($currencies[$defaultCurrency]))
-                        <span class="text-primary">{{ $currencies[$defaultCurrency]['symbol'] }}</span>
-                        {{ $defaultCurrency }} - {{ $currencies[$defaultCurrency]['name'] }}
-                    @else
-                        {{ $defaultCurrency }}
-                    @endif
-                </p>
-            </div>
-
-            {{-- All Currencies --}}
-            <div>
-                <label class="text-sm text-base-content/60 mb-2 block">{{ $trans['settings.accepted_currencies'] ?? 'Accepted Currencies' }}</label>
-                <div class="flex flex-wrap gap-2" id="display-currencies">
-                    @if($host->currencies && count($host->currencies) > 0)
-                        @foreach($host->currencies as $code)
-                            @if(isset($currencies[$code]))
-                                <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg {{ $code === $defaultCurrency ? 'ring-2 ring-primary' : '' }}">
-                                    <span class="text-lg font-bold text-primary">{{ $currencies[$code]['symbol'] }}</span>
-                                    <span class="text-sm font-medium">{{ $code }}</span>
-                                    <span class="text-xs text-base-content/60">{{ $currencies[$code]['name'] }}</span>
-                                    @if($code === $defaultCurrency)
-                                        <span class="badge badge-primary badge-xs">{{ $trans['settings.default'] ?? 'Default' }}</span>
-                                    @endif
-                                </div>
-                            @endif
-                        @endforeach
-                    @else
-                        <span class="text-base-content/50 text-sm">{{ $trans['settings.no_currencies'] ?? 'No currencies selected' }}</span>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Section Divider: Required Settings --}}
-    <div class="divider text-base-content/40 text-sm">
-        <span class="icon-[tabler--asterisk] size-4 mr-1 text-error"></span> {{ $trans['settings.required_settings_section'] ?? 'Required Settings' }}
-    </div>
-
-    {{-- Studio Categories Card (Required) --}}
+    {{-- Profile Settings Accordion --}}
     @php
         $categoryGroups = [
             'Mind & Body' => ['Yoga (Hatha, Vinyasa, Power, Yin, Restorative)', 'Pilates (Mat / Reformer)', 'Meditation / Mindfulness', 'Breathwork', 'Tai Chi', 'Qigong', 'Stretching / Mobility', 'Barre'],
@@ -585,231 +241,685 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         if (is_string($selectedCategories)) {
             $selectedCategories = json_decode($selectedCategories, true) ?? [];
         }
-    @endphp
-    <div id="studio-categories-settings" class="card bg-base-100 scroll-mt-20">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        {{ $trans['settings.studio_categories'] ?? 'Studio Categories' }}
-                        <span class="badge badge-error badge-sm">Required</span>
-                    </h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.studio_categories_desc'] ?? 'What types of services does your studio offer?' }}</p>
-                </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-categories-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
 
-            <div class="space-y-1">
-                <label class="text-sm text-base-content/60">{{ $trans['settings.selected_categories'] ?? 'Selected Categories' }}</label>
-                <div class="flex flex-wrap gap-2" id="display-studio-categories">
-                    @if(count($selectedCategories) > 0)
-                        @foreach($selectedCategories as $category)
-                            <span class="badge badge-soft badge-primary">{{ $category }}</span>
-                        @endforeach
-                    @else
-                        <span class="text-base-content/50">{{ $trans['settings.no_categories_selected'] ?? 'No categories selected' }}</span>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
+        $customServicePlanCategories = $host->custom_service_plan_categories ?? [];
+        if (is_string($customServicePlanCategories)) {
+            $customServicePlanCategories = json_decode($customServicePlanCategories, true) ?? [];
+        }
+        $disabledServicePlanCategories = $host->disabled_service_plan_categories ?? [];
+        if (is_string($disabledServicePlanCategories)) {
+            $disabledServicePlanCategories = json_decode($disabledServicePlanCategories, true) ?? [];
+        }
+        $defaultServicePlanCategories = \App\Models\ServicePlan::getCategories();
 
-    {{-- Language Settings Card (Required) --}}
-    @php
         $supportedLanguages = [
             'en' => ['name' => 'English'],
             'fr' => ['name' => 'French'],
             'de' => ['name' => 'German'],
             'es' => ['name' => 'Spanish'],
         ];
+
+        $studioCertifications = $host->certifications()->studioLevel()->get();
     @endphp
-    <div id="language-settings" class="card bg-base-100 scroll-mt-20">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        {{ $trans['settings.language_settings'] ?? 'Language Settings' }}
-                        <span class="badge badge-error badge-sm">Required</span>
-                    </h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.language_desc'] ?? 'Configure language preferences for your studio' }}</p>
+
+    <div class="accordion divide-y divide-base-200 rounded-lg bg-base-100" id="profile-settings-accordion">
+
+        {{-- 1. Branding --}}
+        <div class="accordion-item" id="branding-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="branding-content" aria-expanded="false">
+                <span class="icon-[tabler--palette] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.branding'] ?? 'Branding' }}</span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.branding_desc'] ?? 'Logo and cover image for your booking page' }}</span>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-language-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            <div class="space-y-4">
-                {{-- Studio Languages (Multiple Selection) --}}
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.studio_languages'] ?? 'Studio Languages' }}</label>
-                    <div class="flex flex-wrap gap-2" id="display-studio-languages">
-                        @php
-                            $studioLanguages = $host->studio_languages ?? ['en'];
-                            if (is_string($studioLanguages)) {
-                                $studioLanguages = json_decode($studioLanguages, true) ?? ['en'];
-                            }
-                        @endphp
-                        @foreach($studioLanguages as $langCode)
-                            @if(isset($supportedLanguages[$langCode]))
-                            <span class="badge badge-soft badge-primary">
-                                {{ $supportedLanguages[$langCode]['name'] }}
-                            </span>
-                            @endif
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- Default Studio Language --}}
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.default_studio_language'] ?? 'Default Studio Language' }}</label>
-                    <div class="flex items-center gap-2" id="display-language-app">
-                        @php $langApp = $host->default_language_app ?? 'en'; @endphp
-                        @if(isset($supportedLanguages[$langApp]))
-                            <span class="font-medium">{{ $supportedLanguages[$langApp]['name'] }}</span>
-                        @else
-                            <span class="text-base-content/50">Not set</span>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Booking Page Language --}}
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">{{ $trans['settings.booking_page_language'] ?? 'Booking Page Language' }}</label>
-                    <div class="flex items-center gap-2" id="display-language-booking">
-                        @php $langBooking = $host->default_language_booking ?? 'en'; @endphp
-                        @if(isset($supportedLanguages[$langBooking]))
-                            <span class="font-medium">{{ $supportedLanguages[$langBooking]['name'] }}</span>
-                        @else
-                            <span class="text-base-content/50">Not set</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    {{-- Booking Cancellation Policy Card (Required) --}}
-    <div id="cancellation-settings" class="card bg-base-100 scroll-mt-20">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        {{ $trans['settings.cancellation_policy'] ?? 'Booking Cancellation Policy' }}
-                        <span class="badge badge-error badge-sm">Required</span>
-                    </h2>
-                    <p class="text-base-content/60 text-sm">{{ $trans['settings.cancellation_desc'] ?? 'How far in advance clients must cancel bookings' }}</p>
-                </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-cancellation-drawer')">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </button>
-            </div>
-
-            @php
-                $cancellationHours = $host->getPolicy('cancellation_window_hours', 12);
-                $allowCancellations = $host->getPolicy('allow_cancellations', true);
-                $cancellationOptions = [
-                    0 => 'No advance notice required',
-                    2 => '2 hours before class',
-                    6 => '6 hours before class',
-                    12 => '12 hours before class',
-                    24 => '24 hours before class',
-                    48 => '2 days before class',
-                    72 => '3 days before class',
-                ];
-            @endphp
-
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-full bg-warning/20 flex items-center justify-center">
-                    <span class="icon-[tabler--clock-cancel] size-7 text-warning"></span>
-                </div>
-                <div>
-                    @if(!$allowCancellations)
-                        <div class="font-semibold text-error">{{ $trans['settings.cancellations_disabled'] ?? 'Cancellations Disabled' }}</div>
-                        <p class="text-sm text-base-content/60">{{ $trans['settings.cannot_cancel'] ?? 'Clients cannot cancel their bookings' }}</p>
-                    @else
-                        <div class="font-semibold" id="display-cancellation-window">{{ $cancellationOptions[$cancellationHours] ?? $cancellationHours . ' hours before class' }}</div>
-                        <p class="text-sm text-base-content/60">{{ $trans['settings.must_cancel_advance'] ?? 'Clients must cancel at least this far in advance' }}</p>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Assets & Certifications Card --}}
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-lg font-semibold">Assets & Certifications</h2>
-                    <p class="text-sm text-base-content/60">Manage studio licenses, certifications, and important documents</p>
-                </div>
-                <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('add-certification-drawer')">
-                    <span class="icon-[tabler--plus] size-4"></span>
-                    Add
-                </button>
-            </div>
-
-            @php
-                $studioCertifications = $host->certifications()->studioLevel()->get();
-            @endphp
-            <div id="certifications-list">
-                @if($studioCertifications->isEmpty())
-                    <div class="text-center py-8">
-                        <span class="icon-[tabler--certificate] size-12 text-base-content/20 mx-auto"></span>
-                        <p class="text-base-content/50 mt-2">No certifications added yet</p>
-                        <button type="button" class="btn btn-primary btn-sm mt-4" onclick="openDrawer('add-certification-drawer')">
-                            <span class="icon-[tabler--plus] size-4"></span>
-                            Add Certification
-                        </button>
-                    </div>
-                @else
-                    <div class="space-y-3">
-                        @foreach($studioCertifications as $cert)
-                        <div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="{{ $cert->id }}">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                                    <span class="icon-[tabler--certificate] size-5 text-primary"></span>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="branding-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                        {{-- Logo --}}
+                        <div class="space-y-3">
+                            <label class="text-sm font-medium">{{ $trans['settings.studio_logo'] ?? 'Studio Logo' }}</label>
+                            <div class="flex items-center gap-4">
+                                <div id="logo-preview" class="w-20 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
+                                    @if($host->logo_path)
+                                        <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->logo_path) }}" alt="Studio Logo" class="w-full h-full object-cover" />
+                                    @else
+                                        <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
+                                    @endif
                                 </div>
                                 <div>
-                                    <div class="font-medium">{{ $cert->name }}</div>
-                                    @if($cert->certification_name)
-                                        <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div>
-                                    @endif
-                                    @if($cert->expire_date)
-                                        <div class="text-xs mt-1">
-                                            <span class="badge {{ $cert->status_badge_class }} badge-xs">
-                                                @if($cert->isExpired())
-                                                    Expired {{ $cert->expire_date->format('M j, Y') }}
-                                                @else
-                                                    Expires {{ $cert->expire_date->format('M j, Y') }}
-                                                @endif
-                                            </span>
-                                        </div>
-                                    @endif
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-logo-drawer')">
+                                            <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_logo'] ?? 'Upload Logo' }}
+                                        </button>
+                                        @if($host->logo_path)
+                                        <button type="button" class="btn btn-ghost btn-sm text-error" onclick="removeStudioImage('logo')">
+                                            <span class="icon-[tabler--trash] size-4"></span> Remove
+                                        </button>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.logo_size_hint'] ?? '400x400px, max 5MB' }}</p>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-1">
-                                @if($cert->file_path)
-                                <a href="{{ $cert->file_url }}" download class="btn btn-ghost btn-sm btn-square" title="Download File">
-                                    <span class="icon-[tabler--download] size-4"></span>
-                                </a>
-                                @endif
-                                <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editCertification({{ $cert->id }})" title="Edit">
-                                    <span class="icon-[tabler--pencil] size-4"></span>
+                        </div>
+
+                        {{-- Cover Image --}}
+                        <div class="space-y-3">
+                            <label class="text-sm font-medium">{{ $trans['settings.cover_image'] ?? 'Cover Image' }}</label>
+                            <div class="flex items-center gap-4">
+                                <div id="cover-preview" class="w-32 h-20 bg-base-200 rounded-lg flex items-center justify-center overflow-hidden border border-base-300">
+                                    @if($host->cover_image_path)
+                                        <img src="{{ Storage::disk(config('filesystems.uploads'))->url($host->cover_image_path) }}" alt="Cover Image" class="w-full h-full object-cover" />
+                                    @else
+                                        <span class="icon-[tabler--photo] size-8 text-base-content/30"></span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" class="btn btn-soft btn-sm" onclick="openDrawer('upload-cover-drawer')">
+                                            <span class="icon-[tabler--upload] size-4"></span> {{ $trans['settings.upload_cover'] ?? 'Upload Cover' }}
+                                        </button>
+                                        @if($host->cover_image_path)
+                                        <button type="button" class="btn btn-ghost btn-sm text-error" onclick="removeStudioImage('cover')">
+                                            <span class="icon-[tabler--trash] size-4"></span> Remove
+                                        </button>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-base-content/50 mt-1">{{ $trans['settings.cover_size_hint'] ?? '1200x400px, max 5MB' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 2. About Your Studio --}}
+        <div class="accordion-item" id="about-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="about-content" aria-expanded="false">
+                <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.about_studio'] ?? 'About Your Studio' }}</span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.about_studio_desc'] ?? 'Description shown on your public booking page' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="about-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end gap-2 mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" id="about-edit-btn" onclick="toggleAboutEdit()">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm hidden" id="save-about-inline-btn" onclick="saveAbout()">
+                            <span class="loading loading-spinner loading-xs hidden" id="about-inline-spinner"></span>
+                            Save
+                        </button>
+                        <button type="button" class="btn btn-ghost btn-sm hidden" id="cancel-about-btn" onclick="cancelAboutEdit()">
+                            Cancel
+                        </button>
+                    </div>
+
+                    {{-- Display Mode --}}
+                    <div id="about-display" class="prose prose-sm max-w-none text-base-content/80">
+                        @if($host->about)
+                            {!! $host->about !!}
+                        @else
+                            <p class="text-base-content/50 italic">{{ $trans['settings.no_description'] ?? 'No description set. Click Edit to add a description.' }}</p>
+                        @endif
+                    </div>
+
+                    {{-- Edit Mode --}}
+                    <div id="about-edit-container" class="hidden">
+                        <div id="about-editor" class="bg-base-100 border border-base-content/20 rounded-lg min-h-[200px]"></div>
+                        <p class="text-xs text-base-content/50 mt-2">This appears on your public booking page</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 3. Studio Gallery --}}
+        <div class="accordion-item" id="gallery-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="gallery-content" aria-expanded="false">
+                <span class="icon-[tabler--photo] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.studio_gallery'] ?? 'Studio Gallery' }}</span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.gallery_desc'] ?? 'Showcase your studio with photos' }} (<span id="gallery-current-count">{{ $galleryCount }}</span>/{{ $galleryMaxTotal }})</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="gallery-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('upload-gallery-drawer')" @if($galleryCount >= $galleryMaxTotal) disabled @endif>
+                            <span class="icon-[tabler--plus] size-4"></span> {{ $trans['settings.add_image'] ?? 'Add Image' }}
+                        </button>
+                    </div>
+
+                    {{-- Gallery Grid --}}
+                    <div id="gallery-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach($host->galleryImages as $image)
+                        <div class="gallery-item relative group aspect-video bg-base-200 rounded-lg overflow-hidden" data-id="{{ $image->id }}">
+                            <img src="{{ $image->image_url }}" alt="{{ $image->caption ?? 'Gallery image' }}" class="w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                <button type="button" class="btn btn-circle btn-sm btn-ghost text-white gallery-drag-handle cursor-move" title="Drag to reorder">
+                                    <span class="icon-[tabler--grip-vertical] size-4"></span>
                                 </button>
-                                <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="confirmDeleteCertification({{ $cert->id }}, '{{ addslashes($cert->name) }}')" title="Delete">
+                                <button type="button" class="btn btn-circle btn-sm btn-ghost text-white hover:text-error" onclick="deleteGalleryImage({{ $image->id }})" title="Delete">
                                     <span class="icon-[tabler--trash] size-4"></span>
                                 </button>
                             </div>
+                            @if($image->caption)
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1">
+                                <p class="text-white text-xs truncate">{{ $image->caption }}</p>
+                            </div>
+                            @endif
                         </div>
                         @endforeach
+
+                        {{-- Add More Card --}}
+                        <button type="button" id="gallery-add-more-btn" onclick="openDrawer('upload-gallery-drawer')" class="aspect-video bg-base-200 hover:bg-base-300 border-2 border-dashed border-base-content/20 hover:border-primary rounded-lg flex flex-col items-center justify-center gap-2 transition-colors cursor-pointer">
+                            <span class="icon-[tabler--plus] size-8 text-base-content/40"></span>
+                            <span class="text-sm text-base-content/50">{{ $trans['settings.add_images'] ?? 'Add Images' }}</span>
+                        </button>
                     </div>
-                @endif
+                </div>
             </div>
         </div>
+
+        {{-- 4. Contact Information --}}
+        <div class="accordion-item" id="contact-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="contact-content" aria-expanded="false">
+                <span class="icon-[tabler--address-book] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.contact_info'] ?? 'Contact Information' }}</span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.contact_info_desc'] ?? 'Public and internal contact details' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="contact-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-contact-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">{{ $trans['settings.studio_email'] ?? 'Studio Email (Public)' }}</label>
+                            <p class="font-medium" id="display-studio-email">{{ $host->studio_email ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">{{ $trans['settings.studio_phone'] ?? 'Studio Phone (Public)' }}</label>
+                            <p class="font-medium" id="display-phone">{{ $host->phone ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">{{ $trans['settings.contact_name'] ?? 'Contact Name (Internal)' }}</label>
+                            <p class="font-medium" id="display-contact-name">{{ $host->contact_name ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">{{ $trans['settings.support_email'] ?? 'Support Email (Automated)' }}</label>
+                            <p class="font-medium" id="display-support-email">{{ $host->support_email ?? ($trans['settings.not_set'] ?? 'Not set') }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 5. Social Links --}}
+        <div class="accordion-item" id="social-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="social-content" aria-expanded="false">
+                <span class="icon-[tabler--share] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.social_links'] ?? 'Social Links' }}</span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.social_links_desc'] ?? 'Connect your social media profiles' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="social-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-social-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--brand-instagram] size-5 text-pink-500"></span>
+                            <span id="display-instagram" class="text-sm">{{ $host->social_links['instagram'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--brand-facebook] size-5 text-blue-600"></span>
+                            <span id="display-facebook" class="text-sm">{{ $host->social_links['facebook'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--world] size-5 text-base-content/70"></span>
+                            <span id="display-website" class="text-sm">{{ $host->social_links['website'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--brand-tiktok] size-5 text-base-content"></span>
+                            <span id="display-tiktok" class="text-sm">{{ $host->social_links['tiktok'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--brand-youtube] size-5 text-red-600"></span>
+                            <span id="display-youtube" class="text-sm">{{ $host->social_links['youtube'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--brand-bluesky] size-5 text-sky-500"></span>
+                            <span id="display-bluesky" class="text-sm">{{ $host->social_links['bluesky'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="icon-[tabler--link] size-5 text-base-content/70"></span>
+                            <span id="display-other" class="text-sm">{{ $host->social_links['other'] ?? ($trans['settings.not_connected'] ?? 'Not connected') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 6. Amenities --}}
+        <div class="accordion-item" id="amenities-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="amenities-content" aria-expanded="false">
+                <span class="icon-[tabler--building-community] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.amenities'] ?? 'Amenities' }}</span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.amenities_desc'] ?? 'Facilities available at your studio' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="amenities-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-amenities-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2" id="display-amenities">
+                        @if($host->amenities && count($host->amenities) > 0)
+                            @foreach($host->amenities as $amenity)
+                                <span class="badge badge-soft badge-sm">{{ $amenity }}</span>
+                            @endforeach
+                        @else
+                            <span class="text-base-content/50 text-sm">{{ $trans['settings.no_amenities'] ?? 'No amenities selected' }}</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 7. Countries of Operation --}}
+        <div class="accordion-item" id="countries-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="countries-content" aria-expanded="false">
+                <span class="icon-[tabler--world] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.countries_operation'] ?? 'Countries of Operation' }}</span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.countries_desc'] ?? 'Where your studio operates and serves clients' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="countries-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-countries-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2" id="display-operating-countries">
+                        @if($host->operating_countries && count($host->operating_countries) > 0)
+                            @foreach($host->operating_countries as $countryCode)
+                                @if(isset($operatingCountriesList[$countryCode]))
+                                    <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg">
+                                        <span class="text-lg">{{ $operatingCountriesList[$countryCode]['flag'] }}</span>
+                                        <span class="text-sm font-medium">{{ $operatingCountriesList[$countryCode]['name'] }}</span>
+                                </div>
+                            @endif
+                        @endforeach
+                    @else
+                        <span class="text-base-content/50 text-sm">{{ $trans['settings.no_countries'] ?? 'No countries selected' }}</span>
+                    @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- 8. Business Currencies (Required) --}}
+        <div class="accordion-item" id="currency-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="currency-content" aria-expanded="false">
+                <span class="icon-[tabler--coin] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.business_currencies'] ?? 'Business Currencies' }} <span class="badge badge-error badge-sm align-middle">Required</span></span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.currencies_desc'] ?? 'Currencies accepted for pricing and transactions' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="currency-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-currency-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    {{-- Default Currency --}}
+                    <div class="mb-4">
+                        <label class="text-sm text-base-content/60">{{ $trans['settings.default_currency'] ?? 'Default Currency' }}</label>
+                        <p class="font-medium text-lg" id="display-default-currency">
+                            @php $defaultCurrency = $host->default_currency ?? 'USD'; @endphp
+                            @if(isset($currencies[$defaultCurrency]))
+                                <span class="text-primary">{{ $currencies[$defaultCurrency]['symbol'] }}</span>
+                                {{ $defaultCurrency }} - {{ $currencies[$defaultCurrency]['name'] }}
+                            @else
+                                {{ $defaultCurrency }}
+                            @endif
+                        </p>
+                    </div>
+
+                    {{-- All Currencies --}}
+                    <div>
+                        <label class="text-sm text-base-content/60 mb-2 block">{{ $trans['settings.accepted_currencies'] ?? 'Accepted Currencies' }}</label>
+                        <div class="flex flex-wrap gap-2" id="display-currencies">
+                            @if($host->currencies && count($host->currencies) > 0)
+                                @foreach($host->currencies as $code)
+                                    @if(isset($currencies[$code]))
+                                        <div class="flex items-center gap-2 px-3 py-2 bg-base-200 rounded-lg {{ $code === $defaultCurrency ? 'ring-2 ring-primary' : '' }}">
+                                            <span class="text-lg font-bold text-primary">{{ $currencies[$code]['symbol'] }}</span>
+                                            <span class="text-sm font-medium">{{ $code }}</span>
+                                            <span class="text-xs text-base-content/60">{{ $currencies[$code]['name'] }}</span>
+                                            @if($code === $defaultCurrency)
+                                                <span class="badge badge-primary badge-xs">{{ $trans['settings.default'] ?? 'Default' }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                @endforeach
+                            @else
+                                <span class="text-base-content/50 text-sm">{{ $trans['settings.no_currencies'] ?? 'No currencies selected' }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {{-- 9. Studio Categories (Required) --}}
+        <div class="accordion-item" id="categories-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="categories-content" aria-expanded="false">
+                <span class="icon-[tabler--category] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.studio_categories'] ?? 'Studio Categories' }} <span class="badge badge-error badge-sm align-middle">Required</span></span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.studio_categories_desc'] ?? 'What types of services does your studio offer?' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="categories-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-categories-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-sm text-base-content/60">{{ $trans['settings.selected_categories'] ?? 'Selected Categories' }}</label>
+                        <div class="flex flex-wrap gap-2" id="display-studio-categories">
+                            @if(count($selectedCategories) > 0)
+                                @foreach($selectedCategories as $category)
+                                    <span class="badge badge-soft badge-primary">{{ $category }}</span>
+                                @endforeach
+                            @else
+                                <span class="text-base-content/50">{{ $trans['settings.no_categories_selected'] ?? 'No categories selected' }}</span>
+                            @endif
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {{-- 10. Service Plan Categories --}}
+        <div class="accordion-item" id="service-plan-categories-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="service-plan-categories-content" aria-expanded="false">
+                <span class="icon-[tabler--list-details] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">Service Plan Categories</span>
+                    <span class="text-base-content/60 text-sm block font-normal">Manage default and custom categories for your service plans</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="service-plan-categories-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-service-plan-categories-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> Edit
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        {{-- Default Categories --}}
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">Default Categories</label>
+                            <div class="flex flex-wrap gap-2" id="display-default-service-plan-categories">
+                                @foreach($defaultServicePlanCategories as $key => $label)
+                                    @if(in_array($key, $disabledServicePlanCategories))
+                                        <span class="badge badge-soft badge-sm line-through opacity-50">{{ $label }}</span>
+                                    @else
+                                        <span class="badge badge-soft badge-sm">{{ $label }}</span>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Custom Categories --}}
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">Custom Categories</label>
+                            <div class="flex flex-wrap gap-2" id="display-custom-service-plan-categories">
+                                @if(count($customServicePlanCategories) > 0)
+                                    @foreach($customServicePlanCategories as $category)
+                                        <span class="badge badge-soft badge-primary">{{ $category }}</span>
+                                    @endforeach
+                                @else
+                                    <span class="text-base-content/50 text-sm">No custom categories added</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {{-- 11. Language Settings (Required) --}}
+        <div class="accordion-item" id="language-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="language-content" aria-expanded="false">
+                <span class="icon-[tabler--language] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.language_settings'] ?? 'Language Settings' }} <span class="badge badge-error badge-sm align-middle">Required</span></span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.language_desc'] ?? 'Configure language preferences for your studio' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="language-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-language-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        {{-- Studio Languages (Multiple Selection) --}}
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">{{ $trans['settings.studio_languages'] ?? 'Studio Languages' }}</label>
+                            <div class="flex flex-wrap gap-2" id="display-studio-languages">
+                                @php
+                                    $studioLanguages = $host->studio_languages ?? ['en'];
+                                    if (is_string($studioLanguages)) {
+                                        $studioLanguages = json_decode($studioLanguages, true) ?? ['en'];
+                                    }
+                                @endphp
+                                @foreach($studioLanguages as $langCode)
+                                    @if(isset($supportedLanguages[$langCode]))
+                                    <span class="badge badge-soft badge-primary">
+                                        {{ $supportedLanguages[$langCode]['name'] }}
+                                    </span>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Default Studio Language --}}
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">{{ $trans['settings.default_studio_language'] ?? 'Default Studio Language' }}</label>
+                            <div class="flex items-center gap-2" id="display-language-app">
+                                @php $langApp = $host->default_language_app ?? 'en'; @endphp
+                                @if(isset($supportedLanguages[$langApp]))
+                                    <span class="font-medium">{{ $supportedLanguages[$langApp]['name'] }}</span>
+                                @else
+                                    <span class="text-base-content/50">Not set</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Booking Page Language --}}
+                        <div class="space-y-1">
+                            <label class="text-sm text-base-content/60">{{ $trans['settings.booking_page_language'] ?? 'Booking Page Language' }}</label>
+                            <div class="flex items-center gap-2" id="display-language-booking">
+                                @php $langBooking = $host->default_language_booking ?? 'en'; @endphp
+                                @if(isset($supportedLanguages[$langBooking]))
+                                    <span class="font-medium">{{ $supportedLanguages[$langBooking]['name'] }}</span>
+                                @else
+                                    <span class="text-base-content/50">Not set</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {{-- 12. Booking Cancellation Policy (Required) --}}
+        <div class="accordion-item" id="cancellation-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="cancellation-content" aria-expanded="false">
+                <span class="icon-[tabler--calendar-x] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">{{ $trans['settings.cancellation_policy'] ?? 'Booking Cancellation Policy' }} <span class="badge badge-error badge-sm align-middle">Required</span></span>
+                    <span class="text-base-content/60 text-sm block font-normal">{{ $trans['settings.cancellation_desc'] ?? 'How far in advance clients must cancel bookings' }}</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="cancellation-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-cancellation-drawer')">
+                            <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                        </button>
+                    </div>
+                    @php
+                        $cancellationHours = $host->getPolicy('cancellation_window_hours', 12);
+                        $allowCancellations = $host->getPolicy('allow_cancellations', true);
+                        $cancellationOptions = [
+                            0 => 'No advance notice required',
+                            2 => '2 hours before class',
+                            6 => '6 hours before class',
+                            12 => '12 hours before class',
+                            24 => '24 hours before class',
+                            48 => '2 days before class',
+                            72 => '3 days before class',
+                        ];
+                    @endphp
+
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-warning/20 flex items-center justify-center">
+                            <span class="icon-[tabler--clock-cancel] size-7 text-warning"></span>
+                        </div>
+                        <div>
+                            @if(!$allowCancellations)
+                                <div class="font-semibold text-error">{{ $trans['settings.cancellations_disabled'] ?? 'Cancellations Disabled' }}</div>
+                                <p class="text-sm text-base-content/60">{{ $trans['settings.cannot_cancel'] ?? 'Clients cannot cancel their bookings' }}</p>
+                            @else
+                                <div class="font-semibold" id="display-cancellation-window">{{ $cancellationOptions[$cancellationHours] ?? $cancellationHours . ' hours before class' }}</div>
+                                <p class="text-sm text-base-content/60">{{ $trans['settings.must_cancel_advance'] ?? 'Clients must cancel at least this far in advance' }}</p>
+                            @endif
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        {{-- 13. Assets & Certifications --}}
+        <div class="accordion-item" id="certifications-section">
+            <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="certifications-content" aria-expanded="false">
+                <span class="icon-[tabler--certificate] size-5 text-primary"></span>
+                <div class="flex-1">
+                    <span class="text-lg font-semibold">Assets & Certifications</span>
+                    <span class="text-base-content/60 text-sm block font-normal">Manage studio licenses, certifications, and important documents</span>
+                </div>
+                <span class="icon-[tabler--chevron-down] accordion-icon size-5 transition-transform"></span>
+            </button>
+            <div id="certifications-content" class="accordion-content w-full overflow-hidden transition-[height] hidden" role="region">
+                <div class="px-5 pb-5">
+                    <div class="flex justify-end mb-3">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('add-certification-drawer')">
+                            <span class="icon-[tabler--plus] size-4"></span> Add
+                        </button>
+                    </div>
+                    <div id="certifications-list">
+                        @if($studioCertifications->isEmpty())
+                            <div class="text-center py-8">
+                                <span class="icon-[tabler--certificate] size-12 text-base-content/20 mx-auto"></span>
+                                <p class="text-base-content/50 mt-2">No certifications added yet</p>
+                                <button type="button" class="btn btn-primary btn-sm mt-4" onclick="openDrawer('add-certification-drawer')">
+                                    <span class="icon-[tabler--plus] size-4"></span>
+                                    Add Certification
+                                </button>
+                            </div>
+                        @else
+                            <div class="space-y-3">
+                                @foreach($studioCertifications as $cert)
+                                <div class="flex items-center justify-between p-3 border border-base-content/10 rounded-lg" data-cert-id="{{ $cert->id }}">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                            <span class="icon-[tabler--certificate] size-5 text-primary"></span>
+                                        </div>
+                                        <div>
+                                            <div class="font-medium">{{ $cert->name }}</div>
+                                            @if($cert->certification_name)
+                                                <div class="text-xs text-base-content/60">{{ $cert->certification_name }}</div>
+                                            @endif
+                                            @if($cert->expire_date)
+                                                <div class="text-xs mt-1">
+                                                    <span class="badge {{ $cert->status_badge_class }} badge-xs">
+                                                        @if($cert->isExpired())
+                                                            Expired {{ $cert->expire_date->format('M j, Y') }}
+                                                        @else
+                                                            Expires {{ $cert->expire_date->format('M j, Y') }}
+                                                        @endif
+                                                    </span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        @if($cert->file_path)
+                                        <a href="{{ $cert->file_url }}" download class="btn btn-ghost btn-sm btn-square" title="Download File">
+                                            <span class="icon-[tabler--download] size-4"></span>
+                                        </a>
+                                        @endif
+                                        <button type="button" class="btn btn-ghost btn-sm btn-square" onclick="editCertification({{ $cert->id }})" title="Edit">
+                                            <span class="icon-[tabler--pencil] size-4"></span>
+                                        </button>
+                                        <button type="button" class="btn btn-ghost btn-sm btn-square text-error" onclick="confirmDeleteCertification({{ $cert->id }}, '{{ addslashes($cert->name) }}')" title="Delete">
+                                            <span class="icon-[tabler--trash] size-4"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
     </div>
 
 </div>
@@ -880,6 +990,15 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
                         <option value="Europe/London" {{ ($host->timezone ?? '') == 'Europe/London' ? 'selected' : '' }}>London (GMT)</option>
                         <option value="Europe/Paris" {{ ($host->timezone ?? '') == 'Europe/Paris' ? 'selected' : '' }}>Paris (CET)</option>
                         <option value="Australia/Sydney" {{ ($host->timezone ?? '') == 'Australia/Sydney' ? 'selected' : '' }}>Sydney (AEST)</option>
+                    </select>
+                </div>
+
+                {{-- Time Format --}}
+                <div>
+                    <label class="label-text" for="time_format">Time Format</label>
+                    <select id="time_format" class="select w-full">
+                        <option value="12h" {{ ($host->time_format ?? '12h') == '12h' ? 'selected' : '' }}>12-hour (2:00 PM)</option>
+                        <option value="24h" {{ ($host->time_format ?? '12h') == '24h' ? 'selected' : '' }}>24-hour (14:00)</option>
                     </select>
                 </div>
             </div>
@@ -1497,6 +1616,58 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
     </form>
 </div>
 
+{{-- Edit Service Plan Categories Drawer --}}
+<div id="edit-service-plan-categories-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Service Plan Categories</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-service-plan-categories-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="edit-service-plan-categories-form" class="flex flex-col flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-sm text-base-content/60 mb-4">Enable or disable default categories and add your own custom categories.</p>
+
+            {{-- Default Categories (checkboxes) --}}
+            <div class="mb-5">
+                <label class="label-text text-sm font-medium">Default Categories</label>
+                <p class="text-xs text-base-content/50 mb-2">Uncheck to disable a default category</p>
+                <div class="border border-base-200 rounded-lg p-2 space-y-1">
+                    @foreach($defaultServicePlanCategories as $key => $label)
+                    <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-base-200 rounded-lg">
+                        <input type="checkbox" name="spc_default_categories[]" value="{{ $key }}" class="checkbox checkbox-primary checkbox-sm spc-default-checkbox" {{ !in_array($key, $disabledServicePlanCategories) ? 'checked' : '' }} />
+                        <span class="text-sm">{{ $label }}</span>
+                    </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Custom Categories --}}
+            <div class="border-t border-base-200 pt-4">
+                <label class="label-text text-sm font-medium" for="spc_custom_textarea">Custom Categories</label>
+                <p class="text-xs text-base-content/50 mb-2">Add your own categories, one per line</p>
+                <textarea id="spc_custom_textarea" class="textarea textarea-bordered w-full" rows="4" placeholder="Enter custom categories, one per line...&#10;e.g.&#10;Specialty Classes&#10;Workshops&#10;Private Sessions">{{ implode("\n", $customServicePlanCategories) }}</textarea>
+
+                {{-- Current custom tags preview --}}
+                <div class="mt-2">
+                    <div class="flex flex-wrap gap-1" id="spc-custom-tags">
+                        @foreach($customServicePlanCategories as $cat)
+                            <span class="badge badge-primary badge-sm">{{ $cat }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-service-plan-categories-btn">
+                <span class="loading loading-spinner loading-xs hidden" id="service-plan-categories-spinner"></span>
+                Save Changes
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-service-plan-categories-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
 {{-- Add/Edit Certification Drawer --}}
 <div id="add-certification-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
@@ -1884,7 +2055,7 @@ function closeDrawer(id) {
 }
 
 function closeAllDrawers() {
-    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-countries-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-categories-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
+    var drawers = ['edit-basic-drawer', 'upload-logo-drawer', 'upload-cover-drawer', 'edit-contact-drawer', 'edit-social-drawer', 'edit-amenities-drawer', 'edit-countries-drawer', 'edit-currency-drawer', 'edit-language-drawer', 'edit-categories-drawer', 'edit-service-plan-categories-drawer', 'edit-cancellation-drawer', 'upload-gallery-drawer', 'add-certification-drawer', 'edit-certification-drawer'];
     drawers.forEach(function(id) {
         var drawer = document.getElementById(id);
         if (drawer) {
@@ -1991,7 +2162,8 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
             studio_structure: studioStructure,
             subdomain: subdomain,
             short_description: document.getElementById('short_description').value,
-            timezone: document.getElementById('timezone').value
+            timezone: document.getElementById('timezone').value,
+            time_format: document.getElementById('time_format').value
         })
     })
     .then(function(r) { return r.json(); })
@@ -2009,6 +2181,9 @@ document.getElementById('edit-basic-form').addEventListener('submit', function(e
 
             document.getElementById('display-short-description').textContent = document.getElementById('short_description').value || 'Not set';
             document.getElementById('display-timezone').textContent = document.getElementById('timezone').value || 'Not set';
+
+            var timeFormat = document.getElementById('time_format').value;
+            document.getElementById('display-time-format').textContent = timeFormat === '24h' ? '24-hour (14:00)' : '12-hour (2:00 PM)';
 
             captureDrawerData('edit-basic-drawer'); // Update original data so close doesn't reset
             closeDrawer('edit-basic-drawer');
@@ -2496,6 +2671,72 @@ document.getElementById('edit-cancellation-form').addEventListener('submit', fun
             }
             closeDrawer('edit-cancellation-drawer');
             setTimeout(function() { showToast('Cancellation policy updated!'); }, 350);
+        } else { showToast(result.message || 'Failed to update', 'error'); }
+    })
+    .catch(function() { showToast('An error occurred', 'error'); })
+    .finally(function() { btn.disabled = false; spinner.classList.add('hidden'); });
+});
+
+// Service Plan Categories - update tags preview on textarea input
+document.getElementById('spc_custom_textarea').addEventListener('input', function() {
+    var lines = this.value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+    var container = document.getElementById('spc-custom-tags');
+    container.innerHTML = lines.map(function(l) { return '<span class="badge badge-primary badge-sm">' + l.replace(/</g, '&lt;') + '</span>'; }).join('');
+});
+
+// All default category keys/labels for display update
+var spcDefaultCategoryMap = @json($defaultServicePlanCategories);
+
+document.getElementById('edit-service-plan-categories-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('save-service-plan-categories-btn');
+    var spinner = document.getElementById('service-plan-categories-spinner');
+    btn.disabled = true; spinner.classList.remove('hidden');
+
+    var customLines = document.getElementById('spc_custom_textarea').value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+
+    // Collect disabled default categories (unchecked checkboxes)
+    var allDefaultKeys = Object.keys(spcDefaultCategoryMap);
+    var checkedKeys = [];
+    document.querySelectorAll('.spc-default-checkbox:checked').forEach(function(cb) { checkedKeys.push(cb.value); });
+    var disabledKeys = allDefaultKeys.filter(function(k) { return checkedKeys.indexOf(k) === -1; });
+
+    fetch('{{ route("settings.studio.service-plan-categories.update") }}', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({
+            custom_service_plan_categories: customLines,
+            disabled_service_plan_categories: disabledKeys
+        })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.success) {
+            // Update custom categories display
+            var customEl = document.getElementById('display-custom-service-plan-categories');
+            if (customEl) {
+                if (customLines.length > 0) {
+                    customEl.innerHTML = customLines.map(function(l) { return '<span class="badge badge-soft badge-primary">' + l.replace(/</g, '&lt;') + '</span>'; }).join('');
+                } else {
+                    customEl.innerHTML = '<span class="text-base-content/50 text-sm">No custom categories added</span>';
+                }
+            }
+            // Update default categories display (show disabled with strikethrough)
+            var defaultEl = document.getElementById('display-default-service-plan-categories');
+            if (defaultEl) {
+                var html = '';
+                for (var key in spcDefaultCategoryMap) {
+                    var label = spcDefaultCategoryMap[key];
+                    if (disabledKeys.indexOf(key) !== -1) {
+                        html += '<span class="badge badge-soft badge-sm line-through opacity-50">' + label + '</span>';
+                    } else {
+                        html += '<span class="badge badge-soft badge-sm">' + label + '</span>';
+                    }
+                }
+                defaultEl.innerHTML = html;
+            }
+            closeDrawer('edit-service-plan-categories-drawer');
+            setTimeout(function() { showToast('Service plan categories updated!'); }, 350);
         } else { showToast(result.message || 'Failed to update', 'error'); }
     })
     .catch(function() { showToast('An error occurred', 'error'); })
@@ -3301,5 +3542,25 @@ openDrawer = function(id) {
     }
     originalOpenDrawer(id);
 };
+
+// Profile settings accordion behavior
+document.querySelectorAll('#profile-settings-accordion .accordion-toggle').forEach(function(button) {
+    button.addEventListener('click', function() {
+        var content = document.getElementById(this.getAttribute('aria-controls'));
+        var icon = this.querySelector('.accordion-icon');
+        var isExpanded = this.getAttribute('aria-expanded') === 'true';
+
+        // Toggle current
+        if (isExpanded) {
+            content.classList.add('hidden');
+            this.setAttribute('aria-expanded', 'false');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        } else {
+            content.classList.remove('hidden');
+            this.setAttribute('aria-expanded', 'true');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        }
+    });
+});
 </script>
 @endpush

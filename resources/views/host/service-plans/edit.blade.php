@@ -27,10 +27,8 @@
         </a>
     </div>
 
-    <form action="{{ route('service-plans.update', $servicePlan) }}" method="POST" enctype="multipart/form-data">
-        @csrf
-        @method('PUT')
+    <x-form-validate action="{{ route('service-plans.update', $servicePlan) }}" method="PUT" :has-files="true">
         @include('host.service-plans._form')
-    </form>
+    </x-form-validate>
 </div>
 @endsection

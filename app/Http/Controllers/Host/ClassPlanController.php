@@ -121,6 +121,28 @@ class ClassPlanController extends Controller
             $data['new_member_drop_in_prices'] = array_filter($data['new_member_drop_in_prices'], fn($price) => $price !== null && $price !== '');
         }
 
+        // Handle billing discounts from multi-currency inputs
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
+        }
+
         // Handle image upload
         if ($request->hasFile('image')) {
             $data['image_path'] = $request->file('image')->storePublicly($host->getStoragePath('class-plans'), config('filesystems.uploads'));
@@ -295,6 +317,28 @@ class ClassPlanController extends Controller
 
         if (isset($data['new_member_drop_in_prices'])) {
             $data['new_member_drop_in_prices'] = array_filter($data['new_member_drop_in_prices'], fn($price) => $price !== null && $price !== '');
+        }
+
+        // Handle billing discounts from multi-currency inputs
+        $billingDiscounts = [];
+        foreach (['1' => 'billing_discounts_1mo', '3' => 'billing_discounts_3mo', '6' => 'billing_discounts_6mo', '9' => 'billing_discounts_9mo', '12' => 'billing_discounts_12mo'] as $months => $field) {
+            if (isset($data[$field])) {
+                $billingDiscounts[$months] = array_filter($data[$field], fn($v) => $v !== null && $v !== '');
+                unset($data[$field]);
+            }
+        }
+        if (!empty($billingDiscounts)) {
+            $data['billing_discounts'] = $billingDiscounts;
+        }
+
+        // Handle multi-currency registration/cancellation fees
+        if (isset($data['registration_fees'])) {
+            $data['registration_fees'] = array_filter($data['registration_fees'], fn($v) => $v !== null && $v !== '');
+            $data['registration_fee'] = $data['registration_fees'][$defaultCurrency] ?? null;
+        }
+        if (isset($data['cancellation_fees'])) {
+            $data['cancellation_fees'] = array_filter($data['cancellation_fees'], fn($v) => $v !== null && $v !== '');
+            $data['cancellation_fee'] = $data['cancellation_fees'][$defaultCurrency] ?? null;
         }
 
         // Handle image upload

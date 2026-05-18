@@ -2,9 +2,7 @@
     $classPass = $classPass ?? null;
 @endphp
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {{-- Main Form --}}
-    <div class="lg:col-span-2 space-y-6">
+<div class="space-y-6">
         {{-- Basic Info --}}
         <div class="card bg-base-100">
             <div class="card-header">
@@ -46,11 +44,11 @@
                         @enderror
                     </div>
                     <div>
-                        <label class="label-text" for="default_credits_per_class">Credits per Class</label>
+                        <label class="label-text" for="default_credits_per_class">Credits per Class <span class="text-error">*</span></label>
                         <input type="number" id="default_credits_per_class" name="default_credits_per_class"
                             value="{{ old('default_credits_per_class', $classPass?->default_credits_per_class ?? 1) }}"
                             class="input w-full @error('default_credits_per_class') input-error @enderror"
-                            min="1" max="10">
+                            min="1" max="10" required>
                         <p class="text-xs text-base-content/60 mt-1">Default credits deducted per booking</p>
                         @error('default_credits_per_class')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -61,92 +59,47 @@
         </div>
 
         {{-- Pricing --}}
+        <x-studio-pricing-table
+            title="Pricing"
+            help="Leave empty for free passes. New member prices are shown on public booking (subdomain)."
+            :rows="[
+                ['section' => 'New Member Pricing', 'section_icon' => 'icon-[tabler--user-plus]', 'section_badge' => 'Public Booking', 'section_bg' => 'bg-info/5'],
+                ['name' => 'new_member_prices', 'label' => 'Price', 'values' => $classPass?->new_member_prices ?? []],
+                ['section' => 'Standard Pricing', 'section_icon' => 'icon-[tabler--users]', 'section_bg' => 'bg-base-200/50'],
+                ['name' => 'prices', 'label' => 'Price', 'values' => $classPass?->prices ?? []],
+            ]"
+        />
+
+        {{-- Fees & Cancellation --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Pricing</h3>
+                <h3 class="card-title">Fees & Cancellation Policy</h3>
             </div>
-            <div class="card-body space-y-4">
-                <div>
-                    <label class="label-text mb-2 block">Price by Currency</label>
-                    <p class="text-sm text-base-content/60 mb-3">New member prices are shown on public booking. Default currency price is required.</p>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <x-studio-currency-inputs
+                        name="registration_fees"
+                        :values="$classPass?->registration_fees ?? []"
+                        label="Registration Fee"
+                        help="One-time fee when purchasing a billing period"
+                    />
 
-                    @php
-                        $existingPrices = $classPass?->prices ?? [];
-                        $existingNewMemberPrices = $classPass?->new_member_prices ?? [];
-                        $legacyPrice = $classPass?->price;
-                    @endphp
+                    <x-studio-currency-inputs
+                        name="cancellation_fees"
+                        :values="$classPass?->cancellation_fees ?? []"
+                        label="Cancellation Fee"
+                        help="Fee charged for early cancellation"
+                    />
 
-                    <div class="overflow-x-auto">
-                        <table class="table table-zebra">
-                            <thead>
-                                <tr>
-                                    <th class="w-48">Price Type</th>
-                                    @foreach($hostCurrencies as $currency)
-                                        <th class="text-center">
-                                            {{ $currency }}
-                                            @if($currency === $defaultCurrency)
-                                                <span class="badge badge-primary badge-xs ms-1">Default</span>
-                                            @endif
-                                        </th>
-                                    @endforeach
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {{-- New Member Pricing --}}
-                                <tr class="bg-info/5">
-                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                        <span class="icon-[tabler--user-plus] size-4 me-1 align-middle"></span>
-                                        New Member Pricing
-                                        <span class="badge badge-soft badge-info badge-sm ms-2">Public Booking</span>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><label class="label-text">Price</label></td>
-                                    @foreach($hostCurrencies as $currency)
-                                        <td>
-                                            <label class="input input-bordered input-sm flex items-center gap-1">
-                                                <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                                <input type="number" name="new_member_prices[{{ $currency }}]" step="0.01" min="0"
-                                                       value="{{ old('new_member_prices.' . $currency, $existingNewMemberPrices[$currency] ?? '') }}"
-                                                       class="grow w-full min-w-20" placeholder="0.00">
-                                            </label>
-                                        </td>
-                                    @endforeach
-                                </tr>
-
-                                {{-- Existing Member Pricing --}}
-                                <tr class="bg-base-200/50">
-                                    <td colspan="{{ count($hostCurrencies) + 1 }}" class="font-semibold">
-                                        <span class="icon-[tabler--users] size-4 me-1 align-middle"></span>
-                                        Standard Pricing
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td><label class="label-text">Price <span class="text-error">*</span></label></td>
-                                    @foreach($hostCurrencies as $currency)
-                                        @php
-                                            $isDefault = $currency === $defaultCurrency;
-                                            $currentPrice = old("prices.{$currency}",
-                                                $existingPrices[$currency] ??
-                                                ($isDefault && $legacyPrice !== null ? $legacyPrice : '')
-                                            );
-                                        @endphp
-                                        <td>
-                                            <label class="input input-bordered input-sm flex items-center gap-1 @error("prices.{$currency}") input-error @enderror">
-                                                <span class="text-base-content/60 text-sm">{{ $currencySymbols[$currency] ?? $currency }}</span>
-                                                <input type="number" name="prices[{{ $currency }}]" step="0.01" min="0"
-                                                       value="{{ $currentPrice }}"
-                                                       class="grow w-full min-w-20" placeholder="0.00"
-                                                       {{ $isDefault ? 'required' : '' }}>
-                                            </label>
-                                            @error("prices.{$currency}")
-                                                <p class="text-error text-xs mt-1">{{ $message }}</p>
-                                            @enderror
-                                        </td>
-                                    @endforeach
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div>
+                        <label class="label-text text-sm" for="cancellation_grace_hours">Grace Period</label>
+                        <div class="flex items-center gap-2 mt-1">
+                            <input type="number" id="cancellation_grace_hours" name="cancellation_grace_hours" step="1" min="0" max="720"
+                                   value="{{ old('cancellation_grace_hours', $classPass?->cancellation_grace_hours ?? 48) }}"
+                                   class="input input-sm w-28" placeholder="48">
+                            <span class="text-sm text-base-content/60">hours</span>
+                        </div>
+                        <p class="text-xs text-base-content/50 mt-1">Full refund window after purchase</p>
                     </div>
                 </div>
             </div>
@@ -198,29 +151,77 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="label-text" for="activation_type">When Does Pass Start? <span class="text-error">*</span></label>
-                        <select id="activation_type" name="activation_type" class="select w-full @error('activation_type') input-error @enderror" required>
-                            @foreach($activationTypes as $value => $label)
-                                <option value="{{ $value }}" {{ old('activation_type', $classPass?->activation_type ?? 'on_purchase') === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <p class="text-xs text-base-content/60 mt-1">Controls when the validity period begins</p>
-                        @error('activation_type')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
+                <div>
+                    <label class="label-text" for="activation_type">When Does Pass Start? <span class="text-error">*</span></label>
+                    <select id="activation_type" name="activation_type" class="select w-full @error('activation_type') input-error @enderror" required>
+                        @foreach($activationTypes as $value => $label)
+                            <option value="{{ $value }}" {{ old('activation_type', $classPass?->activation_type ?? 'on_purchase') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-base-content/60 mt-1">Controls when the validity period begins</p>
+                    @error('activation_type')
+                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                {{-- Auto-Renewal --}}
+                <div class="border-t border-base-content/10 pt-4">
+                    <label class="label-text mb-2 block">Auto-Renewal (Subscription)</label>
+                    <div class="flex flex-wrap gap-2">
+                        <label class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
+                            <input type="checkbox" id="is_recurring" name="is_recurring" value="1"
+                                class="checkbox checkbox-primary checkbox-sm"
+                                {{ old('is_recurring', $classPass?->is_recurring) ? 'checked' : '' }}>
+                            <span class="label-text text-sm">Enable Auto-Renewal</span>
+                        </label>
+
+                        <label id="rollover-label" class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors {{ old('is_recurring', $classPass?->is_recurring) ? '' : 'hidden' }}">
+                            <input type="checkbox" id="rollover_enabled" name="rollover_enabled" value="1"
+                                class="checkbox checkbox-info checkbox-sm"
+                                {{ old('rollover_enabled', $classPass?->rollover_enabled) ? 'checked' : '' }}>
+                            <span class="label-text text-sm">Enable Credit Rollover</span>
+                        </label>
                     </div>
-                    <div>
-                        <label class="label-text" for="grace_period_days">Grace Period (Days)</label>
-                        <input type="number" id="grace_period_days" name="grace_period_days"
-                            value="{{ old('grace_period_days', $classPass?->grace_period_days ?? 0) }}"
-                            class="input w-full @error('grace_period_days') input-error @enderror"
-                            min="0" max="30">
-                        <p class="text-xs text-base-content/60 mt-1">Extra days after expiry for booking</p>
-                        @error('grace_period_days')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
+
+                    <div id="recurring-options" class="{{ old('is_recurring', $classPass?->is_recurring) ? '' : 'hidden' }} mt-3 space-y-3">
+                        <div>
+                            <label class="label-text" for="renewal_interval">Renewal Interval</label>
+                            <select id="renewal_interval" name="renewal_interval" class="select w-full max-w-xs @error('renewal_interval') input-error @enderror">
+                                <option value="">Select interval...</option>
+                                @foreach($renewalIntervals as $value => $label)
+                                    <option value="{{ $value }}" data-days="{{ $value === 'weekly' ? 7 : ($value === 'bi_weekly' ? 14 : 30) }}"
+                                        {{ old('renewal_interval', $classPass?->renewal_interval) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('renewal_interval')
+                                <p class="text-error text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div id="rollover-options" class="{{ old('rollover_enabled', $classPass?->rollover_enabled) ? '' : 'hidden' }}">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="label-text" for="max_rollover_credits">Max Rollover Credits</label>
+                                    <input type="number" id="max_rollover_credits" name="max_rollover_credits"
+                                        value="{{ old('max_rollover_credits', $classPass?->max_rollover_credits ?? 10) }}"
+                                        class="input w-full @error('max_rollover_credits') input-error @enderror"
+                                        min="0" max="100">
+                                    @error('max_rollover_credits')
+                                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="label-text" for="max_rollover_periods">Max Rollover Periods</label>
+                                    <input type="number" id="max_rollover_periods" name="max_rollover_periods"
+                                        value="{{ old('max_rollover_periods', $classPass?->max_rollover_periods ?? 2) }}"
+                                        class="input w-full @error('max_rollover_periods') input-error @enderror"
+                                        min="0" max="12">
+                                    @error('max_rollover_periods')
+                                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -234,7 +235,18 @@
             <div class="card-body space-y-4">
                 <div>
                     <label class="label-text" for="eligibility_type">Which Classes Can Be Booked? <span class="text-error">*</span></label>
-                    <select id="eligibility_type" name="eligibility_type" class="select w-full @error('eligibility_type') input-error @enderror" required>
+                    <select id="eligibility_type" name="eligibility_type" class="hidden" required
+                        data-select='{
+                            "hasSearch": true,
+                            "searchPlaceholder": "Search eligibility types...",
+                            "placeholder": "Select eligibility...",
+                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                            "toggleClasses": "advance-select-toggle",
+                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+                            "optionClasses": "advance-select-option selected:select-active",
+                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+                        }'>
                         @foreach($eligibilityTypes as $value => $label)
                             <option value="{{ $value }}" {{ old('eligibility_type', $classPass?->eligibility_type ?? 'all') === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
@@ -399,24 +411,8 @@
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
-                    <div>
-                        <label class="label-text" for="peak_time_start">Peak Start Time</label>
-                        <input type="time" id="peak_time_start" name="peak_time_start"
-                            value="{{ old('peak_time_start', $classPass?->peak_time_start) }}"
-                            class="input w-full @error('peak_time_start') input-error @enderror">
-                        @error('peak_time_start')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="label-text" for="peak_time_end">Peak End Time</label>
-                        <input type="time" id="peak_time_end" name="peak_time_end"
-                            value="{{ old('peak_time_end', $classPass?->peak_time_end) }}"
-                            class="input w-full @error('peak_time_end') input-error @enderror">
-                        @error('peak_time_end')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    <x-time-picker name="peak_time_start" :value="$classPass?->peak_time_start" label="Peak Start Time" placeholder="Select start time..." />
+                    <x-time-picker name="peak_time_end" :value="$classPass?->peak_time_end" label="Peak End Time" placeholder="Select end time..." />
                 </div>
 
                 <div>
@@ -445,38 +441,32 @@
                 {{-- Freeze & Extension --}}
                 <div>
                     <h4 class="font-medium mb-3">Freeze & Extension</h4>
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="flex flex-wrap gap-2">
+                        <label class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
                             <input type="checkbox" name="allow_admin_extension" value="1"
-                                class="toggle toggle-primary"
+                                class="checkbox checkbox-primary checkbox-sm"
                                 {{ old('allow_admin_extension', $classPass?->allow_admin_extension ?? true) ? 'checked' : '' }}>
-                            <div>
-                                <span class="font-medium">Allow Admin Extension</span>
-                                <p class="text-xs text-base-content/60">Admins can extend the expiry date</p>
-                            </div>
+                            <span class="label-text text-sm">Allow Admin Extension</span>
                         </label>
 
-                        <label class="flex items-center gap-3 cursor-pointer">
+                        <label class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
                             <input type="checkbox" id="allow_freeze" name="allow_freeze" value="1"
-                                class="toggle toggle-primary"
+                                class="checkbox checkbox-primary checkbox-sm"
                                 {{ old('allow_freeze', $classPass?->allow_freeze) ? 'checked' : '' }}>
-                            <div>
-                                <span class="font-medium">Allow Freeze</span>
-                                <p class="text-xs text-base-content/60">Members can pause their pass</p>
-                            </div>
+                            <span class="label-text text-sm">Allow Freeze</span>
                         </label>
+                    </div>
 
-                        <div id="freeze-options" class="{{ old('allow_freeze', $classPass?->allow_freeze) ? '' : 'hidden' }} pl-10 space-y-3">
-                            <div>
-                                <label class="label-text" for="max_freeze_days">Max Freeze Days</label>
-                                <input type="number" id="max_freeze_days" name="max_freeze_days"
-                                    value="{{ old('max_freeze_days', $classPass?->max_freeze_days ?? 30) }}"
-                                    class="input w-full max-w-xs @error('max_freeze_days') input-error @enderror"
-                                    min="1" max="365">
-                                @error('max_freeze_days')
-                                    <p class="text-error text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
+                    <div id="freeze-options" class="{{ old('allow_freeze', $classPass?->allow_freeze) ? '' : 'hidden' }} mt-3">
+                        <div>
+                            <label class="label-text" for="max_freeze_days">Max Freeze Days</label>
+                            <input type="number" id="max_freeze_days" name="max_freeze_days"
+                                value="{{ old('max_freeze_days', $classPass?->max_freeze_days ?? 30) }}"
+                                class="input w-full max-w-xs @error('max_freeze_days') input-error @enderror"
+                                min="1" max="365">
+                            @error('max_freeze_days')
+                                <p class="text-error text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
                     </div>
                 </div>
@@ -484,194 +474,132 @@
                 {{-- Sharing & Transfer --}}
                 <div class="border-t border-base-content/10 pt-6">
                     <h4 class="font-medium mb-3">Sharing & Transfer</h4>
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="flex flex-wrap gap-2">
+                        <label class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
                             <input type="checkbox" name="allow_transfer" value="1"
-                                class="toggle toggle-primary"
+                                class="checkbox checkbox-primary checkbox-sm"
                                 {{ old('allow_transfer', $classPass?->allow_transfer) ? 'checked' : '' }}>
-                            <div>
-                                <span class="font-medium">Allow Transfer</span>
-                                <p class="text-xs text-base-content/60">Pass can be transferred to another member</p>
-                            </div>
+                            <span class="label-text text-sm">Allow Transfer</span>
                         </label>
 
-                        <label class="flex items-center gap-3 cursor-pointer">
+                        <label class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
                             <input type="checkbox" id="allow_family_sharing" name="allow_family_sharing" value="1"
-                                class="toggle toggle-primary"
+                                class="checkbox checkbox-primary checkbox-sm"
                                 {{ old('allow_family_sharing', $classPass?->allow_family_sharing) ? 'checked' : '' }}>
-                            <div>
-                                <span class="font-medium">Allow Family Sharing</span>
-                                <p class="text-xs text-base-content/60">Credits can be shared with family members</p>
-                            </div>
+                            <span class="label-text text-sm">Allow Family Sharing</span>
                         </label>
 
-                        <div id="family-options" class="{{ old('allow_family_sharing', $classPass?->allow_family_sharing) ? '' : 'hidden' }} pl-10">
-                            <label class="label-text" for="max_family_members">Max Family Members</label>
-                            <input type="number" id="max_family_members" name="max_family_members"
-                                value="{{ old('max_family_members', $classPass?->max_family_members ?? 4) }}"
-                                class="input w-full max-w-xs @error('max_family_members') input-error @enderror"
-                                min="1" max="10">
-                            @error('max_family_members')
-                                <p class="text-error text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <label class="flex items-center gap-3 cursor-pointer">
+                        <label class="custom-option flex flex-row items-center gap-2 px-3 py-2 cursor-pointer rounded-lg border border-base-200 hover:bg-base-200/50 transition-colors">
                             <input type="checkbox" name="allow_gifting" value="1"
-                                class="toggle toggle-primary"
+                                class="checkbox checkbox-primary checkbox-sm"
                                 {{ old('allow_gifting', $classPass?->allow_gifting) ? 'checked' : '' }}>
-                            <div>
-                                <span class="font-medium">Allow Gifting</span>
-                                <p class="text-xs text-base-content/60">Pass can be purchased as a gift</p>
-                            </div>
+                            <span class="label-text text-sm">Allow Gifting</span>
                         </label>
                     </div>
-                </div>
 
-                {{-- Auto-Renewal --}}
-                <div class="border-t border-base-content/10 pt-6">
-                    <h4 class="font-medium mb-3">Auto-Renewal (Subscription)</h4>
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" id="is_recurring" name="is_recurring" value="1"
-                                class="toggle toggle-primary"
-                                {{ old('is_recurring', $classPass?->is_recurring) ? 'checked' : '' }}>
-                            <div>
-                                <span class="font-medium">Enable Auto-Renewal</span>
-                                <p class="text-xs text-base-content/60">Pass automatically renews and charges the member</p>
-                            </div>
-                        </label>
-
-                        <div id="recurring-options" class="{{ old('is_recurring', $classPass?->is_recurring) ? '' : 'hidden' }} pl-10 space-y-3">
-                            <div>
-                                <label class="label-text" for="renewal_interval">Renewal Interval</label>
-                                <select id="renewal_interval" name="renewal_interval" class="select w-full max-w-xs @error('renewal_interval') input-error @enderror">
-                                    <option value="">Select interval...</option>
-                                    @foreach($renewalIntervals as $value => $label)
-                                        <option value="{{ $value }}" {{ old('renewal_interval', $classPass?->renewal_interval) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                                @error('renewal_interval')
-                                    <p class="text-error text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" id="rollover_enabled" name="rollover_enabled" value="1"
-                                    class="toggle toggle-info"
-                                    {{ old('rollover_enabled', $classPass?->rollover_enabled) ? 'checked' : '' }}>
-                                <div>
-                                    <span class="font-medium">Enable Credit Rollover</span>
-                                    <p class="text-xs text-base-content/60">Unused credits roll over to next period</p>
-                                </div>
-                            </label>
-
-                            <div id="rollover-options" class="{{ old('rollover_enabled', $classPass?->rollover_enabled) ? '' : 'hidden' }} space-y-3">
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="label-text" for="max_rollover_credits">Max Rollover Credits</label>
-                                        <input type="number" id="max_rollover_credits" name="max_rollover_credits"
-                                            value="{{ old('max_rollover_credits', $classPass?->max_rollover_credits ?? 10) }}"
-                                            class="input w-full @error('max_rollover_credits') input-error @enderror"
-                                            min="0" max="100">
-                                        @error('max_rollover_credits')
-                                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                    <div>
-                                        <label class="label-text" for="max_rollover_periods">Max Rollover Periods</label>
-                                        <input type="number" id="max_rollover_periods" name="max_rollover_periods"
-                                            value="{{ old('max_rollover_periods', $classPass?->max_rollover_periods ?? 2) }}"
-                                            class="input w-full @error('max_rollover_periods') input-error @enderror"
-                                            min="0" max="12">
-                                        @error('max_rollover_periods')
-                                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                    <div id="family-options" class="{{ old('allow_family_sharing', $classPass?->allow_family_sharing) ? '' : 'hidden' }} mt-3">
+                        <label class="label-text" for="max_family_members">Max Family Members</label>
+                        <input type="number" id="max_family_members" name="max_family_members"
+                            value="{{ old('max_family_members', $classPass?->max_family_members ?? 4) }}"
+                            class="input w-full max-w-xs @error('max_family_members') input-error @enderror"
+                            min="1" max="10">
+                        @error('max_family_members')
+                            <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    {{-- Sidebar --}}
-    <div class="space-y-6">
-        {{-- Appearance --}}
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <h3 class="card-title">Appearance</h3>
-            </div>
-            <div class="card-body space-y-4">
-                <div>
-                    <label class="label-text" for="color">Display Color</label>
-                    <div class="flex items-center gap-2">
-                        <input type="color" id="color" name="color"
-                            value="{{ old('color', $classPass?->color ?? '#6366f1') }}"
-                            class="w-12 h-10 rounded cursor-pointer">
-                        <input type="text" id="color_text"
-                            value="{{ old('color', $classPass?->color ?? '#6366f1') }}"
-                            class="input flex-1"
-                            pattern="^#[0-9A-Fa-f]{6}$"
-                            placeholder="#6366f1">
-                    </div>
-                    @error('color')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="label-text" for="image">Cover Image</label>
-                    @if($classPass?->image_path)
-                        <div class="mb-2 relative inline-block">
-                            <img src="{{ $classPass->image_url }}" alt="{{ $classPass->name }}" class="w-32 h-20 object-cover rounded-lg">
-                            <label class="absolute -top-2 -right-2 btn btn-xs btn-circle btn-error cursor-pointer">
-                                <input type="checkbox" name="remove_image" value="1" class="hidden" onchange="this.closest('.relative').style.display='none'">
-                                <span class="icon-[tabler--x] size-3"></span>
-                            </label>
-                        </div>
-                    @endif
-                    <input type="file" id="image" name="image"
-                        class="file-input w-full @error('image') file-input-error @enderror"
-                        accept="image/jpeg,image/png,image/jpg,image/webp">
-                    <p class="text-xs text-base-content/60 mt-1">Max 2MB, JPEG/PNG/WebP</p>
-                    @error('image')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
             </div>
         </div>
 
-        {{-- Publishing --}}
+        {{-- Image --}}
         <div class="card bg-base-100">
             <div class="card-header">
-                <h3 class="card-title">Publishing</h3>
+                <h3 class="card-title">Image</h3>
+            </div>
+            <div class="card-body">
+                <input type="file" id="image" name="image" class="hidden" accept="image/jpeg,image/png,image/jpg,image/webp">
+
+                {{-- Preview (shown when image exists) --}}
+                <div id="image-preview-wrapper" class="{{ $classPass?->image_path ? '' : 'hidden' }}">
+                    <div class="relative group rounded-xl overflow-hidden">
+                        <img id="image-preview" src="{{ $classPass?->image_url ?? '' }}" alt="Pass image" class="w-full h-44 object-cover">
+                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button type="button" class="btn btn-sm btn-ghost text-white" onclick="document.getElementById('image').click()">
+                                <span class="icon-[tabler--edit] size-4"></span> Change
+                            </button>
+                            <button type="button" class="btn btn-sm btn-ghost text-white" onclick="removeImage()">
+                                <span class="icon-[tabler--trash] size-4"></span> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Upload zone (shown when no image) --}}
+                <div id="image-upload-zone" class="border-2 border-dashed border-base-content/20 rounded-xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors {{ $classPass?->image_path ? 'hidden' : '' }}"
+                     onclick="document.getElementById('image').click()"
+                     ondragover="event.preventDefault(); this.classList.add('border-primary', 'bg-primary/5')"
+                     ondragleave="this.classList.remove('border-primary', 'bg-primary/5')"
+                     ondrop="event.preventDefault(); this.classList.remove('border-primary', 'bg-primary/5'); handleImageDrop(event)">
+                    <span class="icon-[tabler--photo-up] size-10 text-base-content/30 mx-auto block mb-3"></span>
+                    <p class="text-sm font-medium text-base-content/70">Click to upload or drag & drop</p>
+                    <p class="text-xs text-base-content/50 mt-1">JPG, PNG or WebP. Max 2MB.</p>
+                </div>
+
+                @error('image')
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        {{-- Status --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <h3 class="card-title">Status</h3>
             </div>
             <div class="card-body space-y-4">
-                <div>
-                    <label class="label-text" for="status">Status <span class="text-error">*</span></label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="label-text" for="status">Status <span class="text-error">*</span></label>
                     <select id="status" name="status" class="select w-full @error('status') input-error @enderror" required>
                         @foreach($statuses as $value => $label)
                             <option value="{{ $value }}" {{ old('status', $classPass?->status ?? 'draft') === $value ? 'selected' : '' }}>{{ $label }}</option>
                         @endforeach
                     </select>
-                    <p class="text-xs text-base-content/60 mt-1">Only active passes can be purchased</p>
-                    @error('status')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                        <p class="text-xs text-base-content/60 mt-1">Only active passes can be purchased</p>
+                        @error('status')
+                            <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="label-text" for="color">Calendar Color</label>
+                        <div class="flex items-center gap-2">
+                            <input type="color" id="color" name="color"
+                                value="{{ old('color', $classPass?->color ?? '#6366f1') }}"
+                                class="w-12 h-10 rounded cursor-pointer">
+                            <input type="text" id="color_text"
+                                value="{{ old('color', $classPass?->color ?? '#6366f1') }}"
+                                class="input flex-1"
+                                pattern="^#[0-9A-Fa-f]{6}$"
+                                placeholder="#6366f1">
+                        </div>
+                        @error('color')
+                            <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" name="visibility_public" value="1"
-                        class="toggle toggle-primary"
-                        {{ old('visibility_public', $classPass?->visibility_public ?? true) ? 'checked' : '' }}>
+                <div class="flex items-center justify-between">
                     <div>
                         <span class="font-medium">Visible on Booking Page</span>
-                        <p class="text-xs text-base-content/60">Show this pass to customers</p>
+                        <p class="text-xs text-base-content/60">Show this pass to customers on the public booking page</p>
                     </div>
-                </label>
+                    <label class="switch switch-primary">
+                        <input type="checkbox" name="visibility_public" value="1"
+                            {{ old('visibility_public', $classPass?->visibility_public ?? true) ? 'checked' : '' }} />
+                        <span class="switch-indicator"></span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -687,12 +615,80 @@
                 </a>
             </div>
         </div>
-    </div>
 </div>
 
 @push('scripts')
 <script>
+    // Image upload preview
+    var imageInput = document.getElementById('image');
+    var imagePreview = document.getElementById('image-preview');
+    var imagePreviewWrapper = document.getElementById('image-preview-wrapper');
+    var imageUploadZone = document.getElementById('image-upload-zone');
+
+    imageInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            previewFile(this.files[0]);
+        }
+    });
+
+    function previewFile(file) {
+        if (!file.type.startsWith('image/')) return;
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size must be under 2MB.');
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreviewWrapper.classList.remove('hidden');
+            imageUploadZone.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function handleImageDrop(e) {
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            imageInput.files = files;
+            previewFile(files[0]);
+        }
+    }
+
+    function removeImage() {
+        imageInput.value = '';
+        imagePreview.src = '';
+        imagePreviewWrapper.classList.add('hidden');
+        imageUploadZone.classList.remove('hidden');
+    }
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Filter renewal intervals based on validity period
+    function filterRenewalIntervals() {
+        var validityType = document.getElementById('validity_type').value;
+        var validityValue = parseInt(document.getElementById('validity_value').value) || 0;
+        var renewalSelect = document.getElementById('renewal_interval');
+        var options = renewalSelect.querySelectorAll('option[data-days]');
+        var totalDays = 0;
+
+        if (validityType === 'days') {
+            totalDays = validityValue;
+        } else if (validityType === 'months') {
+            totalDays = validityValue * 30;
+        } else {
+            totalDays = 9999; // no_expiration — show all
+        }
+
+        options.forEach(function(opt) {
+            var requiredDays = parseInt(opt.dataset.days);
+            var allowed = totalDays >= requiredDays;
+            opt.disabled = !allowed;
+            opt.hidden = !allowed;
+            if (opt.selected && !allowed) {
+                renewalSelect.value = '';
+            }
+        });
+    }
+
     // Sync color picker with text input
     document.getElementById('color').addEventListener('input', function() {
         document.getElementById('color_text').value = this.value;
@@ -705,9 +701,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Validity type changes
     document.getElementById('validity_type').addEventListener('change', function() {
-        const valueSection = document.getElementById('validity-value-section');
-        const presetsSection = document.getElementById('validity-presets');
-        const unitSpan = document.getElementById('validity-unit');
+        var valueSection = document.getElementById('validity-value-section');
+        var presetsSection = document.getElementById('validity-presets');
+        var unitSpan = document.getElementById('validity-unit');
 
         if (this.value === 'days' || this.value === 'months') {
             valueSection.classList.remove('hidden');
@@ -717,6 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
             valueSection.classList.add('hidden');
             presetsSection.classList.add('hidden');
         }
+        filterRenewalIntervals();
     });
 
     // Validity presets
@@ -726,6 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('validity_value').value = this.dataset.value;
             document.getElementById('validity-unit').textContent = this.dataset.type;
             document.getElementById('validity-value-section').classList.remove('hidden');
+            filterRenewalIntervals();
         });
     });
 
@@ -763,12 +761,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Recurring toggle
     document.getElementById('is_recurring').addEventListener('change', function() {
         document.getElementById('recurring-options').classList.toggle('hidden', !this.checked);
+        document.getElementById('rollover-label').classList.toggle('hidden', !this.checked);
     });
 
     // Rollover toggle
     document.getElementById('rollover_enabled').addEventListener('change', function() {
         document.getElementById('rollover-options').classList.toggle('hidden', !this.checked);
     });
+
+    document.getElementById('validity_value').addEventListener('input', filterRenewalIntervals);
+    filterRenewalIntervals();
 });
 </script>
 @endpush

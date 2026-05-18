@@ -219,6 +219,7 @@ class SettingsController extends Controller
             'studio_categories.*' => 'string|max:255',
             'short_description' => 'nullable|string|max:500',
             'timezone' => 'nullable|string|max:100',
+            'time_format' => 'nullable|string|in:12h,24h',
             'city' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:50',
         ]);
@@ -498,6 +499,32 @@ class SettingsController extends Controller
             'message' => 'Studio categories updated successfully',
             'data' => [
                 'studio_categories' => $validated['studio_categories'],
+            ],
+        ]);
+    }
+
+    public function updateServicePlanCategories(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'custom_service_plan_categories' => 'nullable|array',
+            'custom_service_plan_categories.*' => 'string|max:255',
+            'disabled_service_plan_categories' => 'nullable|array',
+            'disabled_service_plan_categories.*' => 'string|max:255',
+        ]);
+
+        $host->update([
+            'custom_service_plan_categories' => $validated['custom_service_plan_categories'] ?? [],
+            'disabled_service_plan_categories' => $validated['disabled_service_plan_categories'] ?? [],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Service plan categories updated successfully',
+            'data' => [
+                'custom_service_plan_categories' => $host->custom_service_plan_categories,
+                'disabled_service_plan_categories' => $host->disabled_service_plan_categories,
             ],
         ]);
     }

@@ -316,30 +316,37 @@
                     <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $servicePlan->description }}</p>
                     @endif
 
-                    <div class="mt-4 flex items-center gap-4 text-sm">
+                    <div class="mt-4 flex items-center gap-4 text-sm flex-wrap">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
                             <span class="font-medium">{{ $servicePlan->formatted_price }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->active_staff_members_count }} {{ $trans['common.staff_member'] ?? 'staff' }}</span>
+                            <span>{{ $servicePlan->max_participants }} {{ $trans['common.max'] ?? 'max' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--user] size-4 text-base-content/60"></span>
+                            <span>{{ $servicePlan->active_staff_members_count }} staff</span>
                         </div>
                         <span class="badge badge-soft badge-neutral badge-sm capitalize">{{ str_replace('_', ' ', $servicePlan->location_type) }}</span>
                     </div>
 
                     {{-- Actions --}}
-                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
-                        <a href="{{ route('service-plans.show', $servicePlan) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                        </a>
-                        <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary flex-1">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10 justify-end">
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('service-plans.show', $servicePlan) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('service-plans.edit', $servicePlan) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
                 </div>
             </div>
@@ -375,14 +382,18 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-6 text-sm mt-2">
+                    <div class="flex items-center gap-6 text-sm mt-2 flex-wrap">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
                             <span class="font-medium">{{ $servicePlan->formatted_price }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $servicePlan->active_staff_members_count }} {{ $trans['common.staff_member'] ?? 'staff' }}</span>
+                            <span>{{ $servicePlan->max_participants }} {{ $trans['common.max'] ?? 'max' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--user] size-4 text-base-content/60"></span>
+                            <span>{{ $servicePlan->active_staff_members_count }} staff</span>
                         </div>
                         @if($servicePlan->description)
                         <p class="text-base-content/60 line-clamp-1 flex-1">{{ $servicePlan->description }}</p>
@@ -391,17 +402,19 @@
 
                     {{-- Actions --}}
                     <div class="card-actions justify-end mt-2">
-                        <a href="{{ route('service-plans.show', $servicePlan) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                            {{ $trans['btn.view'] ?? 'View' }}
-                        </a>
-                        <a href="{{ route('service-plans.edit', $servicePlan) }}" class="btn btn-sm btn-soft btn-primary">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('service-plans.show', $servicePlan) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('service-plans.edit', $servicePlan) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('service-plans.destroy', $servicePlan) }}', '{{ $servicePlan->name }}', '{{ $trans['catalog.service_plan'] ?? 'service plan' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
                 </div>
             </div>
@@ -575,56 +588,60 @@
                                 &bull; {{ $classPass->formatted_validity }}
                             </p>
                         </div>
-                        <span class="badge badge-soft {{ $classPass->status === 'active' ? 'badge-success' : ($classPass->status === 'draft' ? 'badge-warning' : 'badge-neutral') }} badge-sm">
-                            {{ ucfirst($classPass->status) }}
-                        </span>
+                        <div class="flex items-center gap-1">
+                            <span class="badge badge-soft {{ $classPass->status === 'active' ? 'badge-success' : ($classPass->status === 'draft' ? 'badge-warning' : 'badge-neutral') }} badge-sm">
+                                {{ ucfirst($classPass->status) }}
+                            </span>
+                        </div>
                     </div>
 
                     @if($classPass->description)
                     <p class="text-sm text-base-content/60 line-clamp-2 mt-2">{{ $classPass->description }}</p>
                     @endif
 
-                    <div class="mt-4 flex items-center gap-4 text-sm">
+                    <div class="mt-4 flex items-center gap-4 text-sm flex-wrap">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
                             <span class="font-medium">{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</span>
                         </div>
                         <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
+                            <span>{{ $classPass->class_count }} {{ $trans['common.credits'] ?? 'credits' }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
                             <span>{{ $classPass->purchases_count }} {{ $trans['common.sold'] ?? 'sold' }}</span>
                         </div>
-                        @if($classPass->is_recurring)
-                        <span class="badge badge-soft badge-info badge-sm">{{ $trans['common.recurring'] ?? 'Recurring' }}</span>
-                        @endif
-                    </div>
-
-                    {{-- Eligibility Badge --}}
-                    <div class="mt-2">
                         @if($classPass->eligibility_type === 'all')
                             <span class="badge badge-soft badge-success badge-sm">{{ $trans['class_passes.all_classes'] ?? 'All Classes' }}</span>
-                        @elseif($classPass->eligibility_type === 'categories')
-                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_categories ?? []) }} {{ $trans['common.categories'] ?? 'categories' }}</span>
-                        @elseif($classPass->eligibility_type === 'class_plans')
-                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_class_plan_ids ?? []) }} {{ $trans['common.classes'] ?? 'classes' }}</span>
-                        @elseif($classPass->eligibility_type === 'instructors')
-                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_instructor_ids ?? []) }} {{ $trans['common.instructors'] ?? 'instructors' }}</span>
-                        @elseif($classPass->eligibility_type === 'locations')
-                            <span class="badge badge-soft badge-secondary badge-sm">{{ count($classPass->eligible_location_ids ?? []) }} {{ $trans['common.locations'] ?? 'locations' }}</span>
+                        @else
+                            <span class="badge badge-soft badge-secondary badge-sm capitalize">{{ str_replace('_', ' ', $classPass->eligibility_type) }}</span>
                         @endif
                     </div>
 
                     {{-- Actions --}}
-                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10">
-                        <a href="{{ route('class-passes.show', $classPass) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                        </a>
-                        <a href="{{ route('class-passes.edit', $classPass) }}" class="btn btn-sm btn-soft btn-primary flex-1">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-passes.destroy', $classPass) }}', '{{ $classPass->name }}', '{{ $trans['catalog.class_pass'] ?? 'class pass' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                    <div class="card-actions mt-4 pt-4 border-t border-base-content/10 justify-end">
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('class-passes.show', $classPass) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('class-passes.edit', $classPass) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li>
+                                <form action="{{ route('class-passes.duplicate', $classPass) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left flex items-center gap-2">
+                                        <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
+                                    </button>
+                                </form>
+                            </li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('class-passes.destroy', $classPass) }}', '{{ $classPass->name }}', '{{ $trans['catalog.class_pass'] ?? 'class pass' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
                 </div>
             </div>
@@ -665,10 +682,14 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-6 text-sm mt-2">
+                    <div class="flex items-center gap-6 text-sm mt-2 flex-wrap">
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--currency-dollar] size-4 text-base-content/60"></span>
                             <span class="font-medium">{{ $classPass->getFormattedPriceForCurrency($defaultCurrency) }}</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
+                            <span>{{ $classPass->class_count }} {{ $trans['common.credits'] ?? 'credits' }}</span>
                         </div>
                         <div class="flex items-center gap-1">
                             <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
@@ -677,12 +698,6 @@
                         @if($classPass->is_recurring)
                         <span class="badge badge-soft badge-info badge-sm">{{ ucfirst($classPass->renewal_interval) }}</span>
                         @endif
-                        @if($classPass->default_credits_per_class > 1)
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--ticket] size-4 text-base-content/60"></span>
-                            <span>{{ $classPass->default_credits_per_class }} {{ $trans['class_passes.credits_per_class'] ?? 'credits/class' }}</span>
-                        </div>
-                        @endif
                         @if($classPass->description)
                         <p class="text-base-content/60 line-clamp-1 flex-1">{{ $classPass->description }}</p>
                         @endif
@@ -690,23 +705,27 @@
 
                     {{-- Actions --}}
                     <div class="card-actions justify-end mt-2">
-                        <a href="{{ route('class-passes.show', $classPass) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                            {{ $trans['btn.view'] ?? 'View' }}
-                        </a>
-                        <a href="{{ route('class-passes.edit', $classPass) }}" class="btn btn-sm btn-soft btn-primary">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        <form action="{{ route('class-passes.duplicate', $classPass) }}" method="POST" class="inline">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-soft btn-info" title="{{ $trans['btn.duplicate'] ?? 'Duplicate' }}">
-                                <span class="icon-[tabler--copy] size-4"></span>
-                            </button>
-                        </form>
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('class-passes.destroy', $classPass) }}', '{{ $classPass->name }}', '{{ $trans['catalog.class_pass'] ?? 'class pass' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('class-passes.show', $classPass) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('class-passes.edit', $classPass) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            <li>
+                                <form action="{{ route('class-passes.duplicate', $classPass) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left flex items-center gap-2">
+                                        <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
+                                    </button>
+                                </form>
+                            </li>
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('class-passes.destroy', $classPass) }}', '{{ $classPass->name }}', '{{ $trans['catalog.class_pass'] ?? 'class pass' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
                 </div>
             </div>
