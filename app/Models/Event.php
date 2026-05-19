@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -66,6 +67,8 @@ class Event extends Model
         'online_url',
         'online_platform',
         'cover_image',
+        'gallery_images',
+        'file_attachments',
         'capacity',
         'registration_count',
         'waitlist_count',
@@ -89,6 +92,8 @@ class Event extends Model
             'published_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'completed_at' => 'datetime',
+            'gallery_images' => 'array',
+            'file_attachments' => 'array',
             'waitlist_enabled' => 'boolean',
             'hide_attendee_list' => 'boolean',
         ];
@@ -133,6 +138,11 @@ class Event extends Model
     {
         return $this->hasMany(EventAttendee::class)
             ->whereIn('status', ['registered', 'confirmed', 'attended']);
+    }
+
+    public function questionnaireAttachments(): MorphMany
+    {
+        return $this->morphMany(QuestionnaireAttachment::class, 'attachable');
     }
 
     public function clients(): BelongsToMany

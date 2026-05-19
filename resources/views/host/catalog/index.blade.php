@@ -1060,8 +1060,8 @@
             @foreach($events as $event)
             <div class="card bg-base-100 card-side {{ $event->status === 'cancelled' ? 'opacity-60' : '' }}">
                 @if($event->cover_image)
-                <figure class="w-32 shrink-0 relative">
-                    <img src="{{ $event->cover_image }}" alt="{{ $event->title }}" class="w-full h-full object-cover">
+                <figure class="w-32 shrink-0 overflow-hidden relative">
+                    <img src="{{ $event->cover_image }}" alt="{{ $event->title }}" class="absolute inset-0 w-full h-full object-cover">
                 </figure>
                 @else
                 <div class="w-32 shrink-0 flex items-center justify-center bg-primary/10 rounded-s-xl">
@@ -1071,64 +1071,66 @@
                     </div>
                 </div>
                 @endif
-                <div class="card-body py-4">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h3 class="card-title text-base">{{ $event->title }}</h3>
-                            <p class="text-sm text-base-content/60">
-                                {{ $event->start_datetime->format('D, M j, Y \a\t g:i A') }}
-                                @if($event->venue_name)
-                                    &bull; {{ $event->venue_name }}
-                                @endif
-                            </p>
-                        </div>
+                <div class="card-body py-3">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
+                            <a href="{{ route('events.show', $event) }}" class="card-title text-base hover:text-primary">{{ $event->title }}</a>
                             <span class="badge badge-soft {{ $event->status === 'published' ? 'badge-success' : ($event->status === 'draft' ? 'badge-warning' : ($event->status === 'cancelled' ? 'badge-error' : 'badge-neutral')) }} badge-sm">
                                 {{ ucfirst($event->status) }}
                             </span>
                             <span class="badge badge-soft badge-sm capitalize">
-                                {{ str_replace('_', '-', $event->event_type) }}
+                                @if($event->event_type === 'in_person')
+                                    In-Person
+                                @elseif($event->event_type === 'online')
+                                    Online
+                                @else
+                                    Hybrid
+                                @endif
                             </span>
                         </div>
+                        <x-actions-dropdown>
+                            <li><a href="{{ route('events.show', $event) }}">
+                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                            </a></li>
+                            <li><a href="{{ route('events.edit', $event) }}">
+                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                            </a></li>
+                            @if($event->status === 'draft')
+                            <li>
+                                <form action="{{ route('events.publish', $event) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="w-full text-left flex items-center gap-2">
+                                        <span class="icon-[tabler--send] size-4"></span> {{ $trans['btn.publish'] ?? 'Publish' }}
+                                    </button>
+                                </form>
+                            </li>
+                            @endif
+                            <li>
+                                <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('events.destroy', $event) }}', '{{ $event->title }}', '{{ $trans['catalog.event'] ?? 'event' }}')">
+                                    <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                </button>
+                            </li>
+                        </x-actions-dropdown>
                     </div>
 
-                    <div class="flex items-center gap-6 text-sm mt-2">
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--users] size-4 text-base-content/60"></span>
-                            <span>{{ $event->registered_attendees_count }}@if($event->capacity)/{{ $event->capacity }}@endif {{ $trans['common.attendees'] ?? 'attendees' }}</span>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <span class="icon-[tabler--clock] size-4 text-base-content/60"></span>
-                            <span>{{ $event->start_datetime->diffForHumans() }}</span>
-                        </div>
-                        @if($event->short_description)
-                        <p class="text-base-content/60 line-clamp-1 flex-1">{{ $event->short_description }}</p>
+                    <div class="flex items-center gap-2 mt-1 flex-wrap">
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--calendar] size-3.5 me-1"></span>{{ $event->start_datetime->format('D, M j, Y') }}</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--clock] size-3.5 me-1"></span>{{ $event->start_datetime->format('g:i A') }}</span>
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--users] size-3.5 me-1"></span>{{ $event->registered_attendees_count }}@if($event->capacity)/{{ $event->capacity }}@endif attendees</span>
+                        @if($event->venue_name)
+                        <span class="badge badge-soft badge-sm"><span class="icon-[tabler--map-pin] size-3.5 me-1"></span>{{ $event->venue_name }}</span>
                         @endif
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="card-actions justify-end mt-2">
-                        <a href="{{ route('events.show', $event) }}" class="btn btn-sm btn-soft btn-secondary">
-                            <span class="icon-[tabler--eye] size-4"></span>
-                            {{ $trans['btn.view'] ?? 'View' }}
-                        </a>
-                        <a href="{{ route('events.edit', $event) }}" class="btn btn-sm btn-soft btn-primary">
-                            <span class="icon-[tabler--edit] size-4"></span>
-                            {{ $trans['btn.edit'] ?? 'Edit' }}
-                        </a>
-                        @if($event->status === 'draft')
-                        <form action="{{ route('events.publish', $event) }}" method="POST" class="inline">
-                            @csrf
-                            @method('PATCH')
-                            <button type="submit" class="btn btn-sm btn-soft btn-success">
-                                <span class="icon-[tabler--send] size-4"></span>
-                                {{ $trans['btn.publish'] ?? 'Publish' }}
-                            </button>
-                        </form>
-                        @endif
-                        <button type="button" class="btn btn-sm btn-soft btn-error" onclick="openDeleteModal('{{ route('events.destroy', $event) }}', '{{ $event->title }}', '{{ $trans['catalog.event'] ?? 'event' }}')">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
+                        <span class="badge badge-soft badge-sm">
+                            @if($event->visibility === 'public')
+                                <span class="icon-[tabler--world] size-3.5 me-1"></span>
+                            @elseif($event->visibility === 'private')
+                                <span class="icon-[tabler--lock] size-3.5 me-1"></span>
+                            @else
+                                <span class="icon-[tabler--link] size-3.5 me-1"></span>
+                            @endif
+                            {{ ucfirst($event->visibility) }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -1175,10 +1177,18 @@
 @push('scripts')
 <script>
     function openDeleteModal(action, name, type) {
-        document.getElementById('deleteForm').action = action;
-        document.getElementById('deleteItemName').textContent = name;
-        document.getElementById('deleteItemType').textContent = type;
-        document.getElementById('deleteModal').showModal();
+        // Close any open dropdowns first
+        document.querySelectorAll('details.dropdown[open]').forEach(function(d) {
+            d.removeAttribute('open');
+        });
+
+        // Small delay to let dropdown close before showing modal
+        setTimeout(function() {
+            document.getElementById('deleteForm').action = action;
+            document.getElementById('deleteItemName').textContent = name;
+            document.getElementById('deleteItemType').textContent = type;
+            document.getElementById('deleteModal').showModal();
+        }, 50);
     }
 </script>
 @endpush

@@ -3,17 +3,20 @@
 namespace App\Http\Controllers\Host;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Host\Traits\SyncsQuestionnaireAttachments;
 use App\Models\Client;
 use App\Models\Event;
 use App\Models\EventAttendee;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class EventController extends Controller
 {
+    use SyncsQuestionnaireAttachments;
     protected function getHost()
     {
         $host = Auth::user()->currentHost() ?? Auth::user()->host;
@@ -85,8 +88,9 @@ class EventController extends Controller
     {
         $host = $this->getHost();
         $timezones = timezone_identifiers_list();
+        $questionnaires = $this->getPublishedQuestionnaires();
 
-        return view('host.events.create', compact('host', 'timezones'));
+        return view('host.events.create', compact('host', 'timezones', 'questionnaires'));
     }
 
     /**
@@ -119,6 +123,10 @@ class EventController extends Controller
             'skill_level' => ['required', 'in:beginner,intermediate,advanced,all_levels'],
             'audience_type' => ['required', 'in:adults,kids,families,seniors,all'],
             'cover_image' => ['nullable', 'image', 'max:5120'],
+            'gallery_images' => ['nullable', 'array', 'max:20'],
+            'gallery_images.*' => ['image', 'max:5120'],
+            'file_attachments' => ['nullable', 'array'],
+            'file_attachments.*' => ['file', 'max:10240'],
             'waitlist_enabled' => ['boolean'],
             'hide_attendee_list' => ['boolean'],
         ]);
@@ -142,13 +150,13 @@ class EventController extends Controller
             'timezone' => $validated['timezone'],
             'venue_name' => $validated['venue_name'],
             'address_line_1' => $validated['address_line_1'],
-            'address_line_2' => $validated['address_line_2'],
-            'city' => $validated['city'],
-            'state' => $validated['state'],
-            'zip_code' => $validated['zip_code'],
-            'online_url' => $validated['online_url'],
-            'online_platform' => $validated['online_platform'],
-            'capacity' => $validated['capacity'],
+            'address_line_2' => $validated['address_line_2'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'state' => $validated['state'] ?? null,
+            'zip_code' => $validated['zip_code'] ?? null,
+            'online_url' => $validated['online_url'] ?? null,
+            'online_platform' => $validated['online_platform'] ?? null,
+            'capacity' => $validated['capacity'] ?? null,
             'skill_level' => $validated['skill_level'],
             'audience_type' => $validated['audience_type'],
             'waitlist_enabled' => $request->boolean('waitlist_enabled'),
@@ -161,6 +169,37 @@ class EventController extends Controller
             $path = $request->file('cover_image')->store('events/' . $event->id, 'public');
             $event->update(['cover_image' => '/storage/' . $path]);
         }
+
+        // Handle gallery images
+        if ($request->hasFile('gallery_images')) {
+            $gallery = [];
+            foreach ($request->file('gallery_images') as $file) {
+                $gallery[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('events/gallery'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $event->update(['gallery_images' => $gallery]);
+        }
+
+        // Handle file attachments
+        if ($request->hasFile('file_attachments')) {
+            $attachments = [];
+            foreach ($request->file('file_attachments') as $file) {
+                $attachments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('events/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $event->update(['file_attachments' => $attachments]);
+        }
+
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($event, $request);
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event created successfully! You can now add attendees or publish it.');
@@ -177,6 +216,7 @@ class EventController extends Controller
         $event->load([
             'attendees.client',
             'createdBy',
+            'questionnaireAttachments.questionnaire',
         ]);
 
         $stats = [
@@ -204,8 +244,10 @@ class EventController extends Controller
         $this->authorizeEvent($event);
         $host = $this->getHost();
         $timezones = timezone_identifiers_list();
+        $questionnaires = $this->getPublishedQuestionnaires();
+        $event->load('questionnaireAttachments');
 
-        return view('host.events.edit', compact('event', 'host', 'timezones'));
+        return view('host.events.edit', compact('event', 'host', 'timezones', 'questionnaires'));
     }
 
     /**
@@ -238,9 +280,15 @@ class EventController extends Controller
             'skill_level' => ['required', 'in:beginner,intermediate,advanced,all_levels'],
             'audience_type' => ['required', 'in:adults,kids,families,seniors,all'],
             'cover_image' => ['nullable', 'image', 'max:5120'],
+            'gallery_images' => ['nullable', 'array', 'max:20'],
+            'gallery_images.*' => ['image', 'max:5120'],
+            'file_attachments' => ['nullable', 'array'],
+            'file_attachments.*' => ['file', 'max:10240'],
             'waitlist_enabled' => ['boolean'],
             'hide_attendee_list' => ['boolean'],
         ]);
+
+        $host = $this->getHost();
 
         // Combine date and time
         $startDatetime = $validated['start_date'] . ' ' . $validated['start_time'];
@@ -257,13 +305,13 @@ class EventController extends Controller
             'timezone' => $validated['timezone'],
             'venue_name' => $validated['venue_name'],
             'address_line_1' => $validated['address_line_1'],
-            'address_line_2' => $validated['address_line_2'],
-            'city' => $validated['city'],
-            'state' => $validated['state'],
-            'zip_code' => $validated['zip_code'],
-            'online_url' => $validated['online_url'],
-            'online_platform' => $validated['online_platform'],
-            'capacity' => $validated['capacity'],
+            'address_line_2' => $validated['address_line_2'] ?? null,
+            'city' => $validated['city'] ?? null,
+            'state' => $validated['state'] ?? null,
+            'zip_code' => $validated['zip_code'] ?? null,
+            'online_url' => $validated['online_url'] ?? null,
+            'online_platform' => $validated['online_platform'] ?? null,
+            'capacity' => $validated['capacity'] ?? null,
             'skill_level' => $validated['skill_level'],
             'audience_type' => $validated['audience_type'],
             'waitlist_enabled' => $request->boolean('waitlist_enabled'),
@@ -275,6 +323,47 @@ class EventController extends Controller
             $path = $request->file('cover_image')->store('events/' . $event->id, 'public');
             $event->update(['cover_image' => '/storage/' . $path]);
         }
+
+        // Handle removing existing gallery images
+        if ($request->filled('remove_gallery_images')) {
+            $removeIndexes = array_map('intval', explode(',', $request->input('remove_gallery_images')));
+            $existing = $event->gallery_images ?? [];
+            $existing = array_values(array_filter($existing, function ($img, $idx) use ($removeIndexes) {
+                return !in_array($idx, $removeIndexes);
+            }, ARRAY_FILTER_USE_BOTH));
+            $event->update(['gallery_images' => $existing ?: null]);
+        }
+
+        // Handle gallery images (append to existing)
+        if ($request->hasFile('gallery_images')) {
+            $existing = $event->fresh()->gallery_images ?? [];
+            foreach ($request->file('gallery_images') as $file) {
+                $existing[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('events/gallery'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $event->update(['gallery_images' => $existing]);
+        }
+
+        // Handle file attachments (append to existing)
+        if ($request->hasFile('file_attachments')) {
+            $existing = $event->file_attachments ?? [];
+            foreach ($request->file('file_attachments') as $file) {
+                $existing[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'path' => $file->storePublicly($host->getStoragePath('events/files'), config('filesystems.uploads')),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                ];
+            }
+            $event->update(['file_attachments' => $existing]);
+        }
+
+        // Sync questionnaire attachments
+        $this->syncQuestionnaireAttachments($event, $request);
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event updated successfully!');

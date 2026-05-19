@@ -64,13 +64,6 @@
         <span class="icon-[tabler--arrow-up] size-4"></span>
     </button>
 
-    {{-- Support button --}}
-    <a href="{{ route('support.requests.index') }}" id="support-btn"
-        class="btn btn-circle btn-secondary btn-sm fixed bottom-16 right-4 z-50 shadow-lg"
-        aria-label="Support">
-        <span class="icon-[tabler--headset] size-4"></span>
-    </a>
-
     {{-- Back to top script --}}
     <script>
         (function() {
