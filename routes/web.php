@@ -787,8 +787,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings/team/permissions/{user}/edit', [TeamController::class, 'editPermissions'])->name('settings.team.permissions.edit');
     Route::put('/settings/team/permissions/{user}', [TeamController::class, 'updatePermissions'])->name('settings.team.permissions.update');
 
-    // Settings - Clients
-    Route::get('/settings/clients', [SettingsController::class, 'clientSettings'])->name('settings.clients');
+    // Settings - Clients (redirect to member-portal, keep PUT for AJAX save)
+    Route::get('/settings/clients', function () { return redirect()->route('settings.member-portal'); })->name('settings.clients');
     Route::put('/settings/clients', [SettingsController::class, 'updateClientSettings'])->name('settings.clients.update');
 
     // Settings - Member Portal

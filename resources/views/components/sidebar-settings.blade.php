@@ -98,11 +98,8 @@
     <li class="menu-title sidebar-section-label pt-3">
         <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Clients</span>
     </li>
-    <li><a href="{{ route('settings.clients') }}" class="{{ request()->routeIs('settings.clients') ? 'active' : '' }}">
-        <span class="icon-[tabler--users-cog] size-4"></span> <span class="sidebar-label">Client Settings</span>
-    </a></li>
     <li><a href="{{ route('settings.member-portal') }}" class="{{ request()->routeIs('settings.member-portal') ? 'active' : '' }}">
-        <span class="icon-[tabler--user-shield] size-4"></span> <span class="sidebar-label">Member Portal</span>
+        <span class="icon-[tabler--users-cog] size-4"></span> <span class="sidebar-label">Client & Portal Settings</span>
     </a></li>
     @endif
 

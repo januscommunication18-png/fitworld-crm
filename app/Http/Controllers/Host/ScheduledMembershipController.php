@@ -16,6 +16,29 @@ class ScheduledMembershipController extends Controller
     ) {}
 
     /**
+     * Resolve staff user IDs and standalone instructor IDs into a single array of instructor IDs.
+     */
+    private function resolveInstructorIds($host, $request): array
+    {
+        $instructorIds = [];
+
+        // Staff members: convert user IDs to instructor IDs via pivot
+        $staffUserIds = array_filter($request->input('staff_member_ids', []));
+        foreach ($staffUserIds as $userId) {
+            $pivot = $host->teamMembers()->where('users.id', $userId)->first()?->pivot;
+            if ($pivot?->instructor_id) {
+                $instructorIds[] = $pivot->instructor_id;
+            }
+        }
+
+        // Standalone instructors: already instructor IDs
+        $standaloneIds = array_filter($request->input('instructor_ids', []));
+        $instructorIds = array_merge($instructorIds, $standaloneIds);
+
+        return $instructorIds;
+    }
+
+    /**
      * Display a listing of membership schedule sessions.
      */
     public function index(Request $request)
@@ -94,12 +117,18 @@ class ScheduledMembershipController extends Controller
             ->orderBy('name')
             ->get();
 
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
         return view('host.scheduled-membership.create', [
             'membershipPlans' => $membershipPlans,
-            'instructors' => $host->instructors()->active()->orderBy('name')->get(),
             'locations' => $host->locations()->orderBy('name')->get(),
             'selectedMembershipPlanId' => $request->membership_plan_id,
             'selectedDate' => $request->date ?? now()->format('Y-m-d'),
+            'hostCurrencies' => $hostCurrencies,
+            'defaultCurrency' => $defaultCurrency,
+            'currencySymbols' => $currencySymbols,
         ]);
     }
 
@@ -141,13 +170,29 @@ class ScheduledMembershipController extends Controller
             }
         }
 
-        // Gather instructor IDs (primary first, then backups)
-        $instructorIds = [];
+        // Gather instructor IDs and split into staff (user IDs) and standalone instructors
+        $rawInstructorIds = [];
         if ($classSession->primary_instructor_id) {
-            $instructorIds[] = $classSession->primary_instructor_id;
+            $rawInstructorIds[] = $classSession->primary_instructor_id;
         }
         foreach ($classSession->backupInstructors as $backup) {
-            $instructorIds[] = $backup->id;
+            $rawInstructorIds[] = $backup->id;
+        }
+
+        // Convert to user IDs for staff members, keep instructor IDs for standalone
+        $assignedStaffMemberIds = [];
+        $assignedInstructorIds = [];
+        if (!empty($rawInstructorIds)) {
+            // Find which instructor IDs belong to team members (have user_id in pivot)
+            $staffLinked = $host->teamMembers()
+                ->wherePivotIn('instructor_id', $rawInstructorIds)
+                ->get();
+
+            $assignedStaffMemberIds = $staffLinked->pluck('id')->toArray();
+            $linkedInstructorIds = $staffLinked->pluck('pivot.instructor_id')->toArray();
+
+            // Remaining are standalone instructors
+            $assignedInstructorIds = array_values(array_diff($rawInstructorIds, $linkedInstructorIds));
         }
 
         $membershipPlans = MembershipPlan::where('host_id', $host->id)
@@ -155,9 +200,12 @@ class ScheduledMembershipController extends Controller
             ->orderBy('name')
             ->get();
 
+        $hostCurrencies = $host->currencies ?? ['USD'];
+        $defaultCurrency = $host->default_currency ?? 'USD';
+        $currencySymbols = MembershipPlan::getCurrencySymbols();
+
         return view('host.scheduled-membership.create', [
             'membershipPlans' => $membershipPlans,
-            'instructors' => $host->instructors()->active()->orderBy('name')->get(),
             'locations' => $host->locations()->orderBy('name')->get(),
             'selectedMembershipPlanId' => $classSession->membershipPlans->first()?->id,
             'selectedDate' => $classSession->start_time->format('Y-m-d'),
@@ -170,11 +218,15 @@ class ScheduledMembershipController extends Controller
             'recurrenceEndType' => $recurrenceEndType,
             'recurrenceCount' => $recurrenceCount,
             'recurrenceEndDate' => $recurrenceEndDate,
-            'instructorIds' => $instructorIds,
+            'assignedStaffMemberIds' => $assignedStaffMemberIds,
+            'assignedInstructorIds' => $assignedInstructorIds,
             'locationId' => $classSession->location_id,
             'capacity' => $classSession->capacity,
             'notes' => $classSession->notes,
             'status' => $classSession->status,
+            'hostCurrencies' => $hostCurrencies,
+            'defaultCurrency' => $defaultCurrency,
+            'currencySymbols' => $currencySymbols,
         ]);
     }
 
@@ -195,6 +247,8 @@ class ScheduledMembershipController extends Controller
             'start_date' => 'required|date',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
+            'staff_member_ids' => 'nullable|array',
+            'staff_member_ids.*' => 'exists:users,id',
             'instructor_ids' => 'nullable|array',
             'instructor_ids.*' => 'exists:instructors,id',
             'location_id' => 'nullable|exists:locations,id',
@@ -207,8 +261,9 @@ class ScheduledMembershipController extends Controller
         $endDateTime = Carbon::parse($request->start_date . ' ' . $request->end_time);
         $durationMinutes = $startDateTime->diffInMinutes($endDateTime);
 
-        $instructorIds = array_filter($request->instructor_ids ?? []);
-        $primaryInstructorId = !empty($instructorIds) ? array_shift($instructorIds) : null;
+        // Resolve staff user IDs to instructor IDs, merge with standalone instructor IDs
+        $allInstructorIds = $this->resolveInstructorIds($host, $request);
+        $primaryInstructorId = !empty($allInstructorIds) ? array_shift($allInstructorIds) : null;
 
         $membershipPlan = MembershipPlan::find($request->membership_plan_id);
         $sessionTitle = $request->title ?: $membershipPlan->name . ' Session';
@@ -225,12 +280,7 @@ class ScheduledMembershipController extends Controller
             'notes' => $request->notes,
         ]);
 
-        if (!empty($instructorIds)) {
-            $classSession->syncBackupInstructors($instructorIds);
-        } else {
-            $classSession->syncBackupInstructors([]);
-        }
-
+        $classSession->syncBackupInstructors($allInstructorIds);
         $classSession->membershipPlans()->sync([$request->membership_plan_id]);
 
         return redirect()
@@ -254,6 +304,8 @@ class ScheduledMembershipController extends Controller
             'recurrence_end_type' => 'required|in:after,on,never',
             'recurrence_count' => 'required_if:recurrence_end_type,after|nullable|integer|min:1|max:52',
             'recurrence_end_date' => 'required_if:recurrence_end_type,on|nullable|date|after:start_date',
+            'staff_member_ids' => 'nullable|array',
+            'staff_member_ids.*' => 'exists:users,id',
             'instructor_ids' => 'nullable|array',
             'instructor_ids.*' => 'exists:instructors,id',
             'location_id' => 'nullable|exists:locations,id',
@@ -269,10 +321,10 @@ class ScheduledMembershipController extends Controller
         $endDateTime = Carbon::parse($request->start_date . ' ' . $request->end_time);
         $durationMinutes = $startDateTime->diffInMinutes($endDateTime);
 
-        // Get instructor IDs
-        $instructorIds = array_filter($request->instructor_ids ?? []);
-        $primaryInstructorId = !empty($instructorIds) ? array_shift($instructorIds) : null;
-        $backupInstructorIds = $instructorIds; // Remaining instructors are backups
+        // Resolve staff user IDs to instructor IDs, merge with standalone instructor IDs
+        $allInstructorIds = $this->resolveInstructorIds($host, $request);
+        $primaryInstructorId = !empty($allInstructorIds) ? array_shift($allInstructorIds) : null;
+        $backupInstructorIds = $allInstructorIds;
 
         // Build recurrence rule
         $endValue = match ($request->recurrence_end_type) {

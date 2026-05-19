@@ -96,10 +96,10 @@
         </form>
 
         {{-- Accordion Sections --}}
-        <div class="accordion divide-y divide-base-200 rounded-lg bg-base-100" id="booking-accordion">
+        <div class="accordion space-y-1.5" id="booking-accordion">
 
             {{-- Section: Branding & Layout --}}
-            <div class="accordion-item">
+            <div class="accordion-item bg-base-100 rounded-lg">
                 <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="branding-content" aria-expanded="true">
                     <span class="icon-[tabler--palette] size-5 text-primary"></span>
                     <div class="flex-1">
@@ -256,7 +256,7 @@
                                 </div>
                             </div>
 
-                            <div class="flex justify-end pt-4 border-t border-base-200">
+                            <div class="flex justify-start pt-4 border-t border-base-200">
                                 <button type="submit" class="btn btn-primary btn-sm">
                                     <span class="icon-[tabler--check] size-4"></span> Save Branding
                                 </button>
@@ -267,7 +267,7 @@
             </div>
 
             {{-- Section: Public Content --}}
-            <div class="accordion-item">
+            <div class="accordion-item bg-base-100 rounded-lg">
                 <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="public-content-content" aria-expanded="false">
                     <span class="icon-[tabler--file-text] size-5 text-info"></span>
                     <div class="flex-1">
@@ -361,7 +361,7 @@
                                 <p class="text-xs text-base-content/60 mt-1">You have {{ $locations->count() }} location(s)</p>
                             </div>
 
-                            <div class="flex justify-end pt-4 border-t border-base-200">
+                            <div class="flex justify-start pt-4 border-t border-base-200">
                                 <button type="submit" class="btn btn-primary btn-sm">
                                     <span class="icon-[tabler--check] size-4"></span> Save Public Content
                                 </button>
@@ -372,7 +372,7 @@
             </div>
 
             {{-- Section: Booking Experience --}}
-            <div class="accordion-item">
+            <div class="accordion-item bg-base-100 rounded-lg">
                 <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="booking-ux-content" aria-expanded="false">
                     <span class="icon-[tabler--calendar-event] size-5 text-success"></span>
                     <div class="flex-1">
@@ -445,7 +445,7 @@
                                 </label>
                             </div>
 
-                            <div class="flex justify-end pt-4 border-t border-base-200">
+                            <div class="flex justify-start pt-4 border-t border-base-200">
                                 <button type="submit" class="btn btn-primary btn-sm">
                                     <span class="icon-[tabler--check] size-4"></span> Save Booking Experience
                                 </button>
@@ -456,7 +456,7 @@
             </div>
 
             {{-- Section: Filter Options --}}
-            <div class="accordion-item">
+            <div class="accordion-item bg-base-100 rounded-lg">
                 <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="filters-content" aria-expanded="false">
                     <span class="icon-[tabler--filter] size-5 text-warning"></span>
                     <div class="flex-1">
@@ -502,7 +502,7 @@
                                 @endif
                             </div>
 
-                            <div class="flex justify-end pt-4 border-t border-base-200">
+                            <div class="flex justify-start pt-4 border-t border-base-200">
                                 <button type="submit" class="btn btn-primary btn-sm">
                                     <span class="icon-[tabler--check] size-4"></span> Save Filters
                                 </button>

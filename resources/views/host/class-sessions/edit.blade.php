@@ -25,10 +25,8 @@
         </a>
     </div>
 
-    <form action="{{ route('class-sessions.update', $classSession) }}" method="POST">
-        @csrf
-        @method('PUT')
+    <x-form-validate action="{{ route('class-sessions.update', $classSession) }}" method="PUT">
         @include('host.class-sessions._form')
-    </form>
+    </x-form-validate>
 </div>
 @endsection

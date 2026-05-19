@@ -199,9 +199,9 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div class="lg:col-span-2 space-y-6">
                     {{-- Accordion Sections --}}
-                    <div class="accordion divide-y divide-base-200 rounded-lg bg-base-100" id="client-info-accordion">
+                    <div class="accordion space-y-1.5" id="client-info-accordion">
                         {{-- Quick Notes - Open by default --}}
-                        <div class="accordion-item">
+                        <div class="accordion-item bg-base-100 rounded-lg">
                             <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="notes-content" aria-expanded="true">
                                 <span class="icon-[tabler--notes] size-5 text-primary"></span>
                                 Notes
@@ -268,7 +268,7 @@
                             </div>
                         </div>
                         {{-- Progress Tracking --}}
-                        <div class="accordion-item">
+                        <div class="accordion-item bg-base-100 rounded-lg">
                             <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="progress-content" aria-expanded="false">
                                 <span class="icon-[tabler--chart-line] size-5 text-primary"></span>
                                 Progress Tracking
@@ -341,7 +341,7 @@
                         </div>
 
                         {{-- This Week's Schedule --}}
-                        <div class="accordion-item">
+                        <div class="accordion-item bg-base-100 rounded-lg">
                             <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="schedule-content" aria-expanded="false">
                                 <span class="icon-[tabler--calendar-week] size-5 text-primary"></span>
                                 This Week's Schedule
@@ -389,7 +389,7 @@
 
                         {{-- Personal Details --}}
                         @if($client->date_of_birth || $client->gender)
-                        <div class="accordion-item">
+                        <div class="accordion-item bg-base-100 rounded-lg">
                             <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="personal-content" aria-expanded="false">
                                 <span class="icon-[tabler--user-circle] size-5 text-primary"></span>
                                 Personal Details
@@ -418,7 +418,7 @@
 
                         {{-- Emergency Contact --}}
                         @if($client->emergency_contact_name || $client->emergency_contact_phone)
-                        <div class="accordion-item">
+                        <div class="accordion-item bg-base-100 rounded-lg">
                             <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="emergency-content" aria-expanded="false">
                                 <span class="icon-[tabler--emergency-bed] size-5 text-primary"></span>
                                 Emergency Contact
@@ -459,7 +459,7 @@
 
                         {{-- Health & Fitness --}}
                         @if($client->experience_level || $client->fitness_goals || $client->medical_conditions || $client->injuries || $client->limitations)
-                        <div class="accordion-item">
+                        <div class="accordion-item bg-base-100 rounded-lg">
                             <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="health-content" aria-expanded="false">
                                 <span class="icon-[tabler--heartbeat] size-5 text-primary"></span>
                                 Health & Fitness
@@ -515,7 +515,7 @@
 
                         {{-- Custom Fields --}}
                         @if($customFields['sections']->count() > 0 || $customFields['unsectionedFields']->count() > 0)
-                        <div class="accordion-item">
+                        <div class="accordion-item bg-base-100 rounded-lg">
                             <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="custom-content" aria-expanded="false">
                                 <span class="icon-[tabler--forms] size-5 text-primary"></span>
                                 Additional Information

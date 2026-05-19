@@ -224,6 +224,14 @@
   border-color: var(--fitcrm-base-300);
 }
 
+/* Advance select: dropdown menu styling */
+.advance-select-menu {
+  border: 1px solid #d1d5db !important;
+  background: white !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.5rem !important;
+}
+
 /* Advance select: selected option background */
 .advance-select-option.select-active,
 .advance-select-option.selected {

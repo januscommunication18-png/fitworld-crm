@@ -272,10 +272,10 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         $studioCertifications = $host->certifications()->studioLevel()->get();
     @endphp
 
-    <div class="accordion divide-y divide-base-200 rounded-lg bg-base-100" id="profile-settings-accordion">
+    <div class="accordion space-y-1.5" id="profile-settings-accordion">
 
         {{-- 1. Branding --}}
-        <div class="accordion-item" id="branding-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="branding-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="branding-content" aria-expanded="false">
                 <span class="icon-[tabler--palette] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -346,7 +346,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 2. About Your Studio --}}
-        <div class="accordion-item" id="about-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="about-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="about-content" aria-expanded="false">
                 <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -389,7 +389,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 3. Studio Gallery --}}
-        <div class="accordion-item" id="gallery-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="gallery-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="gallery-content" aria-expanded="false">
                 <span class="icon-[tabler--photo] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -438,7 +438,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 4. Contact Information --}}
-        <div class="accordion-item" id="contact-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="contact-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="contact-content" aria-expanded="false">
                 <span class="icon-[tabler--address-book] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -477,7 +477,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 5. Social Links --}}
-        <div class="accordion-item" id="social-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="social-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="social-content" aria-expanded="false">
                 <span class="icon-[tabler--share] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -528,7 +528,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 6. Amenities --}}
-        <div class="accordion-item" id="amenities-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="amenities-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="amenities-content" aria-expanded="false">
                 <span class="icon-[tabler--building-community] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -558,7 +558,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 7. Countries of Operation --}}
-        <div class="accordion-item" id="countries-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="countries-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="countries-content" aria-expanded="false">
                 <span class="icon-[tabler--world] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -593,7 +593,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 8. Business Currencies (Required) --}}
-        <div class="accordion-item" id="currency-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="currency-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="currency-content" aria-expanded="false">
                 <span class="icon-[tabler--coin] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -651,7 +651,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 9. Studio Categories (Required) --}}
-        <div class="accordion-item" id="categories-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="categories-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="categories-content" aria-expanded="false">
                 <span class="icon-[tabler--category] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -685,7 +685,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 10. Service Plan Categories --}}
-        <div class="accordion-item" id="service-plan-categories-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="service-plan-categories-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="service-plan-categories-content" aria-expanded="false">
                 <span class="icon-[tabler--list-details] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -736,7 +736,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- Rental Item Categories --}}
-        <div class="accordion-item" id="rental-item-categories-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="rental-item-categories-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="rental-item-categories-content" aria-expanded="false">
                 <span class="icon-[tabler--package] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -786,7 +786,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 11. Language Settings (Required) --}}
-        <div class="accordion-item" id="language-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="language-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="language-content" aria-expanded="false">
                 <span class="icon-[tabler--language] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -855,7 +855,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 12. Booking Cancellation Policy (Required) --}}
-        <div class="accordion-item" id="cancellation-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="cancellation-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="cancellation-content" aria-expanded="false">
                 <span class="icon-[tabler--calendar-x] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -905,7 +905,7 @@ $studioTypesList = ['Yoga', 'Pilates (Mat)', 'Pilates (Reformer)', 'Fitness', 'C
         </div>
 
         {{-- 13. Assets & Certifications --}}
-        <div class="accordion-item" id="certifications-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="certifications-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="certifications-content" aria-expanded="false">
                 <span class="icon-[tabler--certificate] size-5 text-primary"></span>
                 <div class="flex-1">

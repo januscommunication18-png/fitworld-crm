@@ -28,7 +28,7 @@
             <a href="{{ route('service-slots.create') }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--plus] size-4"></span> Create Service Slot
             </a>
-        @else
+        @elseif($type !== 'all')
             <a href="{{ route('class-sessions.create') }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--plus] size-4"></span> Create Session
             </a>
@@ -41,6 +41,11 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 {{-- Type Toggle --}}
                 <div class="flex rounded-lg border border-base-300 overflow-hidden">
+                    <a href="{{ route('schedule-planner.index', ['type' => 'all']) }}"
+                       class="px-4 py-1.5 text-sm font-medium flex items-center gap-2 transition-colors {{ $type === 'all' ? 'bg-primary text-primary-content' : 'hover:bg-base-200' }}">
+                        <span class="icon-[tabler--layout-list] size-4"></span>
+                        All
+                    </a>
                     <a href="{{ route('schedule-planner.index', ['type' => 'class', 'class_plan_id' => $type === 'class' ? $selectedPlanId : null]) }}"
                        class="px-4 py-1.5 text-sm font-medium flex items-center gap-2 transition-colors {{ $type === 'class' ? 'bg-primary text-primary-content' : 'hover:bg-base-200' }}">
                         <span class="icon-[tabler--yoga] size-4"></span>
@@ -58,7 +63,8 @@
                     </a>
                 </div>
 
-                {{-- Plan Filter --}}
+                {{-- Plan Filter (not shown for "All") --}}
+                @if($type !== 'all')
                 <div class="form-control w-64">
                     @if($type === 'membership')
                         <select id="plan-filter" class="select select-bordered select-sm"
@@ -98,10 +104,9 @@
                         </select>
                     @endif
                 </div>
-
-                @if($selectedPlanId)
-                    <span class="text-sm text-base-content/60">{{ $schedules->count() }} {{ Str::plural('schedule', $schedules->count()) }}</span>
                 @endif
+
+                <span class="text-sm text-base-content/60">{{ $schedules->count() }} {{ Str::plural('schedule', $schedules->count()) }}</span>
             </div>
         </div>
     </div>
@@ -112,7 +117,9 @@
             <div class="card-body text-center py-12">
                 <span class="icon-[tabler--calendar-off] size-12 text-base-content/20 mx-auto mb-4"></span>
                 <h3 class="text-lg font-semibold mb-2">No Schedules Found</h3>
-                @if($type === 'membership')
+                @if($type === 'all')
+                    <p class="text-base-content/60 mb-4">No recurring or upcoming schedules found across all types.</p>
+                @elseif($type === 'membership')
                     <p class="text-base-content/60 mb-4">No recurring or upcoming sessions found for this membership plan.</p>
                     <a href="{{ route('scheduled-membership.create') }}" class="btn btn-primary btn-sm">
                         <span class="icon-[tabler--plus] size-4"></span> Create First Session
@@ -136,18 +143,34 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Custom Name</th>
-                            <th>Days</th>
+                            @if($type === 'all')
+                                <th>Type</th>
+                            @endif
+                            <th>Name</th>
+                            @if($type !== 'all')
+                                <th>Days</th>
+                            @endif
                             <th>Time</th>
                             <th>Instructor</th>
                             <th>Location</th>
-                            <th class="text-center">{{ $type === 'service' ? 'Slots' : 'Sessions' }}</th>
+                            <th class="text-center">Upcoming</th>
                             <th class="w-20">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($schedules as $schedule)
                         <tr>
+                            @if($type === 'all')
+                            <td>
+                                @if($schedule->type === 'class')
+                                    <span class="badge badge-soft badge-primary badge-sm"><span class="icon-[tabler--yoga] size-3 me-1"></span>Class</span>
+                                @elseif($schedule->type === 'service')
+                                    <span class="badge badge-soft badge-secondary badge-sm"><span class="icon-[tabler--massage] size-3 me-1"></span>Service</span>
+                                @else
+                                    <span class="badge badge-soft badge-warning badge-sm"><span class="icon-[tabler--id-badge-2] size-3 me-1"></span>Membership</span>
+                                @endif
+                            </td>
+                            @endif
                             <td>
                                 <div class="flex items-center gap-2">
                                     @if($schedule->is_recurring)
@@ -158,6 +181,7 @@
                                     <span class="font-medium">{{ $schedule->title ?? 'Untitled' }}</span>
                                 </div>
                             </td>
+                            @if($type !== 'all')
                             <td>
                                 <div class="flex flex-wrap gap-1">
                                     @foreach(explode(', ', $schedule->days) as $day)
@@ -165,6 +189,7 @@
                                     @endforeach
                                 </div>
                             </td>
+                            @endif
                             <td class="text-sm">{{ $schedule->time }}</td>
                             <td>
                                 <div class="flex items-center gap-2">
@@ -185,14 +210,14 @@
                             </td>
                             <td>
                                 <div class="flex items-center gap-1">
-                                    @if($type === 'service')
+                                    @if($schedule->type === 'service')
                                         <a href="{{ route('service-slots.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
                                         <a href="{{ route('service-slots.edit', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
                                             <span class="icon-[tabler--pencil] size-4"></span>
                                         </a>
-                                    @elseif($type === 'membership')
+                                    @elseif($schedule->type === 'membership')
                                         <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>

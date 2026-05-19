@@ -25,9 +25,8 @@
         </a>
     </div>
 
-    <form action="{{ route('class-sessions.store') }}" method="POST">
-        @csrf
+    <x-form-validate action="{{ route('class-sessions.store') }}">
         @include('host.class-sessions._form')
-    </form>
+    </x-form-validate>
 </div>
 @endsection

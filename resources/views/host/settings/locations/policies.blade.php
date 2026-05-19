@@ -29,10 +29,10 @@
     </div>
 
     {{-- Accordion --}}
-    <div class="accordion divide-y divide-base-200 rounded-lg bg-base-100" id="policies-accordion">
+    <div class="accordion space-y-1.5" id="policies-accordion">
 
         {{-- Section A: Cancellation Policy --}}
-        <div class="accordion-item" id="cancellation-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="cancellation-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="cancellation-content" aria-expanded="true">
                 <span class="icon-[tabler--calendar-x] size-5 text-error"></span>
                 <div class="flex-1">
@@ -107,7 +107,7 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-end pt-4 border-t border-base-200">
+                        <div class="flex justify-start pt-4 border-t border-base-200">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <span class="icon-[tabler--check] size-4"></span> Save Cancellation Policy
                             </button>
@@ -118,7 +118,7 @@
         </div>
 
         {{-- Section B: No-Show Policy --}}
-        <div class="accordion-item" id="noshow-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="noshow-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="noshow-content" aria-expanded="false">
                 <span class="icon-[tabler--user-x] size-5 text-warning"></span>
                 <div class="flex-1">
@@ -192,7 +192,7 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-end pt-4 border-t border-base-200">
+                        <div class="flex justify-start pt-4 border-t border-base-200">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <span class="icon-[tabler--check] size-4"></span> Save No-Show Policy
                             </button>
@@ -203,7 +203,7 @@
         </div>
 
         {{-- Section C: Waitlist Policy --}}
-        <div class="accordion-item" id="waitlist-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="waitlist-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="waitlist-content" aria-expanded="false">
                 <span class="icon-[tabler--list-numbers] size-5 text-info"></span>
                 <div class="flex-1">
@@ -270,7 +270,7 @@
                             <p class="text-xs text-base-content/60 mt-1">How long to hold the spot after promotion before moving to the next person</p>
                         </div>
 
-                        <div class="flex justify-end pt-4 border-t border-base-200">
+                        <div class="flex justify-start pt-4 border-t border-base-200">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <span class="icon-[tabler--check] size-4"></span> Save Waitlist Policy
                             </button>
@@ -281,7 +281,7 @@
         </div>
 
         {{-- Section D: Booking Limits --}}
-        <div class="accordion-item" id="booking-limits-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="booking-limits-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="booking-limits-content" aria-expanded="false">
                 <span class="icon-[tabler--bookmark] size-5 text-primary"></span>
                 <div class="flex-1">
@@ -350,7 +350,7 @@
                             </div>
                         </div>
 
-                        <div class="flex justify-end pt-4 border-t border-base-200">
+                        <div class="flex justify-start pt-4 border-t border-base-200">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <span class="icon-[tabler--check] size-4"></span> Save Booking Limits
                             </button>
@@ -361,7 +361,7 @@
         </div>
 
         {{-- Section E: Legal Pages --}}
-        <div class="accordion-item" id="legal-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="legal-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="legal-content" aria-expanded="false">
                 <span class="icon-[tabler--file-text] size-5 text-info"></span>
                 <div class="flex-1">
@@ -396,7 +396,7 @@
                             <p class="text-xs text-base-content/60 mt-2">Displayed in a modal when clients book on your public page</p>
                         </div>
 
-                        <div class="flex justify-end pt-4 border-t border-base-200">
+                        <div class="flex justify-start pt-4 border-t border-base-200">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <span class="icon-[tabler--check] size-4"></span> Save Legal Pages
                             </button>
@@ -407,7 +407,7 @@
         </div>
 
         {{-- Section F: Studio Rules --}}
-        <div class="accordion-item" id="rules-section">
+        <div class="accordion-item bg-base-100 rounded-lg" id="rules-section">
             <button class="accordion-toggle inline-flex items-center gap-2 px-5 py-4 w-full text-left font-medium" aria-controls="rules-content" aria-expanded="false">
                 <span class="icon-[tabler--gavel] size-5 text-secondary"></span>
                 <div class="flex-1">
@@ -447,7 +447,7 @@
                             <p class="text-xs text-base-content/60 mt-1">Included in booking confirmation emails</p>
                         </div>
 
-                        <div class="flex justify-end pt-4 border-t border-base-200">
+                        <div class="flex justify-start pt-4 border-t border-base-200">
                             <button type="submit" class="btn btn-primary btn-sm">
                                 <span class="icon-[tabler--check] size-4"></span> Save Studio Rules
                             </button>

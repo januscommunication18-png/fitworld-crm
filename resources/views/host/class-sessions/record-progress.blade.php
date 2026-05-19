@@ -85,7 +85,7 @@
             @endif
 
             {{-- Progress Recording Accordion --}}
-            <div class="accordion divide-y divide-base-content/10 rounded-lg border border-base-content/10 bg-base-100" data-accordion-always-open>
+            <div class="accordion space-y-1.5" data-accordion-always-open>
                 @foreach($bookings as $index => $booking)
                     @php
                         $existingReport = $existingReports->get($booking->id);
@@ -94,7 +94,7 @@
                             ? $existingReport->values->keyBy('progress_template_metric_id')
                             : collect();
                     @endphp
-                    <div class="accordion-item {{ (isset($singleClientMode) && $singleClientMode) ? 'active' : '' }}" id="client-accordion-{{ $booking->id }}" data-client-id="{{ $booking->client_id }}">
+                    <div class="accordion-item bg-base-100 rounded-lg {{ (isset($singleClientMode) && $singleClientMode) ? 'active' : '' }}" id="client-accordion-{{ $booking->id }}" data-client-id="{{ $booking->client_id }}">
                         <button type="button"
                                 class="accordion-toggle inline-flex items-center justify-between gap-x-4 px-5 py-4 text-start w-full"
                                 aria-controls="client-collapse-{{ $booking->id }}"

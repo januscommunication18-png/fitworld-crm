@@ -673,7 +673,10 @@ class SettingsController extends Controller
         // Get current member portal settings or defaults
         $settings = $host->member_portal_settings ?? $this->getDefaultMemberPortalSettings();
 
-        return view('host.settings.member-portal.index', compact('host', 'settings'));
+        // Get client settings for the combined page
+        $clientSettings = $host->client_settings ?? [];
+
+        return view('host.settings.member-portal.index', compact('host', 'settings', 'clientSettings'));
     }
 
     public function updateMemberPortal(Request $request)

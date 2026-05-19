@@ -21,8 +21,20 @@ class SchedulePlannerController extends Controller
         $membershipPlans = MembershipPlan::where('host_id', $host->id)->active()->orderBy('name')->get();
 
         $schedules = collect();
+        $selectedPlanId = null;
 
-        if ($type === 'membership') {
+        if ($type === 'all') {
+            // Merge all schedules from all types
+            foreach ($classPlans as $plan) {
+                $schedules = $schedules->merge($this->getClassSchedules($host, $plan->id));
+            }
+            foreach ($servicePlans as $plan) {
+                $schedules = $schedules->merge($this->getServiceSchedules($host, $plan->id));
+            }
+            foreach ($membershipPlans as $plan) {
+                $schedules = $schedules->merge($this->getMembershipSchedules($host, $plan->id));
+            }
+        } elseif ($type === 'membership') {
             $selectedPlanId = $request->get('membership_plan_id', $membershipPlans->first()?->id);
             $schedules = $this->getMembershipSchedules($host, $selectedPlanId);
         } elseif ($type === 'service') {
