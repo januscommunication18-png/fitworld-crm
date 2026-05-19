@@ -70,31 +70,29 @@
             </div>
             <div class="card-body space-y-4">
                 <div>
-                    <label class="label-text" for="class_plan_id">Class Plan</label>
-                    <select id="class_plan_id" name="class_plan_id" class="hidden @error('class_plan_id') input-error @enderror" required
-                        data-select='{
-                            "hasSearch": true,
-                            "searchPlaceholder": "Search classes...",
-                            "placeholder": "Select a class...",
-                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                            "toggleClasses": "advance-select-toggle",
-                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                            "optionClasses": "advance-select-option selected:select-active",
-                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                        }'>
-                        <option value="">Select a class...</option>
-                        @foreach($classPlans as $plan)
-                        <option value="{{ $plan->id }}"
+                    <label class="label-text" for="class_plan_id">Class Plan <span class="text-error">*</span></label>
+                    @php
+                        $classPlanOptions = [];
+                        foreach($classPlans as $plan) {
+                            $classPlanOptions[$plan->id] = $plan->name . ' (' . $plan->formatted_duration . ')';
+                        }
+                    @endphp
+                    <x-studio-select
+                        name="class_plan_id"
+                        :options="$classPlanOptions"
+                        :selected="old('class_plan_id', $selectedClassPlanId)"
+                        placeholder="Select a class..."
+                        :required="true"
+                        id="class_plan_id"
+                    />
+                    {{-- Hidden data attributes for JS --}}
+                    @foreach($classPlans as $plan)
+                        <input type="hidden" class="class-plan-data" data-plan-id="{{ $plan->id }}"
                             data-duration="{{ $plan->default_duration_minutes }}"
                             data-capacity="{{ $plan->default_capacity }}"
                             data-price="{{ $plan->default_price }}"
-                            data-color="{{ $plan->color }}"
-                            {{ old('class_plan_id', $selectedClassPlanId) == $plan->id ? 'selected' : '' }}>
-                            {{ $plan->name }} ({{ $plan->formatted_duration }})
-                        </option>
-                        @endforeach
-                    </select>
+                            data-color="{{ $plan->color }}">
+                    @endforeach
                     @error('class_plan_id')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -131,8 +129,7 @@
                                 <input type="text" id="session_date" name="session_date"
                                     value="{{ old('session_date', $selectedDate) }}"
                                     class="input w-full flatpickr-date @error('session_date') input-error @enderror"
-                                    placeholder="Select date..."
-                                    required>
+                                    placeholder="Select date...">
                                 @error('session_date')
                                     <p class="text-error text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -142,8 +139,7 @@
                                 <input type="text" id="session_time" name="session_time"
                                     value="{{ old('session_time', $classSession?->start_time?->format('H:i') ?? '09:00') }}"
                                     class="input w-full flatpickr-time @error('session_time') input-error @enderror"
-                                    placeholder="Select time..."
-                                    required>
+                                    placeholder="Select time...">
                                 @error('session_time')
                                     <p class="text-error text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -263,149 +259,113 @@
                         {{-- Primary Instructor --}}
                         <div>
                             <label class="label-text" for="primary_instructor_id">Primary Instructor <span class="text-error">*</span></label>
-                            <select id="primary_instructor_id" name="primary_instructor_id" class="hidden @error('primary_instructor_id') input-error @enderror" required
-                                data-select='{
-                                    "hasSearch": true,
-                                    "searchPlaceholder": "Search instructors...",
-                                    "placeholder": "Select an instructor...",
-                                    "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                    "toggleClasses": "advance-select-toggle",
-                                    "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                                    "optionClasses": "advance-select-option selected:select-active",
-                                    "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                    "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                                }'>
-                                <option value="">Select an instructor...</option>
-                                @foreach($instructors as $instructor)
-                                <option value="{{ $instructor->id }}" {{ old('primary_instructor_id', $classSession?->primary_instructor_id) == $instructor->id ? 'selected' : '' }}>
-                                    {{ $instructor->name }}
-                                </option>
-                                @endforeach
-                            </select>
+                            @php
+                                $instructorOptions = [];
+                                foreach($instructors as $inst) {
+                                    $instructorOptions[$inst->id] = $inst->name;
+                                }
+                            @endphp
+                            <x-studio-select
+                                name="primary_instructor_id"
+                                :options="$instructorOptions"
+                                :selected="old('primary_instructor_id', $classSession?->primary_instructor_id)"
+                                placeholder="Select an instructor..."
+                                :required="true"
+                                id="primary_instructor_id"
+                            />
                             @error('primary_instructor_id')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        {{-- Backup Instructors (Multiple) --}}
+                        {{-- Backup Instructors --}}
                         <div>
-                            <div class="flex items-center justify-between mb-2">
-                                <label class="label-text">Backup Instructors (optional)</label>
-                                <button type="button" id="add-backup-instructor" class="btn btn-ghost btn-sm btn-circle text-primary" title="Add backup instructor">
-                                    <span class="icon-[tabler--plus] size-5"></span>
-                                </button>
-                            </div>
-                            <div id="backup-instructors-container" class="space-y-2">
-                                @php
-                                    $backupInstructorIds = old('backup_instructor_ids', $classSession?->backupInstructors?->pluck('id')->toArray() ?? []);
-                                    if (empty($backupInstructorIds)) {
-                                        $backupInstructorIds = [null]; // Show one empty row by default
-                                    }
-                                @endphp
-                                @foreach($backupInstructorIds as $index => $backupId)
-                                <div class="backup-instructor-row flex items-center gap-2" data-index="{{ $index }}">
-                                    <div class="flex-1">
-                                        <select name="backup_instructor_ids[]" class="select w-full backup-instructor-select">
-                                            <option value="">Select backup instructor...</option>
-                                            @foreach($instructors as $instructor)
-                                            <option value="{{ $instructor->id }}" {{ $backupId == $instructor->id ? 'selected' : '' }}>
-                                                {{ $instructor->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <button type="button" class="remove-backup-instructor btn btn-ghost btn-sm btn-circle text-error flex-shrink-0" title="Remove">
-                                        <span class="icon-[tabler--trash] size-4"></span>
-                                    </button>
-                                </div>
+                            <label class="label-text mb-1">Backup Instructors (optional)</label>
+                            @php
+                                $backupInstructorIds = old('backup_instructor_ids', $classSession?->backupInstructors?->pluck('id')->toArray() ?? []);
+                            @endphp
+                            <select id="backup_instructor_ids" name="backup_instructor_ids[]" multiple class="hidden"
+                                data-select='{!! json_encode([
+                                    "hasSearch" => true,
+                                    "searchPlaceholder" => "Search instructors...",
+                                    "placeholder" => "Select backup instructors...",
+                                    "toggleTag" => "<button type=\"button\" aria-expanded=\"false\"></button>",
+                                    "toggleClasses" => "advance-select-toggle",
+                                    "dropdownClasses" => "advance-select-menu max-h-72 overflow-y-auto",
+                                    "optionClasses" => "advance-select-option selected:select-active",
+                                    "optionTemplate" => "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                                    "extraMarkup" => "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>",
+                                ], JSON_UNESCAPED_SLASHES) !!}'>
+                                @foreach($instructors as $instructor)
+                                    <option value="{{ $instructor->id }}"
+                                        {{ in_array($instructor->id, $backupInstructorIds) ? 'selected' : '' }}>
+                                        {{ $instructor->name }}
+                                    </option>
                                 @endforeach
-                            </div>
-                            <p class="text-base-content/60 text-xs mt-2">Add backup instructors in order of priority.</p>
+                            </select>
+                            <p class="text-base-content/60 text-xs mt-2">Select one or more backup instructors in order of priority.</p>
                             @error('backup_instructor_ids')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
 
-                    {{-- Right: Instructor Availability Panel --}}
+                    {{-- Right: Availability Panel --}}
                     <div>
-                        {{-- Placeholder (shown when no instructor selected) --}}
-                        <div id="instructor-avail-placeholder" class="text-center py-12 border-2 border-dashed border-base-300 rounded-lg">
-                            <span class="icon-[tabler--user] size-12 text-base-content/20 mx-auto mb-3"></span>
-                            <p class="text-base-content/50">Select an instructor and date to see their availability</p>
+                        <div id="instructor-avail-placeholder" class="text-center py-8 border-2 border-dashed border-base-300 rounded-lg">
+                            <span class="icon-[tabler--user] size-10 text-base-content/20 mx-auto mb-2"></span>
+                            <p class="text-base-content/50 text-sm">Select an instructor and date to see availability</p>
                         </div>
 
-                        {{-- Loading State --}}
-                        <div id="instructor-avail-loading" class="hidden text-center py-12">
+                        <div id="instructor-avail-loading" class="hidden text-center py-8">
                             <span class="loading loading-spinner loading-lg text-primary"></span>
-                            <p class="text-base-content/50 mt-3">Loading availability...</p>
+                            <p class="text-base-content/50 mt-3 text-sm">Loading availability...</p>
                         </div>
 
-                        {{-- Availability Panel (shows for all selected days) --}}
-                        <div id="instructor-avail-panel" class="hidden space-y-4">
-                            {{-- Instructor Info --}}
-                            <div class="flex items-center gap-4 bg-base-200 rounded-lg p-4">
+                        <div id="instructor-avail-panel" class="hidden space-y-3">
+                            <div class="flex items-center gap-3 bg-base-200 rounded-lg p-3">
                                 <div class="avatar placeholder">
-                                    <div class="bg-primary text-primary-content size-12 rounded-full">
-                                        <span id="instructor-avail-initials" class="text-lg font-bold">JS</span>
+                                    <div class="bg-primary text-primary-content size-10 rounded-full">
+                                        <span id="instructor-avail-initials" class="text-sm font-bold">?</span>
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="font-semibold text-lg" id="instructor-avail-name">Instructor Name</div>
+                                    <div class="font-semibold" id="instructor-avail-name">Instructor</div>
                                     <div class="text-sm text-base-content/60" id="instructor-avail-subtitle">Availability</div>
                                 </div>
                             </div>
 
-                            {{-- Time Slot Display --}}
                             <div id="instructor-time-slot" class="hidden">
-                                <div class="text-sm font-medium text-base-content/60 mb-2">Available Hours</div>
-                                <div class="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
-                                    <span class="icon-[tabler--clock] size-5 text-primary"></span>
-                                    <span id="instructor-time-range" class="font-semibold text-lg">9:00 AM - 5:00 PM</span>
+                                <div class="text-sm font-medium text-base-content/60 mb-1">Available Hours</div>
+                                <div class="flex items-center gap-2 p-2 bg-base-200 rounded-lg">
+                                    <span class="icon-[tabler--clock] size-4 text-primary"></span>
+                                    <span id="instructor-time-range" class="font-medium">9:00 AM - 5:00 PM</span>
                                 </div>
                             </div>
 
-                            {{-- Available Time Slots (clickable) --}}
                             <div id="available-time-slots-section" class="hidden">
-                                <div class="text-sm font-medium text-base-content/60 mb-2">Available Time Slots</div>
-                                <div id="available-time-slots-loading" class="hidden py-4 text-center">
+                                <div class="text-sm font-medium text-base-content/60 mb-1">Available Slots</div>
+                                <div id="available-time-slots-loading" class="hidden py-3 text-center">
                                     <span class="loading loading-spinner loading-sm text-primary"></span>
-                                    <span class="text-sm text-base-content/50 ml-2">Loading slots...</span>
                                 </div>
-                                <div id="available-time-slots-grid" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                                    {{-- Time slots will be populated here --}}
-                                </div>
-                                <div id="available-time-slots-empty" class="hidden py-4 text-center">
-                                    <span class="icon-[tabler--calendar-off] size-8 text-base-content/20"></span>
-                                    <p class="text-sm text-base-content/50 mt-2">No available slots for this date</p>
+                                <div id="available-time-slots-grid" class="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto"></div>
+                                <div id="available-time-slots-empty" class="hidden py-3 text-center">
+                                    <p class="text-sm text-base-content/50">No available slots</p>
                                 </div>
                             </div>
 
-                            {{-- Conflict override: always allow creation, conflicts shown in listing --}}
                             <input type="hidden" id="override_availability_warnings" name="override_availability_warnings" value="1">
 
-                            {{-- Working Days with Selection Indicator --}}
                             <div>
-                                <div class="text-sm font-medium text-base-content/60 mb-2">Working Days</div>
-                                <div class="flex gap-2" id="instructor-avail-working-days">
-                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">S</span>
-                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">M</span>
-                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">T</span>
-                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">W</span>
-                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">T</span>
-                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">F</span>
-                                    <span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200">S</span>
+                                <div class="text-sm font-medium text-base-content/60 mb-1">Working Days</div>
+                                <div class="flex gap-1.5" id="instructor-avail-working-days">
+                                    @foreach(['S','M','T','W','T','F','S'] as $d)
+                                    <span class="size-8 rounded text-xs font-medium flex items-center justify-center bg-base-200">{{ $d }}</span>
+                                    @endforeach
                                 </div>
-                                <p class="text-xs text-base-content/50 mt-2">
-                                    <span class="inline-block w-3 h-3 rounded bg-success/20 border-2 border-success mr-1 align-middle"></span> Works this day
-                                    <span class="inline-block w-3 h-3 rounded bg-primary ring-2 ring-primary ring-offset-1 ml-3 mr-1 align-middle"></span> Selected day
-                                </p>
                             </div>
 
-                            {{-- Days Availability Summary --}}
-                            <div id="instructor-days-availability" class="space-y-2">
-                                {{-- Will be populated dynamically --}}
-                            </div>
+                            <div id="instructor-days-availability" class="space-y-2"></div>
                         </div>
                     </div>
                 </div>
@@ -438,16 +398,15 @@
             <div class="card-header">
                 <div class="flex items-center gap-2">
                     <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">4</span>
-                    <h3 class="card-title">Location</h3>
+                    <h3 class="card-title">Location & Capacity</h3>
                 </div>
-                <span class="badge badge-soft badge-neutral badge-sm">Optional</span>
             </div>
             <div class="card-body space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {{-- Class/Location Type Filter --}}
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {{-- Class/Location Type Filter (multiselect) --}}
                     <div>
                         <label class="label-text" for="class_location_type">Class Type</label>
-                        <select id="class_location_type" class="hidden"
+                        <select id="class_location_type" multiple class="hidden"
                             data-select='{
                                 "placeholder": "All Types",
                                 "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
@@ -457,13 +416,13 @@
                                 "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
                                 "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
                             }'>
-                            <option value="">All Types</option>
                             @foreach(\App\Models\Location::getLocationTypeOptions() as $type => $label)
                             <option value="{{ $type }}" {{ $selectedClassType === $type ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
 
+                    {{-- Location --}}
                     <div>
                         <label class="label-text" for="location_id">Location</label>
                         <select id="location_id" name="location_id" class="hidden @error('location_id') input-error @enderror"
@@ -495,29 +454,39 @@
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
-                </div>
 
-                {{-- Room selection (for In-Person Studio only) --}}
-                <div id="room-wrapper" class="hidden">
-                    <label class="label-text" for="room_id">Room(s)</label>
-                    <select id="room_id" name="room_ids[]" multiple class="hidden @error('room_ids') input-error @enderror"
-                        data-select='{
-                            "placeholder": "Select rooms...",
-                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                            "toggleClasses": "advance-select-toggle",
-                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                            "optionClasses": "advance-select-option selected:select-active",
-                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                        }'>
-                    </select>
-                    @error('room_ids')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                    @error('room_ids.*')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    {{-- Room(s) --}}
+                    <div id="room-wrapper" class="hidden flex flex-col">
+                        <label class="label-text order-first mb-0">Room</label>
+                        <select id="room_id" name="room_ids[]" class="hidden @error('room_ids') input-error @enderror"
+                            data-select='{
+                                "placeholder": "Select room...",
+                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                                "toggleClasses": "advance-select-toggle",
+                                "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
+                                "optionClasses": "advance-select-option selected:select-active",
+                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+                            }'>
+                        </select>
+                        @error('room_ids')
+                            <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    {{-- Capacity --}}
+                    <div>
+                        <label class="label-text" for="capacity">Capacity <span class="text-error">*</span></label>
+                        <input type="number" id="capacity" name="capacity"
+                            value="{{ old('capacity', $classSession?->capacity ?? 20) }}"
+                            class="input w-full @error('capacity') input-error @enderror"
+                            min="1" max="500" required>
+                        @error('capacity')
+                            <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
+                <input type="hidden" id="price" name="price" value="{{ old('price', $classSession?->price) }}">
 
                 {{-- Location Notes (for non In-Person types) --}}
                 <div id="location-notes-wrapper" class="hidden">
@@ -550,46 +519,11 @@
             </div>
         </div>
 
-        {{-- Card 5: Capacity & Price --}}
+        {{-- Card 5: Notes --}}
         <div class="card bg-base-100">
             <div class="card-header">
                 <div class="flex items-center gap-2">
                     <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">5</span>
-                    <h3 class="card-title">Capacity & Price</h3>
-                </div>
-            </div>
-            <div class="card-body space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="label-text" for="capacity">Capacity</label>
-                        <input type="number" id="capacity" name="capacity"
-                            value="{{ old('capacity', $classSession?->capacity ?? 20) }}"
-                            class="input w-full @error('capacity') input-error @enderror"
-                            min="1" max="500" required>
-                        @error('capacity')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="label-text" for="price">Price Override ($)</label>
-                        <input type="number" id="price" name="price"
-                            value="{{ old('price', $classSession?->price) }}"
-                            class="input w-full @error('price') input-error @enderror"
-                            min="0" max="9999.99" step="0.01"
-                            placeholder="Leave empty to use class plan price">
-                        @error('price')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Card 6: Notes --}}
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <div class="flex items-center gap-2">
-                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">6</span>
                     <h3 class="card-title">Internal Notes</h3>
                 </div>
             </div>
@@ -603,54 +537,6 @@
             </div>
         </div>
 
-        @if($classSession)
-        {{-- Status & Session Info (Edit mode only) --}}
-        <div class="card bg-base-100">
-            <div class="card-header">
-                <h3 class="card-title">Session Status</h3>
-            </div>
-            <div class="card-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="label-text" for="status">Status</label>
-                        <select id="status" name="status" class="hidden @error('status') input-error @enderror"
-                            data-select='{
-                                "placeholder": "Select status...",
-                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                                "toggleClasses": "advance-select-toggle",
-                                "dropdownClasses": "advance-select-menu",
-                                "optionClasses": "advance-select-option selected:select-active",
-                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                            }'>
-                            @foreach($statuses as $value => $label)
-                            <option value="{{ $value }}" {{ old('status', $classSession->status) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        @error('status')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="label-text">Session Info</label>
-                        <dl class="mt-2 space-y-1 text-sm">
-                            <div class="flex justify-between">
-                                <dt class="text-base-content/60">Created</dt>
-                                <dd>{{ $classSession->created_at->format('M j, Y') }}</dd>
-                            </div>
-                            @if($classSession->isRecurring())
-                            <div class="flex justify-between">
-                                <dt class="text-base-content/60">Type</dt>
-                                <dd><span class="badge badge-soft badge-info badge-sm">Recurring</span></dd>
-                            </div>
-                            @endif
-                        </dl>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endif
-
         {{-- Status --}}
         <div class="card bg-base-100">
             <div class="card-header">
@@ -660,28 +546,47 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="flex flex-wrap gap-3">
-                    @foreach($statuses as $value => $label)
-                        @if($value !== 'completed' && $value !== 'cancelled')
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="status" value="{{ $value }}"
-                                class="radio radio-primary"
-                                {{ old('status', $classSession?->status ?? 'draft') === $value ? 'checked' : '' }}>
-                            <span class="label-text">{{ $label }}</span>
-                            @if($value === 'published')
-                                <span class="badge badge-success badge-sm">Live</span>
-                            @endif
-                        </label>
-                        @endif
-                    @endforeach
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="font-medium">Publish Session</span>
+                        <p class="text-xs text-base-content/60">Published sessions are visible to clients and open for booking.</p>
+                    </div>
+                    <input type="hidden" name="status" id="session_status_value" value="{{ in_array(old('status', $classSession?->status ?? 'draft'), ['published']) ? 'published' : 'draft' }}">
+                    <label class="switch switch-primary">
+                        <input type="checkbox" id="session_status_toggle"
+                            {{ in_array(old('status', $classSession?->status ?? 'draft'), ['published']) ? 'checked' : '' }}
+                            onchange="document.getElementById('session_status_value').value = this.checked ? 'published' : 'draft'" />
+                        <span class="switch-indicator"></span>
+                    </label>
                 </div>
-                <p class="text-xs text-base-content/60 mt-2">Published sessions are visible to clients and open for booking.</p>
+            </div>
+        </div>
+
+        {{-- Conflict Override (hidden by default, shown when conflict detected) --}}
+        <div id="conflict-override-card" class="card bg-base-100 hidden">
+            <div class="card-body">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-start gap-3">
+                        <span class="icon-[tabler--alert-triangle] size-5 text-warning mt-0.5"></span>
+                        <div>
+                            <span class="font-medium">Scheduling Conflict Detected</span>
+                            <p class="text-xs text-base-content/60" id="conflict-message">The selected instructor has a conflict on the chosen date/time.</p>
+                        </div>
+                    </div>
+                    <label class="switch switch-warning">
+                        <input type="hidden" name="override_conflicts" value="0">
+                        <input type="checkbox" id="conflict_override_toggle" name="override_conflicts" value="1"
+                            onchange="document.getElementById('submit-btn').disabled = !this.checked && document.getElementById('conflict-override-card').classList.contains('hidden') === false" />
+                        <span class="switch-indicator"></span>
+                    </label>
+                </div>
+                <p class="text-xs text-warning mt-2 ml-8">Toggle on to schedule anyway despite the conflict.</p>
             </div>
         </div>
 
         {{-- Actions --}}
         <div class="flex items-center gap-4 pt-4">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" id="submit-btn" class="btn btn-primary">
                 <span class="icon-[tabler--check] size-5"></span>
                 {{ $classSession ? 'Update Session' : 'Schedule Session' }}
             </button>
@@ -720,37 +625,42 @@ document.addEventListener('DOMContentLoaded', function() {
         userEditedPrice = true;
     });
 
+    // Get class plan data from hidden inputs
+    function getClassPlanData(planId) {
+        var el = document.querySelector('.class-plan-data[data-plan-id="' + planId + '"]');
+        if (!el) return null;
+        return {
+            duration: el.dataset.duration,
+            capacity: el.dataset.capacity,
+            price: el.dataset.price,
+            color: el.dataset.color,
+        };
+    }
+
     // Auto-fill from class plan when selection changes
     function applyClassPlanDefaults(forceUpdate) {
-        var selectedOption = classPlanSelect.options[classPlanSelect.selectedIndex];
-        if (selectedOption && selectedOption.value) {
-            // Check if class plan actually changed
-            var planChanged = lastSelectedPlanId !== selectedOption.value;
+        var planId = classPlanSelect.value;
+        if (planId) {
+            var data = getClassPlanData(planId);
+            if (!data) return;
+
+            var planChanged = lastSelectedPlanId !== planId;
             if (planChanged) {
-                lastSelectedPlanId = selectedOption.value;
-                // Reset flags when class plan changes (user explicitly changed it)
+                lastSelectedPlanId = planId;
                 if (forceUpdate) {
                     userEditedCapacity = false;
                     userEditedPrice = false;
                 }
             }
 
-            // Always update duration
-            durationInput.value = selectedOption.dataset.duration || 60;
+            durationInput.value = data.duration || 60;
 
-            // Update capacity if user hasn't manually edited it
             if (!userEditedCapacity) {
-                capacityInput.value = selectedOption.dataset.capacity || 20;
+                capacityInput.value = data.capacity || 20;
             }
 
-            // Update price placeholder always, value only if not edited
-            var defaultPrice = selectedOption.dataset.price;
-            priceInput.placeholder = defaultPrice && defaultPrice !== ''
-                ? 'Default: $' + parseFloat(defaultPrice).toFixed(2)
-                : 'Leave empty to use class plan price';
-
             if (!userEditedPrice) {
-                priceInput.value = defaultPrice && defaultPrice !== '' ? defaultPrice : '';
+                priceInput.value = data.price && data.price !== '' ? data.price : '';
             }
 
             updateTimePreview();
@@ -794,12 +704,11 @@ document.addEventListener('DOMContentLoaded', function() {
     dateInput.addEventListener('change', updateTimePreview);
     updateTimePreview();
 
-    // Set initial placeholder for price based on selected class plan
-    var selectedPlanOption = classPlanSelect.options[classPlanSelect.selectedIndex];
-    if (selectedPlanOption && selectedPlanOption.value) {
-        var defaultPrice = selectedPlanOption.dataset.price;
-        if (defaultPrice && defaultPrice !== '') {
-            priceInput.placeholder = 'Default: $' + parseFloat(defaultPrice).toFixed(2);
+    // Set initial price from selected class plan
+    if (classPlanSelect.value) {
+        var initData = getClassPlanData(classPlanSelect.value);
+        if (initData && initData.price && !priceInput.value) {
+            priceInput.value = initData.price;
         }
     }
 
@@ -816,15 +725,23 @@ document.addEventListener('DOMContentLoaded', function() {
     var classLocationTypeSelect = document.getElementById('class_location_type');
     var hsSelectInstance = null;
 
-    // Filter locations based on selected class type
+    // Get selected class types (multiselect returns array)
+    function getSelectedClassTypes() {
+        var selected = [];
+        Array.from(classLocationTypeSelect.selectedOptions || classLocationTypeSelect.options).forEach(function(opt) {
+            if (opt.selected && opt.value) selected.push(opt.value);
+        });
+        return selected;
+    }
+
+    // Filter locations based on selected class types
     function filterLocationsByType() {
-        var selectedType = classLocationTypeSelect.value;
+        var selectedTypes = getSelectedClassTypes();
         var currentLocationValue = locationSelect.value;
         var hasVisibleSelected = false;
 
         Array.from(locationSelect.options).forEach(function(option) {
             if (!option.value) {
-                // Always show the placeholder
                 option.style.display = '';
                 return;
             }
@@ -836,14 +753,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 locationTypes = [];
             }
 
-            // Also check the legacy single type
             var legacyType = option.dataset.type || '';
             if (legacyType && !locationTypes.includes(legacyType)) {
                 locationTypes.push(legacyType);
             }
 
-            // Show if no type filter selected, or if location has the selected type
-            var shouldShow = !selectedType || locationTypes.includes(selectedType);
+            // Show if no type filter selected, or if location has ANY of the selected types
+            var shouldShow = selectedTypes.length === 0 || selectedTypes.some(function(t) { return locationTypes.includes(t); });
             option.style.display = shouldShow ? '' : 'none';
             option.disabled = !shouldShow;
 
@@ -852,12 +768,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Reset selection if current selection is now hidden
         if (!hasVisibleSelected && currentLocationValue) {
             locationSelect.value = '';
         }
 
-        // Update fields based on class type
         updateLocationFields();
     }
 
@@ -868,7 +782,8 @@ document.addEventListener('DOMContentLoaded', function() {
     classTypeObserver.observe(classLocationTypeSelect, { attributes: true, childList: true, subtree: true });
 
     function updateLocationFields() {
-        var selectedClassType = classLocationTypeSelect.value;
+        var selectedTypes = getSelectedClassTypes();
+        var selectedClassType = selectedTypes.length > 0 ? selectedTypes[0] : '';
         var selectedOption = locationSelect.options[locationSelect.selectedIndex];
         var hasLocation = selectedOption && selectedOption.value;
 
@@ -963,12 +878,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial location fields setup - delay to allow HSSelect to initialize
     function initializeLocationFields() {
-        // Get the actual selected class type from the select (PHP pre-selected)
-        var selectedClassTypeOption = classLocationTypeSelect.options[classLocationTypeSelect.selectedIndex];
-        if (selectedClassTypeOption && selectedClassTypeOption.value) {
-            classLocationTypeSelect.value = selectedClassTypeOption.value;
-        }
-
         filterLocationsByType();
         updateLocationFields();
     }
@@ -979,11 +888,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Re-run after HSSelect might have updated
         setTimeout(function() {
-            // Force the class type select to reflect the actual selected value
-            if (classLocationTypeSelect.value) {
-                filterLocationsByType();
-                updateLocationFields();
-            }
+            filterLocationsByType();
+            updateLocationFields();
         }, 200);
     }, 100);
 
@@ -1156,151 +1062,71 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Backup instructors dynamic add/remove
-    var backupContainer = document.getElementById('backup-instructors-container');
-    var addBackupBtn = document.getElementById('add-backup-instructor');
+    // Instructor availability references
     var primaryInstructorSelect = document.getElementById('primary_instructor_id');
-    var backupRowIndex = backupContainer.querySelectorAll('.backup-instructor-row').length;
 
-    // Instructor data for building new rows
-    var instructorsData = @json($instructors->map(fn($i) => ['id' => $i->id, 'name' => $i->name]));
-
-    function escapeHtml(text) {
-        var div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // Get all selected instructor IDs (primary + all backups)
-    function getSelectedInstructorIds() {
-        var selected = [];
-        // Add primary instructor
-        if (primaryInstructorSelect.value) {
-            selected.push(primaryInstructorSelect.value);
-        }
-        // Add all backup instructors
-        backupContainer.querySelectorAll('.backup-instructor-select').forEach(function(select) {
-            if (select.value) {
-                selected.push(select.value);
-            }
+    // Primary instructor change listener for availability
+    if (primaryInstructorSelect) {
+        primaryInstructorSelect.addEventListener('change', function() {
+            loadInstructorAvailability();
         });
-        return selected;
-    }
 
-    // Update all backup dropdowns to hide already-selected instructors
-    function updateBackupDropdowns() {
-        var selectedIds = getSelectedInstructorIds();
-
-        backupContainer.querySelectorAll('.backup-instructor-select').forEach(function(select) {
-            var currentValue = select.value;
-
-            // Update each option's disabled state
-            Array.from(select.options).forEach(function(option) {
-                if (option.value === '') return; // Skip placeholder
-
-                // Disable if selected elsewhere (but not in this select)
-                var isSelectedElsewhere = selectedIds.includes(option.value) && option.value !== currentValue;
-                option.disabled = isSelectedElsewhere;
-                option.style.display = isSelectedElsewhere ? 'none' : '';
+        var primaryObserver = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.attributeName === 'value' || mutation.type === 'childList') {
+                    loadInstructorAvailability();
+                }
             });
         });
+        primaryObserver.observe(primaryInstructorSelect, { attributes: true, childList: true, subtree: true });
     }
 
-    function buildInstructorOptions(excludeIds) {
-        excludeIds = excludeIds || [];
-        var options = '<option value="">Select backup instructor...</option>';
-        instructorsData.forEach(function(instructor) {
-            var isExcluded = excludeIds.includes(String(instructor.id));
-            if (!isExcluded) {
-                options += '<option value="' + instructor.id + '">' + escapeHtml(instructor.name) + '</option>';
-            }
-        });
-        return options;
-    }
+    // Filter backup instructor dropdown to exclude primary instructor
+    var backupSelect = document.getElementById('backup_instructor_ids');
 
-    function createBackupRow() {
-        var selectedIds = getSelectedInstructorIds();
-        var row = document.createElement('div');
-        row.className = 'backup-instructor-row flex items-center gap-2';
-        row.dataset.index = backupRowIndex++;
-        row.innerHTML = '<div class="flex-1">' +
-            '<select name="backup_instructor_ids[]" class="select w-full backup-instructor-select">' +
-            buildInstructorOptions(selectedIds) +
-            '</select>' +
-            '</div>' +
-            '<button type="button" class="remove-backup-instructor btn btn-ghost btn-sm btn-circle text-error flex-shrink-0" title="Remove">' +
-            '<span class="icon-[tabler--trash] size-4"></span>' +
-            '</button>';
-        return row;
-    }
+    function filterBackupInstructors() {
+        if (!backupSelect || !primaryInstructorSelect) return;
+        var primaryId = primaryInstructorSelect.value;
 
-    function updateRemoveButtons() {
-        var rows = backupContainer.querySelectorAll('.backup-instructor-row');
-        rows.forEach(function(row, index) {
-            var removeBtn = row.querySelector('.remove-backup-instructor');
-            // Always show remove button, but if there's only one empty row, hide it
-            if (rows.length === 1) {
-                var select = row.querySelector('select');
-                if (!select.value) {
-                    removeBtn.classList.add('invisible');
-                } else {
-                    removeBtn.classList.remove('invisible');
-                }
+        Array.from(backupSelect.options).forEach(function(option) {
+            if (!option.value) return;
+            if (option.value === primaryId) {
+                option.disabled = true;
+                option.style.display = 'none';
+                // Deselect if was selected
+                if (option.selected) option.selected = false;
             } else {
-                removeBtn.classList.remove('invisible');
+                option.disabled = false;
+                option.style.display = '';
             }
         });
+
+        // Also update the rendered FlyonUI dropdown items
+        var backupWrapper = backupSelect.closest('div');
+        if (backupWrapper) {
+            setTimeout(function() {
+                var dropdownItems = backupWrapper.querySelectorAll('.advance-select-option');
+                dropdownItems.forEach(function(item) {
+                    var val = item.getAttribute('data-value');
+                    if (val === primaryId) {
+                        item.style.display = 'none';
+                    } else {
+                        item.style.display = '';
+                    }
+                });
+            }, 100);
+        }
     }
 
-    addBackupBtn.addEventListener('click', function() {
-        backupContainer.appendChild(createBackupRow());
-        updateRemoveButtons();
-    });
+    if (primaryInstructorSelect) {
+        primaryInstructorSelect.addEventListener('change', filterBackupInstructors);
+        // Also run on mutation for advance-select
+        var backupFilterObserver = new MutationObserver(filterBackupInstructors);
+        backupFilterObserver.observe(primaryInstructorSelect, { attributes: true, childList: true, subtree: true });
+    }
 
-    backupContainer.addEventListener('click', function(e) {
-        var removeBtn = e.target.closest('.remove-backup-instructor');
-        if (removeBtn) {
-            var row = removeBtn.closest('.backup-instructor-row');
-            var rows = backupContainer.querySelectorAll('.backup-instructor-row');
-            if (rows.length > 1) {
-                row.remove();
-            } else {
-                // If it's the last row, just clear the selection
-                row.querySelector('select').value = '';
-            }
-            updateRemoveButtons();
-            updateBackupDropdowns();
-        }
-    });
-
-    // Update dropdowns when any backup selection changes
-    backupContainer.addEventListener('change', function(e) {
-        if (e.target.classList.contains('backup-instructor-select')) {
-            updateRemoveButtons();
-            updateBackupDropdowns();
-        }
-    });
-
-    // Update backup dropdowns when primary instructor changes
-    // Listen on both native change and HSSelect wrapper for advance-select
-    primaryInstructorSelect.addEventListener('change', function() {
-        updateBackupDropdowns();
-    });
-
-    // Also observe for mutations in case advance-select updates the value differently
-    var primaryObserver = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.attributeName === 'value' || mutation.type === 'childList') {
-                updateBackupDropdowns();
-                loadInstructorAvailability();
-            }
-        });
-    });
-    primaryObserver.observe(primaryInstructorSelect, { attributes: true, childList: true, subtree: true });
-
-    // Initial update
-    updateRemoveButtons();
-    updateBackupDropdowns();
+    // Initial filter
+    setTimeout(filterBackupInstructors, 300);
 
     // =====================================================
     // Recurring Class Toggle & Days of Week Selection
@@ -1552,6 +1378,27 @@ document.addEventListener('DOMContentLoaded', function() {
         availInitials.textContent = data.instructor.initials;
         availName.textContent = data.instructor.name;
 
+        // Check if availability is configured
+        if (!data.has_configured_availability) {
+            availSubtitle.textContent = 'Availability not configured';
+            instructorTimeSlot.classList.remove('hidden');
+            instructorTimeRange.innerHTML = '<span class="text-warning text-sm">Not configured</span>';
+            availableSlotsSection.classList.add('hidden');
+
+            var dayLetters = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            var unconfiguredHtml = '';
+            dayLetters.forEach(function(letter) {
+                unconfiguredHtml += '<span class="size-9 rounded text-sm font-medium flex items-center justify-center bg-base-200 text-base-content/40">' + letter + '</span>';
+            });
+            availWorkingDays.innerHTML = unconfiguredHtml;
+            availDaysContainer.innerHTML = '<div class="p-3 bg-warning/10 border border-warning/20 rounded-lg">' +
+                '<div class="flex items-start gap-2">' +
+                '<span class="icon-[tabler--alert-triangle] size-4 text-warning mt-0.5"></span>' +
+                '<p class="text-sm text-base-content/70">No working days or hours configured for this instructor. <a href="/settings/team/users" class="link link-primary text-sm">Set up availability</a></p>' +
+                '</div></div>';
+            return;
+        }
+
         // Determine which days to show
         var daysToShow = selectedDays.length > 0 ? selectedDays : [data.day_of_week];
         var subtitle = selectedDays.length > 0
@@ -1611,10 +1458,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         availWorkingDays.innerHTML = workingDaysHtml;
 
-        // Build availability summary for each selected day
-        var availHtml = '';
+        // Build compact availability summary for each selected day
+        var availHtml = '<div class="space-y-1">';
         daysToShow.forEach(function(dayIndex) {
-            var dayName = dayNames[dayIndex];
+            var dayName = dayNamesShort[dayIndex];
             var works = data.working_days[dayIndex];
 
             if (works) {
@@ -1622,31 +1469,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     ? data.availability.from + ' - ' + data.availability.to
                     : 'All day';
 
-                availHtml += '<div class="flex items-center gap-3 p-3 bg-success/10 border border-success/20 rounded-lg">' +
-                    '<span class="icon-[tabler--check] size-5 text-success"></span>' +
-                    '<div class="flex-1">' +
-                    '<div class="font-medium text-success">' + dayName + '</div>' +
-                    '<div class="text-sm text-base-content/60">Available ' + hoursText + '</div>' +
+                availHtml += '<div class="flex items-center justify-between py-1.5 px-2 rounded bg-success/5">' +
+                    '<div class="flex items-center gap-2">' +
+                    '<span class="icon-[tabler--check] size-3.5 text-success"></span>' +
+                    '<span class="text-xs font-medium">' + dayName + '</span>' +
                     '</div>' +
+                    '<span class="text-xs text-base-content/60">' + hoursText + '</span>' +
                     '</div>';
             } else {
-                availHtml += '<div class="flex items-center gap-3 p-3 bg-error/10 border border-error/20 rounded-lg">' +
-                    '<span class="icon-[tabler--x] size-5 text-error"></span>' +
-                    '<div class="flex-1">' +
-                    '<div class="font-medium text-error">' + dayName + '</div>' +
-                    '<div class="text-sm text-base-content/60">Does not work this day</div>' +
+                availHtml += '<div class="flex items-center justify-between py-1.5 px-2 rounded bg-error/5">' +
+                    '<div class="flex items-center gap-2">' +
+                    '<span class="icon-[tabler--x] size-3.5 text-error"></span>' +
+                    '<span class="text-xs font-medium text-error">' + dayName + '</span>' +
                     '</div>' +
+                    '<span class="text-xs text-base-content/40">Off</span>' +
                     '</div>';
             }
         });
+        availHtml += '</div>';
 
-        // If there are existing sessions on the start date, show them
+        // Existing sessions on the start date
         if (data.existing_sessions.length > 0 && selectedDays.length === 0) {
-            availHtml += '<div class="mt-3">' +
-                '<div class="text-sm font-medium text-base-content/60 mb-2">Existing appointments on ' + data.formatted_date + '</div>';
+            availHtml += '<div class="mt-2">' +
+                '<div class="text-xs font-medium text-base-content/60 mb-1">Existing on ' + data.formatted_date + '</div>';
             data.existing_sessions.forEach(function(session) {
-                availHtml += '<div class="flex items-center gap-2 text-sm bg-base-200 rounded px-3 py-2 mb-1">' +
-                    '<span class="icon-[tabler--calendar-event] size-4 text-base-content/50"></span>' +
+                availHtml += '<div class="flex items-center gap-1.5 text-xs bg-base-200 rounded px-2 py-1 mb-0.5">' +
+                    '<span class="icon-[tabler--calendar-event] size-3 text-base-content/50"></span>' +
                     '<span class="font-medium">' + session.time + '</span>' +
                     '<span class="text-base-content/60 truncate">- ' + session.title + '</span>' +
                     '</div>';
@@ -1657,9 +1505,80 @@ document.addEventListener('DOMContentLoaded', function() {
         availDaysContainer.innerHTML = availHtml;
     }
 
-    // Conflict check is a no-op — sessions are always created, conflicts shown in listing
+    // Conflict check — show override toggle when conflict detected
+    var conflictCard = document.getElementById('conflict-override-card');
+    var conflictMessage = document.getElementById('conflict-message');
+    var conflictToggle = document.getElementById('conflict_override_toggle');
+    var submitBtn = document.getElementById('submit-btn');
+
     function checkSchedulingConflict(data) {
-        // No UI warning — override_availability_warnings is always set via hidden input
+        if (!conflictCard) return;
+
+        var hasConflict = false;
+        var messages = [];
+
+        // Check if instructor doesn't work on selected day
+        var selectedDays = getSelectedDays();
+        var daysToCheck = selectedDays.length > 0 ? selectedDays : [data.day_of_week];
+
+        daysToCheck.forEach(function(dayIndex) {
+            if (!data.working_days[dayIndex]) {
+                hasConflict = true;
+                messages.push(dayNames[dayIndex] + ' is a day off');
+            }
+        });
+
+        // Check for overlapping sessions
+        if (data.existing_sessions && data.existing_sessions.length > 0) {
+            var sessionTime = timeInput.value;
+            var duration = parseInt(durationInput.value) || 60;
+
+            if (sessionTime) {
+                var parts = sessionTime.split(':');
+                var startMins = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                var endMins = startMins + duration;
+
+                data.existing_sessions.forEach(function(session) {
+                    // Parse existing session time range "g:i A - g:i A"
+                    var timeParts = session.time.split(' - ');
+                    if (timeParts.length === 2) {
+                        var existStart = parseTimeToMinutes(timeParts[0]);
+                        var existEnd = parseTimeToMinutes(timeParts[1]);
+
+                        if (existStart !== null && existEnd !== null) {
+                            if (startMins < existEnd && endMins > existStart) {
+                                hasConflict = true;
+                                messages.push('Overlaps with "' + session.title + '" (' + session.time + ')');
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        if (hasConflict) {
+            conflictCard.classList.remove('hidden');
+            conflictMessage.textContent = messages.join('. ') + '.';
+            // Disable submit until override is toggled
+            if (conflictToggle) {
+                submitBtn.disabled = !conflictToggle.checked;
+            }
+        } else {
+            conflictCard.classList.add('hidden');
+            submitBtn.disabled = false;
+            if (conflictToggle) conflictToggle.checked = false;
+        }
+    }
+
+    function parseTimeToMinutes(timeStr) {
+        var match = timeStr.trim().match(/(\d+):(\d+)\s*(AM|PM)/i);
+        if (!match) return null;
+        var hours = parseInt(match[1]);
+        var minutes = parseInt(match[2]);
+        var isPM = match[3].toUpperCase() === 'PM';
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+        return hours * 60 + minutes;
     }
 
     function formatTimeForDisplay(totalMinutes) {

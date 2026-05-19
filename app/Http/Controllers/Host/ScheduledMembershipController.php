@@ -22,13 +22,14 @@ class ScheduledMembershipController extends Controller
     {
         $instructorIds = [];
 
-        // Staff members: convert user IDs to instructor IDs via pivot
+        // Staff members: convert user IDs to instructor IDs via Instructor.user_id
         $staffUserIds = array_filter($request->input('staff_member_ids', []));
-        foreach ($staffUserIds as $userId) {
-            $pivot = $host->teamMembers()->where('users.id', $userId)->first()?->pivot;
-            if ($pivot?->instructor_id) {
-                $instructorIds[] = $pivot->instructor_id;
-            }
+        if (!empty($staffUserIds)) {
+            $linked = \App\Models\Instructor::where('host_id', $host->id)
+                ->whereIn('user_id', $staffUserIds)
+                ->pluck('id')
+                ->toArray();
+            $instructorIds = array_merge($instructorIds, $linked);
         }
 
         // Standalone instructors: already instructor IDs
@@ -48,6 +49,7 @@ class ScheduledMembershipController extends Controller
         // Get filter parameters
         $membershipPlanId = $request->get('membership_plan_id');
         $instructorId = $request->get('instructor_id');
+        $locationId = $request->get('location_id');
         $status = $request->get('status');
         $date = $request->get('date', now()->format('Y-m-d'));
         $range = $request->get('range', 'month');
@@ -78,6 +80,7 @@ class ScheduledMembershipController extends Controller
                 });
             })
             ->when($instructorId, fn($q) => $q->where('primary_instructor_id', $instructorId))
+            ->when($locationId, fn($q) => $q->where('location_id', $locationId))
             ->when($status, fn($q) => $q->where('status', $status))
             ->orderBy('start_time');
 
@@ -95,12 +98,47 @@ class ScheduledMembershipController extends Controller
         // Get filter options
         $membershipPlans = $host->membershipPlans()->active()->orderBy('name')->get();
         $instructors = $host->instructors()->active()->orderBy('name')->get();
+        $locations = $host->locations()->orderBy('name')->get();
         $statuses = ClassSession::getStatuses();
 
         return view('host.membership-schedules.index', compact(
-            'sessions', 'sessionsByDate', 'membershipPlans', 'instructors', 'statuses',
-            'membershipPlanId', 'instructorId', 'status', 'date', 'range',
+            'sessions', 'sessionsByDate', 'membershipPlans', 'instructors', 'locations', 'statuses',
+            'membershipPlanId', 'instructorId', 'locationId', 'status', 'date', 'range',
             'startDate', 'endDate'
+        ));
+    }
+
+    /**
+     * Display a membership session.
+     */
+    public function show(ClassSession $classSession)
+    {
+        $host = auth()->user()->host;
+
+        if ($classSession->host_id !== $host->id) {
+            abort(404);
+        }
+
+        $classSession->load([
+            'primaryInstructor',
+            'backupInstructors',
+            'location',
+            'room',
+            'membershipPlans',
+            'recurrenceChildren' => fn($q) => $q->orderBy('start_time'),
+            'bookings.client',
+        ]);
+
+        $membershipPlan = $classSession->membershipPlans->first();
+
+        $confirmedBookings = $classSession->bookings->where('status', 'confirmed');
+        $cancelledBookings = $classSession->bookings->where('status', 'cancelled');
+        $allBookings = $classSession->bookings;
+        $checkedInCount = $confirmedBookings->filter(fn($b) => $b->isCheckedIn())->count();
+
+        return view('host.scheduled-membership.show', compact(
+            'classSession', 'membershipPlan', 'confirmedBookings', 'cancelledBookings',
+            'allBookings', 'checkedInCount'
         ));
     }
 
@@ -121,11 +159,29 @@ class ScheduledMembershipController extends Controller
         $defaultCurrency = $host->default_currency ?? 'USD';
         $currencySymbols = MembershipPlan::getCurrencySymbols();
 
+        // Determine schedule type and location from query param or from the selected plan
+        $scheduleType = $request->schedule_type;
+        $locationId = null;
+        if ($request->membership_plan_id) {
+            $selectedPlan = $membershipPlans->find($request->membership_plan_id);
+            if (!$scheduleType) {
+                $scheduleType = $selectedPlan?->schedule_type;
+            }
+            if ($selectedPlan?->location_ids && count($selectedPlan->location_ids) > 0) {
+                $locationId = $selectedPlan->location_ids[0];
+            }
+        }
+
+        $qrCheckinEnabled = $selectedPlan->qr_checkin_enabled ?? false;
+
         return view('host.scheduled-membership.create', [
             'membershipPlans' => $membershipPlans,
             'locations' => $host->locations()->orderBy('name')->get(),
             'selectedMembershipPlanId' => $request->membership_plan_id,
             'selectedDate' => $request->date ?? now()->format('Y-m-d'),
+            'scheduleType' => $scheduleType ?? 'scheduled',
+            'locationId' => $locationId,
+            'qrCheckinEnabled' => $qrCheckinEnabled,
             'hostCurrencies' => $hostCurrencies,
             'defaultCurrency' => $defaultCurrency,
             'currencySymbols' => $currencySymbols,
@@ -179,20 +235,22 @@ class ScheduledMembershipController extends Controller
             $rawInstructorIds[] = $backup->id;
         }
 
-        // Convert to user IDs for staff members, keep instructor IDs for standalone
+        // Convert instructor IDs to user IDs for staff, keep standalone instructor IDs
         $assignedStaffMemberIds = [];
         $assignedInstructorIds = [];
         if (!empty($rawInstructorIds)) {
-            // Find which instructor IDs belong to team members (have user_id in pivot)
-            $staffLinked = $host->teamMembers()
-                ->wherePivotIn('instructor_id', $rawInstructorIds)
-                ->get();
+            $instructors = \App\Models\Instructor::whereIn('id', $rawInstructorIds)->get();
+            $staffUserIds = $host->teamMembers()->pluck('users.id')->toArray();
 
-            $assignedStaffMemberIds = $staffLinked->pluck('id')->toArray();
-            $linkedInstructorIds = $staffLinked->pluck('pivot.instructor_id')->toArray();
-
-            // Remaining are standalone instructors
-            $assignedInstructorIds = array_values(array_diff($rawInstructorIds, $linkedInstructorIds));
+            foreach ($instructors as $instructor) {
+                if ($instructor->user_id && in_array($instructor->user_id, $staffUserIds)) {
+                    // Instructor is linked to a team member
+                    $assignedStaffMemberIds[] = $instructor->user_id;
+                } else {
+                    // Standalone instructor
+                    $assignedInstructorIds[] = $instructor->id;
+                }
+            }
         }
 
         $membershipPlans = MembershipPlan::where('host_id', $host->id)
@@ -224,6 +282,7 @@ class ScheduledMembershipController extends Controller
             'capacity' => $classSession->capacity,
             'notes' => $classSession->notes,
             'status' => $classSession->status,
+            'qrCheckinEnabled' => $classSession->membershipPlans->first()?->qr_checkin_enabled ?? false,
             'hostCurrencies' => $hostCurrencies,
             'defaultCurrency' => $defaultCurrency,
             'currencySymbols' => $currencySymbols,
@@ -289,44 +348,83 @@ class ScheduledMembershipController extends Controller
     }
 
     /**
-     * Store scheduled membership class sessions.
+     * Store scheduled membership class sessions or open access plan.
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $host = auth()->user()->host;
+        $scheduleType = $request->input('schedule_type', 'scheduled');
+
+        // Common validation
+        $rules = [
             'membership_plan_id' => 'required|exists:membership_plans,id',
             'title' => 'nullable|string|max:255',
-            'start_date' => 'required|date|after_or_equal:today',
-            'start_time' => 'required|date_format:H:i',
-            'end_time' => 'required|date_format:H:i|after:start_time',
-            'recurrence_days' => 'required|array|min:1',
-            'recurrence_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
-            'recurrence_end_type' => 'required|in:after,on,never',
-            'recurrence_count' => 'required_if:recurrence_end_type,after|nullable|integer|min:1|max:52',
-            'recurrence_end_date' => 'required_if:recurrence_end_type,on|nullable|date|after:start_date',
-            'staff_member_ids' => 'nullable|array',
-            'staff_member_ids.*' => 'exists:users,id',
-            'instructor_ids' => 'nullable|array',
-            'instructor_ids.*' => 'exists:instructors,id',
+            'schedule_type' => 'required|in:scheduled,open_access',
             'location_id' => 'nullable|exists:locations,id',
-            'capacity' => 'required|integer|min:1|max:500',
+            'capacity' => 'nullable|integer|min:1|max:500',
             'notes' => 'nullable|string|max:1000',
             'status' => 'nullable|in:draft,published',
+        ];
+
+        // Scheduled-only validation
+        if ($scheduleType === 'scheduled') {
+            $rules = array_merge($rules, [
+                'start_date' => 'required|date|after_or_equal:today',
+                'start_time' => 'required|date_format:H:i',
+                'end_time' => 'required|date_format:H:i|after:start_time',
+                'recurrence_days' => 'required|array|min:1',
+                'recurrence_days.*' => 'in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+                'recurrence_end_type' => 'required|in:after,on,never',
+                'recurrence_count' => 'required_if:recurrence_end_type,after|nullable|integer|min:1|max:52',
+                'recurrence_end_date' => 'required_if:recurrence_end_type,on|nullable|date|after:start_date',
+                'staff_member_ids' => 'nullable|array',
+                'staff_member_ids.*' => 'exists:users,id',
+                'instructor_ids' => 'nullable|array',
+                'instructor_ids.*' => 'exists:instructors,id',
+                'capacity' => 'required|integer|min:1|max:500',
+            ]);
+        }
+
+        $request->validate($rules);
+
+        $membershipPlan = MembershipPlan::find($request->membership_plan_id);
+
+        // ── Open Access: update the plan, no sessions ──
+        if ($scheduleType === 'open_access') {
+            $updateData = [
+                'schedule_type' => MembershipPlan::SCHEDULE_TYPE_OPEN_ACCESS,
+                'has_scheduled_class' => true,
+                'status' => in_array($request->input('status'), ['published', 'active']) ? 'active' : 'draft',
+            ];
+
+            // Save location to the plan
+            if ($request->filled('location_id')) {
+                $updateData['location_scope_type'] = 'selected';
+                $updateData['location_ids'] = [(int) $request->location_id];
+            }
+
+            $updateData['qr_checkin_enabled'] = $request->boolean('qr_checkin_enabled');
+            $membershipPlan->update($updateData);
+
+            return redirect()
+                ->route('membership-plans.show', $membershipPlan)
+                ->with('success', 'Membership plan set to Open Access. Members can now be checked in anytime.');
+        }
+
+        // ── Scheduled Sessions: existing logic ──
+        $membershipPlan->update([
+            'schedule_type' => MembershipPlan::SCHEDULE_TYPE_SCHEDULED,
+            'qr_checkin_enabled' => $request->boolean('qr_checkin_enabled'),
         ]);
 
-        $host = auth()->user()->host;
-
-        // Parse start and end datetime
         $startDateTime = Carbon::parse($request->start_date . ' ' . $request->start_time);
         $endDateTime = Carbon::parse($request->start_date . ' ' . $request->end_time);
         $durationMinutes = $startDateTime->diffInMinutes($endDateTime);
 
-        // Resolve staff user IDs to instructor IDs, merge with standalone instructor IDs
         $allInstructorIds = $this->resolveInstructorIds($host, $request);
         $primaryInstructorId = !empty($allInstructorIds) ? array_shift($allInstructorIds) : null;
         $backupInstructorIds = $allInstructorIds;
 
-        // Build recurrence rule
         $endValue = match ($request->recurrence_end_type) {
             'after' => (int) $request->recurrence_count,
             'on' => Carbon::parse($request->recurrence_end_date),
@@ -339,14 +437,11 @@ class ScheduledMembershipController extends Controller
             $endValue
         );
 
-        // Get membership plan for default title
-        $membershipPlan = \App\Models\MembershipPlan::find($request->membership_plan_id);
         $sessionTitle = $request->title ?: $membershipPlan->name . ' Session';
 
-        // Create the first session (no class_plan_id for membership-only sessions)
         $session = ClassSession::create([
             'host_id' => $host->id,
-            'class_plan_id' => null, // Membership-only session, not tied to specific class
+            'class_plan_id' => null,
             'primary_instructor_id' => $primaryInstructorId,
             'location_id' => $request->location_id,
             'title' => $sessionTitle,
@@ -354,21 +449,18 @@ class ScheduledMembershipController extends Controller
             'end_time' => $endDateTime,
             'duration_minutes' => $durationMinutes,
             'capacity' => $request->capacity,
-            'price' => null, // Included in membership
+            'price' => null,
             'status' => $request->status ?? ClassSession::STATUS_DRAFT,
             'recurrence_rule' => $recurrenceRule,
             'notes' => $request->notes,
         ]);
 
-        // Sync backup instructors
         if (!empty($backupInstructorIds)) {
             $session->syncBackupInstructors($backupInstructorIds);
         }
 
-        // Sync the membership plan for auto-enrollment
         $session->membershipPlans()->sync([$request->membership_plan_id]);
 
-        // Create recurring sessions
         $recurringSession = $this->recurrenceService->createRecurringSessions(
             $session,
             $request->recurrence_days,
@@ -378,7 +470,6 @@ class ScheduledMembershipController extends Controller
 
         $createdCount = 1 + $recurringSession->count();
 
-        // Sync membership plan and backup instructors to recurring sessions
         foreach ($recurringSession as $recurring) {
             $recurring->membershipPlans()->sync([$request->membership_plan_id]);
             if (!empty($backupInstructorIds)) {
@@ -386,10 +477,8 @@ class ScheduledMembershipController extends Controller
             }
         }
 
-        $message = "Created {$createdCount} scheduled membership class sessions successfully.";
-
         return redirect()
             ->route('class-sessions.index', ['date' => $startDateTime->format('Y-m-d'), 'range' => 'month'])
-            ->with('success', $message);
+            ->with('success', "Created {$createdCount} scheduled membership sessions successfully.");
     }
 }

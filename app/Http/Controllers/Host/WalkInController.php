@@ -1613,6 +1613,9 @@ class WalkInController extends Controller
             $workingDaysDisplay[] = $instructor->worksOnDay($i);
         }
 
+        // Check if availability is actually configured
+        $hasConfiguredAvailability = !empty($instructor->working_days) || !empty($instructor->availability_by_day) || !empty($instructor->availability_hours);
+
         return response()->json([
             'instructor' => [
                 'id' => $instructor->id,
@@ -1627,6 +1630,7 @@ class WalkInController extends Controller
             'works_today' => $worksToday,
             'working_days' => $workingDaysDisplay,
             'availability' => $availability,
+            'has_configured_availability' => $hasConfiguredAvailability,
             'existing_sessions' => $existingSessions,
             'workload' => [
                 'classes_this_week' => $classesThisWeek,

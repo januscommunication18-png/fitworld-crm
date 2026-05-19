@@ -53,6 +53,7 @@ class ClassSessionController extends Controller
         // 'all' - no date filtering
 
         $query = ClassSession::where('host_id', $host->id)
+            ->whereNotNull('class_plan_id')
             ->with(['classPlan', 'primaryInstructor', 'backupInstructors', 'location', 'room']);
 
         // Apply date range filter if not 'all'

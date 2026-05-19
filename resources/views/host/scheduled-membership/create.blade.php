@@ -97,8 +97,59 @@
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
+
+                        {{-- Schedule Type Toggle --}}
+                        <div class="p-4 bg-base-200/30 rounded-xl mt-2">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="font-medium">Schedule Type</span>
+                                    <p class="text-xs text-base-content/60">Choose between recurring sessions or open access walk-in check-in.</p>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm {{ old('schedule_type', $scheduleType ?? 'scheduled') !== 'open_access' ? 'font-semibold text-primary' : 'text-base-content/50' }}" id="label-scheduled">Scheduled</span>
+                                    <label class="switch switch-primary">
+                                        <input type="hidden" name="schedule_type" value="scheduled">
+                                        <input type="checkbox" name="schedule_type" value="open_access" id="schedule_type_toggle"
+                                            {{ old('schedule_type', $scheduleType ?? 'scheduled') === 'open_access' ? 'checked' : '' }} />
+                                        <span class="switch-indicator"></span>
+                                    </label>
+                                    <span class="text-sm {{ old('schedule_type', $scheduleType ?? 'scheduled') === 'open_access' ? 'font-semibold text-primary' : 'text-base-content/50' }}" id="label-open-access">Open Access</span>
+                                </div>
+                            </div>
+                            <div id="open-access-info" class="mt-3 p-3 bg-info/5 border border-info/20 rounded-lg {{ old('schedule_type', $scheduleType ?? 'scheduled') === 'open_access' ? '' : 'hidden' }}">
+                                <div class="flex items-start gap-2">
+                                    <span class="icon-[tabler--info-circle] size-4 text-info mt-0.5"></span>
+                                    <p class="text-xs text-base-content/70">Members can walk in anytime — no session booking needed. Staff will check them in from the membership check-in screen.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- QR Check-in --}}
+                        @php
+                            $qrEnabled = old('qr_checkin_enabled', $qrCheckinEnabled ?? false);
+                        @endphp
+                        <div class="p-4 bg-base-200/30 rounded-xl mt-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--qrcode] size-5 text-primary"></span>
+                                    <div>
+                                        <span class="font-medium">QR Code Check-in</span>
+                                        <p class="text-xs text-base-content/60">Generate a QR code for daily member self check-in.</p>
+                                    </div>
+                                </div>
+                                <label class="switch switch-primary">
+                                    <input type="hidden" name="qr_checkin_enabled" value="0">
+                                    <input type="checkbox" name="qr_checkin_enabled" value="1"
+                                        {{ $qrEnabled ? 'checked' : '' }} />
+                                    <span class="switch-indicator"></span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
+                {{-- Cards that only show for Scheduled type --}}
+                <div id="scheduled-cards" class="{{ old('schedule_type', $scheduleType ?? 'scheduled') === 'open_access' ? 'hidden' : '' }}">
 
                 {{-- Card 2: Recurring Schedule --}}
                 <div class="card bg-base-100">
@@ -223,6 +274,8 @@
                     title="Assigned Staff & Instructors (Optional)"
                 />
 
+                </div>{{-- /scheduled-cards --}}
+
                 {{-- Card 4: Location --}}
                 <div class="card bg-base-100">
                     <div class="card-header">
@@ -263,12 +316,12 @@
                         </div>
                     </div>
                     <div class="card-body space-y-4">
-                        <div>
+                        <div id="capacity-wrapper" class="{{ old('schedule_type', $scheduleType ?? 'scheduled') === 'open_access' ? 'hidden' : '' }}">
                             <label class="label-text" for="capacity">Capacity <span class="text-error">*</span></label>
                             <input type="number" id="capacity" name="capacity"
                                 value="{{ old('capacity', $capacity ?? 20) }}"
                                 class="input w-full md:w-1/3"
-                                min="1" max="500" required>
+                                min="1" max="500">
                             @error('capacity')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -420,8 +473,8 @@
                     </div>
                 </div>
 
-                {{-- Card 6: Status --}}
-                <div class="card bg-base-100">
+                {{-- Card 6: Status (only for scheduled) --}}
+                <div class="card bg-base-100 {{ old('schedule_type', $scheduleType ?? 'scheduled') === 'open_access' ? 'hidden' : '' }}" id="status-card">
                     <div class="card-header">
                         <div class="flex items-center gap-2">
                             <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">7</span>
@@ -431,13 +484,14 @@
                     <div class="card-body">
                         <div class="flex items-center justify-between">
                             <div>
-                                <span class="font-medium">Publish Sessions</span>
-                                <p class="text-xs text-base-content/60">Published sessions are visible to members and open for booking.</p>
+                                <span class="font-medium" id="status-label">Publish Sessions</span>
+                                <p class="text-xs text-base-content/60" id="status-description">Published sessions are visible to members and open for booking.</p>
                             </div>
+                            <input type="hidden" name="status" id="status_value" value="{{ in_array(old('status', $status ?? 'draft'), ['published', 'active']) ? 'published' : 'draft' }}">
                             <label class="switch switch-primary">
-                                <input type="hidden" name="status" value="draft">
-                                <input type="checkbox" name="status" value="published"
-                                    {{ old('status', $status ?? 'draft') === 'published' ? 'checked' : '' }} />
+                                <input type="checkbox" id="status_toggle"
+                                    {{ in_array(old('status', $status ?? 'draft'), ['published', 'active']) ? 'checked' : '' }}
+                                    onchange="document.getElementById('status_value').value = this.checked ? 'published' : 'draft'" />
                                 <span class="switch-indicator"></span>
                             </label>
                         </div>
@@ -447,9 +501,9 @@
                 {{-- Submit --}}
                 <div class="card bg-base-100">
                     <div class="card-body space-y-2">
-                        <button type="submit" class="btn btn-primary w-full">
-                            <span class="icon-[tabler--{{ ($editMode ?? false) ? 'check' : 'calendar-plus' }}] size-5"></span>
-                            {{ ($editMode ?? false) ? 'Update Schedule' : 'Create Scheduled Sessions' }}
+                        <button type="submit" class="btn btn-primary w-full" id="submit-btn">
+                            <span class="icon-[tabler--{{ ($editMode ?? false) ? 'check' : 'calendar-plus' }}] size-5" id="submit-icon"></span>
+                            <span id="submit-text">{{ ($editMode ?? false) ? 'Update Schedule' : 'Create Scheduled Sessions' }}</span>
                         </button>
                         <a href="{{ route('schedule.calendar') }}" class="btn btn-ghost w-full">Cancel</a>
                     </div>
@@ -464,6 +518,56 @@
 <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Schedule type toggle
+    var scheduleTypeToggle = document.getElementById('schedule_type_toggle');
+    var scheduledCards = document.getElementById('scheduled-cards');
+    var openAccessInfo = document.getElementById('open-access-info');
+    var labelScheduled = document.getElementById('label-scheduled');
+    var labelOpenAccess = document.getElementById('label-open-access');
+    var submitText = document.getElementById('submit-text');
+    var submitIcon = document.getElementById('submit-icon');
+    var statusLabel = document.getElementById('status-label');
+    var statusDescription = document.getElementById('status-description');
+    var capacityWrapper = document.getElementById('capacity-wrapper');
+    var statusCard = document.getElementById('status-card');
+
+    function toggleScheduleType() {
+        var isOpenAccess = scheduleTypeToggle.checked;
+        scheduledCards.classList.toggle('hidden', isOpenAccess);
+        openAccessInfo.classList.toggle('hidden', !isOpenAccess);
+        capacityWrapper.classList.toggle('hidden', isOpenAccess);
+        statusCard.classList.toggle('hidden', isOpenAccess);
+
+        labelScheduled.classList.toggle('font-semibold', !isOpenAccess);
+        labelScheduled.classList.toggle('text-primary', !isOpenAccess);
+        labelScheduled.classList.toggle('text-base-content/50', isOpenAccess);
+        labelOpenAccess.classList.toggle('font-semibold', isOpenAccess);
+        labelOpenAccess.classList.toggle('text-primary', isOpenAccess);
+        labelOpenAccess.classList.toggle('text-base-content/50', !isOpenAccess);
+
+        // Update status label based on schedule type
+        if (isOpenAccess) {
+            statusLabel.textContent = 'Activate Open Access';
+            statusDescription.textContent = 'When active, members can walk in and be checked in anytime.';
+        } else {
+            statusLabel.textContent = 'Publish Sessions';
+            statusDescription.textContent = 'Published sessions are visible to members and open for booking.';
+        }
+
+        @if(!($editMode ?? false))
+        if (isOpenAccess) {
+            submitText.textContent = 'Save Open Access Plan';
+            submitIcon.className = 'icon-[tabler--door-enter] size-5';
+        } else {
+            submitText.textContent = 'Create Scheduled Sessions';
+            submitIcon.className = 'icon-[tabler--calendar-plus] size-5';
+        }
+        @endif
+    }
+
+    scheduleTypeToggle.addEventListener('change', toggleScheduleType);
+    toggleScheduleType(); // Set initial state
+
     // Recurrence end type toggle
     var recurrenceEndType = document.getElementById('recurrence_end_type');
     var recurrenceCountWrapper = document.getElementById('recurrence-count-wrapper');

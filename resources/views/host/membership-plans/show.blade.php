@@ -27,6 +27,9 @@
                 <div class="flex flex-wrap items-center gap-2 mt-2">
                     <span class="badge badge-soft {{ $membershipPlan->status_badge_class }}">{{ ucfirst($membershipPlan->status) }}</span>
                     <span class="badge badge-soft {{ $membershipPlan->type_badge_class }}">{{ $membershipPlan->formatted_type }}</span>
+                    @if($membershipPlan->isOpenAccess())
+                        <span class="badge badge-soft badge-accent badge-sm">Open Access</span>
+                    @endif
                     @if($membershipPlan->visibility_public)
                         <span class="badge badge-soft badge-info badge-sm">Visible on Booking</span>
                     @endif
@@ -36,6 +39,12 @@
 
         {{-- Actions --}}
         <div class="flex items-center gap-2">
+            @if($membershipPlan->isOpenAccess())
+                <a href="{{ route('membership-checkin.index', $membershipPlan) }}" class="btn btn-success btn-sm">
+                    <span class="icon-[tabler--door-enter] size-4"></span>
+                    Check-in Screen
+                </a>
+            @endif
             <a href="{{ route('membership-plans.edit', $membershipPlan) }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--edit] size-4"></span>
                 Edit
@@ -420,6 +429,126 @@
 
         {{-- Schedule Tab --}}
         <div class="tab-content {{ $tab === 'schedule' ? 'active' : 'hidden' }}" data-content="schedule">
+
+            @if($membershipPlan->isOpenAccess())
+                {{-- Open Access Info --}}
+                <div class="space-y-6">
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-accent/10 rounded-lg p-3">
+                                        <span class="icon-[tabler--door-enter] size-8 text-accent"></span>
+                                    </div>
+                                    <div>
+                                        <h2 class="text-lg font-semibold">Open Access</h2>
+                                        <p class="text-sm text-base-content/60">Members can walk in anytime — no session booking needed.</p>
+                                    </div>
+                                </div>
+                                <a href="{{ route('membership-checkin.index', $membershipPlan) }}" class="btn btn-success btn-sm">
+                                    <span class="icon-[tabler--door-enter] size-4"></span>
+                                    Open Check-in Screen
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Open Access Details --}}
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <h2 class="card-title text-lg">
+                                <span class="icon-[tabler--info-circle] size-5"></span>
+                                Open Access Details
+                            </h2>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                                <div>
+                                    <label class="text-sm text-base-content/60">Schedule Type</label>
+                                    <p class="mt-0.5"><span class="badge badge-soft badge-accent badge-sm">Open Access</span></p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Location</label>
+                                    <p class="font-medium">
+                                        @if(!empty($membershipPlan->location_ids))
+                                            @php $openAccessLocation = \App\Models\Location::find($membershipPlan->location_ids[0]); @endphp
+                                            {{ $openAccessLocation?->name ?? '—' }}
+                                        @else
+                                            Any Location
+                                        @endif
+                                    </p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Active Members</label>
+                                    <p class="font-bold text-lg text-primary">{{ $membershipPlan->customerMemberships()->where('status', 'active')->count() }}</p>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-base-content/60">Check-ins Today</label>
+                                    <p class="font-bold text-lg text-success">{{ $membershipPlan->checkins()->whereDate('checked_in_at', today())->count() }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Recent Check-ins --}}
+                    @php
+                        $recentCheckins = $membershipPlan->checkins()
+                            ->with(['client', 'checkedInBy'])
+                            ->latest('checked_in_at')
+                            ->limit(10)
+                            ->get();
+                    @endphp
+                    <div class="card bg-base-100">
+                        <div class="card-body">
+                            <h2 class="card-title text-lg">
+                                <span class="icon-[tabler--clock] size-5"></span>
+                                Recent Check-ins
+                            </h2>
+                            @if($recentCheckins->isEmpty())
+                                <div class="text-center py-8">
+                                    <span class="icon-[tabler--door-enter] size-10 text-base-content/20"></span>
+                                    <p class="text-base-content/60 mt-2 text-sm">No check-ins yet.</p>
+                                </div>
+                            @else
+                                <div class="overflow-x-auto mt-4">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Member</th>
+                                                <th>Checked In</th>
+                                                <th>Checked Out</th>
+                                                <th>By</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($recentCheckins as $checkin)
+                                            <tr>
+                                                <td>
+                                                    <div class="flex items-center gap-2">
+                                                        <div class="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center font-bold text-xs text-primary">
+                                                            {{ $checkin->client->initials }}
+                                                        </div>
+                                                        <span class="font-medium text-sm">{{ $checkin->client->full_name }}</span>
+                                                    </div>
+                                                </td>
+                                                <td class="text-sm">{{ $checkin->checked_in_at->format('M j, g:i A') }}</td>
+                                                <td class="text-sm">
+                                                    @if($checkin->checked_out_at)
+                                                        {{ $checkin->checked_out_at->format('g:i A') }}
+                                                    @else
+                                                        <span class="badge badge-soft badge-success badge-xs">Still here</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-sm text-base-content/60">{{ $checkin->checkedInBy?->first_name ?? '—' }}</td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @else
+
             <div class="alert alert-soft alert-info mb-6">
                 <span class="icon-[tabler--info-circle] size-5"></span>
                 <div>
@@ -581,6 +710,7 @@
                         </div>
                     </div>
                 @endforeach
+            @endif
             @endif
         </div>
     </div>

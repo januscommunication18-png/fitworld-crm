@@ -2,11 +2,20 @@
 
 @section('title', $classSession->display_title)
 
+@php
+    $isMembershipSession = !$classSession->class_plan_id;
+    $linkedMembershipPlan = $classSession->membershipPlans->first();
+@endphp
+
 @section('breadcrumbs')
     <ol>
         <li><a href="{{ route('dashboard') }}"><span class="icon-[tabler--home] size-4"></span> {{ $trans['nav.dashboard'] ?? 'Dashboard' }}</a></li>
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
-        <li><a href="{{ route('class-sessions.index') }}"><span class="icon-[tabler--calendar-event] me-1 size-4"></span> {{ $trans['schedule.class_sessions'] ?? 'Class Sessions' }}</a></li>
+        @if($isMembershipSession)
+            <li><a href="{{ route('membership-schedules.index') }}"><span class="icon-[tabler--id-badge-2] me-1 size-4"></span> Membership Sessions</a></li>
+        @else
+            <li><a href="{{ route('class-sessions.index') }}"><span class="icon-[tabler--calendar-event] me-1 size-4"></span> {{ $trans['schedule.class_sessions'] ?? 'Class Sessions' }}</a></li>
+        @endif
         <li class="breadcrumbs-separator rtl:rotate-180"><span class="icon-[tabler--chevron-right]"></span></li>
         <li aria-current="page">{{ $classSession->display_title }}</li>
     </ol>
@@ -25,13 +34,19 @@
                 <img src="{{ $headerImage }}" alt="{{ $classSession->display_title }}" class="w-24 h-24 rounded-lg object-cover">
             @else
                 <div class="w-24 h-24 rounded-lg flex items-center justify-center" style="background-color: {{ $headerColor }}20;">
-                    <span class="icon-[tabler--calendar-event] size-10" style="color: {{ $headerColor }};"></span>
+                    <span class="icon-[tabler--{{ $isMembershipSession ? 'id-badge-2' : 'calendar-event' }}] size-10" style="color: {{ $headerColor }};"></span>
                 </div>
             @endif
             <div>
                 <h1 class="text-2xl font-bold">{{ $classSession->display_title }}</h1>
                 <div class="flex flex-wrap items-center gap-2 mt-2">
                     <span class="badge {{ $classSession->getStatusBadgeClass() }} badge-soft capitalize">{{ $classSession->status }}</span>
+                    @if($isMembershipSession)
+                        <span class="badge badge-soft badge-warning badge-sm">Membership Session</span>
+                        @if($linkedMembershipPlan)
+                            <span class="badge badge-soft badge-secondary badge-sm">{{ $linkedMembershipPlan->name }}</span>
+                        @endif
+                    @endif
                     @if($classSession->classPlan?->category)
                         <span class="badge badge-soft badge-primary badge-sm capitalize">{{ $classSession->classPlan->category }}</span>
                     @endif
@@ -101,7 +116,7 @@
                     <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                 </a>
             @endif
-            <a href="{{ route('class-sessions.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <a href="{{ $isMembershipSession ? route('membership-schedules.index') : route('class-sessions.index') }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span> Back
             </a>
         </div>
@@ -222,8 +237,8 @@
                             <p class="font-medium">{{ $classSession->capacity }} {{ $trans['common.spots'] ?? 'spots' }}</p>
                         </div>
                         <div>
-                            <label class="text-sm text-base-content/60">{{ $trans['field.class_plan'] ?? 'Class Plan' }}</label>
-                            <p class="font-medium">{{ $classSession->classPlan?->name ?? '-' }}</p>
+                            <label class="text-sm text-base-content/60">{{ $isMembershipSession ? 'Membership Plan' : ($trans['field.class_plan'] ?? 'Class Plan') }}</label>
+                            <p class="font-medium">{{ $isMembershipSession ? ($linkedMembershipPlan?->name ?? '-') : ($classSession->classPlan?->name ?? '-') }}</p>
                         </div>
                         <div>
                             <label class="text-sm text-base-content/60">{{ $trans['field.session_price'] ?? 'Session Price' }}</label>
@@ -237,6 +252,32 @@
                             <label class="text-sm text-base-content/60">{{ $trans['common.created'] ?? 'Created' }}</label>
                             <p class="font-medium">{{ $classSession->created_at->format('M j, Y') }}</p>
                         </div>
+                        @if($classSession->isRecurring())
+                        <div class="col-span-2">
+                            <label class="text-sm text-base-content/60">Recurring Days</label>
+                            <div class="flex flex-wrap gap-1.5 mt-1">
+                                @php
+                                    $rule = $classSession->recurrence_rule;
+                                    if ($classSession->isRecurrenceChild() && $classSession->recurrenceParent) {
+                                        $rule = $classSession->recurrenceParent->recurrence_rule;
+                                    }
+                                    $parsedRule = is_string($rule) ? app(\App\Services\Schedule\RecurrenceService::class)->parseRecurrenceRule($rule) : null;
+                                    $dayMap = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
+                                    $recurringDayLabels = [];
+                                    if ($parsedRule && !empty($parsedRule['days_of_week'])) {
+                                        $recurringDayLabels = array_map(fn($d) => $dayMap[(int)$d] ?? $d, $parsedRule['days_of_week']);
+                                    }
+                                @endphp
+                                @if(!empty($recurringDayLabels))
+                                    @foreach($recurringDayLabels as $day)
+                                        <span class="badge badge-soft badge-primary badge-sm">{{ $day }}</span>
+                                    @endforeach
+                                @else
+                                    <span class="badge badge-soft badge-sm">{{ $classSession->start_time->format('l') }}</span>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>

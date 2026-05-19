@@ -139,7 +139,7 @@
         </div>
     @else
         <div class="card bg-base-100">
-            <div class="overflow-x-auto">
+            <div class="">
                 <table class="table">
                     <thead>
                         <tr>
@@ -166,6 +166,8 @@
                                     <span class="badge badge-soft badge-primary badge-sm"><span class="icon-[tabler--yoga] size-3 me-1"></span>Class</span>
                                 @elseif($schedule->type === 'service')
                                     <span class="badge badge-soft badge-secondary badge-sm"><span class="icon-[tabler--massage] size-3 me-1"></span>Service</span>
+                                @elseif($schedule->type === 'open_access')
+                                    <span class="badge badge-soft badge-accent badge-sm"><span class="icon-[tabler--door-enter] size-3 me-1"></span>Open Access</span>
                                 @else
                                     <span class="badge badge-soft badge-warning badge-sm"><span class="icon-[tabler--id-badge-2] size-3 me-1"></span>Membership</span>
                                 @endif
@@ -173,7 +175,9 @@
                             @endif
                             <td>
                                 <div class="flex items-center gap-2">
-                                    @if($schedule->is_recurring)
+                                    @if($schedule->type === 'open_access')
+                                        <span class="icon-[tabler--door-enter] size-4 text-accent" title="Open Access"></span>
+                                    @elseif($schedule->is_recurring)
                                         <span class="icon-[tabler--calendar-repeat] size-4 text-primary" title="Recurring"></span>
                                     @else
                                         <span class="icon-[tabler--calendar-event] size-4 text-base-content/40" title="One-off"></span>
@@ -190,7 +194,13 @@
                                 </div>
                             </td>
                             @endif
-                            <td class="text-sm">{{ $schedule->time }}</td>
+                            <td class="text-sm">
+                                @if($schedule->type === 'open_access')
+                                    <span class="badge badge-soft badge-accent badge-xs">Anytime</span>
+                                @else
+                                    {{ $schedule->time }}
+                                @endif
+                            </td>
                             <td>
                                 <div class="flex items-center gap-2">
                                     <span class="icon-[tabler--user] size-4 text-base-content/50"></span>
@@ -204,35 +214,86 @@
                                 </div>
                             </td>
                             <td class="text-center">
-                                <span class="badge badge-soft badge-sm {{ $schedule->session_count > 0 ? 'badge-success' : 'badge-neutral' }}">
-                                    {{ $schedule->session_count }} upcoming
-                                </span>
+                                @if($schedule->type === 'open_access')
+                                    <div class="flex flex-col items-center gap-0.5">
+                                        <span class="badge badge-soft badge-sm badge-accent">{{ $schedule->session_count }} {{ Str::plural('member', $schedule->session_count) }}</span>
+                                        @if(($schedule->today_checkins ?? 0) > 0)
+                                            <span class="text-xs text-success">{{ $schedule->today_checkins }} today</span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <span class="badge badge-soft badge-sm {{ $schedule->session_count > 0 ? 'badge-success' : 'badge-neutral' }}">
+                                        {{ $schedule->session_count }} upcoming
+                                    </span>
+                                @endif
                             </td>
                             <td>
-                                <div class="flex items-center gap-1">
-                                    @if($schedule->type === 'service')
-                                        <a href="{{ route('service-slots.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                        </a>
-                                        <a href="{{ route('service-slots.edit', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
-                                            <span class="icon-[tabler--pencil] size-4"></span>
-                                        </a>
+                                <x-actions-dropdown size="xs">
+                                    @if($schedule->type === 'open_access')
+                                        <li><a href="{{ route('membership-plans.show', $schedule->id) }}">
+                                            <span class="icon-[tabler--eye] size-4"></span> View Plan
+                                        </a></li>
+                                        <li><a href="{{ route('scheduled-membership.create', ['membership_plan_id' => $schedule->id, 'schedule_type' => 'open_access']) }}">
+                                            <span class="icon-[tabler--pencil] size-4"></span> Edit
+                                        </a></li>
+                                        <li><a href="{{ route('membership-checkin.index', $schedule->id) }}">
+                                            <span class="icon-[tabler--door-enter] size-4"></span> Check-in Screen
+                                        </a></li>
+                                        @if($schedule->session_count === 0 && ($schedule->today_checkins ?? 0) === 0)
+                                            <li>
+                                                <button type="button" class="w-full text-left flex items-center gap-2 text-error"
+                                                    onclick="openDeleteModal('{{ route('membership-plans.destroy', $schedule->id) }}', '{{ addslashes($schedule->title) }}')">
+                                                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                </button>
+                                            </li>
+                                        @endif
+                                    @elseif($schedule->type === 'service')
+                                        <li><a href="{{ route('schedule-planner.show', $schedule->id) }}">
+                                            <span class="icon-[tabler--eye] size-4"></span> View
+                                        </a></li>
+                                        <li><a href="{{ route('service-slots.edit', $schedule->id) }}">
+                                            <span class="icon-[tabler--pencil] size-4"></span> Edit
+                                        </a></li>
+                                        @if($schedule->session_count === 0)
+                                            <li>
+                                                <button type="button" class="w-full text-left flex items-center gap-2 text-error"
+                                                    onclick="openDeleteModal('{{ route('service-slots.destroy', $schedule->id) }}', '{{ addslashes($schedule->title) }}')">
+                                                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                </button>
+                                            </li>
+                                        @endif
                                     @elseif($schedule->type === 'membership')
-                                        <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                        </a>
-                                        <a href="{{ route('scheduled-membership.edit', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
-                                            <span class="icon-[tabler--pencil] size-4"></span>
-                                        </a>
+                                        <li><a href="{{ route('schedule-planner.show', $schedule->id) }}">
+                                            <span class="icon-[tabler--eye] size-4"></span> View
+                                        </a></li>
+                                        <li><a href="{{ route('scheduled-membership.edit', $schedule->id) }}">
+                                            <span class="icon-[tabler--pencil] size-4"></span> Edit
+                                        </a></li>
+                                        @if($schedule->session_count === 0)
+                                            <li>
+                                                <button type="button" class="w-full text-left flex items-center gap-2 text-error"
+                                                    onclick="openDeleteModal('{{ route('class-sessions.destroy', $schedule->id) }}', '{{ addslashes($schedule->title) }}')">
+                                                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                </button>
+                                            </li>
+                                        @endif
                                     @else
-                                        <a href="{{ route('class-sessions.show', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="View">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                        </a>
-                                        <a href="{{ route('class-sessions.edit', $schedule->id) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
-                                            <span class="icon-[tabler--pencil] size-4"></span>
-                                        </a>
+                                        <li><a href="{{ route('schedule-planner.show', $schedule->id) }}">
+                                            <span class="icon-[tabler--eye] size-4"></span> View
+                                        </a></li>
+                                        <li><a href="{{ route('class-sessions.edit', $schedule->id) }}">
+                                            <span class="icon-[tabler--pencil] size-4"></span> Edit
+                                        </a></li>
+                                        @if($schedule->session_count === 0)
+                                            <li>
+                                                <button type="button" class="w-full text-left flex items-center gap-2 text-error"
+                                                    onclick="openDeleteModal('{{ route('class-sessions.destroy', $schedule->id) }}', '{{ addslashes($schedule->title) }}')">
+                                                    <span class="icon-[tabler--trash] size-4"></span> Delete
+                                                </button>
+                                            </li>
+                                        @endif
                                     @endif
-                                </div>
+                                </x-actions-dropdown>
                             </td>
                         </tr>
                         @endforeach
@@ -242,4 +303,46 @@
         </div>
     @endif
 </div>
+
+{{-- Delete Confirmation Modal --}}
+<dialog id="deleteModal" class="modal">
+    <div class="modal-box">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center">
+                <span class="icon-[tabler--trash] size-6 text-error"></span>
+            </div>
+            <div>
+                <h3 class="font-bold text-lg">Delete Schedule</h3>
+                <p class="text-base-content/60 text-sm">This action cannot be undone.</p>
+            </div>
+        </div>
+        <p class="py-2">Are you sure you want to delete <strong id="deleteItemName"></strong>?</p>
+        <div class="modal-action">
+            <form method="dialog">
+                <button class="btn btn-ghost">Cancel</button>
+            </form>
+            <form id="deleteForm" method="POST">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-error">
+                    <span class="icon-[tabler--trash] size-4"></span>
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+    </form>
+</dialog>
+
+@push('scripts')
+<script>
+function openDeleteModal(action, name, type) {
+    document.getElementById('deleteForm').action = action;
+    document.getElementById('deleteItemName').textContent = name;
+    document.getElementById('deleteModal').showModal();
+}
+</script>
+@endpush
 @endsection

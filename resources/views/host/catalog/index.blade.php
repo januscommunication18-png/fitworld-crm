@@ -484,6 +484,9 @@
                             <a href="{{ route('membership-plans.show', $membershipPlan) }}" class="card-title text-base hover:text-primary">{{ $membershipPlan->name }}</a>
                             <span class="badge badge-soft {{ $membershipPlan->status_badge_class }} badge-sm">{{ ucfirst($membershipPlan->status) }}</span>
                             <span class="badge {{ $membershipPlan->type_badge_class }} badge-soft badge-sm">{{ $membershipPlan->formatted_type }}</span>
+                            @if($membershipPlan->isOpenAccess())
+                                <span class="badge badge-soft badge-accent badge-sm">Open Access</span>
+                            @endif
                         </div>
                         <x-actions-dropdown>
                             <li><a href="{{ route('membership-plans.show', $membershipPlan) }}">

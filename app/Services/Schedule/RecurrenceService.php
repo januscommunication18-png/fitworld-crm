@@ -143,8 +143,11 @@ class RecurrenceService
         // Get backup instructors from parent to copy
         $backupInstructorIds = $parentSession->backupInstructors->pluck('id')->toArray();
 
-        // Skip the first occurrence (it's the parent)
-        foreach ($occurrences->skip(1) as $date) {
+        // Filter out the parent's date (instead of skip(1) which depends on order)
+        $parentDate = $parentSession->start_time->format('Y-m-d');
+        $childOccurrences = $occurrences->filter(fn($date) => $date->format('Y-m-d') !== $parentDate);
+
+        foreach ($childOccurrences as $date) {
             $startTime = $date->copy()->setTimeFrom($parentSession->start_time);
             $endTime = $startTime->copy()->addMinutes((int) $parentSession->duration_minutes);
 

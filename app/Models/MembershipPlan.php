@@ -36,6 +36,10 @@ class MembershipPlan extends Model
     const LOCATION_ALL = 'all';
     const LOCATION_SELECTED = 'selected';
 
+    // Schedule type constants
+    const SCHEDULE_TYPE_SCHEDULED = 'scheduled';
+    const SCHEDULE_TYPE_OPEN_ACCESS = 'open_access';
+
     protected $fillable = [
         'host_id',
         'name',
@@ -43,6 +47,8 @@ class MembershipPlan extends Model
         'description',
         'type',
         'has_scheduled_class',
+        'schedule_type',
+        'qr_checkin_enabled',
         'price',
         'prices',
         'new_member_prices',
@@ -83,6 +89,7 @@ class MembershipPlan extends Model
             'cancellation_fees' => 'array',
             'cancellation_grace_hours' => 'integer',
             'has_scheduled_class' => 'boolean',
+            'qr_checkin_enabled' => 'boolean',
             'addon_members' => 'integer',
             'free_amenities' => 'array',
             'free_rental_ids' => 'array',
@@ -149,6 +156,11 @@ class MembershipPlan extends Model
     {
         return $this->belongsToMany(ClassSession::class, 'class_session_membership_plan')
             ->withTimestamps();
+    }
+
+    public function checkins(): HasMany
+    {
+        return $this->hasMany(MembershipCheckin::class);
     }
 
     /**
@@ -383,6 +395,24 @@ class MembershipPlan extends Model
     public function hasScheduledClass(): bool
     {
         return $this->has_scheduled_class;
+    }
+
+    public function isOpenAccess(): bool
+    {
+        return $this->schedule_type === self::SCHEDULE_TYPE_OPEN_ACCESS;
+    }
+
+    public function isScheduled(): bool
+    {
+        return $this->schedule_type !== self::SCHEDULE_TYPE_OPEN_ACCESS;
+    }
+
+    public static function getScheduleTypes(): array
+    {
+        return [
+            self::SCHEDULE_TYPE_SCHEDULED => 'Scheduled Sessions',
+            self::SCHEDULE_TYPE_OPEN_ACCESS => 'Open Access',
+        ];
     }
 
     /**

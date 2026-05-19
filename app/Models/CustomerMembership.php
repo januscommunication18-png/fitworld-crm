@@ -85,6 +85,11 @@ class CustomerMembership extends Model
         return $this->belongsTo(MembershipPlan::class);
     }
 
+    public function checkins(): HasMany
+    {
+        return $this->hasMany(MembershipCheckin::class);
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');

@@ -101,6 +101,19 @@
                     </select>
                 </div>
 
+                {{-- Location Filter --}}
+                <div class="w-40">
+                    <label class="label-text" for="location_id">{{ $trans['field.location'] ?? 'Location' }}</label>
+                    <select id="location_id" name="location_id" class="select select-sm w-full" onchange="submitFilters()">
+                        <option value="">{{ $trans['schedule.all_locations'] ?? 'All Locations' }}</option>
+                        @foreach($locations as $location)
+                            <option value="{{ $location->id }}" {{ $locationId == $location->id ? 'selected' : '' }}>
+                                {{ $location->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 {{-- Status Filter --}}
                 <div class="w-32">
                     <label class="label-text" for="status">{{ $trans['common.status'] ?? 'Status' }}</label>
@@ -220,11 +233,7 @@
                 <div id="date-{{ $dateKey }}" class="card bg-base-100" @if($isToday) data-today="true" @endif>
                     {{-- Date Header --}}
                     <div class="px-4 py-3 border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-lg flex flex-col items-center justify-center {{ $isToday ? 'bg-primary text-primary-content' : 'bg-base-200' }}">
-                                <span class="text-xs uppercase {{ $isToday ? 'text-primary-content/70' : 'text-base-content/60' }}">{{ $dateObj->format('D') }}</span>
-                                <span class="text-lg font-bold">{{ $dateObj->format('j') }}</span>
-                            </div>
+                        <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="font-semibold {{ $isToday ? 'text-primary' : '' }}">
                                     {{ $dateObj->format('l, F j, Y') }}
@@ -238,7 +247,7 @@
                     </div>
 
                     {{-- Sessions Table --}}
-                    <div class="overflow-x-auto">
+                    <div class="">
                         <table class="table">
                             <thead>
                                 <tr>
@@ -352,90 +361,77 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="flex items-center gap-1">
+                                            <x-actions-dropdown size="xs">
                                                 @if($session->isPublished() && !$session->isPast())
-                                                    <a href="{{ route('walk-in.select', ['session_id' => $session->id]) }}"
-                                                       class="btn btn-ghost btn-xs btn-square text-primary"
-                                                       title="{{ $trans['schedule.add_booking'] ?? 'Add Booking' }}">
-                                                        <span class="icon-[tabler--user-plus] size-4"></span>
-                                                    </a>
+                                                    <li><a href="{{ route('walk-in.select', ['session_id' => $session->id]) }}">
+                                                        <span class="icon-[tabler--user-plus] size-4"></span> {{ $trans['schedule.add_booking'] ?? 'Add Booking' }}
+                                                    </a></li>
                                                 @endif
-                                                <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('class-session-{{ $session->id }}', event)">
-                                                    <span class="icon-[tabler--eye] size-4"></span>
-                                                </button>
-                                                <a href="{{ route('class-sessions.edit', $session) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
-                                                    <span class="icon-[tabler--edit] size-4"></span>
-                                                </a>
+                                                <li><a href="{{ route('class-sessions.show', $session) }}">
+                                                    <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                                                </a></li>
+                                                <li><a href="{{ route('class-sessions.edit', $session) }}">
+                                                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                                                </a></li>
                                                 @if($session->isDraft())
-                                                    <form action="{{ route('class-sessions.publish', $session) }}" method="POST" class="inline">
+                                                    <li>
+                                                        <form action="{{ route('class-sessions.publish', $session) }}" method="POST">
+                                                            @csrf @method('PATCH')
+                                                            <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
+                                                                <span class="icon-[tabler--send] size-4"></span> {{ $trans['btn.publish'] ?? 'Publish' }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                                <li>
+                                                    <form action="{{ route('class-sessions.duplicate', $session) }}" method="POST">
                                                         @csrf
-                                                        @method('PATCH')
-                                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="{{ $trans['btn.publish'] ?? 'Publish' }}">
-                                                            <span class="icon-[tabler--send] size-4"></span>
+                                                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                                                            <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
                                                         </button>
                                                     </form>
+                                                </li>
+                                                @if($session->hasUnresolvedConflict())
+                                                    <li>
+                                                        <form action="{{ route('class-sessions.resolve-conflict', $session) }}" method="POST">
+                                                            @csrf @method('PATCH')
+                                                            <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
+                                                                <span class="icon-[tabler--check] size-4"></span> {{ $trans['schedule.resolve_conflict'] ?? 'Resolve Conflict' }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
                                                 @endif
-                                                <details class="dropdown dropdown-bottom dropdown-end">
-                                                    <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
-                                                        <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                                    </summary>
-                                                    <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
-                                                        @if($session->hasUnresolvedConflict())
-                                                            <li>
-                                                                <form action="{{ route('class-sessions.resolve-conflict', $session) }}" method="POST" class="m-0">
-                                                                    @csrf
-                                                                    @method('PATCH')
-                                                                    <button type="submit" class="w-full text-left flex items-center gap-2 text-success">
-                                                                        <span class="icon-[tabler--check] size-4"></span> {{ $trans['schedule.resolve_conflict'] ?? 'Resolve Conflict' }}
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                            <li class="menu-title px-2 py-1 text-xs">{{ $trans['common.actions'] ?? 'Actions' }}</li>
-                                                        @endif
-                                                        <li>
-                                                            <form action="{{ route('class-sessions.duplicate', $session) }}" method="POST" class="m-0">
-                                                                @csrf
-                                                                <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                                    <span class="icon-[tabler--copy] size-4"></span> {{ $trans['btn.duplicate'] ?? 'Duplicate' }}
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                        @if($session->isPublished())
-                                                            <li>
-                                                                <form action="{{ route('class-sessions.unpublish', $session) }}" method="POST" class="m-0">
-                                                                    @csrf
-                                                                    @method('PATCH')
-                                                                    <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                                        <span class="icon-[tabler--eye-off] size-4"></span> {{ $trans['btn.unpublish'] ?? 'Unpublish' }}
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                        @endif
-                                                        @if(!$session->isCancelled())
-                                                            <li>
-                                                                <form action="{{ route('class-sessions.cancel', $session) }}" method="POST" class="m-0" onsubmit="return confirm('{{ $trans['schedule.confirm_cancel_session'] ?? 'Cancel this session?' }}')">
-                                                                    @csrf
-                                                                    @method('PATCH')
-                                                                    <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                                        <span class="icon-[tabler--x] size-4"></span> {{ $trans['btn.cancel'] ?? 'Cancel' }}
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                        @endif
-                                                        @if(!$session->isPublished())
-                                                            <li>
-                                                                <form action="{{ route('class-sessions.destroy', $session) }}" method="POST" class="m-0" onsubmit="return confirm('{{ $trans['schedule.confirm_delete_session'] ?? 'Delete this session?' }}')">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                                        <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                        @endif
-                                                    </ul>
-                                                </details>
-                                            </div>
+                                                @if($session->isPublished())
+                                                    <li>
+                                                        <form action="{{ route('class-sessions.unpublish', $session) }}" method="POST">
+                                                            @csrf @method('PATCH')
+                                                            <button type="submit" class="w-full text-left flex items-center gap-2">
+                                                                <span class="icon-[tabler--eye-off] size-4"></span> {{ $trans['btn.unpublish'] ?? 'Unpublish' }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                                @if(!$session->isCancelled())
+                                                    <li>
+                                                        <form action="{{ route('class-sessions.cancel', $session) }}" method="POST" onsubmit="return confirm('{{ $trans['schedule.confirm_cancel_session'] ?? 'Cancel this session?' }}')">
+                                                            @csrf @method('PATCH')
+                                                            <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                                <span class="icon-[tabler--x] size-4"></span> {{ $trans['btn.cancel'] ?? 'Cancel' }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                                @if(!$session->isPublished())
+                                                    <li>
+                                                        <form action="{{ route('class-sessions.destroy', $session) }}" method="POST" onsubmit="return confirm('{{ $trans['schedule.confirm_delete_session'] ?? 'Delete this session?' }}')">
+                                                            @csrf @method('DELETE')
+                                                            <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                                <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                @endif
+                                            </x-actions-dropdown>
                                         </td>
                                     </tr>
                                 @endforeach

@@ -46,6 +46,7 @@ use App\Http\Controllers\Host\ProgressTemplateController;
 use App\Http\Controllers\Host\ClassSessionProgressController;
 use App\Http\Controllers\Host\WalkInController;
 use App\Http\Controllers\Host\PriceOverrideController;
+use App\Http\Controllers\Host\MembershipCheckinController;
 use App\Http\Controllers\Host\ScheduledMembershipController;
 use App\Http\Controllers\Host\SupportRequestController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
@@ -488,6 +489,7 @@ Route::middleware('auth')->group(function () {
     // Class Sessions
     Route::resource('class-sessions', ClassSessionController::class)->names('class-sessions');
     Route::get('/schedule-planner', [\App\Http\Controllers\Host\SchedulePlannerController::class, 'index'])->name('schedule-planner.index');
+    Route::get('/schedule-planner/{classSession}', [\App\Http\Controllers\Host\SchedulePlannerController::class, 'show'])->name('schedule-planner.show');
     Route::patch('/class-sessions/{class_session}/publish', [ClassSessionController::class, 'publish'])->name('class-sessions.publish');
     Route::patch('/class-sessions/{class_session}/unpublish', [ClassSessionController::class, 'unpublish'])->name('class-sessions.unpublish');
     Route::patch('/class-sessions/{class_session}/cancel', [ClassSessionController::class, 'cancel'])->name('class-sessions.cancel');
@@ -503,9 +505,17 @@ Route::middleware('auth')->group(function () {
     // Scheduled Membership Classes
     Route::get('/membership-schedules', [ScheduledMembershipController::class, 'index'])->name('membership-schedules.index');
     Route::get('/scheduled-membership/create', [ScheduledMembershipController::class, 'create'])->name('scheduled-membership.create');
+    Route::get('/scheduled-membership/{classSession}', [ScheduledMembershipController::class, 'show'])->name('scheduled-membership.show');
     Route::get('/scheduled-membership/{classSession}/edit', [ScheduledMembershipController::class, 'edit'])->name('scheduled-membership.edit');
     Route::put('/scheduled-membership/{classSession}', [ScheduledMembershipController::class, 'update'])->name('scheduled-membership.update');
     Route::post('/scheduled-membership', [ScheduledMembershipController::class, 'store'])->name('scheduled-membership.store');
+
+    // Open Access Membership Check-in
+    Route::get('/membership-checkin/{membershipPlan}', [MembershipCheckinController::class, 'index'])->name('membership-checkin.index');
+    Route::get('/membership-checkin/{membershipPlan}/search', [MembershipCheckinController::class, 'searchMembers'])->name('membership-checkin.search');
+    Route::post('/membership-checkin/{membershipPlan}', [MembershipCheckinController::class, 'store'])->name('membership-checkin.store');
+    Route::post('/membership-checkin/{membershipCheckin}/checkout', [MembershipCheckinController::class, 'checkOut'])->name('membership-checkin.checkout');
+    Route::get('/membership-checkin/{membershipPlan}/qr', [MembershipCheckinController::class, 'qrCheckin'])->name('membership-checkin.qr');
 
     // Walk-In Booking
     Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');

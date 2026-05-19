@@ -89,6 +89,19 @@
                     </select>
                 </div>
 
+                {{-- Location Filter --}}
+                <div class="w-40">
+                    <label class="label-text" for="location_id">{{ $trans['field.location'] ?? 'Location' }}</label>
+                    <select id="location_id" name="location_id" class="select select-sm w-full" onchange="submitFilters()">
+                        <option value="">{{ $trans['schedule.all_locations'] ?? 'All Locations' }}</option>
+                        @foreach($locations as $location)
+                            <option value="{{ $location->id }}" {{ $locationId == $location->id ? 'selected' : '' }}>
+                                {{ $location->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 {{-- Status Filter --}}
                 <div class="w-32">
                     <label class="label-text" for="status">{{ $trans['common.status'] ?? 'Status' }}</label>
@@ -100,7 +113,7 @@
                     </select>
                 </div>
 
-                @if($membershipPlanId || $instructorId || $status)
+                @if($membershipPlanId || $instructorId || $locationId || $status)
                     <a href="{{ route('membership-schedules.index', ['date' => $date, 'range' => $range]) }}" class="btn btn-ghost btn-sm">
                         <span class="icon-[tabler--x] size-4"></span>
                         {{ $trans['btn.clear'] ?? 'Clear' }}
@@ -194,11 +207,7 @@
                 <div class="card bg-base-100">
                     {{-- Date Header --}}
                     <div class="px-4 py-3 border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-lg flex flex-col items-center justify-center {{ $isToday ? 'bg-secondary text-secondary-content' : 'bg-base-200' }}">
-                                <span class="text-xs uppercase {{ $isToday ? 'text-secondary-content/70' : 'text-base-content/60' }}">{{ $dateObj->format('D') }}</span>
-                                <span class="text-lg font-bold">{{ $dateObj->format('j') }}</span>
-                            </div>
+                        <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="font-semibold {{ $isToday ? 'text-secondary' : '' }}">
                                     {{ $dateObj->format('l, F j, Y') }}
@@ -212,7 +221,7 @@
                     </div>
 
                     {{-- Sessions Table --}}
-                    <div class="overflow-x-auto">
+                    <div class="">
                         <table class="table">
                             <thead>
                                 <tr>
@@ -285,23 +294,25 @@
                                             <span class="badge {{ $session->getStatusBadgeClass() }} badge-soft badge-sm capitalize">{{ $session->status }}</span>
                                         </td>
                                         <td>
-                                            <div class="flex items-center gap-1">
-                                                <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('class-session-{{ $session->id }}', event)">
-                                                    <span class="icon-[tabler--eye] size-4"></span>
-                                                </button>
-                                                <a href="{{ route('class-sessions.edit', $session) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
-                                                    <span class="icon-[tabler--edit] size-4"></span>
-                                                </a>
+                                            <x-actions-dropdown size="xs">
+                                                <li><a href="{{ route('scheduled-membership.show', $session) }}">
+                                                    <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                                                </a></li>
+                                                <li><a href="{{ route('scheduled-membership.edit', $session) }}">
+                                                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                                                </a></li>
                                                 @if($session->status !== 'cancelled' && $confirmedCount === 0)
-                                                    <form action="{{ route('class-sessions.destroy', $session) }}" method="POST" class="inline" onsubmit="return confirm('{{ $trans['schedule.delete_session_confirm'] ?? 'Delete this session?' }}')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="{{ $trans['btn.delete'] ?? 'Delete' }}">
-                                                            <span class="icon-[tabler--trash] size-4"></span>
-                                                        </button>
-                                                    </form>
+                                                    <li>
+                                                        <form action="{{ route('class-sessions.destroy', $session) }}" method="POST" onsubmit="return confirm('{{ $trans['schedule.delete_session_confirm'] ?? 'Delete this session?' }}')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                                <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
                                                 @endif
-                                            </div>
+                                            </x-actions-dropdown>
                                         </td>
                                     </tr>
                                 @endforeach
