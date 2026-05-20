@@ -38,13 +38,15 @@
 
     {{-- Conflict Alert Banner --}}
     @if($unresolvedConflictsCount > 0 && !request('conflicts_only'))
-    <div class="alert alert-error shadow-lg">
-        <span class="icon-[tabler--alert-triangle] size-6"></span>
-        <div class="flex-1">
-            <h3 class="font-bold">{{ $unresolvedConflictsCount }} {{ $trans['schedule.scheduling_conflict'] ?? 'Scheduling Conflict' }}{{ $unresolvedConflictsCount > 1 ? 's' : '' }}</h3>
-            <p class="text-sm">{{ $trans['schedule.conflicts_need_resolution'] ?? 'Some sessions have scheduling conflicts that need to be resolved.' }}</p>
+    <div class="alert alert-error shadow-lg flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="icon-[tabler--alert-triangle] size-6 shrink-0"></span>
+            <div>
+                <h3 class="font-bold">{{ $unresolvedConflictsCount }} {{ $trans['schedule.scheduling_conflict'] ?? 'Scheduling Conflict' }}{{ $unresolvedConflictsCount > 1 ? 's' : '' }}</h3>
+                <p class="text-sm">{{ $trans['schedule.conflicts_need_resolution'] ?? 'Some sessions have scheduling conflicts that need to be resolved.' }}</p>
+            </div>
         </div>
-        <a href="{{ route('class-sessions.index', array_merge(request()->query(), ['conflicts_only' => 1])) }}" class="btn btn-sm btn-outline">
+        <a href="{{ route('class-sessions.index', array_merge(request()->query(), ['conflicts_only' => 1])) }}" class="btn btn-sm btn-outline ml-auto shrink-0 !text-white !border-white hover:!bg-white hover:!text-error">
             {{ $trans['schedule.view_conflicts'] ?? 'View Conflicts' }}
         </a>
     </div>
@@ -265,8 +267,21 @@
                             <tbody>
                                 @foreach($daySessions as $session)
                                     <tr class="hover:bg-base-200/50">
+                                        @php
+                                            $isConflicted = $session->hasUnresolvedConflict() || $conflictSessionIds->contains($session->id);
+                                            $conflictMsg = $session->conflict_notes
+                                                ?: ($conflictMessages[$session->id] ?? (($session->primaryInstructor?->name ?? 'Instructor') . ' is not available on ' . $session->start_time->format('l, M j')));
+                                        @endphp
                                         <td>
-                                            <div class="font-medium">{{ $session->start_time->format('g:i A') }}</div>
+                                            <div class="font-medium flex items-center gap-1">
+                                                {{ $session->start_time->format('g:i A') }}
+                                                @if($isConflicted)
+                                                    <span class="icon-[tabler--alert-triangle] size-3.5 text-error conflict-icon"
+                                                        onmouseenter="showConflictAlert(this)"
+                                                        onmouseleave="hideConflictAlert()"
+                                                        data-message="{{ $conflictMsg }}"></span>
+                                                @endif
+                                            </div>
                                             <div class="text-xs text-base-content/60">{{ $session->formatted_duration }}</div>
                                         </td>
                                         <td>
@@ -444,6 +459,16 @@
     @endif
 </div>
 
+{{-- Conflict Detail Popover --}}
+<div id="conflict-popover" class="fixed z-50 hidden">
+    <div class="bg-error text-error-content rounded-lg shadow-lg px-4 py-3 max-w-xs">
+        <div class="flex items-start gap-2">
+            <span class="icon-[tabler--alert-triangle] size-4 mt-0.5 shrink-0"></span>
+            <p class="text-sm" id="conflict-popover-text"></p>
+        </div>
+    </div>
+</div>
+
 {{-- Drawer Backdrop --}}
 <div id="drawer-backdrop" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeAllDrawers()"></div>
 
@@ -454,6 +479,22 @@
 
 @push('scripts')
 <script>
+// Conflict popover
+var conflictPopover = document.getElementById('conflict-popover');
+var conflictPopoverText = document.getElementById('conflict-popover-text');
+
+function showConflictAlert(el) {
+    conflictPopoverText.textContent = el.dataset.message;
+    var rect = el.getBoundingClientRect();
+    conflictPopover.style.top = (rect.bottom + 6) + 'px';
+    conflictPopover.style.left = rect.left + 'px';
+    conflictPopover.classList.remove('hidden');
+}
+
+function hideConflictAlert() {
+    conflictPopover.classList.add('hidden');
+}
+
 // Filter form auto-submit
 function submitFilters() {
     document.getElementById('filter-form').submit();

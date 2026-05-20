@@ -496,6 +496,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/class-sessions/{class_session}/promote-backup', [ClassSessionController::class, 'promoteBackup'])->name('class-sessions.promote-backup');
     Route::post('/class-sessions/{class_session}/duplicate', [ClassSessionController::class, 'duplicate'])->name('class-sessions.duplicate');
     Route::patch('/class-sessions/{class_session}/resolve-conflict', [ClassSessionController::class, 'resolveConflict'])->name('class-sessions.resolve-conflict');
+    Route::patch('/class-sessions/{class_session}/reassign-instructor', [ClassSessionController::class, 'reassignInstructor'])->name('class-sessions.reassign-instructor');
 
     // Class Session Progress Recording
     Route::get('/class-sessions/{classSession}/record-progress/{progressTemplate}', [ClassSessionProgressController::class, 'create'])->name('class-sessions.record-progress');

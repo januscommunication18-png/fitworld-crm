@@ -78,16 +78,34 @@ class ClassSessionController extends Controller
             $query->forLocation($request->location_id);
         }
 
-        if ($request->boolean('conflicts_only')) {
-            $query->withConflicts();
-        }
-
         $sessions = $query->orderBy('start_time')->get();
 
-        // Count unresolved conflicts for banner
-        $unresolvedConflictsCount = ClassSession::where('host_id', $host->id)
+        // Detect instructor-availability conflicts dynamically (same logic as schedule-planner)
+        $conflictSessionIds = collect();
+        $conflictMessages = [];
+        foreach ($sessions as $session) {
+            $instructor = $session->primaryInstructor;
+            if (!$instructor) continue;
+            $hasConfigured = !empty($instructor->working_days) || !empty($instructor->availability_by_day) || !empty($instructor->availability_hours);
+            if (!$hasConfigured) continue;
+            if (!$instructor->worksOnDay($session->start_time->dayOfWeek)) {
+                $conflictSessionIds->push($session->id);
+                $conflictMessages[$session->id] = $instructor->name . ' is not available on ' . $session->start_time->format('l, M j');
+            }
+        }
+
+        // Filter to only conflicted sessions (DB-flagged OR dynamic) when requested
+        if ($request->boolean('conflicts_only')) {
+            $sessions = $sessions->filter(function ($session) use ($conflictSessionIds) {
+                return $session->hasUnresolvedConflict() || $conflictSessionIds->contains($session->id);
+            })->values();
+        }
+
+        // Count unresolved conflicts for banner (DB-flagged + dynamic, deduped)
+        $dbConflictIds = ClassSession::where('host_id', $host->id)
             ->withConflicts()
-            ->count();
+            ->pluck('id');
+        $unresolvedConflictsCount = $dbConflictIds->merge($conflictSessionIds)->unique()->count();
 
         // Group sessions by date
         $sessionsByDate = $sessions->groupBy(function ($session) {
@@ -110,6 +128,8 @@ class ClassSessionController extends Controller
             'instructorId' => $request->instructor_id,
             'locationId' => $request->location_id,
             'unresolvedConflictsCount' => $unresolvedConflictsCount,
+            'conflictSessionIds' => $conflictSessionIds,
+            'conflictMessages' => $conflictMessages,
         ]);
     }
 
@@ -238,7 +258,7 @@ class ClassSessionController extends Controller
             'location',
             'room',
             'membershipPlans',
-            'recurrenceChildren' => fn ($q) => $q->orderBy('start_time'),
+            'recurrenceParent',
             'bookings.client',
             'bookings.questionnaireResponses.version.questionnaire',
             'bookings.questionnaireResponses.answers.question',
@@ -255,6 +275,33 @@ class ClassSessionController extends Controller
         // Get progress templates attached to this class plan
         $progressTemplates = $classSession->classPlan?->progressTemplates ?? collect();
 
+        // Detect dynamic instructor-availability conflict (same as schedule-planner)
+        $dynamicConflict = false;
+        $dynamicConflictMessage = null;
+        $instructor = $classSession->primaryInstructor;
+        if ($instructor) {
+            $hasConfigured = !empty($instructor->working_days) || !empty($instructor->availability_by_day) || !empty($instructor->availability_hours);
+            if ($hasConfigured && !$instructor->worksOnDay($classSession->start_time->dayOfWeek)) {
+                $dynamicConflict = true;
+                $dynamicConflictMessage = $instructor->name . ' is not available on ' . $classSession->start_time->format('l, M j');
+            }
+        }
+
+        // Build the list of instructors who CAN teach this session's day (for the conflict drawer)
+        $availableInstructors = collect();
+        if ($classSession->hasUnresolvedConflict() || $dynamicConflict) {
+            $host = auth()->user()->host;
+            $dayOfWeek = $classSession->start_time->dayOfWeek;
+            $availableInstructors = $this->getTeachingInstructors($host)
+                ->filter(function ($inst) use ($dayOfWeek, $classSession) {
+                    if ($inst->id === $classSession->primary_instructor_id) return false;
+                    $hasConfigured = !empty($inst->working_days) || !empty($inst->availability_by_day) || !empty($inst->availability_hours);
+                    if (!$hasConfigured) return true;
+                    return $inst->worksOnDay($dayOfWeek);
+                })
+                ->values();
+        }
+
         return view('host.class-sessions.show', [
             'classSession' => $classSession,
             'allBookings' => $allBookings,
@@ -264,6 +311,9 @@ class ClassSessionController extends Controller
             'intakeCompleted' => $intakeCompleted,
             'intakePending' => $intakePending,
             'progressTemplates' => $progressTemplates,
+            'dynamicConflict' => $dynamicConflict,
+            'dynamicConflictMessage' => $dynamicConflictMessage,
+            'availableInstructors' => $availableInstructors,
         ]);
     }
 
@@ -443,6 +493,31 @@ class ClassSessionController extends Controller
         $classSession->resolveConflict(auth()->id());
 
         return back()->with('success', 'Conflict marked as resolved.');
+    }
+
+    /**
+     * Reassign the primary instructor and clear any conflict.
+     */
+    public function reassignInstructor(Request $request, ClassSession $classSession)
+    {
+        $this->authorizeSession($classSession);
+
+        $data = $request->validate([
+            'primary_instructor_id' => 'required|exists:instructors,id',
+        ]);
+
+        $instructor = Instructor::where('host_id', $classSession->host_id)
+            ->where('id', $data['primary_instructor_id'])
+            ->firstOrFail();
+
+        $classSession->primary_instructor_id = $instructor->id;
+        if ($classSession->has_scheduling_conflict) {
+            $classSession->conflict_resolved_at = now();
+            $classSession->conflict_resolved_by = auth()->id();
+        }
+        $classSession->save();
+
+        return back()->with('success', 'Instructor reassigned and conflict resolved.');
     }
 
     protected function authorizeSession(ClassSession $classSession): void

@@ -147,8 +147,9 @@
                             <td class="font-medium">
                                 {{ $classSession->start_time->format('D, M j, Y') }}
                                 @if($conflictSessionIds->contains($classSession->id))
-                                    <span class="icon-[tabler--alert-triangle] size-3.5 text-error ml-1 cursor-pointer conflict-icon"
-                                        onclick="showConflictAlert(this)"
+                                    <span class="icon-[tabler--alert-triangle] size-3.5 text-error ml-1 conflict-icon"
+                                        onmouseenter="showConflictAlert(this)"
+                                        onmouseleave="hideConflictAlert()"
                                         data-message="{{ $classSession->primaryInstructor?->name ?? 'Instructor' }} is not available on {{ $classSession->start_time->format('l, M j') }}"></span>
                                 @endif
                             </td>
@@ -169,8 +170,9 @@
                             <td>
                                 {{ $child->start_time->format('D, M j, Y') }}
                                 @if($conflictSessionIds->contains($child->id))
-                                    <span class="icon-[tabler--alert-triangle] size-3.5 text-error ml-1 cursor-pointer conflict-icon"
-                                        onclick="showConflictAlert(this)"
+                                    <span class="icon-[tabler--alert-triangle] size-3.5 text-error ml-1 conflict-icon"
+                                        onmouseenter="showConflictAlert(this)"
+                                        onmouseleave="hideConflictAlert()"
                                         data-message="{{ $child->primaryInstructor?->name ?? 'Instructor' }} is not available on {{ $child->start_time->format('l, M j') }}"></span>
                                 @endif
                             </td>
@@ -360,27 +362,19 @@
 <script>
 var conflictPopover = document.getElementById('conflict-popover');
 var conflictPopoverText = document.getElementById('conflict-popover-text');
-var hideTimeout;
 
 function showConflictAlert(el) {
-    clearTimeout(hideTimeout);
     conflictPopoverText.textContent = el.dataset.message;
 
     var rect = el.getBoundingClientRect();
     conflictPopover.style.top = (rect.bottom + 6) + 'px';
     conflictPopover.style.left = rect.left + 'px';
     conflictPopover.classList.remove('hidden');
-
-    hideTimeout = setTimeout(function() {
-        conflictPopover.classList.add('hidden');
-    }, 3000);
 }
 
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.conflict-icon') && !e.target.closest('#conflict-popover')) {
-        conflictPopover.classList.add('hidden');
-    }
-});
+function hideConflictAlert() {
+    conflictPopover.classList.add('hidden');
+}
 </script>
 @endpush
 @endsection

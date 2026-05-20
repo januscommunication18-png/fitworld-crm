@@ -124,36 +124,50 @@
 
     {{-- Conflict Alert --}}
     @if($classSession->hasUnresolvedConflict())
-    <div class="alert alert-error shadow-lg">
-        <span class="icon-[tabler--alert-triangle] size-6"></span>
-        <div class="flex-1">
-            <h3 class="font-bold">{{ $trans['schedule.scheduling_conflict'] ?? 'Scheduling Conflict' }}</h3>
-            <p class="text-sm">{{ $classSession->conflict_notes ?? ($trans['schedule.conflict_needs_resolved'] ?? 'This session has a conflict that needs to be resolved.') }}</p>
+    <div class="alert alert-error shadow-lg flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="icon-[tabler--alert-triangle] size-6 shrink-0"></span>
+            <div>
+                <h3 class="font-bold">{{ $trans['schedule.scheduling_conflict'] ?? 'Scheduling Conflict' }}</h3>
+                <p class="text-sm">{{ $classSession->conflict_notes ?? ($trans['schedule.conflict_needs_resolved'] ?? 'This session has a conflict that needs to be resolved.') }}</p>
+            </div>
         </div>
-        <form action="{{ route('class-sessions.resolve-conflict', $classSession) }}" method="POST" class="inline">
-            @csrf @method('PATCH')
-            <button type="submit" class="btn btn-sm"><span class="icon-[tabler--check] size-4"></span> {{ $trans['schedule.mark_as_resolved'] ?? 'Resolve' }}</button>
-        </form>
+        <button type="button" onclick="openConflictDrawer('conflict-drawer-{{ $classSession->id }}')" class="btn btn-sm btn-outline ml-auto shrink-0 !text-white !border-white hover:!bg-white hover:!text-error">
+            {{ $trans['schedule.view_conflict_details'] ?? 'View Conflict Details' }}
+        </button>
+    </div>
+    @elseif(!empty($dynamicConflict))
+    <div class="alert alert-error shadow-lg flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="icon-[tabler--alert-triangle] size-6 shrink-0"></span>
+            <div>
+                <h3 class="font-bold">{{ $trans['schedule.scheduling_conflict'] ?? 'Scheduling Conflict' }}</h3>
+                <p class="text-sm">{{ $dynamicConflictMessage }}</p>
+            </div>
+        </div>
+        <button type="button" onclick="openConflictDrawer('conflict-drawer-{{ $classSession->id }}')" class="btn btn-sm btn-outline ml-auto shrink-0 !text-white !border-white hover:!bg-white hover:!text-error">
+            {{ $trans['schedule.view_conflict_details'] ?? 'View Conflict Details' }}
+        </button>
     </div>
     @endif
 
     {{-- Tabs --}}
     <div class="tabs tabs-bordered" role="tablist">
-        <button class="tab tab-active" data-tab="overview" role="tab">
-            <span class="icon-[tabler--info-circle] size-4 mr-2"></span>Overview
-        </button>
-        <button class="tab" data-tab="bookings" role="tab">
+        <button class="tab tab-active" data-tab="bookings" role="tab">
             <span class="icon-[tabler--users] size-4 mr-2"></span>Bookings
             @if($confirmedBookings->count() > 0)
                 <span class="badge badge-sm badge-primary ml-1">{{ $confirmedBookings->count() }}</span>
             @endif
+        </button>
+        <button class="tab" data-tab="overview" role="tab">
+            <span class="icon-[tabler--info-circle] size-4 mr-2"></span>Overview
         </button>
     </div>
 
     {{-- Tab Contents --}}
     <div class="tab-contents">
         {{-- Overview Tab --}}
-        <div class="tab-content active" data-content="overview">
+        <div class="tab-content hidden" data-content="overview">
             <div class="space-y-6">
 
             {{-- Stats Cards --}}
@@ -391,75 +405,28 @@
             </div>
             @endif
 
-            {{-- Recurrence --}}
+            {{-- Recurrence (this page shows only this single occurrence — link to planner for series) --}}
             @if($classSession->isRecurring())
             <div class="card bg-base-100">
                 <div class="card-body">
-                    <h2 class="card-title text-lg">
-                        <span class="icon-[tabler--repeat] size-5"></span>
-                        {{ $trans['schedule.recurrence'] ?? 'Recurrence' }}
-                    </h2>
-                    @if($classSession->isRecurrenceParent())
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                        <div>
-                            <label class="text-sm text-base-content/60">{{ $trans['schedule.sessions'] ?? 'Total Sessions' }}</label>
-                            <p class="font-bold text-lg text-primary">{{ $classSession->recurrenceChildren->count() + 1 }}</p>
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="icon-[tabler--repeat] size-5 text-primary"></span>
+                            <div>
+                                <h2 class="card-title text-base">{{ $trans['schedule.part_of_recurring_series'] ?? 'Part of a recurring series' }}</h2>
+                                <p class="text-sm text-base-content/60">{{ $trans['schedule.viewing_single_occurrence'] ?? 'You are viewing this single occurrence. Use the planner to see the full series.' }}</p>
+                            </div>
                         </div>
-                        @if($classSession->recurrenceChildren->isNotEmpty())
-                        <div>
-                            <label class="text-sm text-base-content/60">{{ $trans['schedule.ends'] ?? 'Ends' }}</label>
-                            <p class="font-medium">{{ $classSession->recurrenceChildren->last()->start_time->format('M j, Y') }}</p>
-                        </div>
-                        @endif
                         @php
-                            $rule = is_string($classSession->recurrence_rule) ? json_decode($classSession->recurrence_rule, true) : $classSession->recurrence_rule;
-                            $dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                            $selectedDays = isset($rule['days']) ? array_map(fn($d) => $dayNames[$d], $rule['days']) : [];
+                            $seriesAnchor = $classSession->isRecurrenceParent()
+                                ? $classSession
+                                : ($classSession->recurrenceParent ?? $classSession);
                         @endphp
-                        @if(!empty($selectedDays))
-                        <div>
-                            <label class="text-sm text-base-content/60">{{ $trans['schedule.days'] ?? 'Days' }}</label>
-                            <p class="font-medium">{{ implode(', ', $selectedDays) }}</p>
-                        </div>
-                        @endif
+                        <a href="{{ route('schedule-planner.show', $seriesAnchor) }}" class="btn btn-sm btn-outline btn-primary shrink-0">
+                            <span class="icon-[tabler--calendar-event] size-4"></span>
+                            {{ $trans['schedule.view_series'] ?? 'View Series' }}
+                        </a>
                     </div>
-
-                    {{-- Recurring sessions table --}}
-                    @if($classSession->recurrenceChildren->isNotEmpty())
-                    <div class="overflow-x-auto mt-4">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>{{ $trans['common.date'] ?? 'Date' }}</th>
-                                    <th>{{ $trans['common.time'] ?? 'Time' }}</th>
-                                    <th>{{ $trans['common.status'] ?? 'Status' }}</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($classSession->recurrenceChildren->take(10) as $child)
-                                <tr>
-                                    <td>{{ $child->start_time->format('D, M j, Y') }}</td>
-                                    <td>{{ $child->formatted_time_range }}</td>
-                                    <td><span class="badge {{ $child->getStatusBadgeClass() }} badge-soft badge-xs capitalize">{{ $child->status }}</span></td>
-                                    <td><a href="{{ route('class-sessions.show', $child) }}" class="btn btn-ghost btn-xs">{{ $trans['btn.view'] ?? 'View' }}</a></td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                        @if($classSession->recurrenceChildren->count() > 10)
-                        <div class="p-3 text-center text-sm text-base-content/60">
-                            {{ $trans['common.and'] ?? 'And' }} {{ $classSession->recurrenceChildren->count() - 10 }} {{ $trans['common.more'] ?? 'more' }}...
-                        </div>
-                        @endif
-                    </div>
-                    @endif
-                    @else
-                    <div class="mt-4">
-                        <label class="text-sm text-base-content/60">{{ $trans['schedule.parent'] ?? 'Parent Series' }}</label>
-                        <a href="{{ route('class-sessions.show', $classSession->recurrenceParent) }}" class="text-primary hover:underline font-medium">{{ $trans['schedule.view_series'] ?? 'View series' }}</a>
-                    </div>
-                    @endif
                 </div>
             </div>
             @endif
@@ -496,48 +463,68 @@
                 </div>
             </div>
 
-            {{-- Stats & Info --}}
-            <div class="card bg-base-100">
-                <div class="card-body">
-                    <h2 class="card-title text-lg">
-                        <span class="icon-[tabler--chart-bar] size-5"></span>
-                        Stats & Info
-                    </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                        <div>
-                            <label class="text-sm text-base-content/60">{{ $trans['common.created'] ?? 'Created' }}</label>
-                            <p class="font-medium">{{ $classSession->created_at->format('M d, Y') }}</p>
-                        </div>
-                        @if($cancelledBookings->count() > 0)
-                        <div>
-                            <label class="text-sm text-base-content/60">Cancelled Bookings</label>
-                            <p class="font-bold text-lg text-error">{{ $cancelledBookings->count() }}</p>
-                        </div>
-                        @endif
-                        @if($classSession->isConflictResolved())
-                        <div>
-                            <label class="text-sm text-base-content/60">Conflict Resolved</label>
-                            <p class="font-medium">{{ $classSession->conflict_resolved_at->format('M d, Y') }}</p>
-                        </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
             </div>
         </div>
 
         {{-- Bookings Tab --}}
-        <div class="tab-content hidden" data-content="bookings">
+        <div class="tab-content active" data-content="bookings">
             <div class="space-y-6">
-                @if($classSession->isPublished() && !$classSession->isPast())
-                <div class="flex justify-end">
-                    <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-primary btn-sm gap-2">
-                        <span class="icon-[tabler--user-plus] size-4"></span>
-                        {{ $trans['schedule.add_booking'] ?? 'Add Booking' }}
-                    </a>
+
+                {{-- Stats Cards --}}
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="card bg-base-100">
+                        <div class="card-body p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-primary/10 rounded-lg p-2">
+                                    <span class="icon-[tabler--users] size-6 text-primary"></span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold">{{ $confirmedBookings->count() }}</p>
+                                    <p class="text-xs text-base-content/60">{{ $trans['schedule.booked'] ?? 'Booked' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100">
+                        <div class="card-body p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-success/10 rounded-lg p-2">
+                                    <span class="icon-[tabler--user-check] size-6 text-success"></span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold">{{ $checkedInCount }}</p>
+                                    <p class="text-xs text-base-content/60">{{ $trans['bookings.checked_in'] ?? 'Checked In' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100">
+                        <div class="card-body p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-info/10 rounded-lg p-2">
+                                    <span class="icon-[tabler--file-check] size-6 text-info"></span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold">{{ $intakeCompleted }}</p>
+                                    <p class="text-xs text-base-content/60">{{ $trans['schedule.intake_done'] ?? 'Intake Done' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card bg-base-100">
+                        <div class="card-body p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-warning/10 rounded-lg p-2">
+                                    <span class="icon-[tabler--clock-pause] size-6 text-warning"></span>
+                                </div>
+                                <div>
+                                    <p class="text-2xl font-bold">{{ $intakePending }}</p>
+                                    <p class="text-xs text-base-content/60">{{ $trans['schedule.intake_pending'] ?? 'Intake Pending' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                @endif
 
                 @if($allBookings->isEmpty())
                 <div class="card bg-base-100">
@@ -848,4 +835,13 @@ function checkInBooking(bookingId) {
         </div>
     </div>
 </div>
+
+{{-- Conflict Resolution Drawer --}}
+@if($classSession->hasUnresolvedConflict() || !empty($dynamicConflict))
+    @include('host.class-sessions.partials.conflict-drawer', [
+        'classSession' => $classSession,
+        'conflictMessage' => $dynamicConflictMessage ?? $classSession->conflict_notes,
+        'availableInstructors' => $availableInstructors,
+    ])
+@endif
 @endsection
