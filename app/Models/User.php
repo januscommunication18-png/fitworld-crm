@@ -373,7 +373,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'offers.intro', 'offers.packs', 'offers.memberships', 'offers.promos',
                 'insights.attendance', 'insights.revenue',
                 'studio.profile', 'studio.locations', 'studio.booking_page', 'studio.policies',
-                'team.view', 'team.manage', 'team.instructors',
+                'team.view', 'team.manage', 'team.instructors', 'team.instructor_admin',
                 'pricing.override',
             ],
             self::ROLE_MANAGER => [
@@ -454,6 +454,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'team.view' => 'View team members',
                 'team.manage' => 'Manage team (invite/deactivate)',
                 'team.instructors' => 'Manage instructor profiles',
+                'team.instructor_admin' => 'Manage instructor employment, workload, availability & visibility',
                 'team.permissions' => 'Change permissions',
             ],
             'billing' => [

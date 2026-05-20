@@ -9,6 +9,10 @@ Hi there,
 Accept Invitation
 </x-mail::button>
 
+If the button above doesn't work, copy and paste this link into your browser:
+
+<{{ $acceptUrl }}>
+
 This invitation will expire on **{{ $expiresAt }}**.
 
 If you weren't expecting this invitation, you can safely ignore this email.

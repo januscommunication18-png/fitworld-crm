@@ -1,5 +1,13 @@
 @php
     $instructor = $instructor ?? null;
+    $authUser = auth()->user();
+    $canEditAdmin = $authUser && ($authUser->isOwner() || $authUser->hasPermission('team.instructor_admin'));
+    // When the instructor is linked to a User account, prefer the User's account fields
+    // (so this form stays in sync with /settings/profile).
+    $linkedUser = $instructor?->user;
+    $prefillName = $linkedUser?->full_name ?? $instructor?->name;
+    $prefillEmail = $linkedUser?->email ?? $instructor?->email;
+    $prefillPhone = $linkedUser?->phone ?? $instructor?->phone;
 @endphp
 
 @push('styles')
@@ -30,6 +38,7 @@
                     <span class="icon-[tabler--user] size-5 mr-2 inline-block align-middle"></span>
                     <span class="hidden sm:inline">{{ $instructor ? '1' : '2' }}.</span> {{ $trans['instructors.step_profile'] ?? 'Profile' }}
                 </button>
+                @if($canEditAdmin)
                 <button type="button" class="step-tab flex-1 min-w-max px-6 py-4 text-sm font-medium text-center border-b-2 border-transparent text-base-content/60 hover:text-base-content" data-step="{{ $instructor ? 2 : 3 }}" onclick="goToStep({{ $instructor ? 2 : 3 }})">
                     <span class="icon-[tabler--briefcase] size-5 mr-2 inline-block align-middle"></span>
                     <span class="hidden sm:inline">{{ $instructor ? '2' : '3' }}.</span> {{ $trans['instructors.step_employment'] ?? 'Employment' }}
@@ -46,6 +55,7 @@
                     <span class="icon-[tabler--clock] size-5 mr-2 inline-block align-middle"></span>
                     <span class="hidden sm:inline">{{ $instructor ? '5' : '6' }}.</span> {{ $trans['instructors.step_hours'] ?? 'Hours' }}
                 </button>
+                @endif
             </nav>
         </div>
     </div>
@@ -160,32 +170,6 @@
                 </div>
             </div>
             <div class="card-body space-y-5">
-                @if($instructor)
-                {{-- Photo Upload (Edit only) --}}
-                <div class="flex items-center gap-4 p-4 bg-base-200/50 rounded-xl">
-                    <div id="photo-preview" class="avatar {{ $instructor->photo_url ? '' : 'placeholder' }}">
-                        @if($instructor->photo_url)
-                        <div class="w-20 rounded-full ring ring-primary/20 ring-offset-2 ring-offset-base-100">
-                            <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}" />
-                        </div>
-                        @else
-                        <div class="bg-gradient-to-br from-primary to-secondary text-primary-content w-20 rounded-full">
-                            <span id="photo-initials" class="text-2xl font-bold">{{ $instructor->initials }}</span>
-                        </div>
-                        @endif
-                    </div>
-                    <div>
-                        <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" class="hidden" />
-                        <button type="button" class="btn btn-sm btn-outline" onclick="document.getElementById('photo-input').click()">
-                            <span class="icon-[tabler--upload] size-4"></span> {{ $trans['btn.upload_photo'] ?? 'Upload Photo' }}
-                        </button>
-                        <button type="button" id="photo-remove" class="btn btn-sm btn-ghost text-error {{ $instructor->photo_url ? '' : 'hidden' }}">
-                            <span class="icon-[tabler--trash] size-4"></span>
-                        </button>
-                        <p class="text-xs text-base-content/50 mt-2">{{ $trans['common.photo_requirements'] ?? 'JPG, PNG or WebP. Max 2MB.' }}</p>
-                    </div>
-                </div>
-                @endif
 
                 <div class="form-control">
                     <label class="label" for="name">
@@ -194,7 +178,7 @@
                     <div class="relative">
                         <span class="icon-[tabler--user] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
                         <input type="text" id="name" name="name" class="input input-bordered w-full pl-10 @error('name') input-error @enderror" required
-                            value="{{ old('name', $instructor?->name) }}" placeholder="Jane Smith" />
+                            value="{{ old('name', $prefillName) }}" placeholder="Jane Smith" />
                     </div>
                     @error('name')
                         <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
@@ -208,7 +192,7 @@
                     <div class="relative">
                         <span class="icon-[tabler--mail] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
                         <input type="email" id="email" name="email" class="input input-bordered w-full pl-10 @error('email') input-error @enderror"
-                            value="{{ old('email', $instructor?->email) }}" placeholder="jane@example.com" />
+                            value="{{ old('email', $prefillEmail) }}" placeholder="jane@example.com" />
                     </div>
                     @error('email')
                         <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label>
@@ -235,7 +219,7 @@
                     <div class="relative">
                         <span class="icon-[tabler--phone] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
                         <input type="text" id="phone" name="phone" class="input input-bordered w-full pl-10 @error('phone') input-error @enderror"
-                            value="{{ old('phone', $instructor?->phone) }}" placeholder="+1 (555) 123-4567" />
+                            value="{{ old('phone', $prefillPhone) }}" placeholder="+1 (555) 123-4567" />
                     </div>
                 </div>
 
@@ -282,6 +266,7 @@
                         placeholder="{{ $trans['instructors.certifications_placeholder'] ?? 'RYT-200, ACE Certified, etc.' }}">{{ old('certifications', $instructor?->certifications) }}</textarea>
                 </div>
 
+                @if($canEditAdmin)
                 <div class="divider text-base-content/40 text-xs">{{ $trans['common.visibility'] ?? 'VISIBILITY' }}</div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -304,10 +289,12 @@
                     </label>
                     @endif
                 </div>
+                @endif
             </div>
         </div>
     </div>
 
+    @if($canEditAdmin)
     {{-- Step 3: Employment (Step 2 for edit mode) --}}
     <div id="step-{{ $instructor ? 2 : 3 }}" class="step-content hidden">
         <div class="card bg-base-100 shadow-sm">
@@ -541,25 +528,26 @@
             </div>
         </div>
     </div>
+    @endif
 
     {{-- Navigation --}}
-    <div class="flex items-center justify-between pt-4">
+    <div class="flex items-center gap-3 pt-4">
         <button type="button" id="prev-step-btn" class="btn btn-ghost gap-2 hidden" onclick="prevStep()">
             <span class="icon-[tabler--chevron-left] size-5"></span>
             {{ $trans['btn.previous'] ?? 'Previous' }}
         </button>
-        <div class="flex gap-3 ml-auto">
-            <a href="{{ route('instructors.index') }}" class="btn btn-ghost">{{ $trans['btn.cancel'] ?? 'Cancel' }}</a>
-            <button type="submit" id="save-btn" class="btn btn-outline btn-primary gap-2">
-                <span class="icon-[tabler--device-floppy] size-5"></span>
-                {{ $instructor ? ($trans['btn.save_changes'] ?? 'Save Changes') : ($trans['btn.create_instructor'] ?? 'Create Instructor') }}
-            </button>
-            <button type="submit" id="save-next-btn" class="btn btn-primary gap-2" onclick="document.getElementById('_after_save_step').value = (currentStep + 1)">
-                <span class="icon-[tabler--device-floppy] size-5"></span>
-                {{ $trans['btn.save_next'] ?? 'Save & Next' }}
-                <span class="icon-[tabler--chevron-right] size-5"></span>
-            </button>
-        </div>
+        <button type="submit" id="save-btn" class="btn btn-primary gap-2">
+            <span class="icon-[tabler--device-floppy] size-5"></span>
+            {{ $instructor ? ($trans['btn.save_changes'] ?? 'Save Changes') : ($trans['btn.create_instructor'] ?? 'Create Instructor') }}
+        </button>
+        @if($canEditAdmin)
+        <button type="submit" id="save-next-btn" class="btn btn-outline btn-primary gap-2" onclick="document.getElementById('_after_save_step').value = (currentStep + 1)">
+            <span class="icon-[tabler--device-floppy] size-5"></span>
+            {{ $trans['btn.save_next'] ?? 'Save & Next' }}
+            <span class="icon-[tabler--chevron-right] size-5"></span>
+        </button>
+        @endif
+        <a href="{{ route('instructors.index') }}" class="btn btn-ghost ml-auto">{{ $trans['btn.cancel'] ?? 'Cancel' }}</a>
     </div>
     <input type="hidden" name="_after_save_step" id="_after_save_step" value="" />
 </div>
@@ -568,7 +556,8 @@
 <script src="{{ asset('vendor/flatpickr/flatpickr.min.js') }}"></script>
 <script>
 const isEditMode = {{ $instructor ? 'true' : 'false' }};
-const totalSteps = isEditMode ? 5 : 6;
+const canEditAdmin = {{ $canEditAdmin ? 'true' : 'false' }};
+const totalSteps = canEditAdmin ? (isEditMode ? 5 : 6) : (isEditMode ? 1 : 2);
 let currentStep = {{ old('_step', 1) }};
 
 function showStep(step) {
@@ -594,8 +583,10 @@ function showStep(step) {
     });
 
     // Update navigation buttons
-    document.getElementById('prev-step-btn').classList.toggle('hidden', step === 1);
-    document.getElementById('save-next-btn').classList.toggle('hidden', step === totalSteps);
+    const prevBtn = document.getElementById('prev-step-btn');
+    const saveNextBtn = document.getElementById('save-next-btn');
+    if (prevBtn) prevBtn.classList.toggle('hidden', step === 1);
+    if (saveNextBtn) saveNextBtn.classList.toggle('hidden', step === totalSteps);
 
     currentStep = step;
 }
@@ -763,51 +754,6 @@ document.addEventListener('DOMContentLoaded', function() {
     flatpickr('.flatpickr-time', timePickerConfig);
     flatpickr('.flatpickr-time-override', timePickerSmConfig);
 
-    @if($instructor)
-    // Photo upload handling
-    document.getElementById('photo-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append('photo', file);
-
-        fetch('{{ route("instructors.photo", $instructor) }}', {
-            method: 'POST',
-            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const photoPreview = document.getElementById('photo-preview');
-                photoPreview.classList.remove('placeholder');
-                photoPreview.innerHTML = '<div class="w-20 rounded-full ring ring-primary/20 ring-offset-2 ring-offset-base-100"><img src="' + data.path + '" /></div>';
-                document.getElementById('photo-remove').classList.remove('hidden');
-            }
-        })
-        .catch(error => console.error('Upload failed:', error));
-    });
-
-    document.getElementById('photo-remove').addEventListener('click', function() {
-        fetch('{{ route("instructors.photo.remove", $instructor) }}', {
-            method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const name = document.getElementById('name').value || '--';
-                const initials = name.substring(0, 2).toUpperCase();
-                const photoPreview = document.getElementById('photo-preview');
-                photoPreview.classList.add('placeholder');
-                photoPreview.innerHTML = '<div class="bg-gradient-to-br from-primary to-secondary text-primary-content w-20 rounded-full"><span class="text-2xl font-bold">' + initials + '</span></div>';
-                document.getElementById('photo-remove').classList.add('hidden');
-            }
-        })
-        .catch(error => console.error('Remove failed:', error));
-    });
-    @endif
 
     // Show the correct step on page load (e.g. after Save & Next)
     if (currentStep > 1) {

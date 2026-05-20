@@ -20,6 +20,56 @@
 
 @section('content')
 <div class="space-y-6">
+    {{-- Complete Your Profile Alert --}}
+    @php
+        $authUser = auth()->user();
+        $canEditAdmin = $authUser->isOwner() || $authUser->hasPermission('team.instructor_admin');
+
+        $linkedInstructor = $authUser->instructor_id
+            ? \App\Models\Instructor::find($authUser->instructor_id)
+            : \App\Models\Instructor::where('user_id', $authUser->id)->first();
+
+        if ($linkedInstructor) {
+            $completeProfileUrl = route('instructors.edit', ['instructor' => $linkedInstructor->id, 'ref' => 'team']);
+
+            if ($canEditAdmin) {
+                // Owner / admin: check the full instructor profile (employment, rate, working days, availability)
+                $missingProfileFields = $linkedInstructor->getMissingProfileFields();
+            } else {
+                // Team member: only check fields they can actually edit
+                $instructorChecks = [
+                    'Profile Photo' => !empty($linkedInstructor->photo_path) || !empty($authUser->profile_photo),
+                    'Phone' => !empty($linkedInstructor->phone) || !empty($authUser->phone),
+                    'Bio' => !empty($linkedInstructor->bio) || !empty($authUser->bio),
+                ];
+                $missingProfileFields = array_keys(array_filter($instructorChecks, fn($v) => !$v));
+            }
+        } else {
+            // No linked instructor — fall back to basic user-account fields
+            $profileChecks = [
+                'Profile Photo' => !empty($authUser->profile_photo),
+                'Phone' => !empty($authUser->phone),
+                'Bio' => !empty($authUser->bio),
+            ];
+            $missingProfileFields = array_keys(array_filter($profileChecks, fn($v) => !$v));
+            $completeProfileUrl = route('settings.profile');
+        }
+    @endphp
+    @if(!empty($missingProfileFields))
+    <div class="alert alert-warning shadow-lg flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="icon-[tabler--user-exclamation] size-6 shrink-0"></span>
+            <div>
+                <h3 class="font-bold">{{ $trans['dashboard.complete_profile'] ?? 'Complete your profile' }}</h3>
+                <p class="text-sm">{{ $trans['dashboard.profile_update_needed'] ?? 'Please update' }}: <strong>{{ implode(', ', $missingProfileFields) }}</strong></p>
+            </div>
+        </div>
+        <a href="{{ $completeProfileUrl }}" class="btn btn-sm btn-outline ml-auto shrink-0 !text-white !border-white hover:!bg-white hover:!text-warning">
+            {{ $trans['dashboard.complete_profile_btn'] ?? 'Complete Profile' }}
+        </a>
+    </div>
+    @endif
+
     {{-- Header --}}
     <div class="flex items-center justify-between">
         <div>

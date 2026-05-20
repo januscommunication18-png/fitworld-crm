@@ -32,9 +32,9 @@
 </div>
 @endif
 
-{{-- Email Verification Alert (above navbar) --}}
+{{-- Email Verification Alert (only studio owners — invited team members skip verification) --}}
 @auth
-    @if(!Auth::user()->hasVerifiedEmail())
+    @if(!Auth::user()->hasVerifiedEmail() && Auth::user()->isOwner())
     <div id="email-verification-alert" class="bg-gradient-to-r from-error/10 via-error/5 to-error/10 border-b border-error/20 px-6 py-2.5" role="alert">
         <div class="flex items-center justify-center gap-3">
             <div class="flex items-center justify-center size-8 rounded-full bg-error/20">

@@ -924,11 +924,11 @@ class TeamController extends Controller
             'note_type' => 'system',
         ]);
 
-        // Cancel any pending invitations for this email
+        // Revoke any pending invitations for this email
         TeamInvitation::where('host_id', $host->id)
             ->where('email', $user->email)
             ->where('status', TeamInvitation::STATUS_PENDING)
-            ->update(['status' => TeamInvitation::STATUS_CANCELLED]);
+            ->update(['status' => TeamInvitation::STATUS_REVOKED]);
 
         // Detach from host pivot and soft-delete
         $host->teamMembers()->detach($user->id);

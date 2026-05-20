@@ -34,8 +34,11 @@
         </a>
     </div>
 
-    {{-- Incomplete Profile Warning --}}
-    @if(!empty($missingFields))
+    {{-- Incomplete Profile Warning (owner / admin only — fields shown here are owner-only) --}}
+    @php
+        $canEditAdmin = auth()->user()->isOwner() || auth()->user()->hasPermission('team.instructor_admin');
+    @endphp
+    @if(!empty($missingFields) && $canEditAdmin)
     <div class="alert alert-soft alert-warning">
         <span class="icon-[tabler--alert-triangle] size-5"></span>
         <div>

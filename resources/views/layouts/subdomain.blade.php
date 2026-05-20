@@ -102,9 +102,9 @@
     </main>
 
     {{-- Footer --}}
-    <footer class="py-6 text-center border-t border-base-200">
-        <p class="text-sm text-base-content/50">
-            Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary hover:underline">{{ config('app.name') }}</a>
+    <footer class="py-4 text-center">
+        <p class="text-xs text-base-content/40">
+            Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary/70 hover:underline">{{ config('app.name') }}</a>
         </p>
     </footer>
 

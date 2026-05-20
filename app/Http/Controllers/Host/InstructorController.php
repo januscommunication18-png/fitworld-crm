@@ -328,6 +328,9 @@ class InstructorController extends Controller
 
         $wasPending = $instructor->status === Instructor::STATUS_PENDING;
 
+        $authUser = auth()->user();
+        $canEditAdmin = $authUser->isOwner() || $authUser->hasPermission('team.instructor_admin');
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -350,11 +353,51 @@ class InstructorController extends Controller
             'availability_by_day' => 'nullable|array',
         ]);
 
-        $validated['is_visible'] = $request->boolean('is_visible');
-        $validated['is_active'] = $request->boolean('is_active');
+        if ($canEditAdmin) {
+            $validated['is_visible'] = $request->boolean('is_visible');
+            $validated['is_active'] = $request->boolean('is_active');
+        } else {
+            // Strip owner-only fields — team members can only update their own profile info
+            unset(
+                $validated['is_visible'],
+                $validated['is_active'],
+                $validated['employment_type'],
+                $validated['rate_type'],
+                $validated['rate_amount'],
+                $validated['compensation_notes'],
+                $validated['hours_per_week'],
+                $validated['max_classes_per_week'],
+                $validated['working_days'],
+                $validated['availability_default_from'],
+                $validated['availability_default_to'],
+                $validated['availability_by_day'],
+            );
+        }
 
         $instructor->update($validated);
         $instructor->refresh();
+
+        // Keep the linked User record in sync (so /settings/profile shows the same data)
+        if ($instructor->user_id) {
+            $linkedUser = \App\Models\User::find($instructor->user_id);
+            if ($linkedUser) {
+                $userPayload = [];
+                if (!empty($validated['name'])) {
+                    $parts = preg_split('/\s+/', trim($validated['name']), 2);
+                    $userPayload['first_name'] = $parts[0] ?? $linkedUser->first_name;
+                    $userPayload['last_name'] = $parts[1] ?? $linkedUser->last_name;
+                }
+                if (array_key_exists('email', $validated) && !empty($validated['email'])) {
+                    $userPayload['email'] = $validated['email'];
+                }
+                if (array_key_exists('phone', $validated)) {
+                    $userPayload['phone'] = $validated['phone'];
+                }
+                if (!empty($userPayload)) {
+                    $linkedUser->update($userPayload);
+                }
+            }
+        }
 
         // Auto-activate if profile is now complete
         $successMessage = 'Instructor updated successfully.';

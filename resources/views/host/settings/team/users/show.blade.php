@@ -351,9 +351,9 @@
                                     <label class="text-sm text-base-content/60">Default Hours</label>
                                     @if($instructor->availability_default_from && $instructor->availability_default_to)
                                         <p class="font-medium">
-                                            {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_from)->format('g:i A') }}
+                                            {{ \Carbon\Carbon::parse($instructor->availability_default_from)->format('g:i A') }}
                                             —
-                                            {{ \Carbon\Carbon::createFromFormat('H:i', $instructor->availability_default_to)->format('g:i A') }}
+                                            {{ \Carbon\Carbon::parse($instructor->availability_default_to)->format('g:i A') }}
                                         </p>
                                     @else
                                         <p class="text-base-content/50 italic">Not set</p>
@@ -375,9 +375,9 @@
                                                         <div class="flex items-center justify-between py-2 px-3 bg-base-200/30 rounded-lg">
                                                             <span class="font-medium text-sm">{{ $dayOptions[$day] ?? "Day $day" }}</span>
                                                             <span class="text-sm">
-                                                                {{ \Carbon\Carbon::createFromFormat('H:i', $times['from'])->format('g:i A') }}
+                                                                {{ \Carbon\Carbon::parse($times['from'])->format('g:i A') }}
                                                                 —
-                                                                {{ \Carbon\Carbon::createFromFormat('H:i', $times['to'])->format('g:i A') }}
+                                                                {{ \Carbon\Carbon::parse($times['to'])->format('g:i A') }}
                                                             </span>
                                                         </div>
                                                     @endif
