@@ -167,9 +167,12 @@ class TeamController extends Controller
         // Get user's permissions from pivot or user model
         $userPermissions = $user->getPermissionsForHost($host) ?? $user->permissions;
 
-        // Get linked instructor if this is an instructor role or check if one exists
+        // Get linked instructor — by user_id, falling back to email match
         $instructor = Instructor::where('host_id', $host->id)
-            ->where('user_id', $user->id)
+            ->where(function($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('email', $user->email);
+            })
             ->first();
 
         // Get tab from query string
@@ -356,56 +359,97 @@ class TeamController extends Controller
             'availability_by_day' => 'nullable|array',
         ]);
 
+        // Enforce permissions server-side: strip owner-only fields when the actor
+        // can't edit them, and prevent role/permission changes by non-owners or self.
+        $actor = auth()->user();
+        $canEditAdmin = $actor->isOwner() || $actor->hasPermission('team.instructor_admin');
+        $isSelf = $actor->id === $user->id;
+
+        if (!$canEditAdmin || $isSelf) {
+            // Keep existing role/permissions; team members editing themselves can't change them either.
+            $validated['role'] = $user->getRoleForHost($host) ?? $user->role;
+            unset($validated['permissions']);
+        }
+
+        if (!$canEditAdmin) {
+            unset(
+                $validated['employment_type'],
+                $validated['rate_type'],
+                $validated['rate_amount'],
+                $validated['compensation_notes'],
+                $validated['hours_per_week'],
+                $validated['max_classes_per_week'],
+                $validated['working_days'],
+                $validated['availability_default_from'],
+                $validated['availability_default_to'],
+                $validated['availability_by_day'],
+            );
+        }
+
         $instructorId = $user->instructor_id;
         $wasInstructor = $user->role === User::ROLE_INSTRUCTOR || $user->is_instructor;
         $isNowInstructor = $validated['role'] === User::ROLE_INSTRUCTOR;
 
-        // Auto-create instructor record when role changes to instructor
-        if ($isNowInstructor && !$instructorId) {
-            // Check if instructor already exists with this email
+        // Resolve / auto-create an instructor record so instructor-side fields
+        // (specialties, bio, employment, etc.) can always be saved. We use the
+        // Users & Roles page as the single edit point — every team member gets
+        // a backing instructor record on first save.
+        if (!$instructorId) {
             $existingInstructor = Instructor::where('host_id', $host->id)
-                ->where('email', $user->email)
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                    if ($user->email) {
+                        $q->orWhere('email', $user->email);
+                    }
+                })
                 ->first();
 
             if ($existingInstructor) {
                 $instructorId = $existingInstructor->id;
-                // Link user to instructor
-                $existingInstructor->update(['user_id' => $user->id]);
+                if ($existingInstructor->user_id !== $user->id) {
+                    $existingInstructor->update(['user_id' => $user->id]);
+                }
             } else {
-                // Create new instructor record
                 $instructor = Instructor::create([
                     'host_id' => $host->id,
                     'user_id' => $user->id,
                     'name' => $user->full_name,
                     'email' => $user->email,
+                    'phone' => $user->phone,
                     'is_active' => true,
-                    'is_visible' => false,
-                    'status' => Instructor::STATUS_ACTIVE,
+                    'is_visible' => $isNowInstructor,
+                    'status' => $isNowInstructor ? Instructor::STATUS_ACTIVE : Instructor::STATUS_PENDING,
                 ]);
                 $instructorId = $instructor->id;
             }
         }
 
         // Update user profile fields
-        $user->update([
+        $userUpdate = [
             'role' => $validated['role'],
-            'permissions' => $validated['permissions'] ?? null,
             'instructor_id' => $instructorId,
             'is_instructor' => $isNowInstructor,
             'phone' => $validated['phone'] ?? $user->phone,
             'bio' => $validated['bio'] ?? $user->bio,
-        ]);
+        ];
+        if (array_key_exists('permissions', $validated)) {
+            $userUpdate['permissions'] = $validated['permissions'];
+        }
+        $user->update($userUpdate);
 
         // Update host_user pivot table
+        $pivotUpdate = [
+            'role' => $validated['role'],
+            'instructor_id' => $instructorId,
+            'updated_at' => now(),
+        ];
+        if (array_key_exists('permissions', $validated)) {
+            $pivotUpdate['permissions'] = json_encode($validated['permissions']);
+        }
         \DB::table('host_user')
             ->where('user_id', $user->id)
             ->where('host_id', $host->id)
-            ->update([
-                'role' => $validated['role'],
-                'permissions' => json_encode($validated['permissions'] ?? null),
-                'instructor_id' => $instructorId,
-                'updated_at' => now(),
-            ]);
+            ->update($pivotUpdate);
 
         // If user has instructor role, update their instructor profile
         if ($instructorId) {
@@ -1460,9 +1504,25 @@ class TeamController extends Controller
 
         $validated = $request->validate([
             'permissions' => 'nullable|array',
+            'permissions.*' => 'string',
         ]);
 
-        $user->update(['permissions' => $validated['permissions'] ?? null]);
+        $permissions = array_values($validated['permissions'] ?? []);
+        $host = auth()->user()->currentHost();
+
+        // Write to the User row (legacy fallback)
+        $user->update(['permissions' => $permissions ?: null]);
+
+        // Write to the host_user pivot — this is what `hasPermission()` actually reads
+        if ($host) {
+            \DB::table('host_user')
+                ->where('user_id', $user->id)
+                ->where('host_id', $host->id)
+                ->update([
+                    'permissions' => $permissions ? json_encode($permissions) : null,
+                    'updated_at' => now(),
+                ]);
+        }
 
         return back()->with('success', 'Permissions updated for ' . $user->full_name);
     }

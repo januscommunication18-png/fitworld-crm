@@ -92,13 +92,23 @@
                     </div>
                 </div>
 
-                {{-- Remove Photo Button --}}
-                @if($user->profile_photo)
-                <button type="button" onclick="removePhoto()" class="btn btn-ghost btn-sm text-error">
-                    <span class="icon-[tabler--trash] size-4"></span>
-                    Remove Photo
-                </button>
-                @endif
+                <div class="flex items-center gap-2 ml-auto">
+                    @if($user->isOwner() || $user->hasPermission('team.instructor_admin'))
+                    <a href="{{ route('settings.team.users.edit', ['user' => $user->id, 'section' => 'employment']) }}"
+                        class="btn btn-ghost btn-sm">
+                        <span class="icon-[tabler--shield-cog] size-4"></span>
+                        Manage as admin
+                    </a>
+                    @endif
+
+                    {{-- Remove Photo Button --}}
+                    @if($user->profile_photo)
+                    <button type="button" onclick="removePhoto()" class="btn btn-ghost btn-sm text-error">
+                        <span class="icon-[tabler--trash] size-4"></span>
+                        Remove Photo
+                    </button>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -136,55 +146,16 @@
                     <label class="text-sm text-base-content/60">Phone Number</label>
                     <p class="font-medium" id="display-phone">{{ $user->phone ?? 'Not set' }}</p>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Instructor Profile Card (if applicable) --}}
-    @if($instructor)
-    <div class="card bg-base-100">
-        <div class="card-body">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-lg font-semibold flex items-center gap-2">
-                        <span class="icon-[tabler--yoga] size-5 text-accent"></span>
-                        Instructor Profile
-                    </h2>
-                    <p class="text-base-content/60 text-sm">Your public instructor information shown to students</p>
-                </div>
-                <a href="{{ route('settings.team.instructors.edit', $instructor) }}" class="btn btn-accent btn-sm btn-soft">
-                    <span class="icon-[tabler--external-link] size-4"></span> View Full Profile
-                </a>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Display Name</label>
-                    <p class="font-medium">{{ $instructor->name }}</p>
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Specialties</label>
-                    <div class="flex flex-wrap gap-1">
-                        @if($instructor->specialties && count($instructor->specialties) > 0)
-                            @foreach($instructor->specialties as $specialty)
-                                <span class="badge badge-accent badge-soft badge-sm">{{ $specialty }}</span>
-                            @endforeach
-                        @else
-                            <span class="text-base-content/50">Not set</span>
-                        @endif
-                    </div>
-                </div>
 
                 <div class="space-y-1 md:col-span-2">
                     <label class="text-sm text-base-content/60">Bio</label>
-                    <p class="font-medium">{{ $instructor->bio ?? 'Not set' }}</p>
+                    <p class="whitespace-pre-line {{ $user->bio ? 'font-medium' : 'text-base-content/40 italic' }}" id="display-bio">
+                        {{ $user->bio ?? 'Not set' }}
+                    </p>
                 </div>
             </div>
         </div>
     </div>
-    @endif
-
     {{-- Security Card --}}
     <div class="card bg-base-100">
         <div class="card-body">
@@ -422,74 +393,161 @@
     </script>
     @endif
 
-    {{-- Role & Permissions Card (Read-only) --}}
+    @php
+        $dayOptions = \App\Models\Instructor::getDayOptions();
+        $dayEmojis = ['☀️', '🌙', '🔥', '💧', '⚡', '🐟', '⭐'];
+    @endphp
+
+    {{-- Specialties --}}
     <div class="card bg-base-100">
         <div class="card-body">
-            <div class="mb-6">
-                <h2 class="text-lg font-semibold">Role & Permissions</h2>
-                <p class="text-base-content/60 text-sm">Your access level at {{ $host->studio_name }}</p>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <span class="icon-[tabler--sparkles] size-5 text-primary"></span>
+                    Specialties
+                </h2>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openDrawer('edit-specialties-drawer')">
+                    <span class="icon-[tabler--edit] size-4"></span> Edit
+                </button>
             </div>
-
-            <div class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-sm text-base-content/60">Current Role</label>
-                    <p class="font-medium flex items-center gap-2">
-                        <span class="{{ $roleIcon }} size-5"></span>
-                        {{ ucfirst($role) }}
-                    </p>
-                </div>
-
-                @if($role !== 'owner')
-                <div class="space-y-2">
-                    <label class="text-sm text-base-content/60">Permissions</label>
-                    @php
-                        $defaultPerms = \App\Models\User::getDefaultPermissionsForRole($role);
-                        // Handle permissions that might be JSON string or array
-                        $permsArray = $permissions;
-                        if (is_string($permissions)) {
-                            $permsArray = json_decode($permissions, true) ?? [];
-                        }
-                        $permsArray = is_array($permsArray) ? $permsArray : [];
-                        $effectivePerms = !empty($permsArray) ? array_keys(array_filter($permsArray)) : $defaultPerms;
-                        $hasCustom = !empty($permsArray);
-                    @endphp
-
-                    @if($hasCustom)
-                        <p class="text-sm text-primary">
-                            <span class="icon-[tabler--adjustments] size-4 inline"></span>
-                            You have custom permissions assigned
-                        </p>
-                    @else
-                        <p class="text-sm text-base-content/60">Using default {{ ucfirst($role) }} permissions</p>
-                    @endif
-
-                    <div class="flex flex-wrap gap-1 mt-2">
-                        @foreach($effectivePerms as $perm)
-                            @php
-                                $allPerms = \App\Models\User::getAllPermissions();
-                                $label = null;
-                                foreach ($allPerms as $category => $perms) {
-                                    if (isset($perms[$perm])) {
-                                        $label = $perms[$perm];
-                                        break;
-                                    }
-                                }
-                            @endphp
-                            @if($label)
-                                <span class="badge badge-ghost badge-sm">{{ $label }}</span>
-                            @endif
+            <div id="display-specialties">
+                @if($instructor && !empty($instructor->specialties))
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($instructor->specialties as $specialty)
+                            <span class="badge badge-soft badge-primary">{{ $specialty }}</span>
                         @endforeach
                     </div>
-                </div>
                 @else
-                <div class="alert alert-soft alert-primary">
-                    <span class="icon-[tabler--crown] size-5"></span>
-                    <span>As the studio owner, you have full access to all features.</span>
-                </div>
+                    <p class="text-sm text-base-content/40 italic">No specialties added yet.</p>
                 @endif
             </div>
         </div>
     </div>
+
+    {{-- Employment Details (read-only) --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <span class="icon-[tabler--briefcase] size-5 text-secondary"></span>
+                Employment Details
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <div>
+                    <label class="text-sm text-base-content/60">Employment Type</label>
+                    <p class="font-medium">{{ $instructor?->getFormattedEmploymentType() ?? '-' }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-base-content/60">Rate</label>
+                    <p class="font-medium">{{ $instructor?->getFormattedRate() ?? '-' }}</p>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm text-base-content/60">Compensation Notes</label>
+                    @if($instructor && $instructor->compensation_notes)
+                        <p class="text-sm whitespace-pre-line">{{ $instructor->compensation_notes }}</p>
+                    @else
+                        <p class="text-sm text-base-content/40 italic">No notes added.</p>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Workload Limits (read-only) --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <span class="icon-[tabler--chart-bar] size-5 text-warning"></span>
+                Workload Limits
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <div>
+                    <label class="text-sm text-base-content/60">Hours per Week</label>
+                    <p class="font-medium">{{ $instructor?->hours_per_week ? number_format($instructor->hours_per_week, 1) . ' hrs' : '-' }}</p>
+                </div>
+                <div>
+                    <label class="text-sm text-base-content/60">Max Classes per Week</label>
+                    <p class="font-medium">{{ $instructor?->max_classes_per_week ?? '-' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Working Days (read-only) --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <span class="icon-[tabler--calendar-week] size-5 text-accent"></span>
+                Working Days
+            </h2>
+            <div class="mt-3">
+                @if($instructor && !empty($instructor->working_days))
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($dayOptions as $value => $label)
+                            <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm {{ in_array($value, $instructor->working_days) ? 'bg-primary/10 text-primary font-medium' : 'bg-base-200/50 text-base-content/40' }}">
+                                <span>{{ $dayEmojis[$value] ?? '' }}</span>
+                                <span>{{ substr($label, 0, 3) }}</span>
+                            </span>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-sm text-base-content/40 italic">No working days set.</p>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- Availability Hours (read-only) --}}
+    <div class="card bg-base-100">
+        <div class="card-body">
+            <h2 class="text-lg font-semibold flex items-center gap-2">
+                <span class="icon-[tabler--clock] size-5 text-info"></span>
+                Availability Hours
+            </h2>
+            <div class="space-y-4 mt-3">
+                <div>
+                    <label class="text-sm text-base-content/60">Default Hours</label>
+                    @if($instructor && $instructor->availability_default_from && $instructor->availability_default_to)
+                        <p class="font-medium">
+                            {{ \Carbon\Carbon::parse($instructor->availability_default_from)->format('g:i A') }}
+                            —
+                            {{ \Carbon\Carbon::parse($instructor->availability_default_to)->format('g:i A') }}
+                        </p>
+                    @else
+                        <p class="text-sm text-base-content/40 italic">Not set.</p>
+                    @endif
+                </div>
+                @if($instructor && !empty($instructor->availability_by_day))
+                    @php
+                        $hasOverrides = false;
+                        foreach($instructor->availability_by_day as $day => $times) {
+                            if (!empty($times['from']) && !empty($times['to'])) { $hasOverrides = true; break; }
+                        }
+                    @endphp
+                    @if($hasOverrides)
+                        <div class="border-t border-base-200 pt-4">
+                            <label class="text-sm text-base-content/60 block mb-2">Day-Specific Overrides</label>
+                            <div class="space-y-2">
+                                @foreach($instructor->availability_by_day as $day => $times)
+                                    @if(!empty($times['from']) && !empty($times['to']))
+                                        <div class="flex items-center justify-between py-2 px-3 bg-base-200/30 rounded-lg">
+                                            <span class="font-medium text-sm">{{ $dayOptions[$day] ?? "Day $day" }}</span>
+                                            <span class="text-sm">
+                                                {{ \Carbon\Carbon::parse($times['from'])->format('g:i A') }}
+                                                —
+                                                {{ \Carbon\Carbon::parse($times['to'])->format('g:i A') }}
+                                            </span>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                @endif
+            </div>
+        </div>
+    </div>
+
+
 </div>
 
 {{-- Drawer Backdrop --}}
@@ -524,6 +582,12 @@
                 </div>
 
                 <x-phone-input name="phone" :value="$user->phone" label="Phone Number" id-suffix="profile" />
+
+                <div>
+                    <label class="label-text" for="bio">Bio</label>
+                    <textarea id="bio" name="bio" rows="4" class="textarea w-full" placeholder="A brief introduction about yourself...">{{ $user->bio }}</textarea>
+                    <p class="text-xs text-base-content/50 mt-1">Shown on your profile and any public-facing listings.</p>
+                </div>
             </div>
         </div>
         <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
@@ -532,6 +596,46 @@
                 Save Changes
             </button>
             <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-profile-drawer')">Cancel</button>
+        </div>
+    </form>
+</div>
+
+{{-- Edit Specialties Drawer --}}
+<div id="edit-specialties-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+    <div class="flex items-center justify-between p-4 border-b border-base-200">
+        <h3 class="text-lg font-semibold">Edit Specialties</h3>
+        <button type="button" class="btn btn-ghost btn-circle btn-sm" onclick="closeDrawer('edit-specialties-drawer')">
+            <span class="icon-[tabler--x] size-5"></span>
+        </button>
+    </div>
+    <form id="specialties-form" onsubmit="saveSpecialties(event)" class="flex flex-col flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-4 space-y-5">
+            @php
+                $selectedSpecialties = $instructor?->specialties ?? [];
+                $specialtyGroups = \App\Models\Instructor::getSpecialtyGroups();
+            @endphp
+            <p class="text-sm text-base-content/60">Select the areas you specialize in. These appear on your profile and any public listings.</p>
+            @foreach($specialtyGroups as $group => $items)
+                <div>
+                    <div class="text-xs font-semibold text-base-content/50 uppercase tracking-wider mb-2">{{ $group }}</div>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($items as $specialty)
+                            <label class="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-base-content/10 bg-base-100 has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:checked]:text-primary transition-all hover:border-primary/30 text-sm">
+                                <input type="checkbox" name="specialties[]" value="{{ $specialty }}" class="hidden"
+                                    {{ in_array($specialty, $selectedSpecialties) ? 'checked' : '' }} />
+                                <span>{{ $specialty }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        <div class="flex justify-start gap-2 p-4 border-t border-base-200 bg-base-100">
+            <button type="submit" class="btn btn-primary" id="save-specialties-btn">
+                <span class="loading loading-spinner loading-sm hidden"></span>
+                Save Specialties
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="closeDrawer('edit-specialties-drawer')">Cancel</button>
         </div>
     </form>
 </div>
@@ -606,6 +710,7 @@ function closeDrawer(id) {
 function closeAllDrawers() {
     closeDrawer('edit-profile-drawer');
     closeDrawer('change-password-drawer');
+    closeDrawer('edit-specialties-drawer');
 }
 
 function clearErrors(formId) {
@@ -629,6 +734,67 @@ function showErrors(formId, errors) {
             errorEl.textContent = messages[0];
             errorEl.classList.remove('hidden');
         }
+    }
+}
+
+async function saveSpecialties(e) {
+    e.preventDefault();
+    const btn = document.getElementById('save-specialties-btn');
+    const spinner = btn.querySelector('.loading');
+    btn.disabled = true;
+    spinner.classList.remove('hidden');
+
+    const form = e.target;
+    const selected = Array.from(form.querySelectorAll('input[name="specialties[]"]:checked'))
+        .map(el => el.value);
+
+    // The profile update endpoint accepts full personal info; send the current
+    // user's required fields alongside specialties so validation passes.
+    const payload = {
+        first_name: @json($user->first_name),
+        last_name: @json($user->last_name),
+        email: @json($user->email),
+        phone: @json($user->phone),
+        bio: @json($user->bio),
+        specialties: selected,
+    };
+
+    try {
+        const response = await fetch('{{ route("settings.profile.update") }}', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+            // Re-render the display block
+            const display = document.getElementById('display-specialties');
+            if (selected.length === 0) {
+                display.innerHTML = '<p class="text-sm text-base-content/40 italic">No specialties added yet.</p>';
+            } else {
+                display.innerHTML = '<div class="flex flex-wrap gap-2">' +
+                    selected.map(function (s) {
+                        return '<span class="badge badge-soft badge-primary">' +
+                            s.replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+                            '</span>';
+                    }).join('') +
+                    '</div>';
+            }
+            closeDrawer('edit-specialties-drawer');
+            showToast(result.message || 'Specialties updated.', 'success');
+        } else {
+            showToast(result.message || 'Failed to save specialties.', 'error');
+        }
+    } catch (err) {
+        console.error('Error:', err);
+        showToast('An error occurred. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('hidden');
     }
 }
 
@@ -668,6 +834,18 @@ async function saveProfile(e) {
             document.getElementById('display-last-name').textContent = data.last_name;
             document.getElementById('display-email').textContent = data.email;
             document.getElementById('display-phone').textContent = data.phone || 'Not set';
+            var bioEl = document.getElementById('display-bio');
+            if (bioEl) {
+                if (data.bio && data.bio.trim() !== '') {
+                    bioEl.textContent = data.bio;
+                    bioEl.classList.remove('text-base-content/40', 'italic');
+                    bioEl.classList.add('font-medium');
+                } else {
+                    bioEl.textContent = 'Not set';
+                    bioEl.classList.add('text-base-content/40', 'italic');
+                    bioEl.classList.remove('font-medium');
+                }
+            }
 
             closeDrawer('edit-profile-drawer');
             showToast(result.message || 'Profile updated successfully!', 'success');

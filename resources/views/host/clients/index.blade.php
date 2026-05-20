@@ -125,7 +125,7 @@
                     <div class="relative">
                         <span class="icon-[tabler--search] size-4 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/50"></span>
                         <input type="text" id="search" name="search" value="{{ $filters['search'] ?? '' }}"
-                               placeholder="{{ $trans['clients.search_placeholder'] ?? 'Name, email, or phone...' }}"
+                               placeholder="{{ ($restrictedView ?? false) ? 'Enter first name, last name, or full name' : ($trans['clients.search_placeholder'] ?? 'Name, email, or phone...') }}"
                                class="input w-full pl-10">
                     </div>
                 </div>
@@ -163,8 +163,8 @@
                     </select>
                 </div>
                 <button type="submit" class="btn btn-primary">
-                    <span class="icon-[tabler--filter] size-5"></span>
-                    {{ $trans['btn.filter'] ?? 'Filter' }}
+                    <span class="icon-[tabler--search] size-5"></span>
+                    {{ $trans['btn.search'] ?? 'Search' }}
                 </button>
                 @if(!empty(array_filter($filters ?? [])))
                     <a href="{{ route('clients.index') }}" class="btn btn-ghost">
@@ -180,10 +180,26 @@
     @if($clients->isEmpty())
     <div class="card bg-base-100">
         <div class="card-body text-center py-12">
-            <span class="icon-[tabler--users] size-16 text-base-content/20 mx-auto mb-4"></span>
-            <h3 class="text-lg font-semibold mb-2">{{ $trans['clients.no_clients'] ?? 'No Clients Found' }}</h3>
+            <span class="icon-[tabler--{{ ($restrictedView ?? false) ? 'search' : 'users' }}] size-16 text-base-content/20 mx-auto mb-4"></span>
+            <h3 class="text-lg font-semibold mb-2">
+                @if($restrictedView ?? false)
+                    @if(empty($filters['search']))
+                        Search a client by name
+                    @else
+                        No client found
+                    @endif
+                @else
+                    {{ $trans['clients.no_clients'] ?? 'No Clients Found' }}
+                @endif
+            </h3>
             <p class="text-base-content/60 mb-4">
-                @if(!empty(array_filter($filters ?? [])))
+                @if($restrictedView ?? false)
+                    @if(empty($filters['search']))
+                        Type a client's first name, last name, or full name in the search box above to look them up.
+                    @else
+                        No client matches that name exactly. Try the other half of their name, or check spelling.
+                    @endif
+                @elseif(!empty(array_filter($filters ?? [])))
                     {{ $trans['msg.info.no_results'] ?? 'No clients match your current filters. Try adjusting your search.' }}
                 @else
                     {{ $trans['clients.get_started'] ?? 'Get started by adding your first client.' }}
@@ -304,7 +320,7 @@
                                 <th>{{ $trans['clients.tags'] ?? 'Tags' }}</th>
                                 <th>{{ $trans['clients.last_visit'] ?? 'Last Visit' }}</th>
                                 <th>{{ $trans['clients.joined_date'] ?? 'Created' }}</th>
-                                <th class="w-32">{{ $trans['common.actions'] ?? 'Actions' }}</th>
+                                <th class="w-16">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -375,51 +391,46 @@
                                     <span class="text-sm text-base-content/70">{{ $client->created_at->format('M d, Y') }}</span>
                                 </td>
                                 <td>
-                                    <div class="flex items-center gap-1">
-                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('client-{{ $client->id }}', event)">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                        </button>
-                                        <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
-                                            <span class="icon-[tabler--edit] size-4"></span>
-                                        </a>
-                                        <div class="relative">
-                                            <details class="dropdown dropdown-end">
-                                                <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">
-                                                    <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                                </summary>
-                                                <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300 z-[100] absolute right-0 top-full mt-1">
-                                                @if($client->status === 'lead')
-                                                <li>
-                                                    <form method="POST" action="{{ route('clients.convert-to-client', $client) }}" class="m-0">
-                                                        @csrf
-                                                        <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                            <span class="icon-[tabler--user-check] size-4"></span> {{ $trans['clients.convert_to_client'] ?? 'Convert to Client' }}
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @endif
-                                                @if($client->status !== 'member')
-                                                <li>
-                                                    <form method="POST" action="{{ route('clients.convert-to-member', $client) }}" class="m-0">
-                                                        @csrf
-                                                        <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                            <span class="icon-[tabler--id-badge] size-4"></span> {{ $trans['clients.convert_to_member'] ?? 'Convert to Member' }}
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @endif
-                                                <li>
-                                                    <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0" onsubmit="return confirm('{{ $trans['msg.confirm.archive'] ?? 'Archive this client?' }}')">
-                                                        @csrf
-                                                        <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                                            <span class="icon-[tabler--archive] size-4"></span> {{ $trans['btn.archive'] ?? 'Archive' }}
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                </ul>
-                                            </details>
-                                        </div>
-                                    </div>
+                                    <x-actions-dropdown width="w-52">
+                                        <li>
+                                            <button type="button" class="w-full text-left flex items-center gap-2" onclick="openDrawer('client-{{ $client->id }}', event)">
+                                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('clients.edit', $client) }}" class="flex items-center gap-2">
+                                                <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                                            </a>
+                                        </li>
+                                        @if($client->status === 'lead')
+                                            <li>
+                                                <form method="POST" action="{{ route('clients.convert-to-client', $client) }}" class="m-0">
+                                                    @csrf
+                                                    <button type="submit" class="w-full text-left flex items-center gap-2">
+                                                        <span class="icon-[tabler--user-check] size-4"></span> {{ $trans['clients.convert_to_client'] ?? 'Convert to Client' }}
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        @endif
+                                        @if($client->status !== 'member')
+                                            <li>
+                                                <form method="POST" action="{{ route('clients.convert-to-member', $client) }}" class="m-0">
+                                                    @csrf
+                                                    <button type="submit" class="w-full text-left flex items-center gap-2">
+                                                        <span class="icon-[tabler--id-badge] size-4"></span> {{ $trans['clients.convert_to_member'] ?? 'Convert to Member' }}
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        @endif
+                                        <li>
+                                            <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0" onsubmit="return confirm('{{ $trans['msg.confirm.archive'] ?? 'Archive this client?' }}')">
+                                                @csrf
+                                                <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                    <span class="icon-[tabler--archive] size-4"></span> {{ $trans['btn.archive'] ?? 'Archive' }}
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </x-actions-dropdown>
                                 </td>
                             </tr>
                             @endforeach

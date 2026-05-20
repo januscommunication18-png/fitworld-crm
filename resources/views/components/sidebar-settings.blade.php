@@ -1,17 +1,27 @@
 @php
     $user = auth()->user();
-    $canEditStudio = $user->hasPermission('studio.profile');
-    $canManageLocations = $user->hasPermission('studio.locations');
-    $canManageBookingPage = $user->hasPermission('studio.booking_page');
-    $canManagePolicies = $user->hasPermission('studio.policies');
-    $canViewTeam = $user->hasPermission('team.view');
-    $canManageTeam = $user->hasPermission('team.manage');
-    $canChangePermissions = $user->hasPermission('team.permissions');
-    $canManageClients = $user->hasPermission('students.edit');
-    $canManageQuestionnaires = $user->hasPermission('schedule.create') || $user->hasPermission('schedule.edit');
-    $canManagePaymentSettings = $user->hasPermission('payments.stripe');
-    $canManageBilling = $user->hasPermission('billing.plan');
-    $canViewInvoices = $user->hasPermission('billing.invoices');
+    // Section visibility — nav.settings.* gates whether the section appears in sidebar
+    $navStudio = $user->hasPermission('nav.settings.studio');
+    $navTeam = $user->hasPermission('nav.settings.team');
+    $navClientPortal = $user->hasPermission('nav.settings.client_portal');
+    $navPaymentsSection = $user->hasPermission('nav.settings.payments');
+    $navCommunication = $user->hasPermission('nav.settings.communication');
+    $navIntegrations = $user->hasPermission('nav.settings.integrations');
+    $navBilling = $user->hasPermission('nav.settings.billing');
+
+    // Functional permissions — gate what the user can actually do within each section
+    $canEditStudio = $navStudio && $user->hasPermission('studio.profile');
+    $canManageLocations = $navStudio && $user->hasPermission('studio.locations');
+    $canManageBookingPage = $navStudio && $user->hasPermission('studio.booking_page');
+    $canManagePolicies = $navStudio && $user->hasPermission('studio.policies');
+    $canViewTeam = $navTeam && $user->hasPermission('team.view');
+    $canManageTeam = $navTeam && $user->hasPermission('team.manage');
+    $canChangePermissions = $navTeam && $user->hasPermission('team.permissions');
+    $canManageClients = $navClientPortal && $user->hasPermission('studio.client_settings');
+    $canManageQuestionnaires = $navStudio && ($user->hasPermission('schedule.create') || $user->hasPermission('schedule.edit'));
+    $canManagePaymentSettings = $navPaymentsSection && $user->hasPermission('payments.stripe');
+    $canManageBilling = $navBilling && $user->hasPermission('billing.plan');
+    $canViewInvoices = $navBilling && $user->hasPermission('billing.invoices');
 @endphp
 
 {{-- Back button --}}
@@ -117,8 +127,10 @@
     <li><a href="{{ route('settings.payments.payouts') }}" class="{{ request()->routeIs('settings.payments.payouts') ? 'active' : '' }}">
         <span class="icon-[tabler--cash] size-4"></span> <span class="sidebar-label">Payout Preferences</span>
     </a></li>
+    @endif
 
     {{-- Communication --}}
+    @if($navCommunication)
     <li class="menu-title sidebar-section-label pt-3">
         <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Communication</span>
     </li>
@@ -135,8 +147,10 @@
     <li><a href="{{ route('settings.notifications.automation') }}" class="{{ request()->routeIs('settings.notifications.automation') ? 'active' : '' }}">
         <span class="icon-[tabler--robot] size-4"></span> <span class="sidebar-label">Automation Rules</span>
     </a></li>
+    @endif
 
     {{-- Integrations --}}
+    @if($navIntegrations)
     <li class="menu-title sidebar-section-label pt-3">
         <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Integrations</span>
     </li>

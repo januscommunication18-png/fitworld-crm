@@ -79,7 +79,36 @@ class InstructorController extends Controller
         // Auto-fix: Link any unlinked instructors to existing users with matching email
         $this->autoLinkInstructorsToUsers($host);
 
-        $query = $host->instructors()->with(['user', 'invitation']);
+        // Ensure every team member has a corresponding instructor record so they
+        // appear in this listing (any role can be assigned to teach a session).
+        $teamMembers = $host->teamMembers()->get();
+        $existingInstructorUserIds = $host->instructors()->whereNotNull('user_id')->pluck('user_id')->all();
+        foreach ($teamMembers as $member) {
+            if (in_array($member->id, $existingInstructorUserIds)) continue;
+            // Skip if an instructor already exists by email (will be auto-linked below)
+            $byEmail = Instructor::where('host_id', $host->id)
+                ->where('email', $member->email)
+                ->whereNull('user_id')
+                ->first();
+            if ($byEmail) {
+                $byEmail->update(['user_id' => $member->id]);
+                continue;
+            }
+            Instructor::create([
+                'host_id' => $host->id,
+                'user_id' => $member->id,
+                'name' => $member->full_name,
+                'email' => $member->email,
+                'phone' => $member->phone,
+                'is_active' => true,
+                'is_visible' => false,
+                'status' => Instructor::STATUS_PENDING,
+            ]);
+        }
+
+        $query = $host->instructors()
+            ->with(['user', 'invitation'])
+            ->withCount('primarySessions');
 
         // Search filter
         if ($search = $request->get('search')) {
@@ -301,22 +330,57 @@ class InstructorController extends Controller
     }
 
     /**
-     * Show edit instructor form
+     * Edit is now centralized in Users & Roles. Resolve (or stub-create) a linked
+     * User for this instructor and redirect there. Section is preserved via ?section=.
      */
-    public function edit(Instructor $instructor)
+    public function edit(Request $request, Instructor $instructor)
     {
         $this->authorizeInstructor($instructor);
 
-        $missingFields = $instructor->isProfileComplete() ? [] : $instructor->getMissingProfileFields();
+        $host = auth()->user()->currentHost();
 
-        return view('host.instructors.edit', [
-            'instructor' => $instructor,
-            'specialties' => Instructor::getCommonSpecialties(),
-            'employmentTypes' => Instructor::getEmploymentTypes(),
-            'rateTypes' => Instructor::getRateTypes(),
-            'dayOptions' => Instructor::getDayOptions(),
-            'missingFields' => $missingFields,
-        ]);
+        // 1) Already linked? Use that user.
+        $linkedUser = $instructor->user_id ? \App\Models\User::find($instructor->user_id) : null;
+
+        // 2) Email match? Link existing user.
+        if (!$linkedUser && $instructor->email) {
+            $byEmail = \App\Models\User::where('email', $instructor->email)->first();
+            if ($byEmail) {
+                $instructor->update(['user_id' => $byEmail->id]);
+                $linkedUser = $byEmail;
+            }
+        }
+
+        // 3) Auto-create a stub User (no password — invited stub) and attach to host pivot.
+        if (!$linkedUser) {
+            $nameParts = preg_split('/\s+/', trim($instructor->name ?? ''), 2);
+            $linkedUser = \App\Models\User::create([
+                'host_id' => $host->id,
+                'first_name' => $nameParts[0] ?? 'Instructor',
+                'last_name' => $nameParts[1] ?? '',
+                'email' => $instructor->email ?: ('instructor-' . $instructor->id . '@no-login.local'),
+                'password' => null,
+                'role' => \App\Models\User::ROLE_INSTRUCTOR,
+                'status' => \App\Models\User::STATUS_INVITED,
+                'is_instructor' => true,
+                'phone' => $instructor->phone,
+            ]);
+
+            // Attach to host pivot if not already present
+            if (!\DB::table('host_user')->where('user_id', $linkedUser->id)->where('host_id', $host->id)->exists()) {
+                $host->teamMembers()->attach($linkedUser->id, [
+                    'role' => \App\Models\User::ROLE_INSTRUCTOR,
+                    'permissions' => json_encode(\App\Models\User::getDefaultPermissionsForRole(\App\Models\User::ROLE_INSTRUCTOR)),
+                    'joined_at' => now(),
+                ]);
+            }
+
+            $instructor->update(['user_id' => $linkedUser->id]);
+        }
+
+        $section = $request->query('section', 'profile');
+
+        return redirect()->route('settings.team.users.edit', ['user' => $linkedUser->id, 'section' => $section]);
     }
 
     /**
@@ -571,17 +635,36 @@ class InstructorController extends Controller
 
         $tab = $request->get('tab', 'overview');
 
-        // Get schedule data for schedule tab
-        $upcomingSessions = ClassSession::where(function ($q) use ($instructor) {
+        // Upcoming sessions filter range — today | next3 | week | month | year | all
+        $range = in_array($request->get('range'), ['today', 'next3', 'week', 'month', 'year', 'all']) ? $request->get('range') : 'today';
+        $rangeEnd = match ($range) {
+            'today' => now()->endOfDay(),
+            'next3' => now()->addDays(3)->endOfDay(),
+            'week' => now()->endOfWeek(),
+            'month' => now()->endOfMonth(),
+            'year' => now()->endOfYear(),
+            default => null,
+        };
+
+        $upcomingSessionsQuery = ClassSession::where(function ($q) use ($instructor) {
             $q->where('primary_instructor_id', $instructor->id)
-                ->orWhere('backup_instructor_id', $instructor->id);
+                ->orWhere('backup_instructor_id', $instructor->id)
+                ->orWhereHas('backupInstructors', function ($q2) use ($instructor) {
+                    $q2->where('instructors.id', $instructor->id);
+                });
         })
             ->where('start_time', '>', now())
-            ->where('status', '!=', ClassSession::STATUS_CANCELLED)
-            ->with(['classPlan', 'location'])
+            ->where('status', '!=', ClassSession::STATUS_CANCELLED);
+
+        if ($rangeEnd) {
+            $upcomingSessionsQuery->where('start_time', '<=', $rangeEnd);
+        }
+
+        $upcomingSessions = $upcomingSessionsQuery
+            ->with(['classPlan', 'location', 'membershipPlans', 'backupInstructors:id'])
             ->orderBy('start_time')
-            ->limit(10)
-            ->get();
+            ->paginate(15)
+            ->withQueryString();
 
         // Get recent past sessions
         $recentSessions = ClassSession::where(function ($q) use ($instructor) {
@@ -640,6 +723,7 @@ class InstructorController extends Controller
             'instructor' => $instructor,
             'tab' => $tab,
             'upcomingSessions' => $upcomingSessions,
+            'upcomingRange' => $range,
             'recentSessions' => $recentSessions,
             'classPlans' => $classPlans,
             'monthlyStats' => $monthlyStats,

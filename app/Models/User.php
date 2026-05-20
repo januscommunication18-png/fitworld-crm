@@ -340,13 +340,24 @@ class User extends Authenticatable implements MustVerifyEmail
             return true;
         }
 
-        // Check custom permissions override
+        // Check custom permissions override.
+        // The form saves a flat array of granted permission keys (e.g. ["schedule.view"]).
+        // Older records may use an associative map (e.g. {"schedule.view": true}).
         $permissions = $currentHost ? $this->getPermissionsForHost($currentHost) : $this->permissions;
-        if (is_array($permissions) && isset($permissions[$permission])) {
-            return (bool) $permissions[$permission];
+        if (is_array($permissions) && !empty($permissions)) {
+            // Associative map (key => bool)
+            if (array_key_exists($permission, $permissions)) {
+                return (bool) $permissions[$permission];
+            }
+            // Flat list of granted keys
+            if (in_array($permission, $permissions, true)) {
+                return true;
+            }
+            // Custom permission set exists but this permission isn't granted — explicit deny.
+            return false;
         }
 
-        // Fall back to role-based default permissions
+        // No custom override — fall back to role-based default permissions
         return $this->hasDefaultPermissionForRole($permission, $role);
     }
 
@@ -367,16 +378,22 @@ class User extends Authenticatable implements MustVerifyEmail
         $permissions = [
             self::ROLE_OWNER => ['*'], // All permissions
             self::ROLE_ADMIN => [
+                'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.clients', 'nav.helpdesk',
+                'nav.instructors', 'nav.classes_services', 'nav.marketing', 'nav.insights', 'nav.payments', 'nav.settings',
+                'nav.settings.studio', 'nav.settings.team', 'nav.settings.client_portal',
+                'nav.settings.payments', 'nav.settings.communication', 'nav.settings.integrations', 'nav.settings.billing',
                 'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.cancel', 'schedule.rooms',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.waitlist', 'bookings.attendance',
-                'students.view', 'students.create', 'students.edit', 'students.notes', 'students.export',
+                'students.view', 'students.view_all', 'students.create', 'students.edit', 'students.notes', 'students.export',
                 'offers.intro', 'offers.packs', 'offers.memberships', 'offers.promos',
                 'insights.attendance', 'insights.revenue',
-                'studio.profile', 'studio.locations', 'studio.booking_page', 'studio.policies',
+                'studio.profile', 'studio.locations', 'studio.booking_page', 'studio.policies', 'studio.client_settings',
                 'team.view', 'team.manage', 'team.instructors', 'team.instructor_admin',
                 'pricing.override',
             ],
             self::ROLE_MANAGER => [
+                'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.clients', 'nav.helpdesk',
+                'nav.instructors', 'nav.classes_services', 'nav.insights',
                 'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.cancel',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.waitlist', 'bookings.attendance',
                 'students.view', 'students.create', 'students.edit', 'students.notes',
@@ -385,11 +402,13 @@ class User extends Authenticatable implements MustVerifyEmail
                 'pricing.override',
             ],
             self::ROLE_STAFF => [
+                'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.clients',
                 'schedule.view',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.attendance',
                 'students.view', 'students.edit', 'students.notes',
             ],
             self::ROLE_INSTRUCTOR => [
+                'nav.dashboard', 'nav.schedule', 'nav.bookings',
                 'schedule.view_own',
                 'bookings.view_own', 'bookings.attendance_own',
             ],
@@ -404,12 +423,32 @@ class User extends Authenticatable implements MustVerifyEmail
     public static function getAllPermissions(): array
     {
         return [
+            'nav' => [
+                'nav.dashboard' => 'Show Dashboard in sidebar',
+                'nav.schedule' => 'Show Schedule in sidebar',
+                'nav.bookings' => 'Show Bookings in sidebar',
+                'nav.clients' => 'Show Clients in sidebar',
+                'nav.helpdesk' => 'Show Help Desk in sidebar',
+                'nav.instructors' => 'Show Instructors in sidebar',
+                'nav.classes_services' => 'Show Classes & Services in sidebar',
+                'nav.marketing' => 'Show Marketing in sidebar',
+                'nav.insights' => 'Show Insights in sidebar',
+                'nav.payments' => 'Show Payments in sidebar',
+                'nav.settings' => 'Show Settings in sidebar',
+                'nav.settings.studio' => 'Show Studio section in Settings sidebar',
+                'nav.settings.team' => 'Show Team & Users section in Settings sidebar',
+                'nav.settings.client_portal' => 'Show Client & Portal section in Settings sidebar',
+                'nav.settings.payments' => 'Show Payments section in Settings sidebar',
+                'nav.settings.communication' => 'Show Communication section in Settings sidebar',
+                'nav.settings.integrations' => 'Show Integrations section in Settings sidebar',
+                'nav.settings.billing' => 'Show Plans & Billing section in Settings sidebar',
+            ],
             'schedule' => [
                 'schedule.view' => 'View schedule',
                 'schedule.view_own' => 'View own schedule only',
-                'schedule.create' => 'Create/edit classes',
+                'schedule.create' => 'Create and edit classes',
                 'schedule.cancel' => 'Cancel classes',
-                'schedule.rooms' => 'Manage rooms/class types',
+                'schedule.rooms' => 'Manage rooms and class types',
             ],
             'bookings' => [
                 'bookings.view' => 'View all bookings',
@@ -421,11 +460,12 @@ class User extends Authenticatable implements MustVerifyEmail
                 'bookings.attendance_own' => 'Mark attendance for own classes',
             ],
             'students' => [
-                'students.view' => 'View students',
-                'students.create' => 'Add students',
-                'students.edit' => 'Edit student profiles',
-                'students.notes' => 'Add notes/tags',
-                'students.export' => 'Export students',
+                'students.view' => 'View clients (search by full name required)',
+                'students.view_all' => 'View full client directory',
+                'students.create' => 'Add clients',
+                'students.edit' => 'Edit client profiles',
+                'students.notes' => 'Add client notes and tags',
+                'students.export' => 'Export clients',
             ],
             'offers' => [
                 'offers.intro' => 'Manage intro offers',
@@ -446,19 +486,20 @@ class User extends Authenticatable implements MustVerifyEmail
             ],
             'studio' => [
                 'studio.profile' => 'Edit studio profile',
-                'studio.locations' => 'Manage locations/rooms',
+                'studio.locations' => 'Manage locations and rooms',
                 'studio.booking_page' => 'Manage booking page',
                 'studio.policies' => 'Manage policies',
+                'studio.client_settings' => 'Manage Client & Portal settings',
             ],
             'team' => [
                 'team.view' => 'View team members',
-                'team.manage' => 'Manage team (invite/deactivate)',
+                'team.manage' => 'Manage team (invite and deactivate)',
                 'team.instructors' => 'Manage instructor profiles',
                 'team.instructor_admin' => 'Manage instructor employment, workload, availability & visibility',
-                'team.permissions' => 'Change permissions',
+                'team.permissions' => 'Manage user permissions',
             ],
             'billing' => [
-                'billing.plan' => 'Manage plan',
+                'billing.plan' => 'Manage subscription plan',
                 'billing.invoices' => 'View invoices',
                 'billing.payment' => 'Update payment method',
             ],

@@ -32,11 +32,38 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         $host = $this->getHost();
+        $authUser = auth()->user();
+        // Users with `students.view_all` can browse the full directory.
+        // Everyone else must search by exact full name to look up a client.
+        $restrictedView = !$authUser->hasPermission('students.view_all', $host);
+        $search = trim((string) $request->get('search', ''));
+
+        if ($restrictedView && $search === '') {
+            return view('host.clients.index', [
+                'clients' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25),
+                'tags' => Tag::forHost($host->id)->orderBy('name')->get(),
+                'filters' => $request->only(['search', 'status', 'source', 'tag']),
+                'statuses' => Client::getStatuses(),
+                'sources' => Client::getLeadSources(),
+                'restrictedView' => true,
+                'restrictedNoMatch' => false,
+            ]);
+        }
+
         $query = Client::forHost($host->id)->active();
 
-        // Apply filters
-        if ($request->filled('search')) {
-            $query->search($request->search);
+        if ($restrictedView) {
+            // Allow exact match on first name, last name, or the full "first last" combination.
+            $needle = strtolower($search);
+            $query->where(function ($q) use ($needle) {
+                $q->whereRaw('LOWER(first_name) = ?', [$needle])
+                  ->orWhereRaw('LOWER(last_name) = ?', [$needle])
+                  ->orWhereRaw('LOWER(CONCAT(first_name, " ", last_name)) = ?', [$needle]);
+            });
+        } else {
+            if ($request->filled('search')) {
+                $query->search($request->search);
+            }
         }
 
         if ($request->filled('status')) {
@@ -65,6 +92,8 @@ class ClientController extends Controller
             'filters' => $request->only(['search', 'status', 'source', 'tag']),
             'statuses' => Client::getStatuses(),
             'sources' => Client::getLeadSources(),
+            'restrictedView' => $restrictedView,
+            'restrictedNoMatch' => $restrictedView && $clients->total() === 0,
         ]);
     }
 

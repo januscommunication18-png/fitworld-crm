@@ -80,21 +80,25 @@
                         <tr class="{{ $user->trashed() ? 'opacity-50' : '' }}">
                             <td>
                                 <div class="flex items-center gap-3">
-                                    <div class="avatar placeholder">
-                                        @php
-                                            $bgColor = match($userRole) {
-                                                'owner' => 'bg-primary text-primary-content',
-                                                'admin' => 'bg-secondary text-secondary-content',
-                                                'manager' => 'bg-warning text-warning-content',
-                                                'staff' => 'bg-info text-info-content',
-                                                'instructor' => 'bg-accent text-accent-content',
-                                                default => 'bg-base-300 text-base-content'
-                                            };
-                                        @endphp
-                                        <div class="{{ $bgColor }} size-10 rounded-full">
-                                            <span>{{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}</span>
+                                    @if($user->profile_photo)
+                                        <img src="{{ $user->profile_photo_url }}" alt="{{ $user->full_name }}" class="size-10 rounded-full object-cover">
+                                    @else
+                                        <div class="avatar placeholder">
+                                            @php
+                                                $bgColor = match($userRole) {
+                                                    'owner' => 'bg-primary text-primary-content',
+                                                    'admin' => 'bg-secondary text-secondary-content',
+                                                    'manager' => 'bg-warning text-warning-content',
+                                                    'staff' => 'bg-info text-info-content',
+                                                    'instructor' => 'bg-accent text-accent-content',
+                                                    default => 'bg-base-300 text-base-content'
+                                                };
+                                            @endphp
+                                            <div class="{{ $bgColor }} size-10 rounded-full">
+                                                <span>{{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}</span>
+                                            </div>
                                         </div>
-                                    </div>
+                                    @endif
                                     <div>
                                         <a href="{{ route('settings.team.users.show', $user) }}" class="font-medium hover:text-primary">{{ $user->full_name }}</a>
                                         <div class="text-sm text-base-content/60">{{ $user->email }}</div>

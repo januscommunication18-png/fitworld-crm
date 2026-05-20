@@ -28,14 +28,52 @@
 @endsection
 
 @section('settings-content')
+    @php
+        $authUser = auth()->user();
+        $canEditAdmin = $authUser->isOwner() || $authUser->hasPermission('team.instructor_admin');
+        $isSelf = $authUser->id === $user->id;
+    @endphp
     <div class="space-y-6">
         {{-- Header --}}
-        <div class="flex items-center justify-between">
+        @php
+            $hasLogin = !is_null($user->password);
+            $userRole = $user->pivot->role ?? $user->role;
+        @endphp
+        <div class="flex items-center justify-between gap-2">
             <h2 class="text-xl font-semibold">Edit {{ $user->full_name }}</h2>
-            <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-sm gap-1.5">
-                <span class="icon-[tabler--arrow-left] size-4"></span>
-                Back
-            </a>
+            <div class="flex items-center gap-2">
+                @if(!$user->isOwner() || $user->id === auth()->id())
+                <x-actions-dropdown width="w-56" label="Quick Actions">
+                    <li><a href="{{ route('settings.team.users.show', $user) }}">
+                        <span class="icon-[tabler--eye] size-4"></span> View Profile
+                    </a></li>
+                    @if($hasLogin && $user->status === 'active')
+                        <li><a href="{{ route('settings.team.users.show', $user) }}#reset-password">
+                            <span class="icon-[tabler--key] size-4"></span> Reset Password
+                        </a></li>
+                    @endif
+                    @if(!$hasLogin && $user->email && !str_contains($user->email, '@nologin.local'))
+                        <li>
+                            <form action="{{ route('settings.team.users.send-invite', $user) }}" method="POST" class="m-0">
+                                @csrf
+                                <button type="submit" class="w-full text-left flex items-center gap-2">
+                                    <span class="icon-[tabler--mail] size-4"></span> Send Login Invitation
+                                </button>
+                            </form>
+                        </li>
+                    @endif
+                    @if($userRole === 'instructor' && $instructor)
+                        <li><a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}">
+                            <span class="icon-[tabler--user-star] size-4"></span> View Instructor Profile
+                        </a></li>
+                    @endif
+                </x-actions-dropdown>
+                @endif
+                <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-sm gap-1.5">
+                    <span class="icon-[tabler--arrow-left] size-4"></span>
+                    Back
+                </a>
+            </div>
         </div>
 
         {{-- Flash Messages --}}
@@ -57,10 +95,10 @@
             @csrf
             @method('PUT')
 
-            <div class="card bg-base-100 shadow-sm overflow-hidden">
+            <div class="space-y-4">
 
                 {{-- 1. Profile (always open) --}}
-                <details class="group edit-accordion-section" data-section="profile" open>
+                <details class="group edit-accordion-section card bg-base-100 shadow-sm overflow-hidden" data-section="profile" open>
                     <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                         <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                             <span class="icon-[tabler--user] size-5 text-primary"></span>
@@ -98,6 +136,7 @@
                             <x-phone-input name="phone" :value="old('phone', $user->phone ?? $instructor?->phone)" label="Phone Number" id-suffix="team-edit" />
                         </div>
 
+                        @if($canEditAdmin && !$isSelf)
                         <div class="divider text-base-content/40 text-xs">ROLE</div>
 
                         <div class="form-control">
@@ -136,6 +175,10 @@
                             </div>
                             @error('role') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                         </div>
+                        @else
+                        {{-- Hidden role field preserves the existing role on save when non-owner is editing --}}
+                        <input type="hidden" name="role" value="{{ $pivotRole }}" />
+                        @endif
 
                         <div class="form-control">
                             <label class="label" for="bio"><span class="label-text font-medium">Bio</span><span class="label-text-alt text-base-content/50">Optional</span></label>
@@ -159,8 +202,9 @@
                     </div>
                 </details>
 
+                @if($canEditAdmin)
                 {{-- 2. Employment (collapsed) --}}
-                <details class="group edit-accordion-section" data-section="employment">
+                <details class="group edit-accordion-section card bg-base-100 shadow-sm overflow-hidden" data-section="employment">
                     <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                         <div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--briefcase] size-5 text-secondary"></span></div>
                         <div class="flex-1"><h3 class="font-semibold">Employment</h3><p class="text-base-content/60 text-sm">Compensation and employment type</p></div>
@@ -205,7 +249,7 @@
                 </details>
 
                 {{-- 3. Workload (collapsed) --}}
-                <details class="group edit-accordion-section" data-section="workload">
+                <details class="group edit-accordion-section card bg-base-100 shadow-sm overflow-hidden" data-section="workload">
                     <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                         <div class="w-10 h-10 rounded-lg bg-warning/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--chart-bar] size-5 text-warning"></span></div>
                         <div class="flex-1"><h3 class="font-semibold">Workload</h3><p class="text-base-content/60 text-sm">Weekly hours and class limits</p></div>
@@ -236,7 +280,7 @@
                 </details>
 
                 {{-- 4. Days (collapsed) --}}
-                <details class="group edit-accordion-section" data-section="days">
+                <details class="group edit-accordion-section card bg-base-100 shadow-sm overflow-hidden" data-section="days">
                     <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                         <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--calendar-week] size-5 text-accent"></span></div>
                         <div class="flex-1"><h3 class="font-semibold">Days</h3><p class="text-base-content/60 text-sm">Working days of the week</p></div>
@@ -262,7 +306,7 @@
                 </details>
 
                 {{-- 5. Hours (collapsed) --}}
-                <details class="group edit-accordion-section" data-section="hours">
+                <details class="group edit-accordion-section card bg-base-100 shadow-sm overflow-hidden" data-section="hours">
                     <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                         <div class="w-10 h-10 rounded-lg bg-info/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--clock] size-5 text-info"></span></div>
                         <div class="flex-1"><h3 class="font-semibold">Hours</h3><p class="text-base-content/60 text-sm">Availability time ranges</p></div>
@@ -304,9 +348,11 @@
                         </div>
                     </div>
                 </details>
+                @endif
 
+                @if($canEditAdmin && !$isSelf)
                 {{-- 6. Permissions (collapsed) --}}
-                <details class="group edit-accordion-section" data-section="permissions">
+                <details class="group edit-accordion-section card bg-base-100 shadow-sm overflow-hidden" data-section="permissions">
                     <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                         <div class="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--shield-cog] size-5 text-error"></span></div>
                         <div class="flex-1"><h3 class="font-semibold">Permissions</h3><p class="text-base-content/60 text-sm">Customize what this user can access</p></div>
@@ -356,9 +402,10 @@
                         </div>
                     </div>
                 </details>
+                @endif
 
                 {{-- 7. Certifications (collapsed) --}}
-                <details class="group edit-accordion-section" data-section="certifications">
+                <details class="group edit-accordion-section card bg-base-100 shadow-sm overflow-hidden" data-section="certifications">
                     <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
                         <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center shrink-0"><span class="icon-[tabler--certificate] size-5 text-success"></span></div>
                         <div class="flex-1"><h3 class="font-semibold">Certifications</h3><p class="text-base-content/60 text-sm">Track certifications, licenses, and credentials</p></div>
@@ -407,12 +454,12 @@
             </div>{{-- end single card wrapper --}}
 
             {{-- Submit --}}
-            <div class="flex items-center justify-end gap-3 pt-6">
-                <a href="{{ route('settings.team.users') }}" class="btn btn-ghost">Cancel</a>
+            <div class="flex items-center gap-3 pt-6">
                 <button type="submit" class="btn btn-primary gap-2">
                     <span class="icon-[tabler--check] size-5"></span>
                     Save Changes
                 </button>
+                <a href="{{ route('settings.team.users') }}" class="btn btn-ghost ml-auto">Cancel</a>
             </div>
         </form>
     </div>

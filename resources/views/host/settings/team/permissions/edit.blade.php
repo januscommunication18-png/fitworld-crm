@@ -107,6 +107,7 @@
                 <div class="card-body">
                     @php
                         $categoryIcons = [
+                            'nav' => 'icon-[tabler--layout-sidebar]',
                             'schedule' => 'icon-[tabler--calendar]',
                             'bookings' => 'icon-[tabler--clipboard-list]',
                             'students' => 'icon-[tabler--users]',
@@ -119,6 +120,7 @@
                             'pricing' => 'icon-[tabler--currency-dollar]',
                         ];
                         $categoryColors = [
+                            'nav' => 'text-base-content bg-base-content/10',
                             'schedule' => 'text-primary bg-primary/10',
                             'bookings' => 'text-secondary bg-secondary/10',
                             'students' => 'text-info bg-info/10',
@@ -129,6 +131,32 @@
                             'team' => 'text-secondary bg-secondary/10',
                             'billing' => 'text-info bg-info/10',
                             'pricing' => 'text-success bg-success/10',
+                        ];
+                        $categoryLabels = [
+                            'nav' => 'Sidebar Navigation',
+                            'schedule' => 'Schedule',
+                            'bookings' => 'Bookings',
+                            'students' => 'Clients',
+                            'offers' => 'Offers & Promotions',
+                            'insights' => 'Insights & Reports',
+                            'payments' => 'Payments',
+                            'studio' => 'Studio Settings',
+                            'team' => 'Team & Users',
+                            'billing' => 'Billing',
+                            'pricing' => 'Pricing',
+                        ];
+                        $categoryDescriptions = [
+                            'nav' => 'Control which menu items appear in this user\'s sidebar',
+                            'schedule' => 'Calendar, class sessions, and scheduling actions',
+                            'bookings' => 'Bookings, waitlist, and attendance',
+                            'students' => 'Client directory and profile management',
+                            'offers' => 'Intro offers, class packs, memberships, and promo codes',
+                            'insights' => 'Attendance and revenue analytics',
+                            'payments' => 'Transactions, refunds, and Stripe',
+                            'studio' => 'Studio profile, locations, and booking page',
+                            'team' => 'Team members, instructors, and permissions',
+                            'billing' => 'Subscription plan and invoices',
+                            'pricing' => 'Price override at checkout',
                         ];
 
                         // Get current permissions
@@ -150,8 +178,13 @@
                                     <span class="{{ $categoryIcons[$category] ?? 'icon-[tabler--settings]' }} size-4"></span>
                                 </div>
                                 <div class="flex-1">
-                                    <h4 class="font-medium text-sm">{{ ucfirst($category) }}</h4>
-                                    <p class="text-xs text-base-content/50" id="perm-count-{{ $category }}">0 of {{ count($permissions) }} enabled</p>
+                                    <h4 class="font-medium text-sm">{{ $categoryLabels[$category] ?? ucfirst($category) }}</h4>
+                                    <p class="text-xs text-base-content/50" id="perm-count-{{ $category }}">
+                                        <span class="perm-count">0 of {{ count($permissions) }} enabled</span>
+                                        @if(isset($categoryDescriptions[$category]))
+                                            <span class="text-base-content/40"> · {{ $categoryDescriptions[$category] }}</span>
+                                        @endif
+                                    </p>
                                 </div>
                                 <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
                             </summary>
@@ -338,9 +371,13 @@ function updateCategoryCount(category) {
     const checkboxes = document.querySelectorAll('.permission-checkbox[data-category="' + category + '"]');
     const total = checkboxes.length;
     const checked = Array.from(checkboxes).filter(function(cb) { return cb.checked; }).length;
-    const countEl = document.getElementById('perm-count-' + category);
-    if (countEl) {
-        countEl.textContent = checked + ' of ' + total + ' enabled';
+    const wrap = document.getElementById('perm-count-' + category);
+    if (!wrap) return;
+    const countSpan = wrap.querySelector('.perm-count');
+    if (countSpan) {
+        countSpan.textContent = checked + ' of ' + total + ' enabled';
+    } else {
+        wrap.textContent = checked + ' of ' + total + ' enabled';
     }
 }
 

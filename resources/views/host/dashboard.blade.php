@@ -29,30 +29,20 @@
             ? \App\Models\Instructor::find($authUser->instructor_id)
             : \App\Models\Instructor::where('user_id', $authUser->id)->first();
 
-        if ($linkedInstructor) {
-            $completeProfileUrl = route('instructors.edit', ['instructor' => $linkedInstructor->id, 'ref' => 'team']);
+        // Single canonical edit page: Users & Roles
+        $completeProfileUrl = route('settings.team.users.edit', ['user' => $authUser->id, 'section' => 'profile']);
 
-            if ($canEditAdmin) {
-                // Owner / admin: check the full instructor profile (employment, rate, working days, availability)
-                $missingProfileFields = $linkedInstructor->getMissingProfileFields();
-            } else {
-                // Team member: only check fields they can actually edit
-                $instructorChecks = [
-                    'Profile Photo' => !empty($linkedInstructor->photo_path) || !empty($authUser->profile_photo),
-                    'Phone' => !empty($linkedInstructor->phone) || !empty($authUser->phone),
-                    'Bio' => !empty($linkedInstructor->bio) || !empty($authUser->bio),
-                ];
-                $missingProfileFields = array_keys(array_filter($instructorChecks, fn($v) => !$v));
-            }
+        if ($linkedInstructor && $canEditAdmin) {
+            // Owner / admin: check the full instructor profile (employment, rate, working days, availability)
+            $missingProfileFields = $linkedInstructor->getMissingProfileFields();
         } else {
-            // No linked instructor — fall back to basic user-account fields
+            // Team member (or no instructor): only check fields they can actually edit
             $profileChecks = [
-                'Profile Photo' => !empty($authUser->profile_photo),
-                'Phone' => !empty($authUser->phone),
-                'Bio' => !empty($authUser->bio),
+                'Profile Photo' => !empty($authUser->profile_photo) || !empty($linkedInstructor?->photo_path),
+                'Phone' => !empty($authUser->phone) || !empty($linkedInstructor?->phone),
+                'Bio' => !empty($authUser->bio) || !empty($linkedInstructor?->bio),
             ];
             $missingProfileFields = array_keys(array_filter($profileChecks, fn($v) => !$v));
-            $completeProfileUrl = route('settings.profile');
         }
     @endphp
     @if(!empty($missingProfileFields))

@@ -29,15 +29,6 @@
     </div>
     @endif
 
-    {{-- Info Banner --}}
-    <div class="alert alert-info alert-soft">
-        <span class="icon-[tabler--info-circle] size-5"></span>
-        <div>
-            <div class="font-medium">Permissions apply to team members with system access only</div>
-            <div class="text-sm">Only team members who have a login account and an assigned role (Admin, Manager, Staff, Instructor) can have their permissions customized here. Instructors without login access are managed from the <a href="{{ route('instructors.index') }}" class="link font-medium">Instructors</a> page.</div>
-        </div>
-    </div>
-
     {{-- Overview Stats --}}
     @php
         $totalMembers = $users->count();
@@ -211,11 +202,27 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php $currentCategory = ''; @endphp
+                            @php
+                                $currentCategory = '';
+                                $categoryLabels = [
+                                    'nav' => 'Sidebar Navigation',
+                                    'schedule' => 'Schedule',
+                                    'bookings' => 'Bookings',
+                                    'students' => 'Clients',
+                                    'offers' => 'Offers & Promotions',
+                                    'insights' => 'Insights & Reports',
+                                    'payments' => 'Payments',
+                                    'studio' => 'Studio Settings',
+                                    'team' => 'Team & Users',
+                                    'billing' => 'Billing',
+                                    'pricing' => 'Pricing',
+                                ];
+                            @endphp
                             @foreach($allPermissions as $permission => $label)
                                 @php
                                     $parts = explode('.', $permission);
-                                    $category = ucfirst($parts[0]);
+                                    $categoryKey = $parts[0];
+                                    $category = $categoryLabels[$categoryKey] ?? ucfirst($categoryKey);
                                 @endphp
                                 {{-- Skip pricing permissions if feature not enabled --}}
                                 @if(str_starts_with($permission, 'pricing.') && !$hasPriceOverrideFeature)
@@ -227,7 +234,8 @@
                                         <td colspan="5" class="bg-base-300/50 font-semibold text-sm py-2">
                                             <span class="flex items-center gap-2">
                                                 @php
-                                                    $catIcon = match(strtolower($category)) {
+                                                    $catIcon = match($categoryKey) {
+                                                        'nav' => 'icon-[tabler--layout-sidebar]',
                                                         'schedule' => 'icon-[tabler--calendar]',
                                                         'bookings' => 'icon-[tabler--clipboard-list]',
                                                         'students' => 'icon-[tabler--users]',

@@ -65,10 +65,20 @@ class SettingsController extends Controller
         $user = auth()->user();
         $host = $user->currentHost() ?? $user->host;
 
-        // Get instructor profile if user is linked to one
+        // Get instructor profile if user is linked to one (try linked id, fall back to user_id / email)
         $instructor = null;
         if ($user->instructor_id) {
             $instructor = $user->instructor;
+        }
+        if (!$instructor) {
+            $instructor = \App\Models\Instructor::where('host_id', $host->id)
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                    if ($user->email) {
+                        $q->orWhere('email', $user->email);
+                    }
+                })
+                ->first();
         }
 
         // Get the user's role and permissions for current host
@@ -88,17 +98,55 @@ class SettingsController extends Controller
             'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'required|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:50',
+            'bio' => 'nullable|string|max:2000',
+            'specialties' => 'nullable|array',
+            'specialties.*' => 'string|max:120',
         ]);
 
-        $user->update($validated);
+        $userPayload = collect($validated)->except(['specialties'])->all();
+        $user->update($userPayload);
 
-        // If user has linked instructor profile, update that too
-        if ($user->instructor_id && $user->instructor) {
-            $user->instructor->update([
+        // Resolve / auto-link a linked instructor record so instructor-side fields
+        // (specialties, bio mirror, etc.) can be saved from /settings/profile.
+        $host = $user->currentHost() ?? $user->host;
+        $instructor = $user->instructor_id ? $user->instructor : null;
+        if (!$instructor && $host) {
+            $instructor = \App\Models\Instructor::where('host_id', $host->id)
+                ->where(function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                    if ($user->email) {
+                        $q->orWhere('email', $user->email);
+                    }
+                })
+                ->first();
+            if ($instructor && $instructor->user_id !== $user->id) {
+                $instructor->update(['user_id' => $user->id]);
+            }
+        }
+        if (!$instructor && $host && (array_key_exists('specialties', $validated) || array_key_exists('bio', $validated))) {
+            $instructor = \App\Models\Instructor::create([
+                'host_id' => $host->id,
+                'user_id' => $user->id,
                 'name' => $validated['first_name'] . ' ' . $validated['last_name'],
                 'email' => $validated['email'],
-                'phone' => $validated['phone'] ?? $user->instructor->phone,
+                'phone' => $validated['phone'] ?? null,
+                'is_active' => true,
+                'is_visible' => false,
+                'status' => \App\Models\Instructor::STATUS_PENDING,
             ]);
+        }
+
+        if ($instructor) {
+            $instructorPayload = [
+                'name' => $validated['first_name'] . ' ' . $validated['last_name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'] ?? $instructor->phone,
+                'bio' => $validated['bio'] ?? $instructor->bio,
+            ];
+            if (array_key_exists('specialties', $validated)) {
+                $instructorPayload['specialties'] = $validated['specialties'] ?? [];
+            }
+            $instructor->update($instructorPayload);
         }
 
         return response()->json([
@@ -670,6 +718,10 @@ class SettingsController extends Controller
     {
         $host = auth()->user()->currentHost() ?? auth()->user()->host;
 
+        if (!auth()->user()->hasPermission('studio.client_settings', $host)) {
+            abort(403, 'You do not have permission to manage Client & Portal settings.');
+        }
+
         // Get current member portal settings or defaults
         $settings = $host->member_portal_settings ?? $this->getDefaultMemberPortalSettings();
 
@@ -682,6 +734,10 @@ class SettingsController extends Controller
     public function updateMemberPortal(Request $request)
     {
         $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        if (!auth()->user()->hasPermission('studio.client_settings', $host)) {
+            abort(403, 'You do not have permission to manage Client & Portal settings.');
+        }
 
         $validated = $request->validate([
             'enabled' => 'boolean',

@@ -18,62 +18,6 @@
         <p class="text-base-content/60 mt-1">{{ $trans['instructors.manage_description'] ?? 'Manage your studio\'s instructors, view schedules, and track assignments.' }}</p>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="card bg-base-100">
-            <div class="card-body p-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-primary/10 rounded-lg p-2">
-                        <span class="icon-[tabler--users] size-6 text-primary"></span>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold">{{ $stats['total'] }}</p>
-                        <p class="text-xs text-base-content/60">{{ $trans['common.total'] ?? 'Total' }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card bg-base-100">
-            <div class="card-body p-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-success/10 rounded-lg p-2">
-                        <span class="icon-[tabler--user-check] size-6 text-success"></span>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold">{{ $stats['active'] }}</p>
-                        <p class="text-xs text-base-content/60">{{ $trans['common.active'] ?? 'Active' }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card bg-base-100">
-            <div class="card-body p-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-success/10 rounded-lg p-2">
-                        <span class="icon-[tabler--key] size-6 text-success"></span>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold">{{ $stats['with_login'] }}</p>
-                        <p class="text-xs text-base-content/60">{{ $trans['instructors.access_granted'] ?? 'Access Granted' }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="card bg-base-100">
-            <div class="card-body p-4">
-                <div class="flex items-center gap-3">
-                    <div class="bg-neutral/10 rounded-lg p-2">
-                        <span class="icon-[tabler--key-off] size-6 text-neutral"></span>
-                    </div>
-                    <div>
-                        <p class="text-2xl font-bold">{{ $stats['no_login'] }}</p>
-                        <p class="text-xs text-base-content/60">{{ $trans['instructors.no_access'] ?? 'No Access' }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     {{-- Actions Row --}}
     <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div></div>
@@ -250,8 +194,7 @@
                             <tr>
                                 <th>{{ $trans['field.instructor'] ?? 'Instructor' }}</th>
                                 <th>{{ $trans['common.status'] ?? 'Status' }}</th>
-                                <th class="hidden xl:table-cell">{{ $trans['instructors.employment'] ?? 'Employment' }}</th>
-                                <th>{{ $trans['instructors.rate'] ?? 'Rate' }}</th>
+                                <th>{{ $trans['instructors.total_sessions'] ?? 'Total Sessions' }}</th>
                                 <th class="w-20">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
@@ -260,14 +203,15 @@
                                 <tr>
                                     <td>
                                         <div class="flex items-center gap-3">
-                                            @if($instructor->photo_url)
-                                                <img src="{{ $instructor->photo_url }}" alt="{{ $instructor->name }}"
+                                            @php
+                                                $photoSrc = $instructor->photo_url ?? $instructor->user?->profile_photo_url;
+                                            @endphp
+                                            @if($photoSrc)
+                                                <img src="{{ $photoSrc }}" alt="{{ $instructor->name }}"
                                                      class="w-10 h-10 rounded-full object-cover">
                                             @else
-                                                <div class="avatar placeholder">
-                                                    <div class="bg-primary text-primary-content w-10 h-10 rounded-full font-bold text-sm">
-                                                        {{ $instructor->initials }}
-                                                    </div>
+                                                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                                    {{ $instructor->initials }}
                                                 </div>
                                             @endif
                                             <div>
@@ -302,8 +246,10 @@
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="hidden xl:table-cell text-base-content/70">{{ $instructor->getFormattedEmploymentType() ?? '-' }}</td>
-                                    <td class="text-success font-medium">{{ $instructor->getFormattedRate() ?? '-' }}</td>
+                                    <td>
+                                        <span class="font-medium">{{ $instructor->primary_sessions_count }}</span>
+                                        <span class="text-xs text-base-content/50">{{ Str::plural('session', $instructor->primary_sessions_count) }}</span>
+                                    </td>
                                     <td>
                                         <a href="{{ route('instructors.show', $instructor) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['instructors.view_profile'] ?? 'View Profile' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>

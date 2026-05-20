@@ -1,15 +1,30 @@
 @php
     $user = auth()->user();
     $host = $user->currentHost() ?? $user->host;
-    $canViewSchedule = $user->hasPermission('schedule.view') || $user->hasPermission('schedule.view_own');
+    // Sidebar item visibility — controlled by nav.* permissions.
+    // Each menu item must (1) have its nav.* permission AND (2) have at least one of the
+    // underlying functional permissions required to actually use the page.
+    $navDashboard = $user->hasPermission('nav.dashboard');
+    $navSchedule = $user->hasPermission('nav.schedule');
+    $navBookings = $user->hasPermission('nav.bookings');
+    $navClients = $user->hasPermission('nav.clients');
+    $navHelpdesk = $user->hasPermission('nav.helpdesk');
+    $navInstructors = $user->hasPermission('nav.instructors');
+    $navClassesServices = $user->hasPermission('nav.classes_services');
+    $navMarketing = $user->hasPermission('nav.marketing');
+    $navInsights = $user->hasPermission('nav.insights');
+    $navPayments = $user->hasPermission('nav.payments');
+    $navSettings = $user->hasPermission('nav.settings');
+
+    $canViewSchedule = $navSchedule && ($user->hasPermission('schedule.view') || $user->hasPermission('schedule.view_own'));
     $canManageSchedule = $user->hasPermission('schedule.create') || $user->hasPermission('schedule.edit');
-    $canViewBookings = $user->hasPermission('bookings.view') || $user->hasPermission('bookings.view_own');
-    $canViewClients = $user->hasPermission('students.view'); // Permission key kept as students.view for backward compatibility
+    $canViewBookings = $navBookings && ($user->hasPermission('bookings.view') || $user->hasPermission('bookings.view_own'));
+    $canViewClients = $navClients && $user->hasPermission('students.view');
     $canViewTeam = $user->hasPermission('team.view') || $user->hasPermission('team.instructors');
-    $canViewOffers = $user->hasPermission('offers.intro') || $user->hasPermission('offers.packs') || $user->hasPermission('offers.memberships') || $user->hasPermission('offers.promos');
-    $canViewInsights = $user->hasPermission('insights.attendance') || $user->hasPermission('insights.revenue');
-    $canViewPayments = $user->hasPermission('payments.view');
-    $canAccessSettings = $user->hasPermission('studio.profile') || $user->hasPermission('team.view') || $user->hasPermission('billing.plan');
+    $canViewOffers = $navMarketing && ($user->hasPermission('offers.intro') || $user->hasPermission('offers.packs') || $user->hasPermission('offers.memberships') || $user->hasPermission('offers.promos'));
+    $canViewInsights = $navInsights && ($user->hasPermission('insights.attendance') || $user->hasPermission('insights.revenue'));
+    $canViewPayments = $navPayments && $user->hasPermission('payments.view');
+    $canAccessSettings = $navSettings && ($user->hasPermission('studio.profile') || $user->hasPermission('team.view') || $user->hasPermission('billing.plan'));
 
     // Check if setup checklist is complete (for owner/admin only)
     $isOwnerOrAdmin = $user->isOwner($host) || $user->isAdmin($host);
@@ -79,7 +94,8 @@
             </li>
             @endif
 
-            {{-- Dashboard - Everyone can see --}}
+            {{-- Dashboard --}}
+            @if($navDashboard)
             <li class="nav-item {{ request()->is('dashboard*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="dashboard">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" {{ $sidebarDisabled ? 'disabled' : '' }} onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--home] size-5 shrink-0"></span>
@@ -105,6 +121,7 @@
                     </a></li>
                 </ul>
             </li>
+            @endif
 
             {{-- Schedule - Requires schedule.view or schedule.view_own --}}
             @php
@@ -241,8 +258,8 @@
             </li>
             @endif
 
-            {{-- Help Desk - Requires students.view permission (same as clients) --}}
-            @if($canViewClients)
+            {{-- Help Desk --}}
+            @if($navHelpdesk && $user->hasPermission('students.view'))
             @php
                 $openTicketCount = auth()->user()?->host?->helpdeskTickets()->unresolved()->count() ?? 0;
             @endphp
@@ -278,8 +295,8 @@
             </li>
             @endif
 
-            {{-- Instructors - Requires team.view or team.instructors --}}
-            @if($canViewTeam)
+            {{-- Instructors --}}
+            @if($navInstructors && $canViewTeam)
             <li class="nav-item {{ request()->is('instructors*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="instructors">
                 <button type="button" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors" onclick="window.FitCRM.toggleSubmenu(this)">
                     <span class="icon-[tabler--user-star] size-5 shrink-0"></span>
@@ -303,8 +320,8 @@
             </li>
             @endif
 
-            {{-- Classes & Services - Requires schedule permissions --}}
-            @if($canManageSchedule)
+            {{-- Classes & Services --}}
+            @if($navClassesServices && $canManageSchedule)
             <li class="nav-item {{ request()->is('catalog*') || request()->is('class-plans*') || request()->is('service-plans*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="catalog">
                 <a href="{{ url('/catalog') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
                     <span class="icon-[tabler--layout-grid] size-5 shrink-0"></span>
@@ -426,13 +443,15 @@
             </li>
             @endif
 
-            {{-- Settings - Always visible since My Profile is accessible to all --}}
+            {{-- Settings --}}
+            @if($navSettings)
             <li class="nav-item {{ request()->is('settings*') ? 'active' : '' }}" data-nav="settings">
                 <a href="{{ url('/settings') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">
                     <span class="icon-[tabler--settings] size-5 shrink-0"></span>
                     <span class="sidebar-label">{{ $trans['nav.settings'] ?? 'Settings' }}</span>
                 </a>
             </li>
+            @endif
         </ul>
         @endif
     </div>

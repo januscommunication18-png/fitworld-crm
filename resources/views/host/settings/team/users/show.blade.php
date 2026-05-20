@@ -18,6 +18,10 @@
 @php
     $userRole = $user->pivot->role ?? $user->role;
     $hasLogin = !is_null($user->password);
+    $authUser = auth()->user();
+    $canEditAdmin = $authUser->isOwner() || $authUser->hasPermission('team.instructor_admin');
+    $isSelf = $authUser->id === $user->id;
+    $canEditPermissions = $authUser->isOwner() || $authUser->hasPermission('team.permissions');
     if (!$hasLogin) {
         $statusBadge = 'badge-neutral';
         $statusText = 'No Login';
@@ -42,20 +46,24 @@
     {{-- Header --}}
     <div class="flex flex-col md:flex-row md:items-start gap-4 relative z-50">
         <div class="flex items-start gap-4 flex-1">
-            <div class="avatar placeholder">
-                @php
-                    $bgColor = match($userRole) {
-                        'owner' => 'bg-primary text-primary-content',
-                        'admin' => 'bg-secondary text-secondary-content',
-                        'staff' => 'bg-info text-info-content',
-                        'instructor' => 'bg-accent text-accent-content',
-                        default => 'bg-base-300 text-base-content'
-                    };
-                @endphp
-                <div class="{{ $bgColor }} w-20 h-20 rounded-full font-bold text-2xl">
-                    <span>{{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}</span>
+            @if($user->profile_photo)
+                <img src="{{ $user->profile_photo_url }}" alt="{{ $user->full_name }}" class="w-20 h-20 rounded-full object-cover">
+            @else
+                <div class="avatar placeholder">
+                    @php
+                        $bgColor = match($userRole) {
+                            'owner' => 'bg-primary text-primary-content',
+                            'admin' => 'bg-secondary text-secondary-content',
+                            'staff' => 'bg-info text-info-content',
+                            'instructor' => 'bg-accent text-accent-content',
+                            default => 'bg-base-300 text-base-content'
+                        };
+                    @endphp
+                    <div class="{{ $bgColor }} w-20 h-20 rounded-full font-bold text-2xl">
+                        <span>{{ strtoupper(substr($user->first_name, 0, 1) . substr($user->last_name, 0, 1)) }}</span>
+                    </div>
                 </div>
-            </div>
+            @endif
             <div>
                 <h1 class="text-2xl font-bold">{{ $user->full_name }}</h1>
                 <p class="text-base-content/60">{{ $user->email }}</p>
@@ -126,19 +134,7 @@
         </div>
     </div>
 
-    {{-- Instructor Link Alert --}}
-    @if($instructor)
-        <div class="alert alert-soft alert-info">
-            <span class="icon-[tabler--info-circle] size-5"></span>
-            <div class="flex-1">
-                <p>This team member has an instructor profile with employment details, schedule, and class assignments.</p>
-            </div>
-            <a href="{{ route('instructors.show', ['instructor' => $instructor, 'ref' => 'team']) }}" class="btn btn-info btn-sm">
-                <span class="icon-[tabler--user-star] size-4"></span>
-                View Instructor Profile
-            </a>
-        </div>
-    @elseif($userRole === 'owner' && $user->id === auth()->id())
+    @if(!$instructor && $userRole === 'owner' && $user->id === auth()->id())
         {{-- Add as Instructor option for owner viewing their own profile --}}
         <div class="alert alert-soft alert-primary">
             <span class="icon-[tabler--user-star] size-5"></span>
@@ -248,15 +244,19 @@
                             </div>
 
                             {{-- Specialties --}}
-                            @if($instructor && !empty($instructor->specialties))
+                            @if($instructor)
                                 <div class="divider my-3"></div>
                                 <div>
                                     <label class="text-sm text-base-content/60 block mb-2">Specialties</label>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($instructor->specialties as $specialty)
-                                            <span class="badge badge-soft badge-primary">{{ $specialty }}</span>
-                                        @endforeach
-                                    </div>
+                                    @if(!empty($instructor->specialties))
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($instructor->specialties as $specialty)
+                                                <span class="badge badge-soft badge-primary">{{ $specialty }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <p class="text-sm text-base-content/40 italic">No specialties added yet.</p>
+                                    @endif
                                 </div>
                             @endif
                         </div>
@@ -269,15 +269,17 @@
                         $userCertifications = $user->certifications;
                     @endphp
 
-                    <div class="card bg-base-100 overflow-hidden">
+                    <div class="space-y-4">
 
                     {{-- Employment Details --}}
                     @if($instructor)
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                             <span class="icon-[tabler--briefcase] size-5 text-secondary"></span>
                             <h2 class="flex-1 font-semibold">Employment Details</h2>
+                            @if($canEditAdmin)
                             <a href="{{ route('settings.team.users.edit', $user) }}?section=employment" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            @endif
                             <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
                         </summary>
                         <div class="p-5 border-b border-base-200">
@@ -294,11 +296,13 @@
 
                     {{-- Workload Limits --}}
                     @if($instructor)
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                             <span class="icon-[tabler--chart-bar] size-5 text-warning"></span>
                             <h2 class="flex-1 font-semibold">Workload Limits</h2>
+                            @if($canEditAdmin)
                             <a href="{{ route('settings.team.users.edit', $user) }}?section=workload" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            @endif
                             <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
                         </summary>
                         <div class="p-5 border-b border-base-200">
@@ -312,11 +316,13 @@
 
                     {{-- Working Days --}}
                     @if($instructor)
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                             <span class="icon-[tabler--calendar-week] size-5 text-accent"></span>
                             <h2 class="flex-1 font-semibold">Working Days</h2>
+                            @if($canEditAdmin)
                             <a href="{{ route('settings.team.users.edit', $user) }}?section=days" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            @endif
                             <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
                         </summary>
                         <div class="p-5 border-b border-base-200">
@@ -338,11 +344,13 @@
 
                     {{-- Availability Hours --}}
                     @if($instructor)
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                             <span class="icon-[tabler--clock] size-5 text-info"></span>
                             <h2 class="flex-1 font-semibold">Availability Hours</h2>
+                            @if($canEditAdmin)
                             <a href="{{ route('settings.team.users.edit', $user) }}?section=hours" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
+                            @endif
                             <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
                         </summary>
                         <div class="p-5 border-b border-base-200">
@@ -392,7 +400,7 @@
                     @endif
 
                     {{-- About --}}
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                             <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
                             <h2 class="flex-1 font-semibold">About</h2>
@@ -411,7 +419,7 @@
                     </details>
 
                     {{-- Social Links --}}
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                             <span class="icon-[tabler--share] size-5 text-secondary"></span>
                             <h2 class="flex-1 font-semibold">Social Links</h2>
@@ -454,7 +462,7 @@
                     </details>
 
                     {{-- Certifications --}}
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none border-b border-base-200">
                             <span class="icon-[tabler--certificate] size-5 text-success"></span>
                             <h2 class="flex-1 font-semibold">Certifications</h2>
@@ -501,11 +509,11 @@
                     </details>
 
                     {{-- Permissions --}}
-                    <details class="group show-accordion-section">
+                    <details class="group show-accordion-section card bg-base-100 shadow-sm overflow-hidden">
                         <summary class="flex items-center gap-3 p-4 cursor-pointer hover:bg-base-200/50 transition-colors list-none">
                             <span class="icon-[tabler--lock] size-5 text-error"></span>
                             <h2 class="flex-1 font-semibold">Permissions</h2>
-                            @if($userRole !== 'owner')
+                            @if($userRole !== 'owner' && $canEditPermissions && !$isSelf)
                                 <a href="{{ route('settings.team.permissions.edit', $user) }}" class="btn btn-ghost btn-xs z-10" onclick="event.stopPropagation()"><span class="icon-[tabler--edit] size-4"></span></a>
                             @endif
                             <span class="icon-[tabler--chevron-down] size-5 text-base-content/50 transition-transform group-open:rotate-180"></span>
@@ -717,6 +725,7 @@
 </div>
 
 {{-- User Certification Drawer --}}
+<div id="user-cert-backdrop" class="fixed inset-0 bg-black/50 z-40 opacity-0 pointer-events-none transition-opacity duration-300" onclick="closeUserCertDrawer()"></div>
 <div id="user-cert-drawer" class="fixed top-0 right-0 h-full w-full max-w-3xl bg-base-100 shadow-xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
     <div class="flex items-center justify-between p-4 border-b border-base-200">
         <h3 class="text-lg font-semibold" id="user-cert-drawer-title">Add Certification</h3>
@@ -1131,15 +1140,21 @@ function closeUserCertDrawer() {
 
 function resetUserCertForm() {
     editingUserCertId = null;
+    var setVal = function (id, val) {
+        var el = document.getElementById(id);
+        if (el) el.value = val;
+    };
     document.getElementById('user-cert-drawer-title').textContent = 'Add Certification';
-    document.getElementById('user-cert-id').value = '';
-    document.getElementById('user_cert_name').value = '';
-    document.getElementById('user_cert_certification_name').value = '';
-    document.getElementById('user_cert_expire_date').value = '';
-    document.getElementById('user_cert_reminder_days').value = '';
-    document.getElementById('user_cert_notes').value = '';
-    document.getElementById('user_cert_file').value = '';
-    document.getElementById('user-cert-remove-file').value = '';
+    setVal('user-cert-id', '');
+    setVal('user_cert_name', '');
+    setVal('user_cert_certification_name', '');
+    // Date-picker component renders two inputs (display + hidden value)
+    setVal('datepicker_user_cert_expire_date', '');
+    setVal('datepicker_value_user_cert_expire_date', '');
+    setVal('user_cert_reminder_days', '');
+    setVal('user_cert_notes', '');
+    setVal('user_cert_file', '');
+    setVal('user-cert-remove-file', '');
     var placeholder = document.getElementById('user-cert-upload-placeholder');
     var preview = document.getElementById('user-cert-upload-preview');
     var existingFile = document.getElementById('user-cert-existing-file');
@@ -1171,7 +1186,10 @@ function editUserCert(id) {
             document.getElementById('user-cert-id').value = cert.id;
             document.getElementById('user_cert_name').value = cert.name || '';
             document.getElementById('user_cert_certification_name').value = cert.certification_name || '';
-            document.getElementById('user_cert_expire_date').value = cert.expire_date || '';
+            var expireHidden = document.getElementById('datepicker_value_user_cert_expire_date');
+            var expireDisplay = document.getElementById('datepicker_user_cert_expire_date');
+            if (expireHidden) expireHidden.value = cert.expire_date || '';
+            if (expireDisplay) expireDisplay.value = cert.expire_date_formatted || cert.expire_date || '';
             document.getElementById('user_cert_reminder_days').value = cert.reminder_days || '';
             document.getElementById('user_cert_notes').value = cert.notes || '';
 
@@ -1281,7 +1299,8 @@ document.getElementById('user-cert-form').addEventListener('submit', function(e)
     var formData = new FormData();
     formData.append('name', document.getElementById('user_cert_name').value);
     formData.append('certification_name', document.getElementById('user_cert_certification_name').value);
-    formData.append('expire_date', document.getElementById('user_cert_expire_date').value);
+    var expireValEl = document.getElementById('datepicker_value_user_cert_expire_date');
+    formData.append('expire_date', expireValEl ? expireValEl.value : '');
     formData.append('reminder_days', document.getElementById('user_cert_reminder_days').value);
     formData.append('notes', document.getElementById('user_cert_notes').value);
 
