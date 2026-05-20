@@ -28,6 +28,7 @@
                 Schedule Planner
             </a>
 
+            @if(auth()->user()->hasPermission('bookings.create'))
             {{-- Sell Dropdown --}}
             <div class="relative">
                 <button type="button" class="btn btn-warning" onclick="toggleDropdown('sell-dropdown')">
@@ -79,6 +80,7 @@
                     </li>
                 </ul>
             </div>
+            @endif
         </div>
     </div>
 

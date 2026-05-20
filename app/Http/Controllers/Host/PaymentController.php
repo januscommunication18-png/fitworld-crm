@@ -26,11 +26,19 @@ class PaymentController extends Controller
         return Auth::user()->host;
     }
 
+    protected function authorizePayments(string $permission, string $message): void
+    {
+        if (!Auth::user()->hasPermission($permission)) {
+            abort(403, $message);
+        }
+    }
+
     /**
      * Show all transactions
      */
     public function transactions(Request $request)
     {
+        $this->authorizePayments('payments.view', 'You do not have permission to view transactions.');
         $host = $this->getHost();
         $status = $request->get('status', 'all');
         $type = $request->get('type', 'all');
@@ -120,6 +128,7 @@ class PaymentController extends Controller
      */
     public function cancelTransaction(Request $request, Transaction $transaction)
     {
+        $this->authorizePayments('payments.refunds', 'You do not have permission to refund or cancel transactions.');
         $host = $this->getHost();
         $user = Auth::user();
 
@@ -166,6 +175,7 @@ class PaymentController extends Controller
      */
     public function showTransaction(Transaction $transaction)
     {
+        $this->authorizePayments('payments.view', 'You do not have permission to view transactions.');
         $host = $this->getHost();
 
         if ($transaction->host_id !== $host->id) {
@@ -258,6 +268,7 @@ class PaymentController extends Controller
 
     public function memberships()
     {
+        $this->authorizePayments('payments.view', 'You do not have permission to view payment records.');
         $host = $this->getHost();
 
         $memberships = CustomerMembership::where('host_id', $host->id)
@@ -272,6 +283,7 @@ class PaymentController extends Controller
 
     public function classPacks()
     {
+        $this->authorizePayments('payments.view', 'You do not have permission to view payment records.');
         return view('host.payments.class-packs');
     }
 }

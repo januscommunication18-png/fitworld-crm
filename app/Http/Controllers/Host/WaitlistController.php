@@ -9,8 +9,16 @@ use Illuminate\Http\Request;
 
 class WaitlistController extends Controller
 {
+    private function authorizeWaitlist(): void
+    {
+        if (!auth()->user()->hasPermission('bookings.waitlist')) {
+            abort(403, 'You do not have permission to manage the waitlist.');
+        }
+    }
+
     public function index(Request $request)
     {
+        $this->authorizeWaitlist();
         $host = auth()->user()->host;
 
         $query = WaitlistEntry::where('host_id', $host->id)
@@ -60,6 +68,7 @@ class WaitlistController extends Controller
     public function show(WaitlistEntry $waitlistEntry)
     {
         $this->authorizeEntry($waitlistEntry);
+        $this->authorizeWaitlist();
 
         $waitlistEntry->load(['classPlan', 'classRequest.helpdeskTicket', 'client']);
 
@@ -71,6 +80,7 @@ class WaitlistController extends Controller
     public function updateStatus(Request $request, WaitlistEntry $waitlistEntry)
     {
         $this->authorizeEntry($waitlistEntry);
+        $this->authorizeWaitlist();
 
         $validated = $request->validate([
             'status' => 'required|in:waiting,offered,claimed,expired,cancelled',
@@ -94,6 +104,7 @@ class WaitlistController extends Controller
     public function offer(WaitlistEntry $waitlistEntry)
     {
         $this->authorizeEntry($waitlistEntry);
+        $this->authorizeWaitlist();
 
         if (!$waitlistEntry->isWaiting()) {
             return back()->with('error', 'This entry is not in waiting status.');
@@ -107,6 +118,7 @@ class WaitlistController extends Controller
     public function cancel(WaitlistEntry $waitlistEntry)
     {
         $this->authorizeEntry($waitlistEntry);
+        $this->authorizeWaitlist();
 
         $waitlistEntry->markAsCancelled();
 
@@ -116,6 +128,7 @@ class WaitlistController extends Controller
     public function destroy(WaitlistEntry $waitlistEntry)
     {
         $this->authorizeEntry($waitlistEntry);
+        $this->authorizeWaitlist();
 
         $waitlistEntry->delete();
 

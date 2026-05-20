@@ -27,25 +27,46 @@ class ScheduleController extends Controller
      */
     public function calendar(Request $request)
     {
-        $host = auth()->user()->host;
+        $authUser = auth()->user();
+        $host = $authUser->host;
+        $viewOwnOnly = !$authUser->hasPermission('schedule.view') && $authUser->hasPermission('schedule.view_own');
+        $myInstructorIds = $viewOwnOnly
+            ? \App\Models\Instructor::where('host_id', $host->id)->where('user_id', $authUser->id)->pluck('id')->all()
+            : [];
 
         // Get data for drawers - current month plus next 2 months
         $startDate = Carbon::now()->startOfMonth()->subWeek();
         $endDate = Carbon::now()->addMonths(2)->endOfMonth();
 
-        $classSessions = ClassSession::where('host_id', $host->id)
+        $classSessionsQuery = ClassSession::where('host_id', $host->id)
             ->with(['classPlan', 'primaryInstructor', 'location', 'room', 'confirmedBookings.client'])
             ->forDateRange($startDate, $endDate)
             ->notCancelled()
-            ->orderBy('start_time')
-            ->get();
+            ->orderBy('start_time');
 
-        $serviceSlots = ServiceSlot::where('host_id', $host->id)
+        if ($viewOwnOnly) {
+            $classSessionsQuery->where(function ($q) use ($myInstructorIds) {
+                $q->whereIn('primary_instructor_id', $myInstructorIds)
+                  ->orWhereIn('backup_instructor_id', $myInstructorIds)
+                  ->orWhereHas('backupInstructors', function ($q2) use ($myInstructorIds) {
+                      $q2->whereIn('instructors.id', $myInstructorIds);
+                  });
+            });
+        }
+
+        $classSessions = $classSessionsQuery->get();
+
+        $serviceSlotsQuery = ServiceSlot::where('host_id', $host->id)
             ->with(['servicePlan', 'instructor', 'location', 'room', 'bookings.client'])
             ->forDateRange($startDate, $endDate)
             ->notCancelled()
-            ->orderBy('start_time')
-            ->get();
+            ->orderBy('start_time');
+
+        if ($viewOwnOnly) {
+            $serviceSlotsQuery->whereIn('instructor_id', $myInstructorIds);
+        }
+
+        $serviceSlots = $serviceSlotsQuery->get();
 
         $spaceRentals = SpaceRental::where('host_id', $host->id)
             ->with(['config.location', 'config.room'])
@@ -215,11 +236,17 @@ class ScheduleController extends Controller
      */
     public function events(Request $request): JsonResponse
     {
-        $host = auth()->user()->host;
+        $authUser = auth()->user();
+        $host = $authUser->host;
         $hostTimezone = $host->timezone ?? config('app.timezone', 'America/New_York');
         $start = Carbon::parse($request->input('start'));
         $end = Carbon::parse($request->input('end'));
         $type = $request->input('type', 'all');
+
+        $viewOwnOnly = !$authUser->hasPermission('schedule.view') && $authUser->hasPermission('schedule.view_own');
+        $myInstructorIds = $viewOwnOnly
+            ? \App\Models\Instructor::where('host_id', $host->id)->where('user_id', $authUser->id)->pluck('id')->all()
+            : [];
 
         $events = [];
 
@@ -229,6 +256,16 @@ class ScheduleController extends Controller
                 ->with(['classPlan', 'primaryInstructor', 'location', 'confirmedBookings'])
                 ->forDateRange($start, $end)
                 ->notCancelled();
+
+            if ($viewOwnOnly) {
+                $classSessionsQuery->where(function ($q) use ($myInstructorIds) {
+                    $q->whereIn('primary_instructor_id', $myInstructorIds)
+                      ->orWhereIn('backup_instructor_id', $myInstructorIds)
+                      ->orWhereHas('backupInstructors', function ($q2) use ($myInstructorIds) {
+                          $q2->whereIn('instructors.id', $myInstructorIds);
+                      });
+                });
+            }
 
             // Filter by type: class (has class_plan_id) or membership (no class_plan_id)
             if ($type === 'class') {
@@ -301,6 +338,10 @@ class ScheduleController extends Controller
                 ->forDateRange($start, $end)
                 ->notCancelled();
 
+            if ($viewOwnOnly) {
+                $serviceSlotsQuery->whereIn('instructor_id', $myInstructorIds);
+            }
+
             if ($request->filled('instructor_id')) {
                 $serviceSlotsQuery->forInstructor($request->instructor_id);
             }
@@ -334,8 +375,8 @@ class ScheduleController extends Controller
             }
         }
 
-        // Get space rentals
-        if ($type === 'all' || $type === 'space_rental') {
+        // Get space rentals (hidden for view_own users — rentals aren't instructor-assigned)
+        if (!$viewOwnOnly && ($type === 'all' || $type === 'space_rental')) {
             $spaceRentalsQuery = SpaceRental::where('host_id', $host->id)
                 ->with(['config.location', 'config.room'])
                 ->whereBetween('start_time', [$start, $end])
@@ -433,6 +474,19 @@ class ScheduleController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        $user = auth()->user();
+        $hasFull = $user->hasPermission('bookings.attendance');
+        $hasOwn = $user->hasPermission('bookings.attendance_own');
+
+        if (!$hasFull) {
+            if (!$hasOwn || !$this->bookingAssignedToUser($booking, $user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to mark attendance for this booking.',
+                ], 403);
+            }
+        }
+
         // Check if already checked in
         if ($booking->isCheckedIn()) {
             return response()->json([
@@ -500,5 +554,39 @@ class ScheduleController extends Controller
     public function waitlist()
     {
         return view('host.schedule.waitlist');
+    }
+
+    /**
+     * Is the booking's session assigned to this user as primary or backup instructor?
+     * Returns false for non-session bookings (e.g. services, rentals) since those
+     * have no instructor-of-record concept under attendance_own.
+     */
+    protected function bookingAssignedToUser(Booking $booking, $user): bool
+    {
+        $bookable = $booking->bookable;
+        if (!$bookable instanceof ClassSession) {
+            return false;
+        }
+
+        $myInstructorIds = \App\Models\Instructor::where('host_id', $booking->host_id)
+            ->where('user_id', $user->id)
+            ->pluck('id')
+            ->all();
+
+        if (empty($myInstructorIds)) {
+            return false;
+        }
+
+        if (in_array($bookable->primary_instructor_id, $myInstructorIds, true)) {
+            return true;
+        }
+
+        if (in_array($bookable->backup_instructor_id, $myInstructorIds, true)) {
+            return true;
+        }
+
+        return $bookable->backupInstructors()
+            ->whereIn('instructors.id', $myInstructorIds)
+            ->exists();
     }
 }

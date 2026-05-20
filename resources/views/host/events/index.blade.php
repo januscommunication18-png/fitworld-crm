@@ -196,9 +196,11 @@
                                 <span class="icon-[tabler--eye] size-4"></span>
                                 View
                             </a>
+                            @if(auth()->user()->hasPermission('schedule.edit'))
                             <a href="{{ route('events.edit', $event) }}" class="btn btn-sm btn-ghost">
                                 <span class="icon-[tabler--edit] size-4"></span>
                             </a>
+                            @endif
                         </div>
                     </div>
                 </div>

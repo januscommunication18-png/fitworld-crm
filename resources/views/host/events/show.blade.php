@@ -58,7 +58,7 @@
 
         {{-- Actions --}}
         <div class="flex items-center gap-2">
-            @if($event->is_draft)
+            @if($event->is_draft && auth()->user()->hasPermission('schedule.publish'))
                 <form action="{{ route('events.publish', $event) }}" method="POST" class="inline">
                     @csrf
                     @method('PATCH')
@@ -68,10 +68,12 @@
                     </button>
                 </form>
             @endif
+            @if(auth()->user()->hasPermission('schedule.edit'))
             <a href="{{ route('events.edit', $event) }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--edit] size-4"></span>
                 Edit
             </a>
+            @endif
             @if($event->canAddAttendees())
                 <a href="{{ route('walk-in.event', $event) }}" class="btn btn-soft btn-sm">
                     <span class="icon-[tabler--user-plus] size-4"></span>
@@ -648,6 +650,7 @@
 </div>
 
 {{-- Cancel Event Modal --}}
+@if(auth()->user()->hasPermission('schedule.cancel'))
 <dialog id="cancel-modal" class="modal">
     <div class="modal-box">
         <form method="dialog">
@@ -680,6 +683,7 @@
         <button>close</button>
     </form>
 </dialog>
+@endif
 @endsection
 
 @push('scripts')

@@ -44,7 +44,12 @@ class ScheduledMembershipController extends Controller
      */
     public function index(Request $request)
     {
-        $host = auth()->user()->host;
+        $authUser = auth()->user();
+        if (!$authUser->hasPermission('schedule.view') && !$authUser->hasPermission('schedule.view_own')) {
+            abort(403, 'You do not have permission to view membership schedules.');
+        }
+        $viewOwnOnly = !$authUser->hasPermission('schedule.view') && $authUser->hasPermission('schedule.view_own');
+        $host = $authUser->host;
 
         // Get filter parameters
         $membershipPlanId = $request->get('membership_plan_id');
@@ -83,6 +88,20 @@ class ScheduledMembershipController extends Controller
             ->when($locationId, fn($q) => $q->where('location_id', $locationId))
             ->when($status, fn($q) => $q->where('status', $status))
             ->orderBy('start_time');
+
+        // Scope to sessions assigned to this user when only view_own is granted
+        if ($viewOwnOnly) {
+            $myInstructorIds = \App\Models\Instructor::where('host_id', $host->id)
+                ->where('user_id', $authUser->id)
+                ->pluck('id');
+            $query->where(function ($q) use ($myInstructorIds) {
+                $q->whereIn('primary_instructor_id', $myInstructorIds)
+                  ->orWhereIn('backup_instructor_id', $myInstructorIds)
+                  ->orWhereHas('backupInstructors', function ($q2) use ($myInstructorIds) {
+                      $q2->whereIn('instructors.id', $myInstructorIds);
+                  });
+            });
+        }
 
         if ($range !== 'all') {
             $query->forDateRange($startDate, $endDate);
@@ -193,10 +212,15 @@ class ScheduledMembershipController extends Controller
      */
     public function edit(ClassSession $classSession)
     {
-        $host = auth()->user()->host;
+        $authUser = auth()->user();
+        $host = $authUser->host;
 
         if ($classSession->host_id !== $host->id) {
             abort(404);
+        }
+
+        if (!$authUser->hasPermission('schedule.edit')) {
+            abort(403, 'You do not have permission to edit existing schedules.');
         }
 
         $classSession->load(['primaryInstructor', 'location', 'membershipPlans', 'backupInstructors']);
@@ -294,10 +318,15 @@ class ScheduledMembershipController extends Controller
      */
     public function update(Request $request, ClassSession $classSession)
     {
-        $host = auth()->user()->host;
+        $authUser = auth()->user();
+        $host = $authUser->host;
 
         if ($classSession->host_id !== $host->id) {
             abort(404);
+        }
+
+        if (!$authUser->hasPermission('schedule.edit')) {
+            abort(403, 'You do not have permission to edit existing schedules.');
         }
 
         $request->validate([

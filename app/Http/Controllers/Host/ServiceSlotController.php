@@ -17,7 +17,12 @@ class ServiceSlotController extends Controller
 {
     public function index(Request $request)
     {
-        $host = auth()->user()->currentHost();
+        $authUser = auth()->user();
+        if (!$authUser->hasPermission('schedule.view') && !$authUser->hasPermission('schedule.view_own')) {
+            abort(403, 'You do not have permission to view service slots.');
+        }
+        $viewOwnOnly = !$authUser->hasPermission('schedule.view') && $authUser->hasPermission('schedule.view_own');
+        $host = $authUser->currentHost();
 
         // Get filter parameters
         $servicePlanId = $request->get('service_plan_id');
@@ -48,6 +53,14 @@ class ServiceSlotController extends Controller
             ->when($instructorId, fn($q) => $q->where('instructor_id', $instructorId))
             ->when($status, fn($q) => $q->where('status', $status))
             ->orderBy('start_time');
+
+        // Scope to slots assigned to this user when only view_own is granted
+        if ($viewOwnOnly) {
+            $myInstructorIds = \App\Models\Instructor::where('host_id', $host->id)
+                ->where('user_id', $authUser->id)
+                ->pluck('id');
+            $query->whereIn('instructor_id', $myInstructorIds);
+        }
 
         if ($range !== 'all') {
             $query->forDateRange($startDate, $endDate);
@@ -204,6 +217,7 @@ class ServiceSlotController extends Controller
     public function edit(ServiceSlot $serviceSlot)
     {
         $this->authorizeHost($serviceSlot);
+        $this->authorizeEdit();
 
         $host = auth()->user()->currentHost();
         $servicePlans = $host->servicePlans()->active()->orderBy('name')->get();
@@ -217,6 +231,7 @@ class ServiceSlotController extends Controller
     public function update(ServiceSlotRequest $request, ServiceSlot $serviceSlot)
     {
         $this->authorizeHost($serviceSlot);
+        $this->authorizeEdit();
 
         $data = $request->validated();
 
@@ -337,6 +352,13 @@ class ServiceSlotController extends Controller
     {
         if ($serviceSlot->host_id !== auth()->user()->host_id) {
             abort(403);
+        }
+    }
+
+    private function authorizeEdit(): void
+    {
+        if (!auth()->user()->hasPermission('schedule.edit')) {
+            abort(403, 'You do not have permission to edit existing schedules.');
         }
     }
 }

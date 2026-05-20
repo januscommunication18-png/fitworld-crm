@@ -12,11 +12,19 @@ class ExportController extends Controller
         protected ExportService $exportService
     ) {}
 
+    private function authorizeExport(string $permission, string $message): void
+    {
+        if (!auth()->user()->hasPermission($permission)) {
+            abort(403, $message);
+        }
+    }
+
     /**
      * Export clients to CSV
      */
     public function clients(Request $request)
     {
+        $this->authorizeExport('students.export', 'You do not have permission to export clients.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportClients($host, $request->all());
@@ -27,6 +35,7 @@ class ExportController extends Controller
      */
     public function transactions(Request $request)
     {
+        $this->authorizeExport('insights.export', 'You do not have permission to export reports.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportTransactions($host, [
@@ -40,6 +49,7 @@ class ExportController extends Controller
      */
     public function bookings(Request $request)
     {
+        $this->authorizeExport('insights.export', 'You do not have permission to export reports.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportBookings($host, [
@@ -53,6 +63,7 @@ class ExportController extends Controller
      */
     public function classes(Request $request)
     {
+        $this->authorizeExport('insights.export', 'You do not have permission to export reports.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportClassSessions($host, [
@@ -66,6 +77,7 @@ class ExportController extends Controller
      */
     public function memberships(Request $request)
     {
+        $this->authorizeExport('insights.export', 'You do not have permission to export reports.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportMemberships($host, $request->all());
@@ -76,6 +88,7 @@ class ExportController extends Controller
      */
     public function instructors(Request $request)
     {
+        $this->authorizeExport('insights.export', 'You do not have permission to export reports.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportInstructors($host, $request->all());
@@ -86,6 +99,7 @@ class ExportController extends Controller
      */
     public function auditLogs(Request $request)
     {
+        $this->authorizeExport('insights.export', 'You do not have permission to export reports.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportAuditLogs($host, [
@@ -100,6 +114,7 @@ class ExportController extends Controller
      */
     public function userSessions(Request $request)
     {
+        $this->authorizeExport('insights.export', 'You do not have permission to export reports.');
         $host = auth()->user()->currentHost();
 
         return $this->exportService->exportUserSessions($host, [

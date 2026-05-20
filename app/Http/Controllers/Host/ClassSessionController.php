@@ -25,7 +25,13 @@ class ClassSessionController extends Controller
 
     public function index(Request $request)
     {
-        $host = auth()->user()->host;
+        $authUser = auth()->user();
+        if (!$authUser->hasPermission('schedule.view') && !$authUser->hasPermission('schedule.view_own')) {
+            abort(403, 'You do not have permission to view class sessions.');
+        }
+        // schedule.view_own = scoped to records assigned to this user (primary/backup)
+        $viewOwnOnly = !$authUser->hasPermission('schedule.view') && $authUser->hasPermission('schedule.view_own');
+        $host = $authUser->host;
         $range = $request->input('range', 'today'); // 'today', 'week', 'month', or 'all'
         $dateInput = $request->input('date', now()->format('Y-m-d'));
 
@@ -55,6 +61,21 @@ class ClassSessionController extends Controller
         $query = ClassSession::where('host_id', $host->id)
             ->whereNotNull('class_plan_id')
             ->with(['classPlan', 'primaryInstructor', 'backupInstructors', 'location', 'room']);
+
+        // Scope to records assigned to this user (primary/backup) when only view_own is granted
+        if ($viewOwnOnly) {
+            $instructorIds = \App\Models\Instructor::where('host_id', $host->id)
+                ->where('user_id', $authUser->id)
+                ->pluck('id');
+
+            $query->where(function ($q) use ($instructorIds) {
+                $q->whereIn('primary_instructor_id', $instructorIds)
+                  ->orWhereIn('backup_instructor_id', $instructorIds)
+                  ->orWhereHas('backupInstructors', function ($q2) use ($instructorIds) {
+                      $q2->whereIn('instructors.id', $instructorIds);
+                  });
+            });
+        }
 
         // Apply date range filter if not 'all'
         if ($startDate && $endDate) {
@@ -320,6 +341,7 @@ class ClassSessionController extends Controller
     public function edit(ClassSession $classSession)
     {
         $this->authorizeSession($classSession);
+        $this->authorizeEdit();
         $host = auth()->user()->host;
 
         $classSession->load('backupInstructors');
@@ -336,6 +358,7 @@ class ClassSessionController extends Controller
     public function update(ClassSessionRequest $request, ClassSession $classSession)
     {
         $this->authorizeSession($classSession);
+        $this->authorizeEdit();
 
         $startTime = $request->getStartTime();
         $endTime = $request->getEndTime();
@@ -400,6 +423,10 @@ class ClassSessionController extends Controller
     {
         $this->authorizeSession($classSession);
 
+        if (!auth()->user()->hasPermission('schedule.publish')) {
+            abort(403, 'You do not have permission to publish sessions.');
+        }
+
         if ($classSession->isCancelled()) {
             return back()->with('error', 'Cannot publish a cancelled session.');
         }
@@ -416,6 +443,10 @@ class ClassSessionController extends Controller
     {
         $this->authorizeSession($classSession);
 
+        if (!auth()->user()->hasPermission('schedule.publish')) {
+            abort(403, 'You do not have permission to unpublish sessions.');
+        }
+
         if ($classSession->isCancelled()) {
             return back()->with('error', 'Cannot unpublish a cancelled session.');
         }
@@ -428,6 +459,10 @@ class ClassSessionController extends Controller
     public function cancel(Request $request, ClassSession $classSession)
     {
         $this->authorizeSession($classSession);
+
+        if (!auth()->user()->hasPermission('schedule.cancel')) {
+            abort(403, 'You do not have permission to cancel sessions.');
+        }
 
         $request->validate([
             'cancellation_reason' => 'nullable|string|max:500',
@@ -524,6 +559,13 @@ class ClassSessionController extends Controller
     {
         if ($classSession->host_id !== auth()->user()->host_id) {
             abort(403);
+        }
+    }
+
+    protected function authorizeEdit(): void
+    {
+        if (!auth()->user()->hasPermission('schedule.edit')) {
+            abort(403, 'You do not have permission to edit existing schedules.');
         }
     }
 

@@ -19,37 +19,29 @@ class SettingsController extends Controller
     {
         $user = auth()->user();
 
-        // Check permissions in priority order and redirect to first accessible page
-        if ($user->hasPermission('studio.profile')) {
-            return redirect()->route('settings.studio.profile');
-        }
+        // Pick the first landing page where the user has BOTH the sidebar nav
+        // permission AND the underlying functional permission, otherwise the
+        // EnforceNavPermission middleware will redirect them back to the dashboard.
+        $candidates = [
+            ['nav.settings.studio', ['studio.profile'], 'settings.studio.profile'],
+            ['nav.settings.studio', ['studio.locations'], 'settings.locations.index'],
+            ['nav.settings.users', ['team.view', 'team.manage'], 'settings.team.users'],
+            ['nav.settings.users', ['team.instructors'], 'settings.team.instructors'],
+            ['nav.settings.permissions', ['team.permissions'], 'settings.team.permissions'],
+            ['nav.settings.payments', ['payments.stripe'], 'settings.payments.settings'],
+            ['nav.settings.billing', ['billing.plan'], 'settings.billing.plan'],
+            ['nav.settings.billing', ['billing.invoices'], 'settings.billing.invoices'],
+        ];
 
-        if ($user->hasPermission('studio.locations')) {
-            return redirect()->route('settings.locations.index');
-        }
-
-        if ($user->hasPermission('team.view') || $user->hasPermission('team.manage')) {
-            return redirect()->route('settings.team.users');
-        }
-
-        if ($user->hasPermission('team.instructors')) {
-            return redirect()->route('settings.team.instructors');
-        }
-
-        if ($user->hasPermission('team.permissions')) {
-            return redirect()->route('settings.team.permissions');
-        }
-
-        if ($user->hasPermission('payments.stripe')) {
-            return redirect()->route('settings.payments.settings');
-        }
-
-        if ($user->hasPermission('billing.plan')) {
-            return redirect()->route('settings.billing.plan');
-        }
-
-        if ($user->hasPermission('billing.invoices')) {
-            return redirect()->route('settings.billing.invoices');
+        foreach ($candidates as [$navPermission, $functionalPerms, $route]) {
+            if (!$user->hasPermission($navPermission)) {
+                continue;
+            }
+            foreach ($functionalPerms as $fp) {
+                if ($user->hasPermission($fp)) {
+                    return redirect()->route($route);
+                }
+            }
         }
 
         // Everyone can access their own profile
@@ -1085,6 +1077,9 @@ class SettingsController extends Controller
 
     public function payoutPreferences()
     {
+        if (!auth()->user()->hasPermission('payments.payouts')) {
+            abort(403, 'You do not have permission to view payouts.');
+        }
         return view('host.settings.payments.payouts');
     }
 
@@ -1152,6 +1147,9 @@ class SettingsController extends Controller
 
     public function stripeIntegration()
     {
+        if (!auth()->user()->hasPermission('payments.stripe')) {
+            abort(403, 'You do not have permission to manage the Stripe connection.');
+        }
         return view('host.settings.integrations.stripe');
     }
 
@@ -1186,16 +1184,25 @@ class SettingsController extends Controller
 
     public function currentPlan()
     {
+        if (!auth()->user()->hasPermission('billing.plan')) {
+            abort(403, 'You do not have permission to manage the subscription plan.');
+        }
         return view('host.settings.billing.plan');
     }
 
     public function usage()
     {
+        if (!auth()->user()->hasPermission('billing.plan')) {
+            abort(403, 'You do not have permission to view subscription usage.');
+        }
         return view('host.settings.billing.usage');
     }
 
     public function invoices()
     {
+        if (!auth()->user()->hasPermission('billing.invoices')) {
+            abort(403, 'You do not have permission to view invoices.');
+        }
         return view('host.settings.billing.invoices');
     }
 

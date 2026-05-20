@@ -1098,7 +1098,7 @@
                             <li><a href="{{ route('events.edit', $event) }}">
                                 <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                             </a></li>
-                            @if($event->status === 'draft')
+                            @if($event->status === 'draft' && auth()->user()->hasPermission('schedule.publish'))
                             <li>
                                 <form action="{{ route('events.publish', $event) }}" method="POST">
                                     @csrf

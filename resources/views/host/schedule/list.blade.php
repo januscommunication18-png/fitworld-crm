@@ -243,9 +243,11 @@
                                                 <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('class-session-{{ $session->id }}', event)">
                                                     <span class="icon-[tabler--eye] size-4"></span>
                                                 </button>
+                                                @if(auth()->user()->hasPermission('schedule.edit'))
                                                 <a href="{{ route('class-sessions.edit', $session) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
                                                     <span class="icon-[tabler--edit] size-4"></span>
                                                 </a>
+                                                @endif
                                                 <a href="{{ route('class-sessions.show', $session) }}" class="btn btn-ghost btn-xs btn-square" title="Details">
                                                     <span class="icon-[tabler--external-link] size-4"></span>
                                                 </a>
@@ -305,9 +307,11 @@
                                                 <button type="button" class="btn btn-ghost btn-xs btn-square" title="View" onclick="openDrawer('service-slot-{{ $slot->id }}', event)">
                                                     <span class="icon-[tabler--eye] size-4"></span>
                                                 </button>
+                                                @if(auth()->user()->hasPermission('schedule.edit'))
                                                 <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
                                                     <span class="icon-[tabler--edit] size-4"></span>
                                                 </a>
+                                                @endif
                                                 <a href="{{ route('service-slots.show', $slot) }}" class="btn btn-ghost btn-xs btn-square" title="Details">
                                                     <span class="icon-[tabler--external-link] size-4"></span>
                                                 </a>

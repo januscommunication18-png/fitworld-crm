@@ -9,6 +9,13 @@ use Illuminate\Http\Request;
 
 class RoomController extends Controller
 {
+    private function authorizeRoomsManage(): void
+    {
+        if (!auth()->user()->hasPermission('studio.rooms')) {
+            abort(403, 'You do not have permission to manage rooms.');
+        }
+    }
+
     /**
      * Available amenities list
      */
@@ -58,6 +65,7 @@ class RoomController extends Controller
      */
     public function create()
     {
+        $this->authorizeRoomsManage();
         $host = auth()->user()->host;
         $locations = $host->locations()->orderBy('name')->get();
 
@@ -80,6 +88,7 @@ class RoomController extends Controller
      */
     public function edit(Room $room)
     {
+        $this->authorizeRoomsManage();
         $host = auth()->user()->host;
         $locations = $host->locations()->orderBy('name')->get();
 
@@ -102,6 +111,7 @@ class RoomController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorizeRoomsManage();
         $host = auth()->user()->host;
         $locationIds = $host->locations()->pluck('id')->toArray();
 
@@ -130,6 +140,7 @@ class RoomController extends Controller
      */
     public function update(Request $request, Room $room)
     {
+        $this->authorizeRoomsManage();
         $host = auth()->user()->host;
         $locationIds = $host->locations()->pluck('id')->toArray();
 
@@ -163,6 +174,7 @@ class RoomController extends Controller
      */
     public function destroy(Room $room)
     {
+        $this->authorizeRoomsManage();
         $host = auth()->user()->host;
         $locationIds = $host->locations()->pluck('id')->toArray();
 
@@ -186,6 +198,7 @@ class RoomController extends Controller
      */
     public function toggleStatus(Room $room)
     {
+        $this->authorizeRoomsManage();
         $host = auth()->user()->host;
         $locationIds = $host->locations()->pluck('id')->toArray();
 

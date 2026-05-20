@@ -28,6 +28,7 @@
                 <span class="text-xs text-base-content/50">{{ str_replace('_', ' ', $timezone) }}</span>
             </div>
 
+            @if(auth()->user()->hasPermission('bookings.create'))
             {{-- Sell Dropdown (Class Pass & Membership) --}}
             <div class="relative">
                 <button type="button" class="btn btn-warning" onclick="toggleDropdown('sell-dropdown')">
@@ -85,7 +86,9 @@
                     </li>
                 </ul>
             </div>
+            @endif
 
+            @if(auth()->user()->hasPermission('schedule.create'))
             {{-- Add Schedule Dropdown --}}
             <div class="relative">
                 <button type="button" class="btn btn-primary" onclick="toggleDropdown('schedule-dropdown')">
@@ -142,6 +145,7 @@
                     </li>
                 </ul>
             </div>
+            @endif
         </div>
     </div>
 

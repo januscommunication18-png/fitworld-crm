@@ -306,10 +306,12 @@
 
     <x-slot name="footer">
         <div class="flex items-center gap-2">
+            @if(auth()->user()->hasPermission('students.edit'))
             <a href="{{ route('clients.edit', $client) }}" class="btn btn-soft btn-primary">
                 <span class="icon-[tabler--edit] size-4 me-1"></span>
                 {{ $trans['btn.edit'] ?? 'Edit' }}
             </a>
+            @endif
         </div>
         <a href="{{ route('clients.show', $client) }}" class="btn btn-primary">
             <span class="icon-[tabler--external-link] size-4 me-1"></span>

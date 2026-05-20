@@ -13,7 +13,12 @@ class SchedulePlannerController extends Controller
 {
     public function index(Request $request)
     {
-        $host = auth()->user()->currentHost();
+        $authUser = auth()->user();
+        if (!$authUser->hasPermission('schedule.view') && !$authUser->hasPermission('schedule.view_own')) {
+            abort(403, 'You do not have permission to view the schedule planner.');
+        }
+        $viewOwnOnly = !$authUser->hasPermission('schedule.view') && $authUser->hasPermission('schedule.view_own');
+        $host = $authUser->currentHost();
         $type = $request->get('type', 'all');
 
         $classPlans = $host->classPlans()->where('is_active', true)->orderBy('name')->get();
@@ -48,6 +53,30 @@ class SchedulePlannerController extends Controller
         } else {
             $selectedPlanId = $request->get('class_plan_id', $classPlans->first()?->id);
             $schedules = $this->getClassSchedules($host, $selectedPlanId);
+        }
+
+        // Scope to schedules assigned to this user when only view_own is granted
+        if ($viewOwnOnly) {
+            $myInstructorIds = \App\Models\Instructor::where('host_id', $host->id)
+                ->where('user_id', $authUser->id)
+                ->pluck('id')
+                ->all();
+            $schedules = $schedules->filter(function ($schedule) use ($myInstructorIds) {
+                // Each schedule item has a `session` (parent ClassSession) — check primary/backup assignment
+                $session = $schedule->session ?? $schedule->classSession ?? null;
+                if (!$session) {
+                    // Fallback if the structure varies — keep only when we can confirm assignment
+                    return false;
+                }
+                if (in_array($session->primary_instructor_id, $myInstructorIds, true)) return true;
+                if (in_array($session->backup_instructor_id, $myInstructorIds, true)) return true;
+                if ($session->relationLoaded('backupInstructors')) {
+                    foreach ($session->backupInstructors as $bi) {
+                        if (in_array($bi->id, $myInstructorIds, true)) return true;
+                    }
+                }
+                return false;
+            })->values();
         }
 
         return view('host.schedule-planner.index', compact(

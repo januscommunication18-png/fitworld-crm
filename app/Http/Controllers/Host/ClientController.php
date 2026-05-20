@@ -196,6 +196,7 @@ class ClientController extends Controller
      */
     public function create()
     {
+        $this->authorizeStudentsPermission('students.create', 'You do not have permission to add clients.');
         $host = $this->getHost();
         $tags = Tag::forHost($host->id)->orderBy('name')->get();
         $customFields = $this->getCustomFieldsForForm($host->id, 'add');
@@ -217,6 +218,7 @@ class ClientController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorizeStudentsPermission('students.create', 'You do not have permission to add clients.');
         $host = $this->getHost();
 
         $validated = $request->validate([
@@ -636,6 +638,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $this->authorizeClient($client);
+        $this->authorizeStudentsPermission('students.edit', 'You do not have permission to edit clients.');
 
         $host = $this->getHost();
         $tags = Tag::forHost($host->id)->orderBy('name')->get();
@@ -661,6 +664,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $this->authorizeClient($client);
+        $this->authorizeStudentsPermission('students.edit', 'You do not have permission to edit clients.');
 
         $validated = $request->validate([
             // Basic Information
@@ -860,6 +864,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $this->authorizeClient($client);
+        $this->authorizeStudentsPermission('students.notes', 'You do not have permission to add client notes.');
 
         $validated = $request->validate([
             'note_type' => ['required', Rule::in(array_keys(ClientNote::getNoteTypes()))],
@@ -958,6 +963,7 @@ class ClientController extends Controller
     {
         $client = Client::findOrFail($id);
         $this->authorizeClient($client);
+        $this->authorizeStudentsPermission('students.notes', 'You do not have permission to manage client tags.');
 
         $validated = $request->validate([
             'tags' => ['required', 'array'],
@@ -983,6 +989,13 @@ class ClientController extends Controller
 
         if ($client->host_id !== $host->id) {
             abort(403, 'This client belongs to a different studio. Please switch to the correct studio to view this client.');
+        }
+    }
+
+    protected function authorizeStudentsPermission(string $permission, string $message): void
+    {
+        if (!auth()->user()->hasPermission($permission)) {
+            abort(403, $message);
         }
     }
 

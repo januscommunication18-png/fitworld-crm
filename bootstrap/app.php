@@ -7,6 +7,7 @@ use App\Http\Middleware\AdminOtpVerified;
 use App\Http\Middleware\AuthenticateMember;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckSecurityCode;
+use App\Http\Middleware\EnforceNavPermission;
 use App\Http\Middleware\ResolveSubdomainHost;
 use App\Http\Middleware\SetCurrentHost;
 use App\Http\Middleware\TrackUserSession;
@@ -56,6 +57,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Track user session activity
         $middleware->appendToGroup('web', TrackUserSession::class);
+
+        // Enforce nav.* permissions as route guards (sidebar permissions also block direct URL access)
+        $middleware->appendToGroup('web', EnforceNavPermission::class);
 
         // Register admin middleware aliases
         $middleware->alias([

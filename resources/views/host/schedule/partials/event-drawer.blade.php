@@ -54,7 +54,7 @@
             {{-- Quick Actions on right --}}
             @if($event->status !== 'cancelled')
             <div class="flex flex-wrap gap-2 justify-end">
-                @if($event->status === 'draft')
+                @if($event->status === 'draft' && auth()->user()->hasPermission('schedule.publish'))
                     <form action="{{ route('events.publish', $event) }}" method="POST" class="inline">
                         @csrf
                         @method('PATCH')
@@ -248,10 +248,12 @@
     </div>
 
     <x-slot name="footer">
+        @if(auth()->user()->hasPermission('schedule.edit'))
         <a href="{{ route('events.edit', $event) }}" class="btn btn-soft btn-primary">
             <span class="icon-[tabler--edit] size-4 me-1"></span>
             {{ $trans['btn.edit'] ?? 'Edit' }}
         </a>
+        @endif
         <a href="{{ route('events.show', $event) }}" class="btn btn-primary">
             <span class="icon-[tabler--external-link] size-4 me-1"></span>
             {{ $trans['btn.view_full_details'] ?? 'View Full Details' }}

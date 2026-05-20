@@ -147,7 +147,6 @@
                     <li><a href="{{ url('/class-sessions') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('class-sessions*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-event] size-4 mr-2"></span>{{ $trans['nav.schedule.class_sessions'] ?? 'Class Sessions' }}
                     </a></li>
-                    @if($user->hasPermission('schedule.view'))
                     <li><a href="{{ url('/service-slots') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('service-slots*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--clock] size-4 mr-2"></span>{{ $trans['nav.schedule.service_slots'] ?? 'Service Slots' }}
                     </a></li>
@@ -160,7 +159,6 @@
                     <li><a href="{{ url('/schedule-planner') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule-planner*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-repeat] size-4 mr-2"></span>Schedule Planner
                     </a></li>
-                    @endif
                     @endif
                     {{-- 1:1 Meetings --}}
                     @if($showOneOnOneMenu)

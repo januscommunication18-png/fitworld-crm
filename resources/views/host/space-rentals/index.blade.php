@@ -135,7 +135,7 @@
                                         <a href="{{ route('space-rentals.show', $rental) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
-                                        @if(in_array($rental->status, ['draft', 'pending']))
+                                        @if(in_array($rental->status, ['draft', 'pending']) && auth()->user()->hasPermission('schedule.edit'))
                                         <a href="{{ route('space-rentals.edit', $rental) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>

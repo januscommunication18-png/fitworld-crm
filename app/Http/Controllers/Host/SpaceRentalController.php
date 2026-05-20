@@ -229,6 +229,7 @@ class SpaceRentalController extends Controller
     public function edit(SpaceRental $rental)
     {
         $this->authorizeHost($rental);
+        $this->authorizeEdit();
 
         // Can only edit draft or pending rentals
         if (!in_array($rental->status, [SpaceRental::STATUS_DRAFT, SpaceRental::STATUS_PENDING])) {
@@ -246,6 +247,7 @@ class SpaceRentalController extends Controller
     public function update(Request $request, SpaceRental $rental)
     {
         $this->authorizeHost($rental);
+        $this->authorizeEdit();
 
         if (!in_array($rental->status, [SpaceRental::STATUS_DRAFT, SpaceRental::STATUS_PENDING])) {
             return back()->with('error', 'Cannot edit rental in current status.');
@@ -374,6 +376,10 @@ class SpaceRentalController extends Controller
     public function cancel(Request $request, SpaceRental $rental)
     {
         $this->authorizeHost($rental);
+
+        if (!auth()->user()->hasPermission('schedule.cancel')) {
+            abort(403, 'You do not have permission to cancel rentals.');
+        }
 
         $data = $request->validate([
             'cancellation_reason' => 'nullable|string|max:500',
@@ -522,6 +528,13 @@ class SpaceRentalController extends Controller
     {
         if ($rental->host_id !== auth()->user()->host_id) {
             abort(403);
+        }
+    }
+
+    private function authorizeEdit(): void
+    {
+        if (!auth()->user()->hasPermission('schedule.edit')) {
+            abort(403, 'You do not have permission to edit existing schedules.');
         }
     }
 

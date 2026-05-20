@@ -2,7 +2,8 @@
     $user = auth()->user();
     // Section visibility — nav.settings.* gates whether the section appears in sidebar
     $navStudio = $user->hasPermission('nav.settings.studio');
-    $navTeam = $user->hasPermission('nav.settings.team');
+    $navUsers = $user->hasPermission('nav.settings.users');
+    $navPermissions = $user->hasPermission('nav.settings.permissions');
     $navClientPortal = $user->hasPermission('nav.settings.client_portal');
     $navPaymentsSection = $user->hasPermission('nav.settings.payments');
     $navCommunication = $user->hasPermission('nav.settings.communication');
@@ -12,11 +13,12 @@
     // Functional permissions — gate what the user can actually do within each section
     $canEditStudio = $navStudio && $user->hasPermission('studio.profile');
     $canManageLocations = $navStudio && $user->hasPermission('studio.locations');
+    $canManageRooms = $navStudio && $user->hasPermission('studio.rooms');
     $canManageBookingPage = $navStudio && $user->hasPermission('studio.booking_page');
     $canManagePolicies = $navStudio && $user->hasPermission('studio.policies');
-    $canViewTeam = $navTeam && $user->hasPermission('team.view');
-    $canManageTeam = $navTeam && $user->hasPermission('team.manage');
-    $canChangePermissions = $navTeam && $user->hasPermission('team.permissions');
+    $canViewTeam = $navUsers && $user->hasPermission('team.view');
+    $canManageTeam = $navUsers && $user->hasPermission('team.manage');
+    $canChangePermissions = $navPermissions && $user->hasPermission('team.permissions');
     $canManageClients = $navClientPortal && $user->hasPermission('studio.client_settings');
     $canManageQuestionnaires = $navStudio && ($user->hasPermission('schedule.create') || $user->hasPermission('schedule.edit'));
     $canManagePaymentSettings = $navPaymentsSection && $user->hasPermission('payments.stripe');
@@ -57,7 +59,7 @@
     @endif
 
     {{-- Locations --}}
-    @if($canManageLocations || $canManageBookingPage || $canManagePolicies)
+    @if($canManageLocations || $canManageRooms || $canManageBookingPage || $canManagePolicies)
     <li class="menu-title sidebar-section-label pt-3">
         <span class="text-xs font-semibold text-base-content/40 uppercase tracking-wider">Locations</span>
     </li>
@@ -65,6 +67,8 @@
     <li><a href="{{ route('settings.locations.index') }}" class="{{ request()->routeIs('settings.locations.index') ? 'active' : '' }}">
         <span class="icon-[tabler--map-pin] size-4"></span> <span class="sidebar-label">Locations</span>
     </a></li>
+    @endif
+    @if($canManageRooms)
     <li><a href="{{ route('settings.locations.rooms') }}" class="{{ request()->routeIs('settings.locations.rooms') ? 'active' : '' }}">
         <span class="icon-[tabler--door] size-4"></span> <span class="sidebar-label">Rooms</span>
     </a></li>

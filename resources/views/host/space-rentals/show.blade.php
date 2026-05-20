@@ -37,13 +37,13 @@
             </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-            @if($rental->canBeCancelled())
+            @if($rental->canBeCancelled() && auth()->user()->hasPermission('schedule.cancel'))
                 <button onclick="document.getElementById('cancel-modal').showModal()" class="btn btn-error btn-outline btn-sm">
                     <span class="icon-[tabler--x] size-4"></span>
                     {{ $trans['btn.cancel'] ?? 'Cancel' }}
                 </button>
             @endif
-            @if(in_array($rental->status, ['draft', 'pending']))
+            @if(in_array($rental->status, ['draft', 'pending']) && auth()->user()->hasPermission('schedule.edit'))
                 <a href="{{ route('space-rentals.edit', $rental) }}" class="btn btn-ghost btn-sm">
                     <span class="icon-[tabler--edit] size-4"></span>
                     {{ $trans['btn.edit'] ?? 'Edit' }}

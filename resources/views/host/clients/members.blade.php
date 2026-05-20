@@ -263,9 +263,11 @@
                             <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                 <span class="icon-[tabler--eye] size-4"></span>
                             </a>
+                            @if(auth()->user()->hasPermission('students.edit'))
                             <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                 <span class="icon-[tabler--edit] size-4"></span>
                             </a>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -340,9 +342,11 @@
                                         <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
+                                        @if(auth()->user()->hasPermission('students.edit'))
                                         <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
+                                        @endif
                                         <div class="relative">
                                             <details class="dropdown dropdown-end">
                                                 <summary class="btn btn-ghost btn-xs btn-square list-none cursor-pointer">

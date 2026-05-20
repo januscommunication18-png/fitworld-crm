@@ -294,9 +294,11 @@
                                                 <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('service-slot-{{ $slot->id }}', event)">
                                                     <span class="icon-[tabler--eye] size-4"></span>
                                                 </button>
+                                                @if(auth()->user()->hasPermission('schedule.edit'))
                                                 <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                                     <span class="icon-[tabler--edit] size-4"></span>
                                                 </a>
+                                                @endif
                                                 @if($slot->status !== 'booked')
                                                     <form action="{{ route('service-slots.destroy', $slot) }}" method="POST" class="inline" onsubmit="return confirm('{{ $trans['schedule.confirm_delete_slot'] ?? 'Delete this slot?' }}')">
                                                         @csrf

@@ -17,6 +17,13 @@ class ClassPlanController extends Controller
     use SyncsQuestionnaireAttachments;
     use SyncsProgressTemplateAttachments;
 
+    private function authorizeClassTypesManage(): void
+    {
+        if (!auth()->user()->hasPermission('studio.class_types')) {
+            abort(403, 'You do not have permission to manage class types.');
+        }
+    }
+
     public function index(Request $request)
     {
         $host = auth()->user()->host;
@@ -35,6 +42,7 @@ class ClassPlanController extends Controller
 
     public function create()
     {
+        $this->authorizeClassTypesManage();
         $host = auth()->user()->host;
 
         // Use studio's selected categories, or fall back to all categories
@@ -85,6 +93,7 @@ class ClassPlanController extends Controller
 
     public function store(ClassPlanRequest $request)
     {
+        $this->authorizeClassTypesManage();
         $host = auth()->user()->host;
         $data = $request->validated();
 
@@ -232,6 +241,7 @@ class ClassPlanController extends Controller
     public function edit(ClassPlan $classPlan)
     {
         $this->authorizeHost($classPlan);
+        $this->authorizeClassTypesManage();
 
         $host = auth()->user()->host;
 
@@ -294,6 +304,7 @@ class ClassPlanController extends Controller
     public function update(ClassPlanRequest $request, ClassPlan $classPlan)
     {
         $this->authorizeHost($classPlan);
+        $this->authorizeClassTypesManage();
 
         $host = auth()->user()->host;
         $data = $request->validated();
@@ -415,6 +426,7 @@ class ClassPlanController extends Controller
     public function destroy(ClassPlan $classPlan)
     {
         $this->authorizeHost($classPlan);
+        $this->authorizeClassTypesManage();
 
         // Check if any scheduled classes use this plan
         if ($classPlan->scheduledClasses()->exists()) {
@@ -435,6 +447,7 @@ class ClassPlanController extends Controller
     public function toggleActive(ClassPlan $classPlan)
     {
         $this->authorizeHost($classPlan);
+        $this->authorizeClassTypesManage();
 
         $classPlan->update(['is_active' => !$classPlan->is_active]);
 
@@ -443,6 +456,7 @@ class ClassPlanController extends Controller
 
     public function reorder(Request $request)
     {
+        $this->authorizeClassTypesManage();
         $host = auth()->user()->host;
         $order = $request->input('order', []);
 

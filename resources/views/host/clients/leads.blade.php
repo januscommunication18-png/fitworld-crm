@@ -120,10 +120,12 @@
                 </a>
             </div>
 
+            @if(auth()->user()->hasPermission('students.create'))
             <a href="{{ route('clients.create') }}?status=lead" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['clients.add_lead'] ?? 'Add Lead' }}
             </a>
+            @endif
         </div>
     </div>
 
@@ -190,7 +192,7 @@
                     {{ $trans['clients.no_leads_desc'] ?? 'Leads will appear here when captured from your website or marketing campaigns.' }}
                 @endif
             </p>
-            @if(empty(array_filter($filters ?? [])))
+            @if(empty(array_filter($filters ?? [])) && auth()->user()->hasPermission('students.create'))
             <a href="{{ route('clients.create') }}?status=lead" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['clients.add_first_lead'] ?? 'Add Your First Lead' }}
@@ -334,9 +336,11 @@
                                         <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}">
                                             <span class="icon-[tabler--eye] size-4"></span>
                                         </a>
+                                        @if(auth()->user()->hasPermission('students.edit'))
                                         <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                             <span class="icon-[tabler--edit] size-4"></span>
                                         </a>
+                                        @endif
                                         <form method="POST" action="{{ route('clients.convert-to-client', $client) }}">
                                             @csrf
                                             <button type="submit" class="btn btn-ghost btn-xs btn-square text-success" title="{{ $trans['clients.convert_to_client'] ?? 'Convert to Client' }}">

@@ -51,7 +51,7 @@
                         </button>
                     </form>
                 @endif
-                @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE)
+                @if($serviceSlot->status === \App\Models\ServiceSlot::STATUS_AVAILABLE && auth()->user()->hasPermission('bookings.create'))
                     <a href="{{ route('walk-in.select-service', ['slot' => $serviceSlot->id]) }}" class="btn btn-soft btn-primary btn-sm">
                         <span class="icon-[tabler--user-plus] size-4"></span>
                         {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
@@ -153,7 +153,7 @@
                             <span class="icon-[tabler--circle-check-filled] size-5"></span>
                             <span class="text-sm font-medium">{{ $trans['status.checked_in_at'] ?? 'Checked in at' }} {{ $booking->checked_in_at->format('g:i A') }}</span>
                         </div>
-                    @else
+                    @elseif(auth()->user()->hasPermission('bookings.attendance') || auth()->user()->hasPermission('bookings.attendance_own'))
                         <button
                             type="button"
                             class="btn btn-sm btn-success"
@@ -176,10 +176,12 @@
             <div class="text-center py-6">
                 <span class="icon-[tabler--user-plus] size-10 text-base-content/20 mx-auto mb-2"></span>
                 <p class="text-sm text-base-content/60 mb-3">{{ $trans['drawer.slot_available'] ?? 'This slot is available for booking' }}</p>
+                @if(auth()->user()->hasPermission('bookings.create'))
                 <a href="{{ route('walk-in.select-service', ['slot' => $serviceSlot->id]) }}" class="btn btn-sm btn-primary">
                     <span class="icon-[tabler--user-plus] size-4"></span>
                     {{ $trans['btn.add_booking'] ?? 'Add Booking' }}
                 </a>
+                @endif
             </div>
         </div>
     @endif
@@ -196,10 +198,12 @@
     @endif
 
     <x-slot name="footer">
+        @if(auth()->user()->hasPermission('schedule.edit'))
         <a href="{{ route('service-slots.edit', $serviceSlot) }}" class="btn btn-soft btn-primary">
             <span class="icon-[tabler--edit] size-4 me-1"></span>
             {{ $trans['btn.edit'] ?? 'Edit' }}
         </a>
+        @endif
         <a href="{{ route('service-slots.show', $serviceSlot) }}" class="btn btn-primary">
             <span class="icon-[tabler--external-link] size-4 me-1"></span>
             {{ $trans['btn.view_full_details'] ?? 'View Full Details' }}

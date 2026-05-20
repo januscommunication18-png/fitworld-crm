@@ -69,7 +69,7 @@
 
         {{-- Actions --}}
         <div class="flex items-center gap-2 flex-wrap">
-            @if($classSession->isPublished() && !$classSession->isPast())
+            @if($classSession->isPublished() && !$classSession->isPast() && auth()->user()->hasPermission('bookings.create'))
                 @if($classSession->membershipPlans->isNotEmpty())
                     <a href="{{ route('walk-in.select-membership', ['class_session_id' => $classSession->id]) }}" class="btn btn-warning btn-sm">
                         <span class="icon-[tabler--id-badge-2] size-4"></span>
@@ -99,7 +99,7 @@
                     </ul>
                 </details>
             @endif
-            @if($classSession->isDraft())
+            @if($classSession->isDraft() && auth()->user()->hasPermission('schedule.publish'))
                 <form action="{{ route('class-sessions.publish', $classSession) }}" method="POST" class="inline">
                     @csrf @method('PATCH')
                     <button type="submit" class="btn btn-success btn-sm">
@@ -107,14 +107,16 @@
                     </button>
                 </form>
             @endif
-            @if($classSession->class_plan_id)
-                <a href="{{ route('class-sessions.edit', $classSession) }}" class="btn btn-primary btn-sm">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </a>
-            @else
-                <a href="{{ route('scheduled-membership.edit', $classSession) }}" class="btn btn-primary btn-sm">
-                    <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
-                </a>
+            @if(auth()->user()->hasPermission('schedule.edit'))
+                @if($classSession->class_plan_id)
+                    <a href="{{ route('class-sessions.edit', $classSession) }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                    </a>
+                @else
+                    <a href="{{ route('scheduled-membership.edit', $classSession) }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                    </a>
+                @endif
             @endif
             <a href="{{ $isMembershipSession ? route('membership-schedules.index') : route('class-sessions.index') }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span> Back
@@ -532,7 +534,7 @@
                         <span class="icon-[tabler--users-minus] size-16 text-base-content/20 mx-auto mb-4"></span>
                         <h3 class="text-lg font-semibold mb-2">{{ $trans['schedule.no_bookings_yet'] ?? 'No Bookings Yet' }}</h3>
                         <p class="text-base-content/60 mb-4">{{ $trans['schedule.no_one_booked'] ?? 'No one has booked this class session yet.' }}</p>
-                        @if($classSession->isPublished() && !$classSession->isPast())
+                        @if($classSession->isPublished() && !$classSession->isPast() && auth()->user()->hasPermission('bookings.create'))
                             <a href="{{ route('walk-in.select', ['session_id' => $classSession->id]) }}" class="btn btn-primary btn-sm">
                                 <span class="icon-[tabler--user-plus] size-4"></span>
                                 {{ $trans['schedule.add_booking'] ?? 'Add Booking' }}
@@ -618,7 +620,7 @@
                                             </td>
                                             <td>
                                                 <div class="flex items-center gap-1">
-                                                    @if($booking->status !== 'cancelled' && !$booking->isCheckedIn())
+                                                    @if($booking->status !== 'cancelled' && !$booking->isCheckedIn() && (auth()->user()->hasPermission('bookings.attendance') || auth()->user()->hasPermission('bookings.attendance_own')))
                                                         <button type="button" class="btn btn-ghost btn-xs btn-square text-success hover:bg-success/10" id="checkin-btn-{{ $booking->id }}" onclick="checkInBooking({{ $booking->id }})" title="{{ $trans['schedule.check_in'] ?? 'Check In' }}">
                                                             <span class="icon-[tabler--login] size-4"></span>
                                                         </button>
@@ -811,6 +813,7 @@ function checkInBooking(bookingId) {
 @endforeach
 
 {{-- Cancel Modal --}}
+@if(auth()->user()->hasPermission('schedule.cancel'))
 <div id="cancel-modal" class="overlay modal overlay-open:opacity-100 hidden" role="dialog" tabindex="-1">
     <div class="modal-dialog modal-dialog-sm">
         <div class="modal-content">
@@ -835,6 +838,7 @@ function checkInBooking(bookingId) {
         </div>
     </div>
 </div>
+@endif
 
 {{-- Conflict Resolution Drawer --}}
 @if($classSession->hasUnresolvedConflict() || !empty($dynamicConflict))

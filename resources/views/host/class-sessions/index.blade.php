@@ -377,7 +377,7 @@
                                         </td>
                                         <td>
                                             <x-actions-dropdown size="xs">
-                                                @if($session->isPublished() && !$session->isPast())
+                                                @if($session->isPublished() && !$session->isPast() && auth()->user()->hasPermission('bookings.create'))
                                                     <li><a href="{{ route('walk-in.select', ['session_id' => $session->id]) }}">
                                                         <span class="icon-[tabler--user-plus] size-4"></span> {{ $trans['schedule.add_booking'] ?? 'Add Booking' }}
                                                     </a></li>
@@ -385,10 +385,12 @@
                                                 <li><a href="{{ route('class-sessions.show', $session) }}">
                                                     <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
                                                 </a></li>
+                                                @if(auth()->user()->hasPermission('schedule.edit'))
                                                 <li><a href="{{ route('class-sessions.edit', $session) }}">
                                                     <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                                                 </a></li>
-                                                @if($session->isDraft())
+                                                @endif
+                                                @if($session->isDraft() && auth()->user()->hasPermission('schedule.publish'))
                                                     <li>
                                                         <form action="{{ route('class-sessions.publish', $session) }}" method="POST">
                                                             @csrf @method('PATCH')
@@ -416,7 +418,7 @@
                                                         </form>
                                                     </li>
                                                 @endif
-                                                @if($session->isPublished())
+                                                @if($session->isPublished() && auth()->user()->hasPermission('schedule.publish'))
                                                     <li>
                                                         <form action="{{ route('class-sessions.unpublish', $session) }}" method="POST">
                                                             @csrf @method('PATCH')
@@ -426,7 +428,7 @@
                                                         </form>
                                                     </li>
                                                 @endif
-                                                @if(!$session->isCancelled())
+                                                @if(!$session->isCancelled() && auth()->user()->hasPermission('schedule.cancel'))
                                                     <li>
                                                         <form action="{{ route('class-sessions.cancel', $session) }}" method="POST" onsubmit="return confirm('{{ $trans['schedule.confirm_cancel_session'] ?? 'Cancel this session?' }}')">
                                                             @csrf @method('PATCH')

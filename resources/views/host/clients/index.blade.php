@@ -108,10 +108,12 @@
                 </a>
             </div>
 
+            @if(auth()->user()->hasPermission('students.create'))
             <a href="{{ route('clients.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['clients.add_client'] ?? 'Add Client' }}
             </a>
+            @endif
         </div>
     </div>
 
@@ -205,7 +207,7 @@
                     {{ $trans['clients.get_started'] ?? 'Get started by adding your first client.' }}
                 @endif
             </p>
-            @if(empty(array_filter($filters ?? [])))
+            @if(empty(array_filter($filters ?? [])) && auth()->user()->hasPermission('students.create'))
             <a href="{{ route('clients.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['clients.add_first'] ?? 'Add Your First Client' }}
@@ -297,9 +299,11 @@
                             <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('client-{{ $client->id }}', event)">
                                 <span class="icon-[tabler--eye] size-4"></span>
                             </button>
+                            @if(auth()->user()->hasPermission('students.edit'))
                             <a href="{{ route('clients.edit', $client) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
                                 <span class="icon-[tabler--edit] size-4"></span>
                             </a>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -397,11 +401,13 @@
                                                 <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
                                             </button>
                                         </li>
+                                        @if(auth()->user()->hasPermission('students.edit'))
                                         <li>
                                             <a href="{{ route('clients.edit', $client) }}" class="flex items-center gap-2">
                                                 <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                                             </a>
                                         </li>
+                                        @endif
                                         @if($client->status === 'lead')
                                             <li>
                                                 <form method="POST" action="{{ route('clients.convert-to-client', $client) }}" class="m-0">

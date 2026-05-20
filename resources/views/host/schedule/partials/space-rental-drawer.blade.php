@@ -248,10 +248,12 @@
     @endif
 
     <x-slot name="footer">
+        @if(auth()->user()->hasPermission('schedule.edit'))
         <a href="{{ route('space-rentals.edit', $spaceRental) }}" class="btn btn-soft btn-primary {{ in_array($spaceRental->status, ['completed', 'cancelled', 'in_progress']) ? 'btn-disabled' : '' }}">
             <span class="icon-[tabler--edit] size-4 me-1"></span>
             {{ $trans['btn.edit'] ?? 'Edit' }}
         </a>
+        @endif
         <a href="{{ route('space-rentals.show', $spaceRental) }}" class="btn btn-primary">
             <span class="icon-[tabler--external-link] size-4 me-1"></span>
             {{ $trans['btn.view_full_details'] ?? 'View Full Details' }}

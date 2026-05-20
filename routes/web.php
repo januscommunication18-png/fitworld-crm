@@ -518,16 +518,18 @@ Route::middleware('auth')->group(function () {
     Route::post('/membership-checkin/{membershipCheckin}/checkout', [MembershipCheckinController::class, 'checkOut'])->name('membership-checkin.checkout');
     Route::get('/membership-checkin/{membershipPlan}/qr', [MembershipCheckinController::class, 'qrCheckin'])->name('membership-checkin.qr');
 
-    // Walk-In Booking
-    Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');
-    Route::get('/walk-in/sessions', [WalkInController::class, 'getSessionsByDate'])->name('walk-in.sessions');
-    Route::get('/walk-in/sessions-range', [WalkInController::class, 'getSessionsByDateRange'])->name('walk-in.sessions-range');
-    Route::get('/walk-in/class-schedules', [WalkInController::class, 'getClassSchedules'])->name('walk-in.class-schedules');
-    Route::get('/walk-in/check-series-conflict', [WalkInController::class, 'checkSeriesConflict'])->name('walk-in.check-series-conflict');
-    Route::get('/walk-in/class/{class_session}', [WalkInController::class, 'classSession'])->name('walk-in.class');
-    Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
-    Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');
-    Route::post('/walk-in/service/{service_slot}', [WalkInController::class, 'bookService'])->name('walk-in.service.book');
+    // Walk-In Booking — requires bookings.create permission
+    Route::middleware('permission:bookings.create')->group(function () {
+        Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');
+        Route::get('/walk-in/sessions', [WalkInController::class, 'getSessionsByDate'])->name('walk-in.sessions');
+        Route::get('/walk-in/sessions-range', [WalkInController::class, 'getSessionsByDateRange'])->name('walk-in.sessions-range');
+        Route::get('/walk-in/class-schedules', [WalkInController::class, 'getClassSchedules'])->name('walk-in.class-schedules');
+        Route::get('/walk-in/check-series-conflict', [WalkInController::class, 'checkSeriesConflict'])->name('walk-in.check-series-conflict');
+        Route::get('/walk-in/class/{class_session}', [WalkInController::class, 'classSession'])->name('walk-in.class');
+        Route::post('/walk-in/class/{class_session}', [WalkInController::class, 'bookClass'])->name('walk-in.class.book');
+        Route::get('/walk-in/service/{service_slot}', [WalkInController::class, 'serviceSlot'])->name('walk-in.service');
+        Route::post('/walk-in/service/{service_slot}', [WalkInController::class, 'bookService'])->name('walk-in.service.book');
+    });
     Route::get('/walk-in/payment-methods/{client_id}', [WalkInController::class, 'getPaymentMethods'])->name('walk-in.payment-methods');
     Route::get('/billing-credits/{billingCredit}/cancel-preview', [\App\Http\Controllers\Host\BillingCreditController::class, 'cancelPreview'])->name('billing-credits.cancel-preview');
     Route::post('/billing-credits/{billingCredit}/cancel', [\App\Http\Controllers\Host\BillingCreditController::class, 'cancel'])->name('billing-credits.cancel');

@@ -298,9 +298,11 @@
                                                 <li><a href="{{ route('scheduled-membership.show', $session) }}">
                                                     <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
                                                 </a></li>
+                                                @if(auth()->user()->hasPermission('schedule.edit'))
                                                 <li><a href="{{ route('scheduled-membership.edit', $session) }}">
                                                     <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                                                 </a></li>
+                                                @endif
                                                 @if($session->status !== 'cancelled' && $confirmedCount === 0)
                                                     <li>
                                                         <form action="{{ route('class-sessions.destroy', $session) }}" method="POST" onsubmit="return confirm('{{ $trans['schedule.delete_session_confirm'] ?? 'Delete this session?' }}')">

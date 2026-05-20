@@ -96,10 +96,12 @@
                 Record Progress
             </button>
             @endif
+            @if(auth()->user()->hasPermission('students.edit'))
             <a href="{{ route('clients.edit', $client) }}" class="btn btn-primary">
                 <span class="icon-[tabler--edit] size-5"></span>
                 Edit
             </a>
+            @endif
             <div class="relative z-[100]">
                 <button type="button" class="btn btn-ghost btn-square" onclick="this.nextElementSibling.classList.toggle('hidden')">
                     <span class="icon-[tabler--dots-vertical] size-5"></span>

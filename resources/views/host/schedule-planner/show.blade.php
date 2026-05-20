@@ -48,14 +48,16 @@
         </div>
 
         <div class="flex items-center gap-2">
-            @if($plannerType === 'membership')
-                <a href="{{ route('scheduled-membership.edit', $classSession) }}" class="btn btn-primary btn-sm">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
-                </a>
-            @else
-                <a href="{{ route('class-sessions.edit', $classSession) }}" class="btn btn-primary btn-sm">
-                    <span class="icon-[tabler--edit] size-4"></span> Edit
-                </a>
+            @if(auth()->user()->hasPermission('schedule.edit'))
+                @if($plannerType === 'membership')
+                    <a href="{{ route('scheduled-membership.edit', $classSession) }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--edit] size-4"></span> Edit
+                    </a>
+                @else
+                    <a href="{{ route('class-sessions.edit', $classSession) }}" class="btn btn-primary btn-sm">
+                        <span class="icon-[tabler--edit] size-4"></span> Edit
+                    </a>
+                @endif
             @endif
             <a href="{{ route('schedule-planner.index') }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span> Back

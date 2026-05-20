@@ -40,10 +40,12 @@
                     Book Client
                 </a>
             @endif
+            @if(auth()->user()->hasPermission('schedule.edit'))
             <a href="{{ route('service-slots.edit', $serviceSlot) }}" class="btn btn-outline">
                 <span class="icon-[tabler--edit] size-5"></span>
                 Edit
             </a>
+            @endif
             <a href="{{ route('service-slots.index') }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span>
                 Back

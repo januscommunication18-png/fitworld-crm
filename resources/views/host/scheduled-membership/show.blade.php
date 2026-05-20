@@ -50,9 +50,11 @@
                     <span class="icon-[tabler--user-plus] size-4"></span> Add Booking
                 </a>
             @endif
+            @if(auth()->user()->hasPermission('schedule.edit'))
             <a href="{{ route('scheduled-membership.edit', $classSession) }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--edit] size-4"></span> Edit
             </a>
+            @endif
             <a href="{{ route('membership-schedules.index') }}" class="btn btn-ghost btn-sm gap-1.5">
                 <span class="icon-[tabler--arrow-left] size-4"></span> Back
             </a>

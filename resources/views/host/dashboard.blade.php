@@ -73,10 +73,12 @@
                 {{ $trans['nav.reports'] ?? 'Reports' }}
             </a>
             @endif
+            @if(auth()->user()->hasPermission('bookings.create'))
             <a href="{{ route('walk-in.select') }}" class="btn btn-primary btn-sm">
                 <span class="icon-[tabler--plus] size-4 mr-1"></span>
                 {{ $trans['dashboard.quick_actions'] ?? 'New Booking' }}
             </a>
+            @endif
         </div>
     </div>
 

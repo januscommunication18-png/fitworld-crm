@@ -36,6 +36,21 @@ class EventController extends Controller
         }
     }
 
+    protected function authorizeEdit(): void
+    {
+        if (!Auth::user()->hasPermission('schedule.edit')) {
+            abort(403, 'You do not have permission to edit existing schedules.');
+        }
+    }
+
+    protected function authorizeAttendance(): void
+    {
+        $user = Auth::user();
+        if (!$user->hasPermission('bookings.attendance') && !$user->hasPermission('bookings.attendance_own')) {
+            abort(403, 'You do not have permission to mark attendance.');
+        }
+    }
+
     /**
      * Display a listing of events.
      */
@@ -242,6 +257,7 @@ class EventController extends Controller
     public function edit(Event $event): View
     {
         $this->authorizeEvent($event);
+        $this->authorizeEdit();
         $host = $this->getHost();
         $timezones = timezone_identifiers_list();
         $questionnaires = $this->getPublishedQuestionnaires();
@@ -256,6 +272,7 @@ class EventController extends Controller
     public function update(Request $request, Event $event): RedirectResponse
     {
         $this->authorizeEvent($event);
+        $this->authorizeEdit();
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -376,6 +393,10 @@ class EventController extends Controller
     {
         $this->authorizeEvent($event);
 
+        if (!Auth::user()->hasPermission('schedule.publish')) {
+            abort(403, 'You do not have permission to publish events.');
+        }
+
         $event->publish();
 
         return back()->with('success', 'Event published successfully!');
@@ -387,6 +408,10 @@ class EventController extends Controller
     public function cancel(Request $request, Event $event): RedirectResponse
     {
         $this->authorizeEvent($event);
+
+        if (!Auth::user()->hasPermission('schedule.cancel')) {
+            abort(403, 'You do not have permission to cancel events.');
+        }
 
         $validated = $request->validate([
             'cancellation_reason' => ['nullable', 'string', 'max:500'],
@@ -504,6 +529,7 @@ class EventController extends Controller
     public function checkIn(Event $event, EventAttendee $attendee): RedirectResponse
     {
         $this->authorizeEvent($event);
+        $this->authorizeAttendance();
 
         if ($attendee->event_id !== $event->id) {
             abort(403, 'Attendee does not belong to this event.');
@@ -524,6 +550,7 @@ class EventController extends Controller
     public function markNoShow(Event $event, EventAttendee $attendee): RedirectResponse
     {
         $this->authorizeEvent($event);
+        $this->authorizeAttendance();
 
         if ($attendee->event_id !== $event->id) {
             abort(403, 'Attendee does not belong to this event.');
@@ -540,6 +567,11 @@ class EventController extends Controller
     public function checkInClient(Request $request, Event $event, Client $client): \Illuminate\Http\JsonResponse
     {
         $this->authorizeEvent($event);
+
+        $user = Auth::user();
+        if (!$user->hasPermission('bookings.attendance') && !$user->hasPermission('bookings.attendance_own')) {
+            return response()->json(['success' => false, 'message' => 'You do not have permission to mark attendance.'], 403);
+        }
 
         // Find the attendee record
         $attendee = EventAttendee::where('event_id', $event->id)

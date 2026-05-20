@@ -108,6 +108,7 @@
                     @php
                         $categoryIcons = [
                             'nav' => 'icon-[tabler--layout-sidebar]',
+                            'settings_nav' => 'icon-[tabler--settings-cog]',
                             'schedule' => 'icon-[tabler--calendar]',
                             'bookings' => 'icon-[tabler--clipboard-list]',
                             'students' => 'icon-[tabler--users]',
@@ -121,6 +122,7 @@
                         ];
                         $categoryColors = [
                             'nav' => 'text-base-content bg-base-content/10',
+                            'settings_nav' => 'text-base-content bg-base-content/10',
                             'schedule' => 'text-primary bg-primary/10',
                             'bookings' => 'text-secondary bg-secondary/10',
                             'students' => 'text-info bg-info/10',
@@ -133,7 +135,8 @@
                             'pricing' => 'text-success bg-success/10',
                         ];
                         $categoryLabels = [
-                            'nav' => 'Sidebar Navigation',
+                            'nav' => 'Main Sidebar Navigation',
+                            'settings_nav' => 'Settings Sidebar Navigation',
                             'schedule' => 'Schedule',
                             'bookings' => 'Bookings',
                             'students' => 'Clients',
@@ -146,7 +149,8 @@
                             'pricing' => 'Pricing',
                         ];
                         $categoryDescriptions = [
-                            'nav' => 'Control which menu items appear in this user\'s sidebar',
+                            'nav' => 'Control which top-level menu items appear in this user\'s sidebar',
+                            'settings_nav' => 'Control which links appear inside the Settings sidebar',
                             'schedule' => 'Calendar, class sessions, and scheduling actions',
                             'bookings' => 'Bookings, waitlist, and attendance',
                             'students' => 'Client directory and profile management',

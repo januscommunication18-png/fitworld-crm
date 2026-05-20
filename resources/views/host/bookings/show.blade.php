@@ -405,7 +405,7 @@
                             {{ $trans['bookings.new_booking'] ?? 'New Booking' }}
                         </a>
 
-                        @if($booking->canBeCancelled())
+                        @if($booking->canBeCancelled() && auth()->user()->hasPermission('bookings.cancel'))
                             <button type="button" class="btn btn-error btn-outline w-full" onclick="openCancelBookingModal('cancel-modal-{{ $booking->id }}')">
                                 <span class="icon-[tabler--x] size-5"></span>
                                 {{ $trans['bookings.cancel_booking'] ?? 'Cancel Booking' }}

@@ -185,7 +185,7 @@
 
     <x-slot name="footer">
         <div class="flex items-center gap-2">
-            @if($booking->canBeCancelled())
+            @if($booking->canBeCancelled() && auth()->user()->hasPermission('bookings.cancel'))
                 <button type="button" class="btn btn-soft btn-error" onclick="openCancelModal({{ $booking->id }}, {{ $booking->isLateCancellation() ? 'true' : 'false' }})">
                     <span class="icon-[tabler--x] size-4 me-1"></span>
                     {{ $trans['btn.cancel_booking'] ?? 'Cancel Booking' }}

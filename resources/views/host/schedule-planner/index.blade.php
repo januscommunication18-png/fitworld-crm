@@ -251,9 +251,11 @@
                                         <li><a href="{{ route('schedule-planner.show', $schedule->id) }}">
                                             <span class="icon-[tabler--eye] size-4"></span> View
                                         </a></li>
+                                        @if(auth()->user()->hasPermission('schedule.edit'))
                                         <li><a href="{{ route('service-slots.edit', $schedule->id) }}">
                                             <span class="icon-[tabler--pencil] size-4"></span> Edit
                                         </a></li>
+                                        @endif
                                         @if($schedule->session_count === 0)
                                             <li>
                                                 <button type="button" class="w-full text-left flex items-center gap-2 text-error"
@@ -266,9 +268,11 @@
                                         <li><a href="{{ route('schedule-planner.show', $schedule->id) }}">
                                             <span class="icon-[tabler--eye] size-4"></span> View
                                         </a></li>
+                                        @if(auth()->user()->hasPermission('schedule.edit'))
                                         <li><a href="{{ route('scheduled-membership.edit', $schedule->id) }}">
                                             <span class="icon-[tabler--pencil] size-4"></span> Edit
                                         </a></li>
+                                        @endif
                                         @if($schedule->session_count === 0)
                                             <li>
                                                 <button type="button" class="w-full text-left flex items-center gap-2 text-error"
@@ -281,9 +285,11 @@
                                         <li><a href="{{ route('schedule-planner.show', $schedule->id) }}">
                                             <span class="icon-[tabler--eye] size-4"></span> View
                                         </a></li>
+                                        @if(auth()->user()->hasPermission('schedule.edit'))
                                         <li><a href="{{ route('class-sessions.edit', $schedule->id) }}">
                                             <span class="icon-[tabler--pencil] size-4"></span> Edit
                                         </a></li>
+                                        @endif
                                         @if($schedule->session_count === 0)
                                             <li>
                                                 <button type="button" class="w-full text-left flex items-center gap-2 text-error"

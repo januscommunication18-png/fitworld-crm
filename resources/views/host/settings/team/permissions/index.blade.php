@@ -205,7 +205,8 @@
                             @php
                                 $currentCategory = '';
                                 $categoryLabels = [
-                                    'nav' => 'Sidebar Navigation',
+                                    'nav' => 'Main Sidebar Navigation',
+                                    'settings_nav' => 'Settings Sidebar Navigation',
                                     'schedule' => 'Schedule',
                                     'bookings' => 'Bookings',
                                     'students' => 'Clients',
@@ -218,11 +219,11 @@
                                     'pricing' => 'Pricing',
                                 ];
                             @endphp
-                            @foreach($allPermissions as $permission => $label)
+                            @foreach($groupedPermissions as $groupKey => $permsInGroup)
+                                @foreach($permsInGroup as $permission => $label)
                                 @php
-                                    $parts = explode('.', $permission);
-                                    $categoryKey = $parts[0];
-                                    $category = $categoryLabels[$categoryKey] ?? ucfirst($categoryKey);
+                                    $categoryKey = $groupKey;
+                                    $category = $categoryLabels[$categoryKey] ?? ucfirst(str_replace('_', ' ', $categoryKey));
                                 @endphp
                                 {{-- Skip pricing permissions if feature not enabled --}}
                                 @if(str_starts_with($permission, 'pricing.') && !$hasPriceOverrideFeature)
@@ -236,6 +237,7 @@
                                                 @php
                                                     $catIcon = match($categoryKey) {
                                                         'nav' => 'icon-[tabler--layout-sidebar]',
+                                                        'settings_nav' => 'icon-[tabler--settings-cog]',
                                                         'schedule' => 'icon-[tabler--calendar]',
                                                         'bookings' => 'icon-[tabler--clipboard-list]',
                                                         'students' => 'icon-[tabler--users]',
@@ -286,6 +288,7 @@
                                         @endif
                                     </td>
                                 </tr>
+                                @endforeach
                             @endforeach
                         </tbody>
                     </table>

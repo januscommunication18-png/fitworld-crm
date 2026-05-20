@@ -684,6 +684,14 @@ class WalkInController extends Controller
             abort(403);
         }
 
+        if (!auth()->user()->hasPermission('bookings.create')) {
+            abort(403, 'You do not have permission to create bookings.');
+        }
+
+        if ($request->input('payment_method') === 'comp' && !auth()->user()->hasPermission('bookings.comp')) {
+            abort(403, 'You do not have permission to comp bookings.');
+        }
+
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'payment_method' => 'required|in:membership,pack,manual,comp,billing_credit',
@@ -1015,6 +1023,14 @@ class WalkInController extends Controller
         // Verify slot belongs to host
         if ($serviceSlot->host_id !== $host->id) {
             abort(403);
+        }
+
+        if (!auth()->user()->hasPermission('bookings.create')) {
+            abort(403, 'You do not have permission to create bookings.');
+        }
+
+        if ($request->input('payment_method') === 'comp' && !auth()->user()->hasPermission('bookings.comp')) {
+            abort(403, 'You do not have permission to comp bookings.');
         }
 
         $validated = $request->validate([
@@ -2081,6 +2097,14 @@ class WalkInController extends Controller
     {
         $host = auth()->user()->currentHost();
 
+        if (!auth()->user()->hasPermission('bookings.create')) {
+            abort(403, 'You do not have permission to sell class passes.');
+        }
+
+        if ($request->input('payment_method') === 'comp' && !auth()->user()->hasPermission('bookings.comp')) {
+            abort(403, 'You do not have permission to comp class passes.');
+        }
+
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'class_pass_id' => 'required|exists:class_passes,id',
@@ -2264,6 +2288,14 @@ class WalkInController extends Controller
     public function bookMembership(Request $request)
     {
         $host = auth()->user()->currentHost();
+
+        if (!auth()->user()->hasPermission('bookings.create')) {
+            abort(403, 'You do not have permission to sell memberships.');
+        }
+
+        if ($request->input('payment_method') === 'comp' && !auth()->user()->hasPermission('bookings.comp')) {
+            abort(403, 'You do not have permission to comp memberships.');
+        }
 
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
@@ -2657,6 +2689,10 @@ class WalkInController extends Controller
         // Verify event belongs to this host
         if ($event->host_id !== $host->id) {
             abort(404);
+        }
+
+        if (!auth()->user()->hasPermission('bookings.create')) {
+            abort(403, 'You do not have permission to register clients for events.');
         }
 
         // Validate request

@@ -29,9 +29,13 @@
                             <div class="text-sm text-base-content/60">All client profiles, contact info, and membership status</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('students.export'))
                     <a href="{{ route('export.clients') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
 
                 <!-- Transactions -->
@@ -43,9 +47,13 @@
                             <div class="text-sm text-base-content/60">All payment and transaction history</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('insights.export'))
                     <a href="{{ route('export.transactions') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
 
                 <!-- Bookings -->
@@ -57,9 +65,13 @@
                             <div class="text-sm text-base-content/60">All booking and attendance records</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('insights.export'))
                     <a href="{{ route('export.bookings') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
 
                 <!-- Class Sessions -->
@@ -71,9 +83,13 @@
                             <div class="text-sm text-base-content/60">All class sessions with attendance data</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('insights.export'))
                     <a href="{{ route('export.classes') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
 
                 <!-- Memberships -->
@@ -85,9 +101,13 @@
                             <div class="text-sm text-base-content/60">All active and past membership records</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('insights.export'))
                     <a href="{{ route('export.memberships') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
 
                 <!-- Instructors -->
@@ -99,9 +119,13 @@
                             <div class="text-sm text-base-content/60">All instructor profiles and assignments</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('insights.export'))
                     <a href="{{ route('export.instructors') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
             </div>
         </div>
@@ -123,9 +147,13 @@
                             <div class="text-sm text-base-content/60">All system activity and audit trail</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('insights.export'))
                     <a href="{{ route('export.audit-logs') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
 
                 <!-- User Sessions -->
@@ -137,9 +165,13 @@
                             <div class="text-sm text-base-content/60">Login history, IP addresses, device info</div>
                         </div>
                     </div>
+                    @if(auth()->user()->hasPermission('insights.export'))
                     <a href="{{ route('export.user-sessions') }}" class="btn btn-soft btn-sm">
                         <span class="icon-[tabler--download] size-4"></span> Export
                     </a>
+                    @else
+                    <span class="text-xs text-base-content/50">No permission</span>
+                    @endif
                 </div>
             </div>
         </div>
