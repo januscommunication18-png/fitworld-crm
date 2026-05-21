@@ -20,18 +20,64 @@
             <h1 class="text-2xl font-bold">Schedule Planner</h1>
             <p class="text-base-content/60 mt-1">View and manage recurring schedules</p>
         </div>
-        @if($type === 'membership')
-            <a href="{{ route('scheduled-membership.create') }}" class="btn btn-primary btn-sm">
-                <span class="icon-[tabler--plus] size-4"></span> Create Membership Session
-            </a>
-        @elseif($type === 'service')
-            <a href="{{ route('service-slots.create') }}" class="btn btn-primary btn-sm">
-                <span class="icon-[tabler--plus] size-4"></span> Create Service Slot
-            </a>
-        @elseif($type !== 'all')
-            <a href="{{ route('class-sessions.create') }}" class="btn btn-primary btn-sm">
-                <span class="icon-[tabler--plus] size-4"></span> Create Session
-            </a>
+
+        @if(auth()->user()->hasPermission('schedule.create'))
+        {{-- Add Schedule Dropdown (matches /schedule/calendar) --}}
+        <div class="relative">
+            <button type="button" class="btn btn-primary" onclick="togglePlannerDropdown('planner-schedule-dropdown')">
+                <span class="icon-[tabler--plus] size-5"></span>
+                {{ $trans['schedule.add_schedule_planner'] ?? 'Add Schedule Planner' }}
+                <span class="icon-[tabler--chevron-down] size-4"></span>
+            </button>
+            <ul id="planner-schedule-dropdown" class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-72 p-2 shadow-lg border border-base-300 z-50">
+                <li class="menu-title text-xs uppercase tracking-wider text-base-content/50 px-2 pt-2">{{ $trans['common.type'] ?? 'Schedule Type' }}</li>
+                <li>
+                    <a href="#" onclick="handlePlannerScheduleClick('class', '{{ route('class-sessions.create') }}', {{ $classPlans->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
+                        <span class="flex items-center gap-2">
+                            <span class="icon-[tabler--yoga] size-5 text-primary"></span>
+                            <span class="font-medium">{{ $trans['page.classes'] ?? 'Class' }}</span>
+                        </span>
+                        <span class="text-xs text-base-content/60 ml-7">{{ $trans['schedule.class_description'] ?? 'Single or recurring class session' }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="handlePlannerScheduleClick('service', '{{ route('service-slots.create') }}', {{ $servicePlans->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
+                        <span class="flex items-center gap-2">
+                            <span class="icon-[tabler--massage] size-5 text-success"></span>
+                            <span class="font-medium">{{ $trans['page.services'] ?? 'Service' }}</span>
+                        </span>
+                        <span class="text-xs text-base-content/60 ml-7">{{ $trans['schedule.service_description'] ?? '1-on-1 appointment slot' }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="handlePlannerScheduleClick('membership', '{{ route('scheduled-membership.create') }}', {{ $membershipPlans->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
+                        <span class="flex items-center gap-2">
+                            <span class="icon-[tabler--calendar-user] size-5 text-warning"></span>
+                            <span class="font-medium">{{ $trans['schedule.membership_schedule'] ?? 'Membership Schedule' }}</span>
+                        </span>
+                        <span class="text-xs text-base-content/60 ml-7">{{ $trans['schedule.membership_schedule_description'] ?? 'Recurring classes for membership holders' }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" onclick="handlePlannerScheduleClick('space_rental', '{{ route('space-rentals.create') }}', {{ $spaceRentalConfigs->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
+                        <span class="flex items-center gap-2">
+                            <span class="icon-[tabler--building] size-5 text-secondary"></span>
+                            <span class="font-medium">{{ $trans['nav.space_rentals'] ?? 'Space Rental' }}</span>
+                        </span>
+                        <span class="text-xs text-base-content/60 ml-7">{{ $trans['space_rentals.schedule_description'] ?? 'Book a space for professional use' }}</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('events.create') }}" class="flex flex-col items-start gap-0.5 py-3">
+                        <span class="flex items-center gap-2">
+                            <span class="icon-[tabler--calendar-event] size-5 text-error"></span>
+                            <span class="font-medium">{{ $trans['nav.events'] ?? 'Event' }}</span>
+                        </span>
+                        <span class="text-xs text-base-content/60 ml-7">{{ $trans['events.schedule_description'] ?? 'Workshop, seminar, or special event' }}</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
         @endif
     </div>
 
@@ -349,6 +395,81 @@ function openDeleteModal(action, name, type) {
     document.getElementById('deleteItemName').textContent = name;
     document.getElementById('deleteModal').showModal();
 }
+
+// Add Schedule dropdown — matches /schedule/calendar behavior
+window.togglePlannerDropdown = function(id) {
+    const dropdown = document.getElementById(id);
+    if (!dropdown) return;
+    dropdown.classList.toggle('hidden');
+};
+
+// Close on outside click
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('planner-schedule-dropdown');
+    if (!dropdown || dropdown.classList.contains('hidden')) return;
+    if (!e.target.closest('#planner-schedule-dropdown') && !e.target.closest('[onclick*="togglePlannerDropdown"]')) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+window.handlePlannerScheduleClick = function(type, url, planCount) {
+    const dropdown = document.getElementById('planner-schedule-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
+
+    if (planCount > 0) {
+        window.location.href = url;
+        return;
+    }
+
+    let typeLabel, typeLabelLower, createUrl;
+    switch(type) {
+        case 'class':
+            typeLabel = 'Class'; typeLabelLower = 'class';
+            createUrl = '{{ route("class-plans.create") }}'; break;
+        case 'service':
+            typeLabel = 'Service'; typeLabelLower = 'service';
+            createUrl = '{{ route("service-plans.create") }}'; break;
+        case 'membership':
+            typeLabel = 'Membership'; typeLabelLower = 'membership';
+            createUrl = '{{ route("membership-plans.create") }}'; break;
+        case 'space_rental':
+            typeLabel = 'Rental Space'; typeLabelLower = 'rental space';
+            createUrl = '{{ route("space-rentals.config.create") }}'; break;
+        default:
+            typeLabel = 'Plan'; typeLabelLower = 'plan';
+            createUrl = '{{ route("catalog.index") }}';
+    }
+
+    let modalTitle, modalMessage, actionText;
+    if (type === 'space_rental') {
+        modalTitle = 'No Rental Spaces Found';
+        modalMessage = 'To book a space rental, you need to create a rental space first in Classes & Services.';
+        actionText = 'Add Rental Space';
+    } else {
+        modalTitle = `No ${typeLabel} Plans Found`;
+        modalMessage = `To schedule a ${typeLabelLower}, you need to create a ${typeLabelLower} plan first in Classes & Services.`;
+        actionText = `Add ${typeLabel} Plan`;
+    }
+
+    if (window.FitCRM && typeof window.FitCRM.showAlertModal === 'function') {
+        window.FitCRM.showAlertModal({
+            title: modalTitle,
+            message: modalMessage,
+            icon: 'alert-triangle',
+            iconBg: 'bg-warning/20',
+            iconColor: 'text-warning',
+            actionText: actionText,
+            actionUrl: createUrl,
+            actionIcon: 'plus',
+            actionClass: 'btn btn-primary'
+        });
+    } else {
+        // Fallback if the alert modal helper isn't loaded on this page
+        if (confirm(modalTitle + '\n\n' + modalMessage + '\n\nGo to create now?')) {
+            window.location.href = createUrl;
+        }
+    }
+};
 </script>
 @endpush
 @endsection

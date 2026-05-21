@@ -18,25 +18,26 @@ use Symfony\Component\HttpFoundation\Response;
 class EnforceNavPermission
 {
     /**
-     * Ordered list of [path_prefix, nav_permission].
+     * Ordered list of [path_prefix, permission|permissions[]].
      * First match wins. Longer prefixes must come BEFORE their shorter parents.
+     * If an array is given, the user passes when they have ANY of the listed permissions.
      */
     protected array $map = [
-        // Settings sub-sections (specific paths first)
-        ['settings/team/permissions', 'nav.settings.permissions'],
-        ['settings/team/users', 'nav.settings.users'],
-        ['settings/team/invite', 'nav.settings.users'],
-        ['settings/team/invitations', 'nav.settings.users'],
-        ['settings/team', 'nav.settings.users'],
-        ['settings/billing', 'nav.settings.billing'],
-        ['settings/payments', 'nav.settings.payments'],
-        ['settings/notifications', 'nav.settings.communication'],
-        ['settings/communication', 'nav.settings.communication'],
-        ['settings/integrations', 'nav.settings.integrations'],
-        ['settings/member-portal', 'nav.settings.client_portal'],
-        ['settings/clients', 'nav.settings.client_portal'],
-        ['settings/locations', 'nav.settings.studio'],
-        ['settings/studio', 'nav.settings.studio'],
+        // Settings sub-sections (specific paths first) — gated by feature permissions
+        ['settings/team/permissions', 'team.permissions'],
+        ['settings/team/users', ['team.view', 'team.manage']],
+        ['settings/team/invite', ['team.manage']],
+        ['settings/team/invitations', ['team.manage']],
+        ['settings/team', ['team.view', 'team.manage', 'team.instructors']],
+        ['settings/billing', ['billing.plan', 'billing.invoices', 'billing.payment']],
+        ['settings/payments', ['payments.stripe', 'payments.view', 'payments.refunds', 'payments.payouts']],
+        ['settings/notifications', 'communication.manage'],
+        ['settings/communication', 'communication.manage'],
+        ['settings/integrations', 'integrations.manage'],
+        ['settings/member-portal', 'studio.client_settings'],
+        ['settings/clients', 'studio.client_settings'],
+        ['settings/locations', ['studio.locations', 'studio.rooms', 'studio.booking_page', 'studio.policies']],
+        ['settings/studio', 'studio.profile'],
         // Settings root falls back to nav.settings
         ['settings', 'nav.settings'],
 
@@ -94,7 +95,15 @@ class EnforceNavPermission
 
         foreach ($this->map as [$prefix, $permission]) {
             if ($path === $prefix || str_starts_with($path, $prefix . '/')) {
-                if (!$user->hasPermission($permission)) {
+                $required = (array) $permission;
+                $allowed = false;
+                foreach ($required as $perm) {
+                    if ($user->hasPermission($perm)) {
+                        $allowed = true;
+                        break;
+                    }
+                }
+                if (!$allowed) {
                     if ($request->expectsJson()) {
                         return response()->json([
                             'message' => 'You do not have permission to access this area.',

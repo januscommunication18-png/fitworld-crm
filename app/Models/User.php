@@ -380,42 +380,38 @@ class User extends Authenticatable implements MustVerifyEmail
             self::ROLE_ADMIN => [
                 'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.clients', 'nav.helpdesk',
                 'nav.instructors', 'nav.classes_services', 'nav.marketing', 'nav.insights', 'nav.payments', 'nav.settings',
-                'nav.settings.profile',
-                'nav.settings.studio', 'nav.settings.users', 'nav.settings.permissions', 'nav.settings.client_portal',
-                'nav.settings.payments', 'nav.settings.communication', 'nav.settings.integrations', 'nav.settings.billing',
                 'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.publish', 'schedule.cancel',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.waitlist', 'bookings.attendance', 'bookings.comp',
                 'students.view', 'students.view_all', 'students.create', 'students.edit', 'students.notes', 'students.export',
                 'offers.intro', 'offers.packs', 'offers.memberships', 'offers.promos',
                 'insights.attendance', 'insights.revenue',
                 'studio.profile', 'studio.locations', 'studio.rooms', 'studio.class_types', 'studio.booking_page', 'studio.policies', 'studio.client_settings',
-                'team.view', 'team.manage', 'team.instructors', 'team.instructor_admin',
+                'team.view', 'team.manage', 'team.instructors', 'team.instructor_admin', 'team.permissions',
+                'communication.manage', 'integrations.manage',
                 'pricing.override',
             ],
             self::ROLE_MANAGER => [
                 'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.clients', 'nav.helpdesk',
                 'nav.instructors', 'nav.classes_services', 'nav.insights', 'nav.settings',
-                // Manager sees Settings → My Profile, plus team management & communication tools
-                'nav.settings.profile', 'nav.settings.studio', 'nav.settings.users', 'nav.settings.communication',
+                // Manager: team viewing & communication tools (Settings → My Profile is always available)
                 'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.publish', 'schedule.cancel',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.waitlist', 'bookings.attendance', 'bookings.comp',
                 'students.view', 'students.create', 'students.edit', 'students.notes',
                 'insights.attendance', 'insights.revenue',
                 'team.view', 'team.instructors',
+                'communication.manage',
                 'pricing.override',
             ],
             self::ROLE_STAFF => [
                 'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.clients', 'nav.settings',
-                // Staff sees Settings → My Profile only
-                'nav.settings.profile',
+                // Staff: sees Settings → My Profile only (always available)
                 'schedule.view',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.attendance',
                 'students.view', 'students.edit', 'students.notes',
             ],
             self::ROLE_INSTRUCTOR => [
                 'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.settings',
-                // Instructor sees Settings → My Profile only
-                'nav.settings.profile',
+                // Instructor: sees Settings → My Profile only (always available)
                 'schedule.view_own',
                 'bookings.view_own', 'bookings.attendance_own',
             ],
@@ -442,17 +438,6 @@ class User extends Authenticatable implements MustVerifyEmail
                 'nav.insights' => 'Show Insights in sidebar',
                 'nav.payments' => 'Show Payments in sidebar',
                 'nav.settings' => 'Show Settings in sidebar',
-            ],
-            'settings_nav' => [
-                'nav.settings.profile' => 'Show My Profile link (always available)',
-                'nav.settings.studio' => 'Show Studio section',
-                'nav.settings.users' => 'Show Users & Roles link',
-                'nav.settings.permissions' => 'Show Permissions link',
-                'nav.settings.client_portal' => 'Show Client & Portal section',
-                'nav.settings.payments' => 'Show Payments section',
-                'nav.settings.communication' => 'Show Communication section',
-                'nav.settings.integrations' => 'Show Integrations section',
-                'nav.settings.billing' => 'Show Plans & Billing section',
             ],
             'schedule' => [
                 'schedule.view' => 'View all schedule',
@@ -517,6 +502,12 @@ class User extends Authenticatable implements MustVerifyEmail
                 'billing.plan' => 'Manage subscription plan',
                 'billing.invoices' => 'View invoices',
                 'billing.payment' => 'Update payment method',
+            ],
+            'communication' => [
+                'communication.manage' => 'Manage email templates, notifications, and automation',
+            ],
+            'integrations' => [
+                'integrations.manage' => 'Manage integrations (Stripe, FitNearYou, Calendar, PayPal, Cash App, Venmo)',
             ],
             'pricing' => [
                 'pricing.override' => 'Override prices at checkout',

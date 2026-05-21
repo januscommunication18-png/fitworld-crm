@@ -209,9 +209,29 @@ class ServiceSlotController extends Controller
     {
         $this->authorizeHost($serviceSlot);
 
-        $serviceSlot->load(['servicePlan', 'instructor', 'location', 'room']);
+        $serviceSlot->load([
+            'servicePlan',
+            'instructor.user',
+            'location',
+            'room',
+            'recurrenceParent',
+            'bookings.client',
+            'bookings.questionnaireResponses.version.questionnaire',
+            'bookings.questionnaireResponses.answers.question',
+        ]);
 
-        return view('host.service-slots.show', compact('serviceSlot'));
+        $allBookings = $serviceSlot->bookings;
+        $confirmedBookings = $allBookings->whereIn('status', ['confirmed', 'completed']);
+        $cancelledBookings = $allBookings->where('status', 'cancelled');
+        $booking = $confirmedBookings->first() ?? $allBookings->first();
+        $checkedInCount = $confirmedBookings->filter(fn($b) => $b->isCheckedIn())->count();
+        $intakeCompleted = $confirmedBookings->filter(fn($b) => $b->intake_status === 'completed')->count();
+        $intakePending = $confirmedBookings->filter(fn($b) => $b->intake_status === 'pending')->count();
+
+        return view('host.service-slots.show', compact(
+            'serviceSlot', 'allBookings', 'confirmedBookings', 'cancelledBookings',
+            'booking', 'checkedInCount', 'intakeCompleted', 'intakePending'
+        ));
     }
 
     public function edit(ServiceSlot $serviceSlot)

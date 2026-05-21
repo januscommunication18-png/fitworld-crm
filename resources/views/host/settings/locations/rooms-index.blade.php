@@ -59,9 +59,11 @@
                 @endforeach
             </select>
             @endif
+            @if(auth()->user()->hasPermission('studio.rooms'))
             <a href="{{ route('settings.rooms.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-4"></span> Add Room
             </a>
+            @endif
         </div>
         @endif
     </div>
@@ -99,9 +101,11 @@
                 <div class="text-center py-8 border border-dashed border-base-content/20 rounded-lg">
                     <span class="icon-[tabler--door] size-10 text-base-content/30"></span>
                     <p class="text-base-content/60 text-sm mt-2">No rooms in this location</p>
+                    @if(auth()->user()->hasPermission('studio.rooms'))
                     <a href="{{ route('settings.rooms.create') }}?location={{ $location->id }}" class="btn btn-ghost btn-sm mt-3">
                         <span class="icon-[tabler--plus] size-4"></span> Add Room
                     </a>
+                    @endif
                 </div>
                 @else
                 <div class="overflow-visible">
@@ -161,6 +165,7 @@
                                                 <li><a href="javascript:void(0)" onclick="viewRoom({{ $room->id }})">
                                                     <span class="icon-[tabler--eye] size-4"></span> View
                                                 </a></li>
+                                                @if(auth()->user()->hasPermission('studio.rooms'))
                                                 <li><a href="{{ route('settings.rooms.edit', $room) }}">
                                                     <span class="icon-[tabler--edit] size-4"></span> Edit
                                                 </a></li>
@@ -171,6 +176,7 @@
                                                 <li><a href="javascript:void(0)" onclick="confirmDeleteRoom({{ $room->id }}, '{{ addslashes($room->name) }}')" class="text-error">
                                                     <span class="icon-[tabler--trash] size-4"></span> Delete
                                                 </a></li>
+                                                @endif
                                             </ul>
                                         </details>
                                     </div>

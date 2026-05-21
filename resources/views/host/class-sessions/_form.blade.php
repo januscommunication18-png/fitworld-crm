@@ -258,21 +258,24 @@
                     <div class="space-y-4">
                         {{-- Primary Instructor --}}
                         <div>
-                            <label class="label-text" for="primary_instructor_id">Primary Instructor <span class="text-error">*</span></label>
-                            @php
-                                $instructorOptions = [];
-                                foreach($instructors as $inst) {
-                                    $instructorOptions[$inst->id] = $inst->name;
-                                }
-                            @endphp
+                            <label class="label-text" for="primary_instructor_id">Assign staff member / Instructor <span class="text-error">*</span></label>
                             <x-studio-select
                                 name="primary_instructor_id"
-                                :options="$instructorOptions"
-                                :selected="old('primary_instructor_id', $classSession?->primary_instructor_id)"
-                                placeholder="Select an instructor..."
-                                :required="true"
                                 id="primary_instructor_id"
-                            />
+                                placeholder="Select a staff member or instructor..."
+                                :required="true"
+                                :option-count="count($instructors)"
+                            >
+                                <option value="">Select a staff member or instructor...</option>
+                                @foreach($instructors as $instructor)
+                                <option value="{{ $instructor->id }}"
+                                    data-photo="{{ $instructor->photo_url ?? '' }}"
+                                    data-initials="{{ $instructor->initials ?? strtoupper(substr($instructor->name, 0, 2)) }}"
+                                    {{ (string) old('primary_instructor_id', $classSession?->primary_instructor_id) === (string) $instructor->id ? 'selected' : '' }}>
+                                    {{ $instructor->name }}
+                                </option>
+                                @endforeach
+                            </x-studio-select>
                             @error('primary_instructor_id')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -280,15 +283,15 @@
 
                         {{-- Backup Instructors --}}
                         <div>
-                            <label class="label-text mb-1">Backup Instructors (optional)</label>
+                            <label class="label-text mb-1">Backup staff members / Instructors (optional)</label>
                             @php
                                 $backupInstructorIds = old('backup_instructor_ids', $classSession?->backupInstructors?->pluck('id')->toArray() ?? []);
                             @endphp
                             <select id="backup_instructor_ids" name="backup_instructor_ids[]" multiple class="hidden"
                                 data-select='{!! json_encode([
                                     "hasSearch" => true,
-                                    "searchPlaceholder" => "Search instructors...",
-                                    "placeholder" => "Select backup instructors...",
+                                    "searchPlaceholder" => "Search...",
+                                    "placeholder" => "Select backup staff or instructors...",
                                     "toggleTag" => "<button type=\"button\" aria-expanded=\"false\"></button>",
                                     "toggleClasses" => "advance-select-toggle",
                                     "dropdownClasses" => "advance-select-menu max-h-72 overflow-y-auto",
@@ -298,12 +301,14 @@
                                 ], JSON_UNESCAPED_SLASHES) !!}'>
                                 @foreach($instructors as $instructor)
                                     <option value="{{ $instructor->id }}"
+                                        data-photo="{{ $instructor->photo_url ?? '' }}"
+                                        data-initials="{{ $instructor->initials ?? strtoupper(substr($instructor->name, 0, 2)) }}"
                                         {{ in_array($instructor->id, $backupInstructorIds) ? 'selected' : '' }}>
                                         {{ $instructor->name }}
                                     </option>
                                 @endforeach
                             </select>
-                            <p class="text-base-content/60 text-xs mt-2">Select one or more backup instructors in order of priority.</p>
+                            <p class="text-base-content/60 text-xs mt-2">Select one or more backups in order of priority.</p>
                             @error('backup_instructor_ids')
                                 <p class="text-error text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -600,6 +605,47 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Inject avatars into advance-select dropdown options
+    function injectAvatars(selectId) {
+        var selectEl = document.getElementById(selectId);
+        if (!selectEl) return;
+        var parentWrapper = selectEl.closest('div');
+        if (!parentWrapper) return;
+
+        function inject() {
+            var dropdownItems = parentWrapper.querySelectorAll('.advance-select-option');
+            dropdownItems.forEach(function(item) {
+                if (item.querySelector('.member-avatar')) return;
+                var value = item.getAttribute('data-value');
+                if (!value) return;
+                var option = selectEl.querySelector('option[value="' + value + '"]');
+                if (!option) return;
+                var photo = option.getAttribute('data-photo');
+                var initials = option.getAttribute('data-initials');
+                var titleEl = item.querySelector('[data-title]');
+                if (!titleEl) return;
+
+                var avatar = document.createElement('span');
+                avatar.className = 'member-avatar shrink-0 size-6 rounded-full flex items-center justify-center text-xs font-bold me-2';
+                if (photo) {
+                    avatar.innerHTML = '<img src="' + photo + '" class="size-6 rounded-full object-cover" />';
+                } else if (initials) {
+                    avatar.className += ' bg-primary/15 text-primary';
+                    avatar.textContent = initials;
+                }
+                titleEl.parentNode.insertBefore(avatar, titleEl);
+            });
+        }
+
+        // Initial pass once FlyonUI renders the dropdown
+        setTimeout(inject, 150);
+        // Re-inject when FlyonUI re-renders options (e.g. search filter)
+        new MutationObserver(inject).observe(parentWrapper, { childList: true, subtree: true });
+    }
+
+    injectAvatars('primary_instructor_id');
+    injectAvatars('backup_instructor_ids');
+
     var classPlanSelect = document.getElementById('class_plan_id');
     var durationInput = document.getElementById('duration_minutes');
     var capacityInput = document.getElementById('capacity');

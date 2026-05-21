@@ -330,43 +330,58 @@ Route::middleware('auth')->group(function () {
         Route::post('/{event}/clients/{client}/check-in', [EventController::class, 'checkInClient'])->name('checkInClient');
     });
 
-    // Instructors (main module - all CRUD operations here)
-    Route::get('/instructors', [InstructorController::class, 'index'])->name('instructors.index');
-    Route::get('/instructors/create', [InstructorController::class, 'create'])->name('instructors.create');
-    Route::post('/instructors', [InstructorController::class, 'store'])->name('instructors.store');
-    Route::get('/instructors/{instructor}', [InstructorController::class, 'show'])->name('instructors.show');
-    Route::get('/instructors/{instructor}/edit', [InstructorController::class, 'edit'])->name('instructors.edit');
-    Route::put('/instructors/{instructor}', [InstructorController::class, 'update'])->name('instructors.update');
-    Route::delete('/instructors/{instructor}', [InstructorController::class, 'destroy'])->name('instructors.destroy');
-    Route::post('/instructors/{instructor}/toggle-status', [InstructorController::class, 'toggleStatus'])->name('instructors.toggle-status');
-    Route::post('/instructors/{instructor}/reset-password', [InstructorController::class, 'resetPassword'])->name('instructors.reset-password');
-    Route::post('/instructors/{instructor}/photo', [InstructorController::class, 'uploadPhoto'])->name('instructors.photo');
-    Route::delete('/instructors/{instructor}/photo', [InstructorController::class, 'removePhoto'])->name('instructors.photo.remove');
-    Route::post('/instructors/{instructor}/invite', [InstructorController::class, 'sendInvite'])->name('instructors.invite');
-    Route::post('/instructors/{instructor}/notes', [InstructorController::class, 'storeNote'])->name('instructors.notes.store');
-    Route::put('/instructor-notes/{note}', [InstructorController::class, 'updateNote'])->name('instructors.notes.update');
-    Route::delete('/instructor-notes/{note}', [InstructorController::class, 'deleteNote'])->name('instructors.notes.delete');
+    // Instructors (main module - profile CRUD requires team.instructors)
+    Route::middleware('permission:team.instructors')->group(function () {
+        Route::get('/instructors', [InstructorController::class, 'index'])->name('instructors.index');
+        Route::get('/instructors/create', [InstructorController::class, 'create'])->name('instructors.create');
+        Route::post('/instructors', [InstructorController::class, 'store'])->name('instructors.store');
+        Route::get('/instructors/{instructor}', [InstructorController::class, 'show'])->name('instructors.show');
+        Route::get('/instructors/{instructor}/edit', [InstructorController::class, 'edit'])->name('instructors.edit');
+        Route::put('/instructors/{instructor}', [InstructorController::class, 'update'])->name('instructors.update');
+        Route::delete('/instructors/{instructor}', [InstructorController::class, 'destroy'])->name('instructors.destroy');
+        Route::post('/instructors/{instructor}/reset-password', [InstructorController::class, 'resetPassword'])->name('instructors.reset-password');
+        Route::post('/instructors/{instructor}/photo', [InstructorController::class, 'uploadPhoto'])->name('instructors.photo');
+        Route::delete('/instructors/{instructor}/photo', [InstructorController::class, 'removePhoto'])->name('instructors.photo.remove');
+        Route::post('/instructors/{instructor}/invite', [InstructorController::class, 'sendInvite'])->name('instructors.invite');
+        Route::post('/instructors/{instructor}/notes', [InstructorController::class, 'storeNote'])->name('instructors.notes.store');
+        Route::put('/instructor-notes/{note}', [InstructorController::class, 'updateNote'])->name('instructors.notes.update');
+        Route::delete('/instructor-notes/{note}', [InstructorController::class, 'deleteNote'])->name('instructors.notes.delete');
 
-    // Instructor Certifications
-    Route::post('/instructors/{instructor}/certifications', [InstructorController::class, 'storeCertification'])->name('instructors.certifications.store');
-    Route::get('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'getCertification'])->name('instructors.certifications.show');
-    Route::post('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'updateCertification'])->name('instructors.certifications.update');
-    Route::delete('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'deleteCertification'])->name('instructors.certifications.delete');
+        // Instructor Certifications
+        Route::post('/instructors/{instructor}/certifications', [InstructorController::class, 'storeCertification'])->name('instructors.certifications.store');
+        Route::get('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'getCertification'])->name('instructors.certifications.show');
+        Route::post('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'updateCertification'])->name('instructors.certifications.update');
+        Route::delete('/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'deleteCertification'])->name('instructors.certifications.delete');
 
-    // Settings team instructors certification routes (alias for drawer AJAX)
-    Route::post('/settings/team/instructors/{instructor}/certifications', [InstructorController::class, 'storeCertification'])->name('settings.team.instructors.certifications.store');
-    Route::get('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'getCertification'])->name('settings.team.instructors.certifications.show');
-    Route::post('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'updateCertification'])->name('settings.team.instructors.certifications.update');
-    Route::delete('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'deleteCertification'])->name('settings.team.instructors.certifications.delete');
-    Route::patch('/settings/team/instructors/{instructor}/toggle-social-visibility', [InstructorController::class, 'toggleSocialVisibility'])->name('settings.team.instructors.toggle-social-visibility');
+        // Settings team instructors certification routes (alias for drawer AJAX)
+        Route::post('/settings/team/instructors/{instructor}/certifications', [InstructorController::class, 'storeCertification'])->name('settings.team.instructors.certifications.store');
+        Route::get('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'getCertification'])->name('settings.team.instructors.certifications.show');
+        Route::post('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'updateCertification'])->name('settings.team.instructors.certifications.update');
+        Route::delete('/settings/team/instructors/{instructor}/certifications/{certification}', [InstructorController::class, 'deleteCertification'])->name('settings.team.instructors.certifications.delete');
+    });
+
+    // Instructor employment / availability / visibility — admin-only
+    Route::middleware('permission:team.instructor_admin')->group(function () {
+        Route::post('/instructors/{instructor}/toggle-status', [InstructorController::class, 'toggleStatus'])->name('instructors.toggle-status');
+        Route::patch('/settings/team/instructors/{instructor}/toggle-social-visibility', [InstructorController::class, 'toggleSocialVisibility'])->name('settings.team.instructors.toggle-social-visibility');
+    });
 
     // Catalog (Classes & Services)
     Route::get('/catalog', [CatalogController::class, 'index'])->name('catalog.index');
 
-    // Class Plans
-    Route::resource('class-plans', ClassPlanController::class)->names('class-plans');
-    Route::patch('/class-plans/{classPlan}/toggle-active', [ClassPlanController::class, 'toggleActive'])->name('class-plans.toggle-active');
-    Route::post('/class-plans/reorder', [ClassPlanController::class, 'reorder'])->name('class-plans.reorder');
+    // Class Plans — mutations require studio.class_types; index/show open to anyone in catalog.
+    // Mutations MUST be registered before index/show so that GET /class-plans/create
+    // doesn't get matched as the parameterized show route ({class_plan} = "create").
+    Route::middleware('permission:studio.class_types')->group(function () {
+        Route::resource('class-plans', ClassPlanController::class)
+            ->except(['index', 'show'])
+            ->names('class-plans');
+        Route::patch('/class-plans/{classPlan}/toggle-active', [ClassPlanController::class, 'toggleActive'])->name('class-plans.toggle-active');
+        Route::post('/class-plans/reorder', [ClassPlanController::class, 'reorder'])->name('class-plans.reorder');
+    });
+    Route::resource('class-plans', ClassPlanController::class)
+        ->only(['index', 'show'])
+        ->names('class-plans');
 
     // Service Plans
     Route::resource('service-plans', ServicePlanController::class)->names('service-plans');
@@ -489,7 +504,7 @@ Route::middleware('auth')->group(function () {
     // Class Sessions
     Route::resource('class-sessions', ClassSessionController::class)->names('class-sessions');
     Route::get('/schedule-planner', [\App\Http\Controllers\Host\SchedulePlannerController::class, 'index'])->name('schedule-planner.index');
-    Route::get('/schedule-planner/{classSession}', [\App\Http\Controllers\Host\SchedulePlannerController::class, 'show'])->name('schedule-planner.show');
+    Route::get('/schedule-planner/{id}', [\App\Http\Controllers\Host\SchedulePlannerController::class, 'show'])->where('id', '[0-9]+')->name('schedule-planner.show');
     Route::patch('/class-sessions/{class_session}/publish', [ClassSessionController::class, 'publish'])->name('class-sessions.publish');
     Route::patch('/class-sessions/{class_session}/unpublish', [ClassSessionController::class, 'unpublish'])->name('class-sessions.unpublish');
     Route::patch('/class-sessions/{class_session}/cancel', [ClassSessionController::class, 'cancel'])->name('class-sessions.cancel');
@@ -699,114 +714,135 @@ Route::middleware('auth')->group(function () {
     Route::delete('/settings/profile/photo', [SettingsController::class, 'removeMyPhoto'])->name('settings.profile.photo.remove');
 
     // Settings - Studio
-    Route::get('/settings/studio/profile', [SettingsController::class, 'studioProfile'])->name('settings.studio.profile');
-    Route::put('/settings/studio/profile', [SettingsController::class, 'updateStudioProfile'])->name('settings.studio.profile.update');
-    Route::put('/settings/studio/about', [SettingsController::class, 'updateStudioAbout'])->name('settings.studio.about.update');
-    Route::put('/settings/studio/contact', [SettingsController::class, 'updateStudioContact'])->name('settings.studio.contact.update');
-    Route::put('/settings/studio/social', [SettingsController::class, 'updateStudioSocial'])->name('settings.studio.social.update');
-    Route::put('/settings/studio/amenities', [SettingsController::class, 'updateStudioAmenities'])->name('settings.studio.amenities.update');
-    Route::put('/settings/studio/currency', [SettingsController::class, 'updateStudioCurrency'])->name('settings.studio.currency.update');
-    Route::put('/settings/studio/countries', [SettingsController::class, 'updateStudioCountries'])->name('settings.studio.countries.update');
-    Route::put('/settings/studio/language', [SettingsController::class, 'updateStudioLanguage'])->name('settings.studio.language.update');
-    Route::put('/settings/studio/categories', [SettingsController::class, 'updateStudioCategories'])->name('settings.studio.categories.update');
-    Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
-    Route::put('/settings/studio/service-plan-categories', [SettingsController::class, 'updateServicePlanCategories'])->name('settings.studio.service-plan-categories.update');
-    Route::put('/settings/studio/rental-item-categories', [SettingsController::class, 'updateRentalItemCategories'])->name('settings.studio.rental-item-categories.update');
+    Route::middleware('permission:studio.profile')->group(function () {
+        Route::get('/settings/studio/profile', [SettingsController::class, 'studioProfile'])->name('settings.studio.profile');
+        Route::put('/settings/studio/profile', [SettingsController::class, 'updateStudioProfile'])->name('settings.studio.profile.update');
+        Route::put('/settings/studio/about', [SettingsController::class, 'updateStudioAbout'])->name('settings.studio.about.update');
+        Route::put('/settings/studio/contact', [SettingsController::class, 'updateStudioContact'])->name('settings.studio.contact.update');
+        Route::put('/settings/studio/social', [SettingsController::class, 'updateStudioSocial'])->name('settings.studio.social.update');
+        Route::put('/settings/studio/amenities', [SettingsController::class, 'updateStudioAmenities'])->name('settings.studio.amenities.update');
+        Route::put('/settings/studio/currency', [SettingsController::class, 'updateStudioCurrency'])->name('settings.studio.currency.update');
+        Route::put('/settings/studio/countries', [SettingsController::class, 'updateStudioCountries'])->name('settings.studio.countries.update');
+        Route::put('/settings/studio/language', [SettingsController::class, 'updateStudioLanguage'])->name('settings.studio.language.update');
+        Route::put('/settings/studio/categories', [SettingsController::class, 'updateStudioCategories'])->name('settings.studio.categories.update');
+        Route::put('/settings/studio/cancellation', [SettingsController::class, 'updateStudioCancellation'])->name('settings.studio.cancellation.update');
+        Route::put('/settings/studio/service-plan-categories', [SettingsController::class, 'updateServicePlanCategories'])->name('settings.studio.service-plan-categories.update');
+        Route::put('/settings/studio/rental-item-categories', [SettingsController::class, 'updateRentalItemCategories'])->name('settings.studio.rental-item-categories.update');
 
-    Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
-    Route::delete('/settings/studio/logo', [SettingsController::class, 'removeStudioLogo'])->name('settings.studio.logo.remove');
-    Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
-    Route::delete('/settings/studio/cover', [SettingsController::class, 'removeStudioCover'])->name('settings.studio.cover.remove');
+        Route::post('/settings/studio/logo', [SettingsController::class, 'uploadStudioLogo'])->name('settings.studio.logo.upload');
+        Route::delete('/settings/studio/logo', [SettingsController::class, 'removeStudioLogo'])->name('settings.studio.logo.remove');
+        Route::post('/settings/studio/cover', [SettingsController::class, 'uploadStudioCover'])->name('settings.studio.cover.upload');
+        Route::delete('/settings/studio/cover', [SettingsController::class, 'removeStudioCover'])->name('settings.studio.cover.remove');
 
-    // Gallery
-    Route::post('/settings/studio/gallery', [SettingsController::class, 'uploadGalleryImage'])->name('settings.studio.gallery.upload');
-    Route::put('/settings/studio/gallery/{id}', [SettingsController::class, 'updateGalleryImage'])->name('settings.studio.gallery.update');
-    Route::delete('/settings/studio/gallery/{id}', [SettingsController::class, 'deleteGalleryImage'])->name('settings.studio.gallery.delete');
-    Route::post('/settings/studio/gallery/reorder', [SettingsController::class, 'reorderGalleryImages'])->name('settings.studio.gallery.reorder');
+        // Gallery
+        Route::post('/settings/studio/gallery', [SettingsController::class, 'uploadGalleryImage'])->name('settings.studio.gallery.upload');
+        Route::put('/settings/studio/gallery/{id}', [SettingsController::class, 'updateGalleryImage'])->name('settings.studio.gallery.update');
+        Route::delete('/settings/studio/gallery/{id}', [SettingsController::class, 'deleteGalleryImage'])->name('settings.studio.gallery.delete');
+        Route::post('/settings/studio/gallery/reorder', [SettingsController::class, 'reorderGalleryImages'])->name('settings.studio.gallery.reorder');
 
-    // Certifications
-    Route::post('/settings/studio/certifications', [SettingsController::class, 'storeCertification'])->name('settings.studio.certifications.store');
-    Route::get('/settings/studio/certifications/{id}', [SettingsController::class, 'getCertification'])->name('settings.studio.certifications.show');
-    Route::post('/settings/studio/certifications/{id}', [SettingsController::class, 'updateCertification'])->name('settings.studio.certifications.update');
-    Route::delete('/settings/studio/certifications/{id}', [SettingsController::class, 'deleteCertification'])->name('settings.studio.certifications.delete');
+        // Certifications
+        Route::post('/settings/studio/certifications', [SettingsController::class, 'storeCertification'])->name('settings.studio.certifications.store');
+        Route::get('/settings/studio/certifications/{id}', [SettingsController::class, 'getCertification'])->name('settings.studio.certifications.show');
+        Route::post('/settings/studio/certifications/{id}', [SettingsController::class, 'updateCertification'])->name('settings.studio.certifications.update');
+        Route::delete('/settings/studio/certifications/{id}', [SettingsController::class, 'deleteCertification'])->name('settings.studio.certifications.delete');
+    });
 
     // Settings - Locations (specific routes first, then parameterized routes)
-    Route::get('/settings/locations', [LocationController::class, 'index'])->name('settings.locations.index');
-    Route::get('/settings/locations/create', [LocationController::class, 'create'])->name('settings.locations.create');
-    Route::post('/settings/locations', [LocationController::class, 'store'])->name('settings.locations.store');
+    Route::middleware('permission:studio.locations')->group(function () {
+        Route::get('/settings/locations', [LocationController::class, 'index'])->name('settings.locations.index');
+        Route::get('/settings/locations/create', [LocationController::class, 'create'])->name('settings.locations.create');
+        Route::post('/settings/locations', [LocationController::class, 'store'])->name('settings.locations.store');
+    });
 
     // Rooms
-    Route::get('/settings/locations/rooms', [RoomController::class, 'index'])->name('settings.locations.rooms');
-    Route::get('/settings/locations/rooms/create', [RoomController::class, 'create'])->name('settings.rooms.create');
-    Route::post('/settings/locations/rooms', [RoomController::class, 'store'])->name('settings.rooms.store');
-    Route::get('/settings/locations/rooms/{room}/edit', [RoomController::class, 'edit'])->name('settings.rooms.edit');
-    Route::put('/settings/locations/rooms/{room}', [RoomController::class, 'update'])->name('settings.rooms.update');
-    Route::delete('/settings/locations/rooms/{room}', [RoomController::class, 'destroy'])->name('settings.rooms.destroy');
-    Route::post('/settings/locations/rooms/{room}/toggle-status', [RoomController::class, 'toggleStatus'])->name('settings.rooms.toggle-status');
+    Route::middleware('permission:studio.rooms')->group(function () {
+        Route::get('/settings/locations/rooms', [RoomController::class, 'index'])->name('settings.locations.rooms');
+        Route::get('/settings/locations/rooms/create', [RoomController::class, 'create'])->name('settings.rooms.create');
+        Route::post('/settings/locations/rooms', [RoomController::class, 'store'])->name('settings.rooms.store');
+        Route::get('/settings/locations/rooms/{room}/edit', [RoomController::class, 'edit'])->name('settings.rooms.edit');
+        Route::put('/settings/locations/rooms/{room}', [RoomController::class, 'update'])->name('settings.rooms.update');
+        Route::delete('/settings/locations/rooms/{room}', [RoomController::class, 'destroy'])->name('settings.rooms.destroy');
+        Route::post('/settings/locations/rooms/{room}/toggle-status', [RoomController::class, 'toggleStatus'])->name('settings.rooms.toggle-status');
+    });
 
     // Booking Page
-    Route::get('/settings/locations/booking-page', [BookingPageController::class, 'index'])->name('settings.locations.booking-page');
-    Route::put('/settings/locations/booking-page', [BookingPageController::class, 'update'])->name('settings.booking-page.update');
-    Route::post('/settings/locations/booking-page/logo', [BookingPageController::class, 'uploadLogo'])->name('settings.booking-page.upload-logo');
-    Route::post('/settings/locations/booking-page/cover', [BookingPageController::class, 'uploadCover'])->name('settings.booking-page.upload-cover');
-    Route::delete('/settings/locations/booking-page/logo', [BookingPageController::class, 'removeLogo'])->name('settings.booking-page.remove-logo');
-    Route::delete('/settings/locations/booking-page/cover', [BookingPageController::class, 'removeCover'])->name('settings.booking-page.remove-cover');
-    Route::post('/settings/locations/booking-page/cover-position', [BookingPageController::class, 'updateCoverPosition'])->name('settings.booking-page.cover-position');
+    Route::middleware('permission:studio.booking_page')->group(function () {
+        Route::get('/settings/locations/booking-page', [BookingPageController::class, 'index'])->name('settings.locations.booking-page');
+        Route::put('/settings/locations/booking-page', [BookingPageController::class, 'update'])->name('settings.booking-page.update');
+        Route::post('/settings/locations/booking-page/logo', [BookingPageController::class, 'uploadLogo'])->name('settings.booking-page.upload-logo');
+        Route::post('/settings/locations/booking-page/cover', [BookingPageController::class, 'uploadCover'])->name('settings.booking-page.upload-cover');
+        Route::delete('/settings/locations/booking-page/logo', [BookingPageController::class, 'removeLogo'])->name('settings.booking-page.remove-logo');
+        Route::delete('/settings/locations/booking-page/cover', [BookingPageController::class, 'removeCover'])->name('settings.booking-page.remove-cover');
+        Route::post('/settings/locations/booking-page/cover-position', [BookingPageController::class, 'updateCoverPosition'])->name('settings.booking-page.cover-position');
+    });
 
     // Policies
-    // Policies
-    Route::get('/settings/locations/policies', [PoliciesController::class, 'index'])->name('settings.locations.policies');
-    Route::put('/settings/locations/policies', [PoliciesController::class, 'update'])->name('settings.policies.update');
+    Route::middleware('permission:studio.policies')->group(function () {
+        Route::get('/settings/locations/policies', [PoliciesController::class, 'index'])->name('settings.locations.policies');
+        Route::put('/settings/locations/policies', [PoliciesController::class, 'update'])->name('settings.policies.update');
+    });
 
     // Location CRUD (parameterized routes must come AFTER specific routes)
-    Route::get('/settings/locations/{location}/edit', [LocationController::class, 'edit'])->name('settings.locations.edit');
-    Route::put('/settings/locations/{location}', [LocationController::class, 'update'])->name('settings.locations.update');
-    Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('settings.locations.destroy');
-    Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
-    Route::post('/settings/locations/{location}/toggle-status', [LocationController::class, 'toggleStatus'])->name('settings.locations.toggle-status');
+    Route::middleware('permission:studio.locations')->group(function () {
+        Route::get('/settings/locations/{location}/edit', [LocationController::class, 'edit'])->name('settings.locations.edit');
+        Route::put('/settings/locations/{location}', [LocationController::class, 'update'])->name('settings.locations.update');
+        Route::delete('/settings/locations/{location}', [LocationController::class, 'destroy'])->name('settings.locations.destroy');
+        Route::post('/settings/locations/{location}/default', [LocationController::class, 'setDefault'])->name('settings.locations.set-default');
+        Route::post('/settings/locations/{location}/toggle-status', [LocationController::class, 'toggleStatus'])->name('settings.locations.toggle-status');
+    });
 
-    // Settings - Team
-    Route::get('/settings/team/users', [TeamController::class, 'users'])->name('settings.team.users');
-    Route::get('/settings/team/users/invite', [TeamController::class, 'showInvite'])->name('settings.team.users.invite');
-    Route::post('/settings/team/invite', [TeamController::class, 'invite'])->name('settings.team.invite');
-    Route::post('/settings/team/invitations/{invitation}/resend', [TeamController::class, 'resendInvite'])->name('settings.team.invite.resend');
-    Route::delete('/settings/team/invitations/{invitation}', [TeamController::class, 'revokeInvite'])->name('settings.team.invite.revoke');
-    Route::get('/settings/team/users/{user}', [TeamController::class, 'showUser'])->name('settings.team.users.show')->where('user', '[0-9]+');
-    Route::get('/settings/team/users/{user}/edit', [TeamController::class, 'editUser'])->name('settings.team.users.edit');
-    Route::put('/settings/team/users/{user}', [TeamController::class, 'updateUser'])->name('settings.team.users.update');
-    Route::put('/settings/team/users/{user}/role', [TeamController::class, 'updateRole'])->name('settings.team.users.role');
-    Route::post('/settings/team/users/{user}/deactivate', [TeamController::class, 'deactivate'])->name('settings.team.users.deactivate');
-    Route::post('/settings/team/users/{user}/reactivate', [TeamController::class, 'reactivate'])->name('settings.team.users.reactivate');
-    Route::post('/settings/team/users/{user}/suspend', [TeamController::class, 'suspend'])->name('settings.team.users.suspend');
-    Route::post('/settings/team/users/{user}/reset-password', [TeamController::class, 'resetUserPassword'])->name('settings.team.users.reset-password');
-    Route::post('/settings/team/users/{user}/send-invite', [TeamController::class, 'sendUserInvite'])->name('settings.team.users.send-invite');
-    Route::post('/settings/team/users/{user}/notes', [TeamController::class, 'storeUserNote'])->name('settings.team.users.notes.store');
-    Route::put('/settings/team/users/{user}/profile', [TeamController::class, 'updateUserProfile'])->name('settings.team.users.profile.update');
-    Route::delete('/settings/team/user-notes/{note}', [TeamController::class, 'deleteUserNote'])->name('settings.team.user-notes.delete');
-    Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
-    Route::post('/settings/team/users/{user}/add-as-instructor', [TeamController::class, 'addAsInstructor'])->name('settings.team.users.add-as-instructor');
+    // Settings - Team — read access requires team.view
+    Route::middleware('permission:team.view')->group(function () {
+        Route::get('/settings/team/users', [TeamController::class, 'users'])->name('settings.team.users');
+        Route::get('/settings/team/users/{user}', [TeamController::class, 'showUser'])->name('settings.team.users.show')->where('user', '[0-9]+');
+        Route::get('/settings/team/users/{user}/certifications/{certification}', [TeamController::class, 'getUserCertification'])->name('settings.team.users.certifications.show');
+    });
 
-    // User Certifications
-    Route::post('/settings/team/users/{user}/certifications', [TeamController::class, 'storeUserCertification'])->name('settings.team.users.certifications.store');
-    Route::get('/settings/team/users/{user}/certifications/{certification}', [TeamController::class, 'getUserCertification'])->name('settings.team.users.certifications.show');
-    Route::delete('/settings/team/users/{user}/certifications/{certification}', [TeamController::class, 'deleteUserCertification'])->name('settings.team.users.certifications.delete');
+    // Settings - Team — mutations require team.manage
+    Route::middleware('permission:team.manage')->group(function () {
+        Route::get('/settings/team/users/invite', [TeamController::class, 'showInvite'])->name('settings.team.users.invite');
+        Route::post('/settings/team/invite', [TeamController::class, 'invite'])->name('settings.team.invite');
+        Route::post('/settings/team/invitations/{invitation}/resend', [TeamController::class, 'resendInvite'])->name('settings.team.invite.resend');
+        Route::delete('/settings/team/invitations/{invitation}', [TeamController::class, 'revokeInvite'])->name('settings.team.invite.revoke');
+        Route::get('/settings/team/users/{user}/edit', [TeamController::class, 'editUser'])->name('settings.team.users.edit');
+        Route::put('/settings/team/users/{user}', [TeamController::class, 'updateUser'])->name('settings.team.users.update');
+        Route::put('/settings/team/users/{user}/role', [TeamController::class, 'updateRole'])->name('settings.team.users.role');
+        Route::post('/settings/team/users/{user}/deactivate', [TeamController::class, 'deactivate'])->name('settings.team.users.deactivate');
+        Route::post('/settings/team/users/{user}/reactivate', [TeamController::class, 'reactivate'])->name('settings.team.users.reactivate');
+        Route::post('/settings/team/users/{user}/suspend', [TeamController::class, 'suspend'])->name('settings.team.users.suspend');
+        Route::post('/settings/team/users/{user}/reset-password', [TeamController::class, 'resetUserPassword'])->name('settings.team.users.reset-password');
+        Route::post('/settings/team/users/{user}/send-invite', [TeamController::class, 'sendUserInvite'])->name('settings.team.users.send-invite');
+        Route::post('/settings/team/users/{user}/notes', [TeamController::class, 'storeUserNote'])->name('settings.team.users.notes.store');
+        Route::put('/settings/team/users/{user}/profile', [TeamController::class, 'updateUserProfile'])->name('settings.team.users.profile.update');
+        Route::delete('/settings/team/user-notes/{note}', [TeamController::class, 'deleteUserNote'])->name('settings.team.user-notes.delete');
+        Route::delete('/settings/team/users/{user}', [TeamController::class, 'remove'])->name('settings.team.users.remove');
+        Route::post('/settings/team/users/{user}/add-as-instructor', [TeamController::class, 'addAsInstructor'])->name('settings.team.users.add-as-instructor');
+
+        // User Certifications (mutations)
+        Route::post('/settings/team/users/{user}/certifications', [TeamController::class, 'storeUserCertification'])->name('settings.team.users.certifications.store');
+        Route::delete('/settings/team/users/{user}/certifications/{certification}', [TeamController::class, 'deleteUserCertification'])->name('settings.team.users.certifications.delete');
+    });
 
     // Redirect old settings instructor routes to main instructors module
     Route::get('/settings/team/instructors', fn() => redirect()->route('instructors.index'))->name('settings.team.instructors');
     Route::get('/settings/team/instructors/create', fn() => redirect()->route('instructors.create'))->name('settings.team.instructors.create');
     Route::get('/settings/team/instructors/{instructor}/edit', fn($instructor) => redirect()->route('instructors.edit', $instructor))->name('settings.team.instructors.edit');
 
-    Route::get('/settings/team/permissions', [TeamController::class, 'permissions'])->name('settings.team.permissions');
-    Route::get('/settings/team/permissions/{user}/edit', [TeamController::class, 'editPermissions'])->name('settings.team.permissions.edit');
-    Route::put('/settings/team/permissions/{user}', [TeamController::class, 'updatePermissions'])->name('settings.team.permissions.update');
+    Route::middleware('permission:team.permissions')->group(function () {
+        Route::get('/settings/team/permissions', [TeamController::class, 'permissions'])->name('settings.team.permissions');
+        Route::get('/settings/team/permissions/{user}/edit', [TeamController::class, 'editPermissions'])->name('settings.team.permissions.edit');
+        Route::put('/settings/team/permissions/{user}', [TeamController::class, 'updatePermissions'])->name('settings.team.permissions.update');
+    });
 
     // Settings - Clients (redirect to member-portal, keep PUT for AJAX save)
     Route::get('/settings/clients', function () { return redirect()->route('settings.member-portal'); })->name('settings.clients');
-    Route::put('/settings/clients', [SettingsController::class, 'updateClientSettings'])->name('settings.clients.update');
+    Route::middleware('permission:studio.client_settings')->group(function () {
+        Route::put('/settings/clients', [SettingsController::class, 'updateClientSettings'])->name('settings.clients.update');
 
-    // Settings - Member Portal
-    Route::get('/settings/member-portal', [SettingsController::class, 'memberPortal'])->name('settings.member-portal');
-    Route::put('/settings/member-portal', [SettingsController::class, 'updateMemberPortal'])->name('settings.member-portal.update');
+        // Settings - Member Portal
+        Route::get('/settings/member-portal', [SettingsController::class, 'memberPortal'])->name('settings.member-portal');
+        Route::put('/settings/member-portal', [SettingsController::class, 'updateMemberPortal'])->name('settings.member-portal.update');
+    });
 
     // Settings - Payments
     Route::get('/settings/payments/settings', [SettingsController::class, 'paymentSettings'])->name('settings.payments.settings');

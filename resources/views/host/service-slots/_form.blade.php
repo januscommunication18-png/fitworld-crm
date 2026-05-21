@@ -62,18 +62,7 @@
             <div class="card-body space-y-4">
                 <div>
                     <label class="label-text" for="service_plan_id">Service</label>
-                    <select id="service_plan_id" name="service_plan_id" class="hidden @error('service_plan_id') input-error @enderror" required
-                        data-select='{
-                            "hasSearch": true,
-                            "searchPlaceholder": "Search services...",
-                            "placeholder": "Select a service...",
-                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                            "toggleClasses": "advance-select-toggle",
-                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                            "optionClasses": "advance-select-option selected:select-active",
-                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                        }'>
+                    <x-studio-select name="service_plan_id" id="service_plan_id" placeholder="Select a service..." :required="true" :option-count="count($servicePlans)">
                         <option value="">Select a service...</option>
                         @foreach($servicePlans as $plan)
                         <option value="{{ $plan->id }}"
@@ -83,20 +72,10 @@
                             {{ $plan->name }} ({{ $plan->formatted_duration }})
                         </option>
                         @endforeach
-                    </select>
+                    </x-studio-select>
                     @error('service_plan_id')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
-                </div>
-
-                {{-- Service Info Display --}}
-                <div id="service-info" class="hidden">
-                    <div class="alert alert-soft alert-info">
-                        <span class="icon-[tabler--info-circle] size-5"></span>
-                        <div>
-                            <p class="text-sm">Duration: <span id="service-duration" class="font-semibold">-</span> min | Price: $<span id="service-price" class="font-semibold">-</span></p>
-                        </div>
-                    </div>
                 </div>
 
                 {{-- Custom Title --}}
@@ -120,35 +99,18 @@
             <div class="card-header">
                 <div class="flex items-center gap-2">
                     <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">2</span>
-                    <h3 class="card-title">Instructor</h3>
+                    <h3 class="card-title">Assign staff member / Instructor</h3>
                 </div>
             </div>
             <div class="card-body">
-                <div>
-                    <label class="label-text" for="instructor_id">Assign Instructor</label>
-                    <select id="instructor_id" name="instructor_id" class="hidden @error('instructor_id') input-error @enderror" required
-                        data-select='{
-                            "hasSearch": true,
-                            "searchPlaceholder": "Search instructors...",
-                            "placeholder": "Select an instructor...",
-                            "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
-                            "toggleClasses": "advance-select-toggle",
-                            "dropdownClasses": "advance-select-menu max-h-72 overflow-y-auto",
-                            "optionClasses": "advance-select-option selected:select-active",
-                            "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
-                            "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
-                        }'>
-                        <option value="">Select an instructor...</option>
-                        @foreach($instructors as $instructor)
-                        <option value="{{ $instructor->id }}" {{ old('instructor_id', $selectedInstructorId) == $instructor->id ? 'selected' : '' }}>
-                            {{ $instructor->name }}
-                        </option>
-                        @endforeach
-                    </select>
-                    @error('instructor_id')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
+                <x-studio-member-select
+                    name="instructor_id"
+                    :selected="$selectedInstructorId"
+                    :required="true"
+                />
+                @error('instructor_id')
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                @enderror
             </div>
         </div>
 
@@ -181,6 +143,23 @@
                         @error('slot_time')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
                         @enderror
+                    </div>
+                    <div>
+                        <label class="label-text" for="slot_end_time_display">End Time</label>
+                        <input type="text" id="slot_end_time_display"
+                            class="input w-full bg-base-200"
+                            placeholder="—" readonly tabindex="-1">
+                        <p class="text-xs text-base-content/60 mt-1">Auto-calculated from start time and service duration.</p>
+                    </div>
+                    <div>
+                        <label class="label-text" for="slot_price_display">Price</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/60">$</span>
+                            <input type="text" id="slot_price_display"
+                                class="input w-full bg-base-200 pl-7"
+                                placeholder="—" readonly tabindex="-1">
+                        </div>
+                        <p class="text-xs text-base-content/60 mt-1">Set by the selected service plan.</p>
                     </div>
                 </div>
 
@@ -277,28 +256,15 @@
             </div>
         </div>
 
-        {{-- Card 5: Pricing & Notes --}}
+        {{-- Card 5: Notes --}}
         <div class="card bg-base-100">
             <div class="card-header">
                 <div class="flex items-center gap-2">
                     <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">5</span>
-                    <h3 class="card-title">Pricing & Notes</h3>
+                    <h3 class="card-title">Notes</h3>
                 </div>
             </div>
             <div class="card-body space-y-4">
-                <div>
-                    <label class="label-text" for="price">Custom Price ($)</label>
-                    <input type="number" id="price" name="price"
-                        value="{{ old('price', $serviceSlot?->price) }}"
-                        class="input w-full @error('price') input-error @enderror"
-                        min="0" max="9999.99" step="0.01"
-                        placeholder="Leave empty to use service price">
-                    <p class="text-xs text-base-content/60 mt-1">Override the default service price for this slot.</p>
-                    @error('price')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
                 <div>
                     <label class="label-text" for="notes">Internal Notes</label>
                     <textarea id="notes" name="notes" rows="2"
@@ -320,31 +286,22 @@
                 </div>
             </div>
             <div class="card-body">
-                <div class="flex flex-wrap gap-3">
-                    @php
-                        $availableStatuses = [
-                            'draft' => 'Draft',
-                            'available' => 'Available',
-                        ];
-                        if ($serviceSlot) {
-                            $availableStatuses = \App\Models\ServiceSlot::getStatuses();
-                        }
-                    @endphp
-                    @foreach($availableStatuses as $value => $label)
-                        @if($value !== 'booked' && $value !== 'cancelled')
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name="status" value="{{ $value }}"
-                                class="radio radio-primary"
-                                {{ old('status', $serviceSlot?->status ?? 'draft') === $value ? 'checked' : '' }}>
-                            <span class="label-text">{{ $label }}</span>
-                            @if($value === 'available')
-                                <span class="badge badge-success badge-sm">Open for Booking</span>
-                            @endif
-                        </label>
-                        @endif
-                    @endforeach
+                @php
+                    $isAvailable = old('status', $serviceSlot?->status ?? 'draft') === 'available';
+                @endphp
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="font-medium">Open for Booking</span>
+                        <p class="text-xs text-base-content/60">Available slots are visible to clients and open for booking.</p>
+                    </div>
+                    <input type="hidden" name="status" id="slot_status_value" value="{{ $isAvailable ? 'available' : 'draft' }}">
+                    <label class="switch switch-primary">
+                        <input type="checkbox" id="slot_status_toggle"
+                            {{ $isAvailable ? 'checked' : '' }}
+                            onchange="document.getElementById('slot_status_value').value = this.checked ? 'available' : 'draft'" />
+                        <span class="switch-indicator"></span>
+                    </label>
                 </div>
-                <p class="text-xs text-base-content/60 mt-2">Available slots are visible to clients and open for booking.</p>
             </div>
         </div>
 
@@ -405,9 +362,43 @@ document.addEventListener('DOMContentLoaded', function() {
     var dateInput = document.getElementById('slot_date');
     var timeInput = document.getElementById('slot_time');
     var startTimeInput = document.getElementById('start_time');
-    var serviceInfo = document.getElementById('service-info');
-    var serviceDuration = document.getElementById('service-duration');
-    var servicePrice = document.getElementById('service-price');
+    var endTimeDisplay = document.getElementById('slot_end_time_display');
+    var priceDisplay = document.getElementById('slot_price_display');
+
+    function getSelectedDuration() {
+        var selectedOption = servicePlanSelect.options[servicePlanSelect.selectedIndex];
+        if (!selectedOption || !selectedOption.value) return null;
+        var d = parseInt(selectedOption.dataset.duration, 10);
+        return isNaN(d) ? null : d;
+    }
+
+    function formatTime12h(hours, minutes) {
+        var period = hours >= 12 ? 'PM' : 'AM';
+        var h12 = hours % 12;
+        if (h12 === 0) h12 = 12;
+        var mm = minutes < 10 ? '0' + minutes : '' + minutes;
+        return h12 + ':' + mm + ' ' + period;
+    }
+
+    function updateEndTime() {
+        var time = timeInput.value;
+        var duration = getSelectedDuration();
+        if (!time || duration === null) {
+            endTimeDisplay.value = '';
+            return;
+        }
+        var parts = time.split(':');
+        var h = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10);
+        if (isNaN(h) || isNaN(m)) {
+            endTimeDisplay.value = '';
+            return;
+        }
+        var total = h * 60 + m + duration;
+        var endH = Math.floor(total / 60) % 24;
+        var endM = total % 60;
+        endTimeDisplay.value = formatTime12h(endH, endM);
+    }
 
     function updateStartTime() {
         var date = dateInput.value;
@@ -415,19 +406,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (date && time) {
             startTimeInput.value = date + 'T' + time;
         }
+        updateEndTime();
     }
 
     function updateServiceInfo() {
         var selectedOption = servicePlanSelect.options[servicePlanSelect.selectedIndex];
         if (selectedOption && selectedOption.value) {
-            var duration = selectedOption.dataset.duration;
             var price = selectedOption.dataset.price;
-            serviceDuration.textContent = duration || '-';
-            servicePrice.textContent = price || '0';
-            serviceInfo.classList.remove('hidden');
+            priceDisplay.value = parseFloat(price || 0).toFixed(2);
         } else {
-            serviceInfo.classList.add('hidden');
+            priceDisplay.value = '';
         }
+        updateEndTime();
     }
 
     // Service plan change handler

@@ -24,6 +24,7 @@ class SchedulePlannerController extends Controller
         $classPlans = $host->classPlans()->where('is_active', true)->orderBy('name')->get();
         $servicePlans = $host->servicePlans()->where('is_active', true)->orderBy('name')->get();
         $membershipPlans = MembershipPlan::where('host_id', $host->id)->active()->orderBy('name')->get();
+        $spaceRentalConfigs = $host->spaceRentalConfigs()->active()->orderBy('name')->get();
 
         $schedules = collect();
         $selectedPlanId = null;
@@ -55,6 +56,9 @@ class SchedulePlannerController extends Controller
             $schedules = $this->getClassSchedules($host, $selectedPlanId);
         }
 
+        // Sort by creation date (newest first) across the merged collection
+        $schedules = $schedules->sortByDesc(fn ($s) => $s->created_at)->values();
+
         // Scope to schedules assigned to this user when only view_own is granted
         if ($viewOwnOnly) {
             $myInstructorIds = \App\Models\Instructor::where('host_id', $host->id)
@@ -80,18 +84,26 @@ class SchedulePlannerController extends Controller
         }
 
         return view('host.schedule-planner.index', compact(
-            'classPlans', 'servicePlans', 'membershipPlans', 'selectedPlanId', 'schedules', 'type'
+            'classPlans', 'servicePlans', 'membershipPlans', 'spaceRentalConfigs',
+            'selectedPlanId', 'schedules', 'type'
         ));
     }
 
     /**
      * Show a planner's details — generic info about the recurring schedule.
+     * Accepts either a ClassSession id or a ServiceSlot id.
      */
-    public function show(ClassSession $classSession)
+    public function show($id)
     {
         $host = auth()->user()->currentHost();
 
-        if ($classSession->host_id !== $host->id) {
+        $classSession = ClassSession::where('id', $id)->where('host_id', $host->id)->first();
+
+        if (!$classSession) {
+            $serviceSlot = ServiceSlot::where('id', $id)->where('host_id', $host->id)->first();
+            if ($serviceSlot) {
+                return redirect()->route('service-slots.show', $serviceSlot);
+            }
             abort(404);
         }
 
@@ -177,7 +189,7 @@ class SchedulePlannerController extends Controller
                   });
             })
             ->with(['primaryInstructor:id,name', 'location:id,name'])
-            ->orderBy('start_time')
+            ->orderByDesc('created_at')
             ->get();
 
         $dayNames = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
@@ -216,6 +228,7 @@ class SchedulePlannerController extends Controller
                 'is_recurring' => (bool) $parent->recurrence_rule,
                 'status' => $parent->status,
                 'type' => 'class',
+                'created_at' => $parent->created_at,
             ]);
         }
 
@@ -241,7 +254,7 @@ class SchedulePlannerController extends Controller
                   });
             })
             ->with(['primaryInstructor:id,name', 'location:id,name'])
-            ->orderBy('start_time')
+            ->orderByDesc('created_at')
             ->get();
 
         $dayNames = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
@@ -280,6 +293,7 @@ class SchedulePlannerController extends Controller
                 'is_recurring' => (bool) $parent->recurrence_rule,
                 'status' => $parent->status,
                 'type' => 'membership',
+                'created_at' => $parent->created_at,
             ]);
         }
 
@@ -301,7 +315,7 @@ class SchedulePlannerController extends Controller
                   });
             })
             ->with(['instructor:id,name', 'location:id,name'])
-            ->orderBy('start_time')
+            ->orderByDesc('created_at')
             ->get();
 
         $dayNames = [0 => 'Sun', 1 => 'Mon', 2 => 'Tue', 3 => 'Wed', 4 => 'Thu', 5 => 'Fri', 6 => 'Sat'];
@@ -340,6 +354,7 @@ class SchedulePlannerController extends Controller
                 'is_recurring' => (bool) $parent->recurrence_rule,
                 'status' => $parent->status,
                 'type' => 'service',
+                'created_at' => $parent->created_at,
             ]);
         }
 
@@ -354,7 +369,7 @@ class SchedulePlannerController extends Controller
             ->where('schedule_type', MembershipPlan::SCHEDULE_TYPE_OPEN_ACCESS)
             ->active()
             ->with('checkins')
-            ->orderBy('name')
+            ->orderByDesc('created_at')
             ->get();
 
         foreach ($openAccessPlans as $plan) {
@@ -382,6 +397,7 @@ class SchedulePlannerController extends Controller
                 'is_open_access' => true,
                 'status' => $plan->status,
                 'type' => 'open_access',
+                'created_at' => $plan->created_at,
             ]);
         }
 

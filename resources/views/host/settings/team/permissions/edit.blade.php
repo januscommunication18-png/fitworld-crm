@@ -108,7 +108,6 @@
                     @php
                         $categoryIcons = [
                             'nav' => 'icon-[tabler--layout-sidebar]',
-                            'settings_nav' => 'icon-[tabler--settings-cog]',
                             'schedule' => 'icon-[tabler--calendar]',
                             'bookings' => 'icon-[tabler--clipboard-list]',
                             'students' => 'icon-[tabler--users]',
@@ -118,11 +117,12 @@
                             'studio' => 'icon-[tabler--building-store]',
                             'team' => 'icon-[tabler--users-group]',
                             'billing' => 'icon-[tabler--receipt]',
+                            'communication' => 'icon-[tabler--mail-cog]',
+                            'integrations' => 'icon-[tabler--plug]',
                             'pricing' => 'icon-[tabler--currency-dollar]',
                         ];
                         $categoryColors = [
                             'nav' => 'text-base-content bg-base-content/10',
-                            'settings_nav' => 'text-base-content bg-base-content/10',
                             'schedule' => 'text-primary bg-primary/10',
                             'bookings' => 'text-secondary bg-secondary/10',
                             'students' => 'text-info bg-info/10',
@@ -132,11 +132,12 @@
                             'studio' => 'text-primary bg-primary/10',
                             'team' => 'text-secondary bg-secondary/10',
                             'billing' => 'text-info bg-info/10',
+                            'communication' => 'text-warning bg-warning/10',
+                            'integrations' => 'text-accent bg-accent/10',
                             'pricing' => 'text-success bg-success/10',
                         ];
                         $categoryLabels = [
                             'nav' => 'Main Sidebar Navigation',
-                            'settings_nav' => 'Settings Sidebar Navigation',
                             'schedule' => 'Schedule',
                             'bookings' => 'Bookings',
                             'students' => 'Clients',
@@ -146,11 +147,12 @@
                             'studio' => 'Studio Settings',
                             'team' => 'Team & Users',
                             'billing' => 'Billing',
+                            'communication' => 'Communication',
+                            'integrations' => 'Integrations',
                             'pricing' => 'Pricing',
                         ];
                         $categoryDescriptions = [
                             'nav' => 'Control which top-level menu items appear in this user\'s sidebar',
-                            'settings_nav' => 'Control which links appear inside the Settings sidebar',
                             'schedule' => 'Calendar, class sessions, and scheduling actions',
                             'bookings' => 'Bookings, waitlist, and attendance',
                             'students' => 'Client directory and profile management',
@@ -160,6 +162,8 @@
                             'studio' => 'Studio profile, locations, and booking page',
                             'team' => 'Team members, instructors, and permissions',
                             'billing' => 'Subscription plan and invoices',
+                            'communication' => 'Email templates, notifications, and automation rules',
+                            'integrations' => 'Stripe, FitNearYou, Calendar, PayPal, Cash App, Venmo',
                             'pricing' => 'Price override at checkout',
                         ];
 

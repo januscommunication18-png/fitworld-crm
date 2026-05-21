@@ -63,6 +63,7 @@
         {{-- Right-aligned buttons --}}
         <div class="flex items-center gap-2 md:ml-auto">
             {{-- Add Booking Dropdown --}}
+            @if(auth()->user()->hasPermission('bookings.create'))
             <div class="relative">
                 <button type="button" class="btn btn-success" onclick="this.nextElementSibling.classList.toggle('hidden')">
                     <span class="icon-[tabler--plus] size-5"></span>
@@ -90,6 +91,7 @@
                     </li>
                 </ul>
             </div>
+            @endif
             @if(isset($todaysClasses) && $todaysClasses->count() > 0 && isset($hasProgressTemplates) && $hasProgressTemplates)
             <button type="button" class="btn btn-success" onclick="document.getElementById('record-progress-modal').classList.remove('hidden')">
                 <span class="icon-[tabler--chart-line] size-5"></span>
@@ -214,6 +216,7 @@
                             </button>
                             <div id="notes-content" class="accordion-content w-full overflow-hidden transition-[height]" role="region">
                                 <div class="px-4 pb-4">
+                                    @if(auth()->user()->hasPermission('students.notes'))
                                     <form id="quick-note-form">
                                         <div class="space-y-3">
                                             <div>
@@ -252,6 +255,7 @@
                                             </div>
                                         </div>
                                     </form>
+                                    @endif
                                     @if($client->clientNotes->count() > 0)
                                         @php $latestNote = $client->clientNotes->first(); @endphp
                                         <div class="flex gap-3 p-3 mt-4 rounded-lg bg-base-200/50 border border-base-300" id="latest-note-display">
@@ -380,10 +384,12 @@
                                         </div>
                                     @else
                                         <p class="text-sm text-base-content/50 mb-3">No bookings this week.</p>
+                                        @if(auth()->user()->hasPermission('bookings.create'))
                                         <div class="flex gap-2">
                                             <a href="{{ route('walk-in.select', ['client_id' => $client->id]) }}" class="btn btn-primary btn-xs">Book Class</a>
                                             <a href="{{ route('walk-in.select-service', ['client_id' => $client->id]) }}" class="btn btn-secondary btn-xs">Book Service</a>
                                         </div>
+                                        @endif
                                     @endif
                                 </div>
                             </div>
@@ -1138,6 +1144,7 @@
             <div class="card bg-base-100">
                 <div class="card-body">
                     {{-- Add Note Form --}}
+                    @if(auth()->user()->hasPermission('students.notes'))
                     <div class="border border-base-300 rounded-xl p-5 mb-6 bg-gradient-to-br from-primary/5 to-transparent">
                         <div class="flex items-center gap-3 mb-4">
                             <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -1188,6 +1195,7 @@
                             </div>
                         </form>
                     </div>
+                    @endif
 
                     {{-- Notes List --}}
                     @if($client->clientNotes->count() > 0)

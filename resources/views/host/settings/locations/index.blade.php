@@ -35,12 +35,14 @@
             <h1 class="text-xl font-semibold">Locations</h1>
             <p class="text-base-content/60 text-sm">Manage your studio, public, and virtual locations (max 5)</p>
         </div>
-        @if($locations->count() < 5)
-        <a href="{{ route('settings.locations.create') }}" class="btn btn-primary">
-            <span class="icon-[tabler--plus] size-4"></span> Add Location
-        </a>
-        @else
-        <span class="badge badge-soft badge-neutral">Maximum locations reached</span>
+        @if(auth()->user()->hasPermission('studio.locations'))
+            @if($locations->count() < 5)
+            <a href="{{ route('settings.locations.create') }}" class="btn btn-primary">
+                <span class="icon-[tabler--plus] size-4"></span> Add Location
+            </a>
+            @else
+            <span class="badge badge-soft badge-neutral">Maximum locations reached</span>
+            @endif
         @endif
     </div>
 
@@ -164,6 +166,7 @@
                                     <li><a href="javascript:void(0)" onclick="viewLocation({{ $location->id }})">
                                         <span class="icon-[tabler--eye] size-4"></span> View
                                     </a></li>
+                                    @if(auth()->user()->hasPermission('studio.locations'))
                                     <li><a href="{{ route('settings.locations.edit', $location) }}">
                                         <span class="icon-[tabler--edit] size-4"></span> Edit
                                     </a></li>
@@ -178,6 +181,7 @@
                                     <li><a href="javascript:void(0)" onclick="confirmDeleteLocation({{ $location->id }}, '{{ addslashes($location->name) }}', {{ $location->rooms_count ?? 0 }})" class="text-error">
                                         <span class="icon-[tabler--trash] size-4"></span> Delete
                                     </a></li>
+                                    @endif
                                     @endif
                                 </ul>
                             </details>

@@ -51,9 +51,11 @@
                         </a>
                         @endif
                     </div>
+                    @if(auth()->user()->hasPermission('team.manage'))
                     <a href="{{ route('settings.team.users.invite') }}" class="btn btn-primary btn-sm">
                         <span class="icon-[tabler--plus] size-4"></span> Add Team Member
                     </a>
+                    @endif
                 </div>
             </div>
 
@@ -147,8 +149,9 @@
                                 @endif
                             </td>
                             <td>
+                                @php $canManageTeam = auth()->user()->hasPermission('team.manage'); @endphp
                                 <div class="flex items-center gap-1">
-                                    @if(!$hasLogin && $user->email && $userRole !== 'owner')
+                                    @if($canManageTeam && !$hasLogin && $user->email && $userRole !== 'owner')
                                     <form action="{{ route('settings.team.users.send-invite', $user) }}" method="POST" class="inline">
                                         @csrf
                                         <button type="submit" class="btn btn-ghost btn-xs btn-square text-primary" title="Send Signup Invite">
@@ -159,10 +162,12 @@
                                     <a href="{{ route('settings.team.users.show', $user) }}" class="btn btn-ghost btn-xs btn-square" title="View Profile">
                                         <span class="icon-[tabler--eye] size-4"></span>
                                     </a>
+                                    @if($canManageTeam)
                                     <a href="{{ route('settings.team.users.edit', $user) }}" class="btn btn-ghost btn-xs btn-square" title="Edit">
                                         <span class="icon-[tabler--edit] size-4"></span>
                                     </a>
-                                    @if($userRole !== 'owner' && $user->id !== auth()->id())
+                                    @endif
+                                    @if($canManageTeam && $userRole !== 'owner' && $user->id !== auth()->id())
                                     <button type="button" class="btn btn-ghost btn-xs btn-square text-error" title="Remove" onclick="openDeleteUserModal({{ $user->id }}, '{{ addslashes($user->full_name) }}')">
                                         <span class="icon-[tabler--trash] size-4"></span>
                                     </button>

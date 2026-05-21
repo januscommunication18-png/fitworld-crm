@@ -395,6 +395,16 @@ class InstructorController extends Controller
         $authUser = auth()->user();
         $canEditAdmin = $authUser->isOwner() || $authUser->hasPermission('team.instructor_admin');
 
+        // Abort if a non-admin tries to submit admin-only fields
+        $adminFields = [
+            'is_visible', 'is_active', 'employment_type', 'rate_type', 'rate_amount',
+            'compensation_notes', 'hours_per_week', 'max_classes_per_week', 'working_days',
+            'availability_default_from', 'availability_default_to', 'availability_by_day',
+        ];
+        if (!$canEditAdmin && $request->hasAny($adminFields)) {
+            abort(403, 'You do not have permission to modify instructor employment, workload, availability, or visibility settings.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',

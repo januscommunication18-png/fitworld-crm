@@ -30,12 +30,14 @@
                 @endif
             </p>
         </div>
+        @if(auth()->user()->hasPermission('schedule.create'))
         <div class="flex items-center gap-2">
             <a href="{{ route('service-slots.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['schedule.add_slot'] ?? 'Add Slot' }}
             </a>
         </div>
+        @endif
     </div>
 
     {{-- Filters --}}
@@ -178,10 +180,12 @@
                         @endif
                     @endif
                 </p>
+                @if(auth()->user()->hasPermission('schedule.create'))
                 <a href="{{ route('service-slots.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
                     {{ $trans['schedule.add_first_slot'] ?? 'Add Your First Slot' }}
                 </a>
+                @endif
             </div>
         </div>
     @else
@@ -191,14 +195,10 @@
                     $dateObj = \Carbon\Carbon::parse($dateKey);
                     $isToday = $dateObj->isToday();
                 @endphp
-                <div class="card bg-base-100">
+                <div id="date-{{ $dateKey }}" class="card bg-base-100" @if($isToday) data-today="true" @endif>
                     {{-- Date Header --}}
                     <div class="px-4 py-3 border-b border-base-200">
-                        <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-lg flex flex-col items-center justify-center {{ $isToday ? 'bg-primary text-primary-content' : 'bg-base-200' }}">
-                                <span class="text-xs uppercase {{ $isToday ? 'text-primary-content/70' : 'text-base-content/60' }}">{{ $dateObj->format('D') }}</span>
-                                <span class="text-lg font-bold">{{ $dateObj->format('j') }}</span>
-                            </div>
+                        <div class="flex items-center justify-between">
                             <div>
                                 <h3 class="font-semibold {{ $isToday ? 'text-primary' : '' }}">
                                     {{ $dateObj->format('l, F j, Y') }}
@@ -283,32 +283,31 @@
                                             <span class="badge {{ $slot->getStatusBadgeClass() }} badge-soft badge-sm capitalize">{{ $slot->status }}</span>
                                         </td>
                                         <td>
-                                            <div class="flex items-center gap-1">
-                                                @if($slot->isAvailable())
-                                                    <a href="{{ route('walk-in.select-service', ['slot' => $slot->id]) }}"
-                                                       class="btn btn-ghost btn-xs btn-square text-primary"
-                                                       title="{{ $trans['schedule.add_booking'] ?? 'Add Booking' }}">
-                                                        <span class="icon-[tabler--user-plus] size-4"></span>
-                                                    </a>
+                                            <x-actions-dropdown size="xs">
+                                                @if($slot->isAvailable() && auth()->user()->hasPermission('bookings.create'))
+                                                    <li><a href="{{ route('walk-in.select-service', ['slot' => $slot->id]) }}">
+                                                        <span class="icon-[tabler--user-plus] size-4"></span> {{ $trans['schedule.add_booking'] ?? 'Add Booking' }}
+                                                    </a></li>
                                                 @endif
-                                                <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.view'] ?? 'View' }}" onclick="openDrawer('service-slot-{{ $slot->id }}', event)">
-                                                    <span class="icon-[tabler--eye] size-4"></span>
-                                                </button>
+                                                <li><button type="button" onclick="openDrawer('service-slot-{{ $slot->id }}', event)" class="w-full text-left flex items-center gap-2">
+                                                    <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
+                                                </button></li>
                                                 @if(auth()->user()->hasPermission('schedule.edit'))
-                                                <a href="{{ route('service-slots.edit', $slot) }}" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['btn.edit'] ?? 'Edit' }}">
-                                                    <span class="icon-[tabler--edit] size-4"></span>
-                                                </a>
+                                                    <li><a href="{{ route('service-slots.edit', $slot) }}">
+                                                        <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
+                                                    </a></li>
                                                 @endif
-                                                @if($slot->status !== 'booked')
-                                                    <form action="{{ route('service-slots.destroy', $slot) }}" method="POST" class="inline" onsubmit="return confirm('{{ $trans['schedule.confirm_delete_slot'] ?? 'Delete this slot?' }}')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-ghost btn-xs btn-square text-error" title="{{ $trans['btn.delete'] ?? 'Delete' }}">
-                                                            <span class="icon-[tabler--trash] size-4"></span>
-                                                        </button>
-                                                    </form>
+                                                @if($slot->status !== 'booked' && $slot->status !== \App\Models\ServiceSlot::STATUS_CANCELLED && auth()->user()->hasPermission('schedule.cancel'))
+                                                    <li>
+                                                        <form action="{{ route('service-slots.destroy', $slot) }}" method="POST" onsubmit="return confirm('{{ $trans['schedule.confirm_delete_slot'] ?? 'Delete this slot?' }}')">
+                                                            @csrf @method('DELETE')
+                                                            <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                                <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                                            </button>
+                                                        </form>
+                                                    </li>
                                                 @endif
-                                            </div>
+                                            </x-actions-dropdown>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -461,6 +460,13 @@ function openDrawer(id, event) {
         event.stopPropagation();
     }
 
+    // Close any open actions-dropdown so it doesn't sit on top of the drawer.
+    document.querySelectorAll('details.js-actions-dropdown[open]').forEach(function (d) {
+        d.removeAttribute('open');
+        var menu = d.querySelector('.js-actions-menu');
+        if (menu) menu.classList.add('hidden');
+    });
+
     const drawer = document.getElementById('drawer-' + id);
     const backdrop = document.getElementById('drawer-backdrop');
 
@@ -530,6 +536,37 @@ function closeAllDrawers() {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeAllDrawers();
+    }
+});
+
+// Auto-scroll to today's date or nearest future date on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const today = '{{ now()->format('Y-m-d') }}';
+
+    let targetCard = document.querySelector('[data-today="true"]');
+
+    if (!targetCard) {
+        const allDateCards = document.querySelectorAll('[id^="date-"]');
+        for (const card of allDateCards) {
+            const cardDate = card.id.replace('date-', '');
+            if (cardDate >= today) {
+                targetCard = card;
+                break;
+            }
+        }
+    }
+
+    if (targetCard) {
+        setTimeout(function() {
+            const rect = targetCard.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const targetPosition = rect.top + scrollTop - 120;
+
+            window.scrollTo({
+                top: targetPosition,
+                behavior: 'smooth'
+            });
+        }, 300);
     }
 });
 </script>

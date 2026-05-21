@@ -19,28 +19,27 @@ class SettingsController extends Controller
     {
         $user = auth()->user();
 
-        // Pick the first landing page where the user has BOTH the sidebar nav
-        // permission AND the underlying functional permission, otherwise the
-        // EnforceNavPermission middleware will redirect them back to the dashboard.
+        // Pick the first landing page the user has the underlying functional
+        // permission for. EnforceNavPermission middleware uses the same
+        // permission keys, so any redirect here will pass.
         $candidates = [
-            ['nav.settings.studio', ['studio.profile'], 'settings.studio.profile'],
-            ['nav.settings.studio', ['studio.locations'], 'settings.locations.index'],
-            ['nav.settings.users', ['team.view', 'team.manage'], 'settings.team.users'],
-            ['nav.settings.users', ['team.instructors'], 'settings.team.instructors'],
-            ['nav.settings.permissions', ['team.permissions'], 'settings.team.permissions'],
-            ['nav.settings.payments', ['payments.stripe'], 'settings.payments.settings'],
-            ['nav.settings.billing', ['billing.plan'], 'settings.billing.plan'],
-            ['nav.settings.billing', ['billing.invoices'], 'settings.billing.invoices'],
+            ['studio.profile', 'settings.studio.profile'],
+            ['studio.locations', 'settings.locations.index'],
+            ['team.view', 'settings.team.users'],
+            ['team.manage', 'settings.team.users'],
+            ['team.instructors', 'settings.team.instructors'],
+            ['team.permissions', 'settings.team.permissions'],
+            ['studio.client_settings', 'settings.member-portal'],
+            ['payments.stripe', 'settings.payments.settings'],
+            ['communication.manage', 'settings.communication.email-templates'],
+            ['integrations.manage', 'settings.integrations.stripe'],
+            ['billing.plan', 'settings.billing.plan'],
+            ['billing.invoices', 'settings.billing.invoices'],
         ];
 
-        foreach ($candidates as [$navPermission, $functionalPerms, $route]) {
-            if (!$user->hasPermission($navPermission)) {
-                continue;
-            }
-            foreach ($functionalPerms as $fp) {
-                if ($user->hasPermission($fp)) {
-                    return redirect()->route($route);
-                }
+        foreach ($candidates as [$permission, $route]) {
+            if ($user->hasPermission($permission)) {
+                return redirect()->route($route);
             }
         }
 

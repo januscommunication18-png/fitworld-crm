@@ -32,10 +32,12 @@
             </div>
 
             @if($tab === 'classes')
+            @if(auth()->user()->hasPermission('studio.class_types'))
             <a href="{{ route('class-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['btn.add'] ?? 'Add' }} {{ $trans['nav.catalog.class_plans'] ?? 'Class Plan' }}
             </a>
+            @endif
             @elseif($tab === 'services')
             <a href="{{ route('service-plans.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
@@ -117,10 +119,12 @@
                 <span class="icon-[tabler--users-group] size-16 text-base-content/20 mx-auto mb-4"></span>
                 <h3 class="text-lg font-semibold mb-2">{{ $trans['catalog.no_class_plans'] ?? 'No Class Plans Yet' }}</h3>
                 <p class="text-base-content/60 mb-4">{{ $trans['catalog.no_class_plans_desc'] ?? 'Create your first class plan template to start scheduling classes.' }}</p>
+                @if(auth()->user()->hasPermission('studio.class_types'))
                 <a href="{{ route('class-plans.create') }}" class="btn btn-primary">
                     <span class="icon-[tabler--plus] size-5"></span>
                     {{ $trans['catalog.create_first_class'] ?? 'Create First Class Plan' }}
                 </a>
+                @endif
             </div>
         </div>
         @else
@@ -179,17 +183,21 @@
                             <li><a href="{{ route('class-plans.show', $classPlan) }}">
                                 <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
                             </a></li>
+                            @if(auth()->user()->hasPermission('studio.class_types'))
                             <li><a href="{{ route('class-plans.edit', $classPlan) }}">
                                 <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                             </a></li>
+                            @endif
                             <li><a href="{{ route('class-sessions.create', ['class_plan_id' => $classPlan->id]) }}">
                                 <span class="icon-[tabler--plus] size-4"></span> Schedule Session
                             </a></li>
+                            @if(auth()->user()->hasPermission('studio.class_types'))
                             <li>
                                 <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
                                     <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
                                 </button>
                             </li>
+                            @endif
                         </x-actions-dropdown>
                     </div>
                 </div>
@@ -225,17 +233,21 @@
                             <li><a href="{{ route('class-plans.show', $classPlan) }}">
                                 <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
                             </a></li>
+                            @if(auth()->user()->hasPermission('studio.class_types'))
                             <li><a href="{{ route('class-plans.edit', $classPlan) }}">
                                 <span class="icon-[tabler--edit] size-4"></span> {{ $trans['btn.edit'] ?? 'Edit' }}
                             </a></li>
+                            @endif
                             <li><a href="{{ route('class-sessions.create', ['class_plan_id' => $classPlan->id]) }}">
                                 <span class="icon-[tabler--plus] size-4"></span> Schedule Session
                             </a></li>
+                            @if(auth()->user()->hasPermission('studio.class_types'))
                             <li>
                                 <button type="button" class="w-full text-left flex items-center gap-2 text-error" onclick="openDeleteModal('{{ route('class-plans.destroy', $classPlan) }}', '{{ $classPlan->name }}', '{{ $trans['catalog.class_plan'] ?? 'class plan' }}')">
                                     <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
                                 </button>
                             </li>
+                            @endif
                         </x-actions-dropdown>
                     </div>
 
