@@ -290,7 +290,7 @@
                                     class="flex items-center gap-4 p-4 w-full text-left hover:bg-base-200/40 transition">
                                 <div class="text-center shrink-0 w-14">
                                     <div class="text-xs uppercase text-base-content/50">{{ $session->start_time->format('M') }}</div>
-                                    <div class="text-2xl font-bold leading-none" style="color: {{ $color }};">{{ $session->start_time->format('d') }}</div>
+                                    <div class="text-2xl font-bold leading-none text-base-content">{{ $session->start_time->format('d') }}</div>
                                     <div class="text-xs text-base-content/50 mt-0.5">{{ $session->start_time->format('D') }}</div>
                                 </div>
                                 <div class="flex-1 min-w-0">
@@ -327,7 +327,7 @@
                 {{-- Public booking price (hero) --}}
                 @if($price !== null)
                     <div class="text-center">
-                        <div class="text-4xl font-bold" style="color: {{ $color }};">
+                        <div class="text-4xl font-bold text-base-content">
                             {{ $currencySymbol }}{{ number_format($price, 2) }}
                         </div>
                         <div class="text-sm text-base-content/50">per class</div>
@@ -432,7 +432,7 @@
             <div class="flex items-center gap-4 p-4 rounded-xl" style="background-color: {{ $color }}10;">
                 <div class="text-center shrink-0 w-16 h-16 rounded-xl bg-base-100 flex flex-col items-center justify-center border border-base-300">
                     <span class="text-xs uppercase text-base-content/50">{{ $session->start_time->format('M') }}</span>
-                    <span class="text-2xl font-bold leading-none" style="color: {{ $color }};">{{ $session->start_time->format('d') }}</span>
+                    <span class="text-2xl font-bold leading-none text-base-content">{{ $session->start_time->format('d') }}</span>
                     <span class="text-[10px] uppercase text-base-content/50 mt-0.5">{{ $session->start_time->format('D') }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
@@ -489,7 +489,7 @@
             @if($sessionPrice !== null && $sessionPrice > 0)
             <div class="flex items-center justify-between bg-base-100 border border-base-300 rounded-xl p-4">
                 <span class="text-sm text-base-content/60">Price</span>
-                <span class="text-xl font-bold" style="color: {{ $color }};">
+                <span class="text-xl font-bold text-base-content">
                     {{ $currencySymbol }}{{ number_format($sessionPrice, 2) }}
                 </span>
             </div>

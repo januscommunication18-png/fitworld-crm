@@ -144,7 +144,13 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         @foreach($periods as $months => $label)
                             @php
-                                $periodTotal = floatval($billingDiscounts[$months] ?? 0);
+                                // $billingDiscounts may be the raw nested-by-currency map
+                                // from the model OR the controller's flat per-currency map.
+                                // Use the model helper when we have a ClassPlan in scope,
+                                // otherwise treat the value as a flat float.
+                                $periodTotal = isset($classPlan)
+                                    ? $classPlan->getBillingPeriodTotalForCurrency($months, $selectedCurrency ?? null)
+                                    : floatval($billingDiscounts[$months] ?? 0);
                                 if ($periodTotal <= 0) continue;
                                 $m = (int) $months;
                                 $monthlyRate = $m > 0 ? $periodTotal / $m : 0;

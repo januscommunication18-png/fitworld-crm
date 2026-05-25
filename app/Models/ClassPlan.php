@@ -202,6 +202,45 @@ class ClassPlan extends Model
     }
 
     /**
+     * Get the configured "total for N months" series price for a given currency.
+     *
+     * billing_discounts is stored either as the new shape
+     *   [ '1' => ['USD' => 100, 'EUR' => 90], '3' => [...] ]
+     * or, for legacy rows, as a flat numeric per period
+     *   [ '1' => 100, '3' => 280 ]
+     * Returns 0.0 when nothing is configured for that period/currency.
+     */
+    public function getBillingPeriodTotalForCurrency(int|string $months, ?string $currency = null): float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $months = (string) (int) $months;
+        $periodData = $this->billing_discounts[$months] ?? null;
+
+        if (is_array($periodData)) {
+            return (float) ($periodData[$currency] ?? 0);
+        }
+        return (float) ($periodData ?? 0);
+    }
+
+    /**
+     * True if at least one billing period has a positive total for the given
+     * currency. Mirrors getBillingPeriodTotalForCurrency() so the "Series Class"
+     * affordance is shown only when there's actually something to buy.
+     */
+    public function hasSeriesOptionForCurrency(?string $currency = null): bool
+    {
+        foreach (['1', '3', '6', '9', '12'] as $months) {
+            if ($this->getBillingPeriodTotalForCurrency($months, $currency) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Get formatted price for a specific currency
      */
     public function getFormattedPriceForCurrency(?string $currency = null): string

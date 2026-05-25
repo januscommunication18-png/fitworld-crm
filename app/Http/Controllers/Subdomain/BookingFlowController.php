@@ -147,25 +147,66 @@ class BookingFlowController extends Controller
             return back()->with('error', 'This class is full.');
         }
 
+        // Need the parent class plan to expose the Single/Series toggle on
+        // /book/contact. If the session has no class plan (one-off), fall back
+        // to the legacy class_session payload so the page still renders.
+        $classPlan = $session->classPlan;
+        if (!$classPlan) {
+            return $this->storeLegacyClassSessionItem($request, $host, $session);
+        }
+
         // Check if logged-in member has an active membership covering this class
         $member = Auth::guard('member')->user();
         $applicableMembership = null;
-        $price = $session->price ?? $session->classPlan?->drop_in_price ?? 0;
         $usingMembership = false;
-
-        if ($member && $session->classPlan) {
-            $applicableMembership = $this->findApplicableMembershipForClass($host, $member, $session->classPlan);
-
+        if ($member) {
+            $applicableMembership = $this->findApplicableMembershipForClass($host, $member, $classPlan);
             if ($applicableMembership) {
-                $price = 0; // Free with membership
                 $usingMembership = true;
             }
         }
 
-        // Get selected currency from session
         $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $price = $usingMembership ? 0 : ($classPlan->getPriceForCurrency($currency) ?? 0);
 
-        // Store in booking state
+        // Treat this as a class_plan booking in Single mode with the chosen
+        // session pre-selected. Mirrors selectClassPlanType()'s payload so the
+        // booking-type toggle, billing-period buttons, and session picker all
+        // appear and the picker is pre-filled to this session.
+        $this->bookingService->setBookingType($request, 'class_plan');
+        $this->bookingService->setSelectedItem($request, [
+            'type' => 'class_plan',
+            'id' => $classPlan->id,
+            'name' => $classPlan->name,
+            'price' => $price,
+            'currency' => $currency,
+            'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
+            'original_price' => $classPlan->getPriceForCurrency($currency) ?? 0,
+            'class_plan_id' => $classPlan->id,
+            'class_session_id' => $session->id,
+            'class_booking_type' => 'single',
+            'billing_discounts' => $this->buildBillingDiscountsForCurrency($classPlan, $currency),
+            'has_series_option' => $classPlan->hasSeriesOptionForCurrency($currency),
+            'session_datetime' => $session->start_time->format('M j, Y g:i A'),
+            'session_instructor' => $session->primaryInstructor?->name,
+            'session_location' => $session->room?->location?->name,
+            'is_waitlist' => $session->is_full,
+            'using_membership' => $usingMembership,
+            'membership_id' => $applicableMembership?->id,
+            'membership_name' => $applicableMembership?->membershipPlan?->name,
+        ]);
+
+        return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
+     * Fallback for sessions that have no parent class plan — keeps the old
+     * class_session payload so /book/contact renders without crashing.
+     */
+    protected function storeLegacyClassSessionItem(Request $request, Host $host, ClassSession $session)
+    {
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $price = $session->price ?? 0;
         $this->bookingService->setBookingType($request, 'class_session');
         $this->bookingService->setSelectedItem($request, [
             'type' => 'class_session',
@@ -174,16 +215,12 @@ class BookingFlowController extends Controller
             'price' => $price,
             'currency' => $currency,
             'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
-            'original_price' => $session->price ?? $session->classPlan?->drop_in_price ?? 0,
+            'original_price' => $session->price ?? 0,
             'datetime' => $session->start_time->format('M j, Y g:i A'),
             'instructor' => $session->primaryInstructor?->name,
             'location' => $session->room?->location?->name,
             'is_waitlist' => $session->is_full,
-            'using_membership' => $usingMembership,
-            'membership_id' => $applicableMembership?->id,
-            'membership_name' => $applicableMembership?->membershipPlan?->name,
         ]);
-
         return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
     }
 
@@ -217,11 +254,27 @@ class BookingFlowController extends Controller
             'original_price' => $price,
             'class_plan_id' => $classPlan->id,
             'class_booking_type' => 'single',
-            'billing_discounts' => $classPlan->billing_discounts ?? [],
-            'has_series_option' => count(array_filter($classPlan->billing_discounts ?? [], fn($v) => floatval($v) > 0)) > 0,
+            'billing_discounts' => $this->buildBillingDiscountsForCurrency($classPlan, $currency),
+            'has_series_option' => $classPlan->hasSeriesOptionForCurrency($currency),
         ]);
 
         return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
+     * Return a flat [period => totalInCurrency] map for the chosen currency.
+     * The booking views and the period buttons expect plain numeric values,
+     * not the nested currency-keyed shape stored on ClassPlan.
+     *
+     * @return array<string, float>
+     */
+    protected function buildBillingDiscountsForCurrency(ClassPlan $classPlan, string $currency): array
+    {
+        $out = [];
+        foreach (['1', '3', '6', '9', '12'] as $months) {
+            $out[$months] = $classPlan->getBillingPeriodTotalForCurrency($months, $currency);
+        }
+        return $out;
     }
 
     /**
@@ -259,18 +312,34 @@ class BookingFlowController extends Controller
                 'original_price' => $price,
                 'class_plan_id' => $classPlan->id,
                 'class_booking_type' => 'single',
-                'billing_discounts' => $classPlan->billing_discounts ?? [],
-                'has_series_option' => count(array_filter($classPlan->billing_discounts ?? [], fn($v) => floatval($v) > 0)) > 0,
+                'billing_discounts' => $this->buildBillingDiscountsForCurrency($classPlan, $currency),
+                'has_series_option' => $classPlan->hasSeriesOptionForCurrency($currency),
             ]);
         } elseif ($bookingType === 'series') {
             $billingPeriod = (int) $validated['billing_period'];
-            $billingDiscounts = $classPlan->billing_discounts ?? [];
-            $totalPrice = floatval($billingDiscounts[$billingPeriod] ?? 0);
+            $totalPrice = $classPlan->getBillingPeriodTotalForCurrency($billingPeriod, $currency);
             $basePrice = $classPlan->getPriceForCurrency($currency) ?? 0;
 
             if ($totalPrice <= 0) {
                 $totalPrice = $basePrice * $billingPeriod;
             }
+
+            // Series summary: count actual published sessions of this plan in
+            // [now, now+N months] so the UI can show "X sessions · From … To …".
+            $rangeStart = now();
+            $rangeEnd = now()->copy()->addMonths($billingPeriod);
+            $sessionsInRange = ClassSession::where('host_id', $host->id)
+                ->where('class_plan_id', $classPlan->id)
+                ->where('status', ClassSession::STATUS_PUBLISHED)
+                ->whereBetween('start_time', [$rangeStart, $rangeEnd])
+                ->orderBy('start_time')
+                ->get(['start_time']);
+            $seriesSummary = [
+                'session_count' => $sessionsInRange->count(),
+                'start_date'    => optional($sessionsInRange->first())->start_time?->format('M j, Y'),
+                'end_date'      => optional($sessionsInRange->last())->start_time?->format('M j, Y'),
+                'months'        => $billingPeriod,
+            ];
 
             $this->bookingService->setBookingType($request, 'class_plan');
             $this->bookingService->setSelectedItem($request, [
@@ -284,12 +353,16 @@ class BookingFlowController extends Controller
                 'class_plan_id' => $classPlan->id,
                 'class_booking_type' => 'series',
                 'billing_period' => $billingPeriod . ' months',
-                'billing_discounts' => $billingDiscounts,
+                'billing_discounts' => $this->buildBillingDiscountsForCurrency($classPlan, $currency),
                 'has_series_option' => true,
+                'series_summary' => $seriesSummary,
             ]);
         }
 
-        return response()->json(['success' => true, 'item' => $this->bookingService->getState($request)['selected_item']]);
+        return response()->json([
+            'success' => true,
+            'item' => $this->bookingService->getState($request)['selected_item'],
+        ]);
     }
 
     /**
@@ -607,11 +680,30 @@ class BookingFlowController extends Controller
             ];
         }
 
+        // For class-plan bookings in "single" mode, the customer also needs to
+        // pick a specific session. Surface upcoming, published, not-cancelled
+        // sessions for this plan so the view can render the picker. We don't
+        // filter by capacity here — fully-booked sessions still appear, the
+        // option just notes "(waitlist)" so members can opt in.
+        $sessions = collect();
+        $selectedItem = $bookingState['selected_item'];
+        if (($selectedItem['type'] ?? null) === 'class_plan' && !empty($selectedItem['class_plan_id'])) {
+            $sessions = \App\Models\ClassSession::where('host_id', $host->id)
+                ->where('class_plan_id', $selectedItem['class_plan_id'])
+                ->where('status', \App\Models\ClassSession::STATUS_PUBLISHED)
+                ->upcoming()
+                ->with(['primaryInstructor', 'room.location'])
+                ->orderBy('start_time')
+                ->limit(60)
+                ->get();
+        }
+
         return view('subdomain.booking.contact-info', [
             'host' => $host,
             'bookingState' => $bookingState,
             'prefillData' => $prefillData,
             'isLoggedIn' => (bool) $member,
+            'sessions' => $sessions,
         ]);
     }
 
@@ -627,10 +719,45 @@ class BookingFlowController extends Controller
             'last_name' => ['required', 'string', 'max:50', new ValidName],
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:50',
+            'class_session_id' => 'nullable|integer',
         ]);
 
         // Store contact info in session
-        $this->bookingService->setContactInfo($request, $validated);
+        $this->bookingService->setContactInfo($request, [
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+        ]);
+
+        // For class_plan + single bookings, the customer also picked a specific
+        // session — validate it belongs to this host/class plan, then merge into
+        // selected_item so payment + confirmation know which session to book.
+        $state = $this->bookingService->getState($request);
+        $selectedItem = $state['selected_item'] ?? [];
+        $isSingleClassPlan = ($selectedItem['type'] ?? null) === 'class_plan'
+            && ($selectedItem['class_booking_type'] ?? 'single') === 'single';
+
+        if ($isSingleClassPlan) {
+            if (empty($validated['class_session_id'])) {
+                return back()->withInput()
+                    ->withErrors(['class_session_id' => 'Please pick a session before continuing.']);
+            }
+            $session = \App\Models\ClassSession::where('host_id', $host->id)
+                ->where('class_plan_id', $selectedItem['class_plan_id'] ?? null)
+                ->where('status', \App\Models\ClassSession::STATUS_PUBLISHED)
+                ->find((int) $validated['class_session_id']);
+            if (!$session) {
+                return back()->withInput()
+                    ->withErrors(['class_session_id' => 'That session is no longer available — please pick another.']);
+            }
+
+            $selectedItem['class_session_id'] = $session->id;
+            $selectedItem['session_datetime'] = $session->start_time->format('M j, Y g:i A');
+            $selectedItem['session_instructor'] = $session->primaryInstructor?->name;
+            $selectedItem['session_location'] = $session->room?->location?->name;
+            $this->bookingService->setSelectedItem($request, $selectedItem);
+        }
 
         return redirect()->route('booking.payment', ['subdomain' => $host->subdomain]);
     }

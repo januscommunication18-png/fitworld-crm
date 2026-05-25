@@ -7,11 +7,22 @@
     $item = $bookingState['selected_item'] ?? [];
     $currencySymbol = $item['currency_symbol'] ?? \App\Models\MembershipPlan::getCurrencySymbol($item['currency'] ?? $host->default_currency ?? 'USD');
 @endphp
+@push('styles')
+<style>
+    /* Selected billing period: green background, all inner text white. The
+       children carry their own color utilities (text-success / text-base-content)
+       so we override them when the parent gets .btn-success applied by JS. */
+    .billing-period-btn.btn-success,
+    .billing-period-btn.btn-success * {
+        color: #ffffff !important;
+    }
+</style>
+@endpush
 
 <div class="min-h-screen flex flex-col bg-gradient-to-br from-base-200 via-base-100 to-base-200">
     {{-- Header --}}
     <nav class="bg-base-100/80 backdrop-blur-sm border-b border-base-200 sticky top-0 z-50" style="height: 70px;">
-        <div class="container-fixed h-full">
+        <div class="w-full h-full px-4 md:px-6">
             <div class="flex items-center justify-between h-full">
                 {{-- Logo --}}
                 <div class="flex items-center">
@@ -132,11 +143,24 @@
                         @if(($item['type'] ?? '') === 'class_plan')
                         @php
                             $currentType = $item['class_booking_type'] ?? 'single';
-                            $billingDiscounts = $item['billing_discounts'] ?? [];
-                            $hasSeriesOption = $item['has_series_option'] ?? false;
+                            $rawBillingDiscounts = $item['billing_discounts'] ?? [];
+                            $itemCurrency = $item['currency'] ?? ($host->default_currency ?? 'USD');
+
+                            // Defensive: billing_discounts may already be a flat
+                            // [period => number] (from the current controller) OR a
+                            // legacy nested [period => [currency => number]] map left
+                            // over from older sessions. Normalize to the flat shape
+                            // so the template logic below can stay simple.
+                            $billingDiscounts = [];
+                            foreach ($rawBillingDiscounts as $period => $value) {
+                                $billingDiscounts[(string) $period] = is_array($value)
+                                    ? (float) ($value[$itemCurrency] ?? 0)
+                                    : (float) $value;
+                            }
+                            $hasSeriesOption = ($item['has_series_option'] ?? false) && collect($billingDiscounts)->filter(fn($v) => $v > 0)->isNotEmpty();
                             $basePrice = $item['original_price'] ?? $item['price'] ?? 0;
                         @endphp
-                        <div class="border-t border-primary/20 mt-4 pt-4">
+                        <div class="bg-base-100 rounded-xl border border-base-200 mt-4 p-4">
                             <p class="text-sm font-medium text-base-content/70 mb-3">Booking Type</p>
                             <div class="flex flex-wrap gap-2" id="class-booking-type-selector">
                                 <button type="button" data-type="single"
@@ -157,14 +181,14 @@
                                 <p class="text-xs text-base-content/60 mb-2">Select billing period</p>
                                 <div class="flex flex-wrap gap-2">
                                     @php
-                                        $periods = ['1' => '1 Mo', '3' => '3 Mo', '6' => '6 Mo', '9' => '9 Mo', '12' => '12 Mo'];
+                                        $periods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months'];
                                     @endphp
                                     @foreach($periods as $months => $label)
                                         @php $periodTotal = floatval($billingDiscounts[$months] ?? 0); @endphp
                                         @if($periodTotal > 0)
                                         @php $m = (int) $months; $monthlyRate = $m > 0 ? $periodTotal / $m : 0; @endphp
                                         <button type="button" data-period="{{ $months }}" data-price="{{ $periodTotal }}"
-                                            class="billing-period-btn btn btn-sm btn-ghost border border-base-300 flex-col h-auto py-2 px-3">
+                                            class="billing-period-btn btn btn-sm btn-ghost border border-base-content flex-col h-auto py-2 px-3">
                                             <span class="text-xs text-base-content/60">{{ $label }}</span>
                                             <span class="font-bold text-success">{{ $currencySymbol }}{{ number_format($periodTotal, 0) }}</span>
                                             <span class="text-[10px] text-base-content/50">{{ $currencySymbol }}{{ number_format($monthlyRate, 2) }}/mo</span>
@@ -172,8 +196,71 @@
                                         @endif
                                     @endforeach
                                 </div>
+
+                                {{-- Series summary — populated by JS after the AJAX response.
+                                      Shows actual session count and the first/last session date
+                                      within the chosen billing period. --}}
+                                @php $initialSummary = $item['series_summary'] ?? null; @endphp
+                                <div id="series-summary" class="{{ $initialSummary ? '' : 'hidden' }} mt-3 grid grid-cols-3 gap-2 bg-success/5 border border-success/30 rounded-lg p-3 text-center">
+                                    <div>
+                                        <div class="text-[10px] uppercase tracking-wide text-base-content/60">Sessions</div>
+                                        <div id="series-summary-count" class="font-bold text-success">{{ $initialSummary['session_count'] ?? '—' }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] uppercase tracking-wide text-base-content/60">Starts</div>
+                                        <div id="series-summary-start" class="font-semibold text-sm">{{ $initialSummary['start_date'] ?? '—' }}</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] uppercase tracking-wide text-base-content/60">Ends</div>
+                                        <div id="series-summary-end" class="font-semibold text-sm">{{ $initialSummary['end_date'] ?? '—' }}</div>
+                                    </div>
+                                </div>
                             </div>
                             @endif
+
+                            {{-- Single Class: pick a specific session.
+                                  Shown when class_booking_type is "single", hidden when "series".
+                                  When visible, the dropdown is required to proceed. --}}
+                            <div id="single-session-picker" class="{{ $currentType === 'single' ? '' : 'hidden' }} mt-4 pt-4 border-t border-base-200">
+                                <label class="label-text mb-1 block" for="class_session_id">Pick a session <span class="text-error">*</span></label>
+                                @if($sessions->isEmpty())
+                                    <div class="alert alert-soft alert-warning text-sm">
+                                        <span class="icon-[tabler--alert-circle] size-4"></span>
+                                        <span>No upcoming sessions are scheduled for this class right now. Please switch to Series or check back later.</span>
+                                    </div>
+                                @else
+                                    @php $preselectedSession = old('class_session_id', $item['class_session_id'] ?? ''); @endphp
+                                    <x-studio-select
+                                        name="__inner_class_session_id"
+                                        id="class_session_id"
+                                        placeholder="Select a date & time..."
+                                        :option-count="$sessions->count()">
+                                        <option value="">-- Select a date & time --</option>
+                                        @foreach($sessions as $s)
+                                            @php
+                                                $bookedCount = $s->bookings_count ?? $s->bookings()->where('status', 'confirmed')->count();
+                                                $cap = $s->capacity ?? $s->classPlan?->default_capacity ?? 0;
+                                                $isFull = $cap > 0 && $bookedCount >= $cap;
+                                                $instructor = $s->primaryInstructor?->name;
+                                                $location = $s->room?->location?->name;
+                                                $bits = [
+                                                    $s->start_time->format('D, M j · g:i A'),
+                                                    $instructor,
+                                                    $location,
+                                                    $isFull ? '(waitlist)' : null,
+                                                ];
+                                                $label = implode(' · ', array_filter($bits));
+                                            @endphp
+                                            <option value="{{ $s->id }}" {{ (string) $preselectedSession === (string) $s->id ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </x-studio-select>
+                                    @error('class_session_id')
+                                        <p class="text-error text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                @endif
+                            </div>
                         </div>
                         @endif
                     </div>
@@ -182,7 +269,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
                     {{-- Form --}}
                     <div class="lg:col-span-3">
-                        <div class="card bg-base-100 shadow-xl">
+                        <div class="card bg-base-100">
                             <div class="card-body">
                                 <div class="flex items-center gap-3 mb-4">
                                     <div class="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -201,25 +288,11 @@
                                     </div>
                                 @endif
 
-                                @if($isLoggedIn)
-                                @push('scripts')
-                                <script>
-                                document.addEventListener('DOMContentLoaded', function() {
-                                    var toast = document.createElement('div');
-                                    toast.className = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] alert alert-success shadow-lg max-w-sm transition-opacity duration-300';
-                                    toast.innerHTML = '<span class="icon-[tabler--check] size-5"></span><span>Logged in as <strong>{{ $prefillData['first_name'] ?? '' }} {{ $prefillData['last_name'] ?? '' }}</strong></span>';
-                                    document.body.appendChild(toast);
-                                    setTimeout(function() {
-                                        toast.style.opacity = '0';
-                                        setTimeout(function() { toast.remove(); }, 300);
-                                    }, 4000);
-                                });
-                                </script>
-                                @endpush
-                                @endif
-
-                                <form action="{{ route('booking.contact.save', ['subdomain' => $host->subdomain]) }}" method="POST">
+                                <form action="{{ route('booking.contact.save', ['subdomain' => $host->subdomain]) }}" method="POST" id="contact-info-form">
                                     @csrf
+                                    {{-- Carries the class session id (synced from the session picker
+                                          which lives in the header card, outside this form). --}}
+                                    <input type="hidden" name="class_session_id" id="class_session_id_hidden" value="{{ old('class_session_id', $item['class_session_id'] ?? '') }}">
 
                                     <div class="space-y-4">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -231,7 +304,8 @@
                                                        value="{{ old('first_name', $prefillData['first_name'] ?? '') }}"
                                                        required
                                                        placeholder="John"
-                                                       class="input input-bordered w-full focus:input-primary @error('first_name') input-error @enderror">
+                                                       @if($isLoggedIn) readonly @endif
+                                                       class="input input-bordered w-full focus:input-primary @error('first_name') input-error @enderror @if($isLoggedIn) bg-base-200/60 cursor-not-allowed @endif">
                                             </div>
                                             <div class="form-control">
                                                 <label class="label" for="last_name">
@@ -241,7 +315,8 @@
                                                        value="{{ old('last_name', $prefillData['last_name'] ?? '') }}"
                                                        required
                                                        placeholder="Doe"
-                                                       class="input input-bordered w-full focus:input-primary @error('last_name') input-error @enderror">
+                                                       @if($isLoggedIn) readonly @endif
+                                                       class="input input-bordered w-full focus:input-primary @error('last_name') input-error @enderror @if($isLoggedIn) bg-base-200/60 cursor-not-allowed @endif">
                                             </div>
                                         </div>
 
@@ -255,10 +330,17 @@
                                                        value="{{ old('email', $prefillData['email'] ?? '') }}"
                                                        required
                                                        placeholder="john@example.com"
-                                                       class="input input-bordered w-full pl-10 focus:input-primary @error('email') input-error @enderror">
+                                                       @if($isLoggedIn) readonly @endif
+                                                       class="input input-bordered w-full pl-10 focus:input-primary @error('email') input-error @enderror @if($isLoggedIn) bg-base-200/60 cursor-not-allowed @endif">
                                             </div>
                                             <label class="label">
-                                                <span class="label-text-alt text-base-content/50">Confirmation & receipt will be sent here</span>
+                                                <span class="label-text-alt text-base-content/50">
+                                                    @if($isLoggedIn)
+                                                        Email is tied to your account. <a href="{{ route('member.portal.profile', ['subdomain' => $host->subdomain]) }}" class="link link-primary">Manage in your profile</a>.
+                                                    @else
+                                                        Confirmation & receipt will be sent here
+                                                    @endif
+                                                </span>
                                             </label>
                                         </div>
 
@@ -272,7 +354,7 @@
                                                        value="{{ old('phone', $prefillData['phone'] ?? '') }}"
                                                        required
                                                        inputmode="numeric"
-                                                       pattern="[0-9+\-\s()]*"
+                                                       pattern="[0-9+ ()-]*"
                                                        placeholder="1234567890"
                                                        class="input input-bordered w-full pl-10 focus:input-primary @error('phone') input-error @enderror">
                                             </div>
@@ -293,7 +375,7 @@
                     {{-- Side Info --}}
                     <div class="lg:col-span-2 space-y-4">
                         {{-- Studio Info --}}
-                        <div class="card bg-base-100 shadow-lg">
+                        <div class="card bg-base-100">
                             <div class="card-body">
                                 <div class="flex items-center gap-3">
                                     @if($host->logo_url)
@@ -314,7 +396,7 @@
                         </div>
 
                         {{-- Security Badge --}}
-                        <div class="card bg-base-100 shadow-lg">
+                        <div class="card bg-base-100">
                             <div class="card-body py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
@@ -329,7 +411,7 @@
                         </div>
 
                         {{-- Help --}}
-                        <div class="card bg-base-100 shadow-lg">
+                        <div class="card bg-base-100">
                             <div class="card-body py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-info/10 flex items-center justify-center">
@@ -361,6 +443,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var subdomain = '{{ $host->subdomain }}';
     var currencySymbol = '{{ $currencySymbol }}';
 
+    // FlyonUI's HSSelect normally auto-inits on its own, but it's a race with
+    // late-imported scripts in some bundles. Force a re-init so the styled
+    // session picker always hydrates. No-op for already-initialized selects.
+    if (typeof HSSelect !== 'undefined') {
+        try { HSSelect.autoInit(); } catch (e) {}
+    }
+
     // Booking type buttons
     document.querySelectorAll('.booking-type-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -369,8 +458,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // For series, need a billing period — select first available if none selected
             var periodPicker = document.getElementById('series-period-picker');
+            var sessionPicker = document.getElementById('single-session-picker');
             if (type === 'series') {
                 if (periodPicker) periodPicker.classList.remove('hidden');
+                if (sessionPicker) sessionPicker.classList.add('hidden');
                 var selectedPeriod = document.querySelector('.billing-period-btn.btn-success');
                 if (!selectedPeriod) {
                     var firstPeriod = document.querySelector('.billing-period-btn');
@@ -382,11 +473,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.billing_period = selectedPeriod ? selectedPeriod.dataset.period : null;
             } else {
                 if (periodPicker) periodPicker.classList.add('hidden');
+                if (sessionPicker) sessionPicker.classList.remove('hidden');
             }
 
             updateBookingType(data, this);
         });
     });
+
+    // Sync the session picker (header card, outside the form) to the hidden
+    // input inside the form; also block submit if Single mode and no session picked.
+    var sessionSelect = document.getElementById('class_session_id');
+    var sessionHidden = document.getElementById('class_session_id_hidden');
+    if (sessionSelect && sessionHidden) {
+        sessionSelect.addEventListener('change', function () {
+            sessionHidden.value = this.value || '';
+        });
+        // Initial sync (handles validation round-trip with old() values).
+        if (sessionSelect.value && !sessionHidden.value) {
+            sessionHidden.value = sessionSelect.value;
+        }
+    }
+
+    var contactForm = document.getElementById('contact-info-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', function (e) {
+            var activeBtn = document.querySelector('.booking-type-btn.btn-primary');
+            var currentType = activeBtn ? activeBtn.dataset.type : '{{ $currentType }}';
+            if (currentType === 'single' && sessionHidden && !sessionHidden.value) {
+                e.preventDefault();
+                if (sessionSelect) sessionSelect.focus();
+                var picker = document.getElementById('single-session-picker');
+                if (picker) picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Inline message
+                var existing = document.getElementById('session-picker-error');
+                if (!existing && picker) {
+                    var p = document.createElement('p');
+                    p.id = 'session-picker-error';
+                    p.className = 'text-error text-sm mt-2';
+                    p.textContent = 'Please pick a session before continuing.';
+                    picker.appendChild(p);
+                }
+            }
+        });
+    }
 
     // Billing period buttons
     document.querySelectorAll('.billing-period-btn').forEach(function(btn) {
@@ -394,9 +523,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Highlight
             document.querySelectorAll('.billing-period-btn').forEach(function(b) {
                 b.classList.remove('btn-success', 'border-success');
-                b.classList.add('btn-ghost', 'border-base-300');
+                b.classList.add('btn-ghost', 'border-base-content');
             });
-            this.classList.remove('btn-ghost', 'border-base-300');
+            this.classList.remove('btn-ghost', 'border-base-content');
             this.classList.add('btn-success', 'border-success');
 
             // Also make sure series is the active type
@@ -443,6 +572,21 @@ document.addEventListener('DOMContentLoaded', function() {
                         (resp.item.billing_period ? '<span class="flex items-center gap-1"><span class="icon-[tabler--refresh] size-4"></span> ' + resp.item.billing_period + '</span>' : '');
                 } else {
                     meta.innerHTML = '<span class="flex items-center gap-1"><span class="icon-[tabler--calendar-event] size-4"></span> Single Class</span>';
+                }
+
+                // Series summary block: populate counts + start/end dates from the
+                // server's response, or hide when switching back to Single.
+                var summary = document.getElementById('series-summary');
+                if (summary) {
+                    if (type === 'series' && resp.item.series_summary) {
+                        var s = resp.item.series_summary;
+                        document.getElementById('series-summary-count').textContent = s.session_count ?? '—';
+                        document.getElementById('series-summary-start').textContent = s.start_date || '—';
+                        document.getElementById('series-summary-end').textContent = s.end_date || '—';
+                        summary.classList.remove('hidden');
+                    } else {
+                        summary.classList.add('hidden');
+                    }
                 }
             }
         });
