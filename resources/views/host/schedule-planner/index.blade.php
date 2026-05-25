@@ -59,15 +59,6 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#" onclick="handlePlannerScheduleClick('space_rental', '{{ route('space-rentals.create') }}', {{ $spaceRentalConfigs->count() }}); return false;" class="flex flex-col items-start gap-0.5 py-3">
-                        <span class="flex items-center gap-2">
-                            <span class="icon-[tabler--building] size-5 text-secondary"></span>
-                            <span class="font-medium">{{ $trans['nav.space_rentals'] ?? 'Space Rental' }}</span>
-                        </span>
-                        <span class="text-xs text-base-content/60 ml-7">{{ $trans['space_rentals.schedule_description'] ?? 'Book a space for professional use' }}</span>
-                    </a>
-                </li>
-                <li>
                     <a href="{{ route('events.create') }}" class="flex flex-col items-start gap-0.5 py-3">
                         <span class="flex items-center gap-2">
                             <span class="icon-[tabler--calendar-event] size-5 text-error"></span>
