@@ -49,10 +49,18 @@ trait UsesCustomTemplate
 
         $customHeader = $host->booking_settings['email_header_html'] ?? '';
         $customFooter = $host->booking_settings['email_footer_html'] ?? '';
+        $showLogo = (bool) ($host->booking_settings['email_header_show_logo'] ?? false);
+        $logoUrl = $host->logo_url ?? null;
 
-        $headerHtml = !empty($customHeader)
+        $headerInner = !empty($customHeader)
             ? $customHeader
             : '<h1 style="margin:0;font-size:24px;font-weight:600;">' . htmlspecialchars($studioName) . '</h1>';
+
+        $logoHtml = ($showLogo && $logoUrl)
+            ? '<img src="' . htmlspecialchars($logoUrl) . '" alt="' . htmlspecialchars($studioName) . '" style="max-height:48px;max-width:200px;display:block;margin:0 auto 12px;">'
+            : '';
+
+        $headerHtml = $logoHtml . $headerInner;
 
         $footerHtml = !empty($customFooter)
             ? $customFooter
@@ -66,12 +74,12 @@ trait UsesCustomTemplate
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 0; background-color: #f3f4f6; }
         .container { max-width: 600px; margin: 0 auto; background: white; }
-        .header { background: ' . $primaryColor . '; color: white; padding: 24px; text-align: center; }
+        .header { padding: 24px; text-align: center; color: #111827; }
         .content { padding: 32px 24px; }
         .content h2 { color: #111827; margin-top: 0; }
         .content ul { padding-left: 20px; }
         .content a { color: ' . $primaryColor . '; }
-        .footer { background: #f9fafb; padding: 24px; text-align: center; font-size: 14px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+        .footer { padding: 24px; text-align: center; font-size: 14px; color: #6b7280; }
     </style>
 </head>
 <body>

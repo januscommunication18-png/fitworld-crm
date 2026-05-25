@@ -10,21 +10,18 @@
     {{-- Status Hero Section --}}
     @php
         $statusColors = [
-            'lead' => 'from-warning/10 to-warning/5',
-            'client' => 'from-info/10 to-info/5',
-            'member' => 'from-success/10 to-success/5',
+            'inactive' => 'from-warning/10 to-warning/5',
+            'active' => 'from-success/10 to-success/5',
             'at_risk' => 'from-error/10 to-error/5',
         ];
         $statusIconColors = [
-            'lead' => 'bg-warning/20 text-warning',
-            'client' => 'bg-info/20 text-info',
-            'member' => 'bg-success/20 text-success',
+            'inactive' => 'bg-warning/20 text-warning',
+            'active' => 'bg-success/20 text-success',
             'at_risk' => 'bg-error/20 text-error',
         ];
         $statusBadges = [
-            'lead' => 'badge-warning',
-            'client' => 'badge-info',
-            'member' => 'badge-success',
+            'inactive' => 'badge-warning',
+            'active' => 'badge-success',
             'at_risk' => 'badge-error',
         ];
     @endphp

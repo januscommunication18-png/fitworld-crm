@@ -136,7 +136,7 @@ class MemberAuthController extends Controller
             'last_name' => $validated['last_name'],
             'email' => strtolower($validated['email']),
             'phone' => $validated['phone'] ?? null,
-            'status' => Client::STATUS_LEAD,
+            'status' => Client::STATUS_INACTIVE,
             'source' => 'member_portal_signup',
         ]);
 
@@ -249,7 +249,7 @@ class MemberAuthController extends Controller
         $email = session('email') ?? $request->get('email');
 
         if (!$email) {
-            return redirect()->route('member.login');
+            return redirect()->route('member.login', ['subdomain' => $host->subdomain]);
         }
 
         return view('subdomain.member.verify-otp', [
@@ -285,7 +285,7 @@ class MemberAuthController extends Controller
         // Check if locked out
         if (!$client->canAttemptOtp()) {
             $minutes = $client->getOtpLockoutMinutesRemaining();
-            return redirect()->route('member.login')
+            return redirect()->route('member.login', ['subdomain' => $host->subdomain])
                 ->withErrors(['email' => "Account temporarily locked. Please try again in {$minutes} minutes."]);
         }
 
@@ -296,7 +296,7 @@ class MemberAuthController extends Controller
         if (!$client->verifyActivationCode($validated['code'])) {
             // Check if now locked
             if (!$client->canAttemptOtp()) {
-                return redirect()->route('member.login')
+                return redirect()->route('member.login', ['subdomain' => $host->subdomain])
                     ->withErrors(['email' => "Too many failed attempts. Account locked for {$lockoutMinutes} minutes."]);
             }
 
@@ -452,7 +452,7 @@ class MemberAuthController extends Controller
             ->first();
 
         if (!$client) {
-            return redirect()->route('member.forgot-password')
+            return redirect()->route('member.forgot-password', ['subdomain' => $host->subdomain])
                 ->withErrors(['email' => 'Invalid or expired reset link.']);
         }
 
@@ -482,7 +482,7 @@ class MemberAuthController extends Controller
             ->first();
 
         if (!$client) {
-            return redirect()->route('member.forgot-password')
+            return redirect()->route('member.forgot-password', ['subdomain' => $host->subdomain])
                 ->withErrors(['email' => 'Invalid or expired reset link.']);
         }
 
@@ -490,7 +490,7 @@ class MemberAuthController extends Controller
             return back()->withErrors(['password' => 'Failed to reset password.']);
         }
 
-        return redirect()->route('member.login')
+        return redirect()->route('member.login', ['subdomain' => $host->subdomain])
             ->with('status', 'Password reset successfully. You can now log in.');
     }
 

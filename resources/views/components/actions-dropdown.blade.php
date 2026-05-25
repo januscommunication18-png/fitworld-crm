@@ -101,6 +101,22 @@
         });
     });
 
+    // Close the dropdown when any item inside it is clicked (button/link/etc.).
+    // Capture-phase + setTimeout(0) so the item's own onclick (e.g. openDrawer) still
+    // fires first, but the dropdown collapses regardless of whether the handler
+    // calls stopPropagation.
+    document.addEventListener('click', function (e) {
+        var details = e.target.closest('details.js-actions-dropdown');
+        if (!details || !details.open) return;
+        var actionable = e.target.closest('.js-actions-menu a, .js-actions-menu button');
+        if (!actionable) return;
+        setTimeout(function () {
+            details.removeAttribute('open');
+            var menu = details.querySelector('.js-actions-menu');
+            if (menu) menu.classList.add('hidden');
+        }, 0);
+    }, true);
+
     // Reposition on scroll/resize so open menu stays anchored to the trigger
     function repositionOpen() {
         document.querySelectorAll('details.js-actions-dropdown[open]').forEach(positionMenu);

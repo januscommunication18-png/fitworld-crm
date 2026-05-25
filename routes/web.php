@@ -261,6 +261,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/clients/tags', [TagController::class, 'index'])->name('clients.tags');
     Route::post('/clients/tags', [TagController::class, 'store'])->name('clients.tags.store');
     Route::put('/clients/tags/{tag}', [TagController::class, 'update'])->name('clients.tags.update-tag');
+    Route::patch('/clients/tags/{tag}/toggle-active', [TagController::class, 'toggleActive'])->name('clients.tags.toggle-active');
     Route::delete('/clients/tags/{tag}', [TagController::class, 'destroy'])->name('clients.tags.destroy');
 
     // Lead Magnet (Coming Soon - before wildcard)
@@ -303,8 +304,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/helpdesk', [\App\Http\Controllers\Host\HelpdeskController::class, 'index'])->name('helpdesk.index');
     Route::get('/helpdesk/create', [\App\Http\Controllers\Host\HelpdeskController::class, 'create'])->name('helpdesk.create');
     Route::post('/helpdesk', [\App\Http\Controllers\Host\HelpdeskController::class, 'store'])->name('helpdesk.store');
-    Route::get('/helpdesk/tags', [\App\Http\Controllers\Host\HelpdeskController::class, 'tags'])->name('helpdesk.tags');
     Route::post('/helpdesk/tags', [\App\Http\Controllers\Host\HelpdeskController::class, 'storeTag'])->name('helpdesk.tags.store');
+    Route::put('/helpdesk/tags/{tag}', [\App\Http\Controllers\Host\HelpdeskController::class, 'updateTag'])->name('helpdesk.tags.update');
     Route::delete('/helpdesk/tags/{tag}', [\App\Http\Controllers\Host\HelpdeskController::class, 'destroyTag'])->name('helpdesk.tags.destroy');
     Route::get('/helpdesk/{ticket}', [\App\Http\Controllers\Host\HelpdeskController::class, 'show'])->name('helpdesk.show');
     Route::put('/helpdesk/{ticket}', [\App\Http\Controllers\Host\HelpdeskController::class, 'update'])->name('helpdesk.update');
@@ -377,6 +378,7 @@ Route::middleware('auth')->group(function () {
             ->except(['index', 'show'])
             ->names('class-plans');
         Route::patch('/class-plans/{classPlan}/toggle-active', [ClassPlanController::class, 'toggleActive'])->name('class-plans.toggle-active');
+        Route::put('/class-plans/{classPlan}/email-workflow', [ClassPlanController::class, 'updateEmailWorkflow'])->name('class-plans.email-workflow.update');
         Route::post('/class-plans/reorder', [ClassPlanController::class, 'reorder'])->name('class-plans.reorder');
     });
     Route::resource('class-plans', ClassPlanController::class)

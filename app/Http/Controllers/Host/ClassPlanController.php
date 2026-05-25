@@ -208,6 +208,18 @@ class ClassPlanController extends Controller
         // Tab support
         $tab = $request->get('tab', 'overview');
 
+        // Email Workflow tab data — team members and current selection.
+        $notificationUsers = $host->getAllTeamMembers();
+        // null  → never configured, default to studio owner
+        // []    → user explicitly cleared the list, respect it
+        // [...] → user-selected, use as-is
+        if ($classPlan->notification_user_ids === null) {
+            $ownerId = $host->getOwner()?->id;
+            $assignedNotificationUserIds = $ownerId ? [$ownerId] : [];
+        } else {
+            $assignedNotificationUserIds = $classPlan->notification_user_ids;
+        }
+
         // Load locations that have sessions for this class plan (scoped to host)
         $locations = $host->locations()
             ->whereHas('classSessions', function ($q) use ($classPlan, $host) {
@@ -234,7 +246,9 @@ class ClassPlanController extends Controller
             'currencySymbols',
             'tab',
             'locations',
-            'sessionsByLocation'
+            'sessionsByLocation',
+            'notificationUsers',
+            'assignedNotificationUserIds'
         ));
     }
 
@@ -472,5 +486,27 @@ class ClassPlanController extends Controller
         if ($classPlan->host_id !== auth()->user()->host_id) {
             abort(403);
         }
+    }
+
+    /**
+     * Save the Email Workflow tab — which team members get notified on
+     * a public-side class-request for this plan.
+     */
+    public function updateEmailWorkflow(Request $request, ClassPlan $classPlan)
+    {
+        $this->authorizeHost($classPlan);
+
+        $validated = $request->validate([
+            'notification_user_ids' => ['nullable', 'array'],
+            'notification_user_ids.*' => ['integer', 'exists:users,id'],
+        ]);
+
+        $classPlan->update([
+            'notification_user_ids' => $validated['notification_user_ids'] ?? [],
+        ]);
+
+        return redirect()
+            ->route('class-plans.show', ['class_plan' => $classPlan->id, 'tab' => 'email-workflow'])
+            ->with('success', 'Email workflow updated.');
     }
 }

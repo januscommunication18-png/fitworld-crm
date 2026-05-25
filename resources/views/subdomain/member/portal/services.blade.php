@@ -8,14 +8,10 @@
 @endphp
 
 @section('content')
-<div class="min-h-screen flex flex-col">
-    @include('subdomain.member.portal._nav')
-
-    <div class="flex-1 bg-base-200">
-        <div class="container-fixed py-8">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold">Booking</h1>
-            </div>
+<x-portal-shell :host="$host" :member="$member">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">Booking</h1>
+    </div>
 
             {{-- Tabs --}}
             <div class="tabs tabs-boxed bg-base-100 w-fit mb-6">
@@ -124,7 +120,5 @@
                     </div>
                 </div>
             @endif
-        </div>
-    </div>
-</div>
+</x-portal-shell>
 @endsection

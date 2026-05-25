@@ -3,12 +3,8 @@
 @section('title', 'Payment History — ' . $host->studio_name)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
-    @include('subdomain.member.portal._nav')
-
-    <div class="flex-1 bg-base-200">
-        <div class="container-fixed py-8">
-            <h1 class="text-2xl font-bold mb-6">Payment History</h1>
+<x-portal-shell :host="$host" :member="$member">
+    <h1 class="text-2xl font-bold mb-6">Payment History</h1>
 
             @if($transactions->count() > 0)
                 <div class="card bg-base-100 overflow-hidden">
@@ -80,7 +76,5 @@
                     </div>
                 </div>
             @endif
-        </div>
-    </div>
-</div>
+</x-portal-shell>
 @endsection

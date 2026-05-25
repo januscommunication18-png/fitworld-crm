@@ -58,6 +58,7 @@ class ClassPlan extends Model
         'equipment_needed',
         'image_path',
         'file_attachments',
+        'notification_user_ids',
         'is_active',
         'is_visible_on_booking_page',
         'sort_order',
@@ -68,6 +69,7 @@ class ClassPlan extends Model
         return [
             'equipment_needed' => 'array',
             'file_attachments' => 'array',
+            'notification_user_ids' => 'array',
             'default_price' => 'decimal:2',
             'drop_in_price' => 'decimal:2',
             'prices' => 'array',

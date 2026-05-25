@@ -35,12 +35,40 @@ class HelpdeskTicket extends Model
         'subject',
         'message',
         'service_plan_id',
+        'requested_type',
+        'requested_id',
         'preferred_date',
         'preferred_time',
         'status',
         'assigned_user_id',
         'source_url',
         'utm_params',
+    ];
+
+    /**
+     * Maps the short form-side alias for each catalog offering to the model
+     * class stored in `requested_type`. The create form posts an alias from
+     * this list along with an ID; the controller resolves it here so the DB
+     * never sees an unknown class string.
+     */
+    public const REQUESTED_TYPE_MAP = [
+        'class_plan'    => \App\Models\ClassPlan::class,
+        'service_plan'  => \App\Models\ServicePlan::class,
+        'class_pass'    => \App\Models\ClassPass::class,
+        'membership'    => \App\Models\MembershipPlan::class,
+        'rental_space'  => \App\Models\SpaceRentalConfig::class,
+        'item_rental'   => \App\Models\RentalItem::class,
+        'event'         => \App\Models\Event::class,
+    ];
+
+    public const REQUESTED_TYPE_LABELS = [
+        'class_plan'    => 'Class Plan',
+        'service_plan'  => 'Service Plan',
+        'class_pass'    => 'Class Pass',
+        'membership'    => 'Membership',
+        'rental_space'  => 'Rental Space',
+        'item_rental'   => 'Item Rental',
+        'event'         => 'Event',
     ];
 
     protected function casts(): array
@@ -67,6 +95,30 @@ class HelpdeskTicket extends Model
     public function servicePlan(): BelongsTo
     {
         return $this->belongsTo(ServicePlan::class);
+    }
+
+    /**
+     * Polymorphic relation to the catalog offering this ticket is asking about.
+     * Used for newly created tickets — the legacy servicePlan() relation is
+     * only meaningful for rows that predate the polymorphic columns.
+     */
+    public function requestedItem(): \Illuminate\Database\Eloquent\Relations\MorphTo
+    {
+        return $this->morphTo(__FUNCTION__, 'requested_type', 'requested_id');
+    }
+
+    /**
+     * Human label for the requested offering type, e.g. "Class Plan". Returns
+     * null if the ticket has no requested item set, or if the type is unknown
+     * (e.g. a model that's no longer in REQUESTED_TYPE_MAP).
+     */
+    public function getRequestedTypeLabelAttribute(): ?string
+    {
+        if (!$this->requested_type) {
+            return null;
+        }
+        $alias = array_search($this->requested_type, self::REQUESTED_TYPE_MAP, true);
+        return $alias ? (self::REQUESTED_TYPE_LABELS[$alias] ?? null) : null;
     }
 
     public function assignedUser(): BelongsTo
@@ -259,7 +311,7 @@ class HelpdeskTicket extends Model
             'last_name' => $lastName,
             'email' => $this->email,
             'phone' => $this->phone,
-            'status' => Client::STATUS_LEAD,
+            'status' => Client::STATUS_INACTIVE,
             'lead_source' => $this->source_type === self::SOURCE_BOOKING_REQUEST
                 ? Client::SOURCE_WEBSITE
                 : Client::SOURCE_WEBSITE,

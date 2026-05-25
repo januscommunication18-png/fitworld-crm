@@ -255,8 +255,20 @@ function insertVariable(varName) {
         subjectInput.value = text.substring(0, start) + variable + text.substring(end);
         subjectInput.selectionStart = subjectInput.selectionEnd = start + variable.length;
         subjectInput.focus();
-    } else {
-        // Copy to clipboard and show notification
+        return;
+    }
+
+    // Otherwise insert into the Quill body at the cursor (or end of doc).
+    if (quill) {
+        var range = quill.getSelection(true) || { index: quill.getLength(), length: 0 };
+        quill.insertText(range.index, variable, 'user');
+        quill.setSelection(range.index + variable.length, 0, 'user');
+        document.getElementById('body_content').value = quill.root.innerHTML;
+        return;
+    }
+
+    {
+        // Last-ditch fallback — copy to clipboard.
         navigator.clipboard.writeText(variable).then(function() {
             showToast('Variable copied! Paste it in the editor.', 'info');
         });

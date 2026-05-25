@@ -131,6 +131,7 @@ class EmailTemplateController extends Controller
                     'response_message' => 'Your reply message',
                     'studio_name' => 'Your studio name',
                     'studio_signature' => 'Studio signature',
+                    'ticket_url' => 'Link to the conversation (portal deep-link or secure guest link)',
                 ],
             ],
             'intake_form_request' => [
@@ -183,6 +184,75 @@ class EmailTemplateController extends Controller
                     'last_visit_date' => 'Date of last visit/booking',
                     'studio_name' => 'Your studio name',
                     'booking_url' => 'Link to book a class',
+                ],
+            ],
+            'member_activation_code' => [
+                'name' => 'Member Verification Code',
+                'description' => 'Sent to clients during sign-up / sign-in with their one-time verification code',
+                'category' => 'transactional',
+                'variables' => [
+                    'customer_name' => 'Customer\'s first name',
+                    'verification_code' => 'The 6-digit one-time code',
+                    'expiry_minutes' => 'Minutes until the code expires',
+                    'studio_name' => 'Your studio name',
+                    'studio_email' => 'Studio email address',
+                ],
+            ],
+            'class_request_received' => [
+                'name' => 'Class Request Received',
+                'description' => 'Sent to the requester after they submit a class info request on the public booking page',
+                'category' => 'transactional',
+                'variables' => [
+                    'customer_name' => 'Requester\'s full name',
+                    'class_name' => 'Name of the class they\'re asking about',
+                    'message' => 'The note the requester left (may be empty)',
+                    'studio_name' => 'Your studio name',
+                    'studio_email' => 'Studio email address',
+                    'studio_phone' => 'Studio phone number',
+                ],
+            ],
+            'class_request_team_notification' => [
+                'name' => 'Class Request — Team Notification',
+                'description' => 'Sent to the team members selected in a class plan\'s Email Workflow when a new class request arrives',
+                'category' => 'team_notification',
+                'variables' => [
+                    'team_member_name' => 'Team member\'s name (recipient)',
+                    'customer_name' => 'Requester\'s full name',
+                    'customer_email' => 'Requester\'s email',
+                    'customer_phone' => 'Requester\'s phone',
+                    'class_name' => 'Name of the class they\'re asking about',
+                    'message' => 'The note the requester left (may be empty)',
+                    'waitlist_requested' => 'Yes / No depending on whether they ticked the waitlist box',
+                    'studio_name' => 'Your studio name',
+                ],
+            ],
+            'helpdesk_assigned_team' => [
+                'name' => 'Helpdesk Ticket Assigned — Team Notification',
+                'description' => 'Sent to a team member when a helpdesk ticket is assigned to them',
+                'category' => 'team_notification',
+                'variables' => [
+                    'team_member_name' => 'Team member\'s name (recipient)',
+                    'ticket_id' => 'Ticket reference ID',
+                    'ticket_subject' => 'Ticket subject line',
+                    'customer_name' => 'Customer who opened the ticket',
+                    'customer_email' => 'Customer\'s email',
+                    'ticket_url' => 'Direct link to the ticket in the dashboard',
+                    'studio_name' => 'Your studio name',
+                ],
+            ],
+            'helpdesk_customer_reply' => [
+                'name' => 'Helpdesk — Customer Replied (Team Notification)',
+                'description' => 'Sent to the ticket\'s assigned team member when the client replies from the member portal',
+                'category' => 'team_notification',
+                'variables' => [
+                    'team_member_name' => 'Team member\'s name (recipient)',
+                    'customer_name' => 'Customer who replied',
+                    'customer_email' => 'Customer\'s email',
+                    'ticket_id' => 'Ticket reference ID',
+                    'ticket_subject' => 'Ticket subject line',
+                    'customer_message' => 'The HTML body of the customer\'s reply',
+                    'ticket_url' => 'Direct link to the ticket in the dashboard',
+                    'studio_name' => 'Your studio name',
                 ],
             ],
         ];
@@ -272,6 +342,11 @@ class EmailTemplateController extends Controller
             'welcome_email' => 'Welcome to {{studio_name}}!',
             'class_reminder' => 'Reminder: {{class_name}} - Tomorrow',
             'winback_campaign' => 'We miss you at {{studio_name}}!',
+            'member_activation_code' => 'Your Verification Code - {{studio_name}}',
+            'class_request_received' => 'We got your request — {{class_name}}',
+            'class_request_team_notification' => 'New class request: {{class_name}} from {{customer_name}}',
+            'helpdesk_assigned_team' => 'Ticket assigned to you: {{ticket_subject}}',
+            'helpdesk_customer_reply' => 'Re: {{ticket_subject}} (customer reply)',
         ];
 
         return $subjects[$key] ?? 'Email from {{studio_name}}';
@@ -377,12 +452,14 @@ class EmailTemplateController extends Controller
         $request->validate([
             'email_header_html' => 'nullable|string|max:5000',
             'email_footer_html' => 'nullable|string|max:5000',
+            'email_header_show_logo' => 'nullable|boolean',
         ]);
 
         $host = auth()->user()->currentHost();
         $settings = $host->booking_settings ?? [];
         $settings['email_header_html'] = $request->input('email_header_html', '');
         $settings['email_footer_html'] = $request->input('email_footer_html', '');
+        $settings['email_header_show_logo'] = $request->boolean('email_header_show_logo');
         $host->booking_settings = $settings;
         $host->save();
 
@@ -399,10 +476,18 @@ class EmailTemplateController extends Controller
 
         $customHeader = $host->booking_settings['email_header_html'] ?? '';
         $customFooter = $host->booking_settings['email_footer_html'] ?? '';
+        $showLogo = (bool) ($host->booking_settings['email_header_show_logo'] ?? false);
+        $logoUrl = $host->logo_url ?? null;
 
-        $headerHtml = !empty($customHeader)
+        $headerInner = !empty($customHeader)
             ? $customHeader
             : '<h1 style="margin:0;font-size:24px;font-weight:600;">' . htmlspecialchars($studioName) . '</h1>';
+
+        $logoHtml = ($showLogo && $logoUrl)
+            ? '<img src="' . htmlspecialchars($logoUrl) . '" alt="' . htmlspecialchars($studioName) . '" style="max-height:48px;max-width:200px;display:block;margin:0 auto 12px;">'
+            : '';
+
+        $headerHtml = $logoHtml . $headerInner;
 
         $footerHtml = !empty($customFooter)
             ? $customFooter
@@ -416,12 +501,12 @@ class EmailTemplateController extends Controller
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 0; background-color: #f3f4f6; }
         .container { max-width: 600px; margin: 0 auto; background: white; }
-        .header { background: ' . $primaryColor . '; color: white; padding: 24px; text-align: center; }
+        .header { padding: 24px; text-align: center; color: #111827; }
         .content { padding: 32px 24px; }
         .content h2 { color: #111827; margin-top: 0; }
         .content ul { padding-left: 20px; }
         .content a { color: ' . $primaryColor . '; }
-        .footer { background: #f9fafb; padding: 24px; text-align: center; font-size: 14px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+        .footer { padding: 24px; text-align: center; font-size: 14px; color: #6b7280; }
     </style>
 </head>
 <body>
@@ -548,6 +633,18 @@ class EmailTemplateController extends Controller
             'due_date' => now()->addDays(2)->format('F j, Y'),
             'booking_url' => $host->subdomain ? url('//' . $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz')) : url('/'),
             'last_visit_date' => now()->subDays(45)->format('F j, Y'),
+            'verification_code' => '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px auto;">'
+                . '<tr><td style="background:#f3f4f6; border-radius:8px; padding:16px 28px; font-family:Menlo,Consolas,monospace; font-size:32px; font-weight:700; letter-spacing:10px; color:#111827; text-align:center;">482915</td></tr></table>',
+            'expiry_minutes' => (string) ($host->member_portal_settings['activation_code_expiry_minutes'] ?? 10),
+            'team_member_name' => $user?->name ?? 'Jane Coach',
+            'customer_email' => 'john.doe@example.com',
+            'customer_phone' => '(555) 123-4567',
+            'waitlist_requested' => 'No',
+            'message' => 'I would like to try this class — what beginner times work best?',
+            'ticket_url' => $host->subdomain
+                ? url('//' . $host->subdomain . '.' . config('app.booking_domain', 'fitcrm.biz') . '/portal/helpdesk/0')
+                : url('/helpdesk/0'),
+            'customer_message' => '<p>Hi! Quick follow-up — is the 6:30 PM class still available?</p>',
         ];
     }
 
@@ -644,7 +741,10 @@ class EmailTemplateController extends Controller
             'helpdesk_reply' => '<h2>Re: {{ticket_subject}}</h2>
 <p>Hi {{customer_name}},</p>
 <p>{{response_message}}</p>
-<p>Ticket ID: {{ticket_id}}</p>
+<p style="margin:24px 0 8px;"><a href="{{ticket_url}}" style="display:inline-block;padding:10px 18px;background:#6366f1;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600;">Open conversation</a></p>
+<p style="font-size:12px;color:#6b7280;margin:0 0 4px;">Or copy this link into your browser:</p>
+<p style="font-size:12px;color:#6366f1;word-break:break-all;margin:0 0 16px;"><a href="{{ticket_url}}" style="color:#6366f1;">{{ticket_url}}</a></p>
+<p style="font-size:12px;color:#6b7280;">Ticket ID: {{ticket_id}}</p>
 <p>Best regards,<br>{{studio_signature}}</p>',
 
             'intake_form_request' => '<h2>Please Complete Your Intake Form</h2>
@@ -692,6 +792,57 @@ class EmailTemplateController extends Controller
 <p><a href="{{booking_url}}">Book a Class Now</a></p>
 <p>We hope to see you soon!</p>
 <p>{{studio_name}}</p>',
+
+            'member_activation_code' => '<h2>Your Verification Code</h2>
+<p>Hi {{customer_name}},</p>
+<p>You requested to sign in to your {{studio_name}} member portal. Use the code below to verify your identity:</p>
+<div style="text-align:center; margin:24px 0;">
+    <div style="display:inline-block; background:#f3f4f6; border-radius:8px; padding:16px 24px; font-size:32px; font-weight:bold; letter-spacing:8px; font-family:monospace;">{{verification_code}}</div>
+</div>
+<p>This code will expire in <strong>{{expiry_minutes}} minutes</strong>.</p>
+<p>If you didn\'t request this code, you can safely ignore this email.</p>
+<p>Thanks,<br>{{studio_name}}</p>',
+
+            'class_request_received' => '<h2>Thanks for reaching out!</h2>
+<p>Hi {{customer_name}},</p>
+<p>We\'ve received your request about <strong>{{class_name}}</strong>. A member of our team will follow up with you shortly.</p>
+<p><strong>Your message:</strong></p>
+<blockquote style="margin:8px 0;padding:8px 12px;border-left:3px solid #6366f1;background:#f9fafb;">{{message}}</blockquote>
+<p>If you need to reach us before then, reply to this email or call us at {{studio_phone}}.</p>
+<p>Thanks,<br>{{studio_name}}<br>{{studio_email}}</p>',
+
+            'class_request_team_notification' => '<h2>New class request</h2>
+<p>Hi {{team_member_name}},</p>
+<p>A new class info-request just came in from the public booking page. Details:</p>
+<ul>
+    <li><strong>Class:</strong> {{class_name}}</li>
+    <li><strong>From:</strong> {{customer_name}}</li>
+    <li><strong>Email:</strong> {{customer_email}}</li>
+    <li><strong>Phone:</strong> {{customer_phone}}</li>
+    <li><strong>Waitlist requested:</strong> {{waitlist_requested}}</li>
+</ul>
+<p><strong>Their message:</strong></p>
+<blockquote style="margin:8px 0;padding:8px 12px;border-left:3px solid #6366f1;background:#f9fafb;">{{message}}</blockquote>
+<p>Please follow up with them as soon as you can.</p>
+<p>— {{studio_name}}</p>',
+
+            'helpdesk_assigned_team' => '<h2>Ticket assigned to you</h2>
+<p>Hi {{team_member_name}},</p>
+<p>A helpdesk ticket has just been assigned to you. Details:</p>
+<ul>
+    <li><strong>Ticket:</strong> #{{ticket_id}} — {{ticket_subject}}</li>
+    <li><strong>From:</strong> {{customer_name}}</li>
+    <li><strong>Email:</strong> {{customer_email}}</li>
+</ul>
+<p><a href="{{ticket_url}}">Open the ticket</a> to review and reply.</p>
+<p>— {{studio_name}}</p>',
+
+            'helpdesk_customer_reply' => '<h2>Customer reply received</h2>
+<p>Hi {{team_member_name}},</p>
+<p><strong>{{customer_name}}</strong> just replied on ticket #{{ticket_id}} — <em>{{ticket_subject}}</em>.</p>
+<blockquote style="margin:8px 0;padding:8px 12px;border-left:3px solid #6366f1;background:#f9fafb;">{{customer_message}}</blockquote>
+<p><a href="{{ticket_url}}">Open the ticket</a> to respond.</p>
+<p>— {{studio_name}}</p>',
         ];
 
         return $defaults[$key] ?? '<p>Email content goes here...</p>';

@@ -42,9 +42,8 @@
                 <div class="flex flex-wrap items-center gap-2 mt-2">
                     @php
                         $statusBadge = match($client->status) {
-                            'lead' => 'badge-warning',
-                            'client' => 'badge-info',
-                            'member' => 'badge-success',
+                            'inactive' => 'badge-warning',
+                            'active' => 'badge-success',
                             'at_risk' => 'badge-error',
                             default => 'badge-ghost'
                         };
@@ -98,59 +97,55 @@
                 Record Progress
             </button>
             @endif
-            @if(auth()->user()->hasPermission('students.edit'))
-            <a href="{{ route('clients.edit', $client) }}" class="btn btn-primary">
-                <span class="icon-[tabler--edit] size-5"></span>
-                Edit
-            </a>
-            @endif
-            <div class="relative z-[100]">
-                <button type="button" class="btn btn-ghost btn-square" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                    <span class="icon-[tabler--dots-vertical] size-5"></span>
-                </button>
-                <ul class="hidden absolute right-0 top-full mt-1 menu bg-base-100 rounded-box w-52 p-2 shadow-xl border border-base-300 z-[9999]">
-                    @if($client->status === 'lead')
-                    <li>
-                        <form method="POST" action="{{ route('clients.convert-to-client', $client) }}" class="m-0">
-                            @csrf
-                            <button type="submit" class="w-full text-left flex items-center gap-2">
-                                <span class="icon-[tabler--user-check] size-4"></span> Convert to Client
-                            </button>
-                        </form>
-                    </li>
-                    @endif
-                    @if($client->status !== 'member')
-                    <li>
-                        <form method="POST" action="{{ route('clients.convert-to-member', $client) }}" class="m-0">
-                            @csrf
-                            <button type="submit" class="w-full text-left flex items-center gap-2">
-                                <span class="icon-[tabler--id-badge] size-4"></span> Convert to Member
-                            </button>
-                        </form>
-                    </li>
-                    @endif
-                    @if($client->status === 'at_risk')
-                    <li>
-                        <form method="POST" action="{{ route('clients.clear-at-risk', $client) }}" class="m-0">
-                            @csrf
-                            <button type="submit" class="w-full text-left flex items-center gap-2">
-                                <span class="icon-[tabler--check] size-4"></span> Clear At-Risk Status
-                            </button>
-                        </form>
-                    </li>
-                    @endif
-                    <li class="divider my-1"></li>
-                    <li>
-                        <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0"
-                              onsubmit="return confirm('Are you sure you want to archive this client?')">
-                            @csrf
-                            <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
-                                <span class="icon-[tabler--archive] size-4"></span> Archive Client
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
+            <x-actions-dropdown width="w-52">
+                @if(auth()->user()->hasPermission('students.edit'))
+                <li>
+                    <a href="{{ route('clients.edit', $client) }}" class="flex items-center gap-2">
+                        <span class="icon-[tabler--edit] size-4"></span> Edit
+                    </a>
+                </li>
+                @endif
+                @if($client->status === 'inactive')
+                <li>
+                    <form method="POST" action="{{ route('clients.convert-to-client', $client) }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                            <span class="icon-[tabler--user-check] size-4"></span> Mark Active
+                        </button>
+                    </form>
+                </li>
+                @endif
+                @if(!$client->is_member)
+                <li>
+                    <form method="POST" action="{{ route('clients.convert-to-member', $client) }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                            <span class="icon-[tabler--id-badge] size-4"></span> Convert to Member
+                        </button>
+                    </form>
+                </li>
+                @endif
+                @if($client->status === 'at_risk')
+                <li>
+                    <form method="POST" action="{{ route('clients.clear-at-risk', $client) }}" class="m-0">
+                        @csrf
+                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                            <span class="icon-[tabler--check] size-4"></span> Clear At-Risk Status
+                        </button>
+                    </form>
+                </li>
+                @endif
+                <li class="divider my-1"></li>
+                <li>
+                    <form method="POST" action="{{ route('clients.archive', $client) }}" class="m-0"
+                          onsubmit="return confirm('Are you sure you want to archive this client?')">
+                        @csrf
+                        <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                            <span class="icon-[tabler--archive] size-4"></span> Archive Client
+                        </button>
+                    </form>
+                </li>
+            </x-actions-dropdown>
         </div>
     </div>
 
@@ -419,6 +414,156 @@
                                         </div>
                                         @endif
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Contact Details (address + secondary phone) --}}
+                        @if($client->secondary_phone || $client->address_line_1 || $client->city || $client->state_province || $client->postal_code || $client->country)
+                        <div class="accordion-item bg-base-100 rounded-lg">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="contact-details-content" aria-expanded="false">
+                                <span class="icon-[tabler--map-pin] size-5 text-primary"></span>
+                                Contact Details
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                            </button>
+                            <div id="contact-details-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        @if($client->secondary_phone)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Secondary Phone</label>
+                                            <p class="font-medium">{{ $client->secondary_phone }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->address_line_1)
+                                        <div class="sm:col-span-2">
+                                            <label class="text-sm text-base-content/60">Address</label>
+                                            <p class="font-medium">
+                                                {{ $client->address_line_1 }}@if($client->address_line_2), {{ $client->address_line_2 }}@endif
+                                            </p>
+                                        </div>
+                                        @endif
+                                        @if($client->city)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">City</label>
+                                            <p class="font-medium">{{ $client->city }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->state_province)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">State / Province</label>
+                                            <p class="font-medium">{{ $client->state_province }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->postal_code)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Postal Code</label>
+                                            <p class="font-medium">{{ $client->postal_code }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->country)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Country</label>
+                                            <p class="font-medium">{{ $client->country }}</p>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Source & Lead --}}
+                        @if($client->lead_source || $client->referral_source || $client->source_url)
+                        <div class="accordion-item bg-base-100 rounded-lg">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="source-content" aria-expanded="false">
+                                <span class="icon-[tabler--tag] size-5 text-primary"></span>
+                                Source & Lead
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                            </button>
+                            <div id="source-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        @if($client->lead_source)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Lead Source</label>
+                                            <p class="font-medium">{{ \App\Models\Client::getLeadSources()[$client->lead_source] ?? ucfirst($client->lead_source) }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->referral_source)
+                                        <div>
+                                            <label class="text-sm text-base-content/60">Referred By</label>
+                                            <p class="font-medium">{{ $client->referral_source }}</p>
+                                        </div>
+                                        @endif
+                                        @if($client->source_url)
+                                        <div class="sm:col-span-2">
+                                            <label class="text-sm text-base-content/60">Source URL</label>
+                                            <a href="{{ $client->source_url }}" target="_blank" rel="noopener" class="font-medium text-primary hover:underline break-all">{{ $client->source_url }}</a>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Communication Preferences --}}
+                        @php
+                            $contactMethods = array_values(array_filter(explode(',', (string) ($client->preferred_contact_method ?? ''))));
+                            $hasComms = !empty($contactMethods) || $client->email_opt_in !== null || $client->sms_opt_in !== null || $client->marketing_opt_in !== null;
+                        @endphp
+                        @if($hasComms)
+                        <div class="accordion-item bg-base-100 rounded-lg">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="comms-content" aria-expanded="false">
+                                <span class="icon-[tabler--mail] size-5 text-primary"></span>
+                                Communication Preferences
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                            </button>
+                            <div id="comms-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4 space-y-3">
+                                    @if(!empty($contactMethods))
+                                    <div>
+                                        <label class="text-sm text-base-content/60">Preferred Methods</label>
+                                        <div class="flex flex-wrap gap-1.5 mt-1">
+                                            @foreach($contactMethods as $cm)
+                                                <span class="badge badge-soft badge-primary badge-sm">{{ \App\Models\Client::getContactMethods()[$cm] ?? ucfirst($cm) }}</span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div class="text-sm">
+                                            <span class="icon-[tabler--{{ $client->email_opt_in ? 'mail-check' : 'mail-off' }}] size-4 {{ $client->email_opt_in ? 'text-success' : 'text-base-content/40' }}"></span>
+                                            Email <span class="text-base-content/60">{{ $client->email_opt_in ? 'opted in' : 'opted out' }}</span>
+                                        </div>
+                                        <div class="text-sm">
+                                            <span class="icon-[tabler--{{ $client->sms_opt_in ? 'message-check' : 'message-off' }}] size-4 {{ $client->sms_opt_in ? 'text-success' : 'text-base-content/40' }}"></span>
+                                            SMS <span class="text-base-content/60">{{ $client->sms_opt_in ? 'opted in' : 'opted out' }}</span>
+                                        </div>
+                                        <div class="text-sm">
+                                            <span class="icon-[tabler--{{ $client->marketing_opt_in ? 'speakerphone' : 'speakerphone' }}] size-4 {{ $client->marketing_opt_in ? 'text-success' : 'text-base-content/40' }}"></span>
+                                            Marketing <span class="text-base-content/60">{{ $client->marketing_opt_in ? 'opted in' : 'opted out' }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Internal Notes (from the client profile field, separate from the Notes tab) --}}
+                        @if($client->notes)
+                        <div class="accordion-item bg-base-100 rounded-lg">
+                            <button class="accordion-toggle inline-flex items-center gap-2 px-4 py-3 w-full text-left font-medium" aria-controls="internal-notes-content" aria-expanded="false">
+                                <span class="icon-[tabler--notes] size-5 text-primary"></span>
+                                Internal Notes
+                                <span class="icon-[tabler--chevron-down] accordion-icon size-5 ml-auto transition-transform"></span>
+                            </button>
+                            <div id="internal-notes-content" class="accordion-content hidden w-full overflow-hidden transition-[height]" role="region">
+                                <div class="px-4 pb-4">
+                                    <p class="whitespace-pre-line text-sm text-base-content/80">{{ $client->notes }}</p>
+                                    <p class="text-xs text-base-content/40 mt-2">Only visible to staff.</p>
                                 </div>
                             </div>
                         </div>
@@ -1897,7 +2042,7 @@
 <div id="score-calculation-modal" class="fixed inset-0 z-[9999] hidden">
     <div class="fixed inset-0 bg-black/50" onclick="document.getElementById('score-calculation-modal').classList.add('hidden')"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-base-100 rounded-box shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="bg-base-100 rounded-box shadow-xl max-w-[1344px] w-full max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between p-4 border-b border-base-200">
                 <h3 class="text-lg font-bold flex items-center gap-2">
                     <span class="icon-[tabler--calculator] size-5 text-primary"></span>
@@ -1918,29 +2063,37 @@
                 </div>
 
                 {{-- This Client's Calculation --}}
-                <div class="bg-base-200/50 rounded-lg p-4">
-                    <h4 class="font-semibold mb-3">{{ $client->full_name }}'s Score Breakdown</h4>
-                    <div class="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                            <div class="text-2xl font-bold text-primary">{{ $clientScore['engagement']['score'] }}</div>
-                            <div class="text-xs text-base-content/60">Engagement × 40%</div>
-                            <div class="text-sm font-medium">= {{ round($clientScore['engagement']['score'] * 0.4, 1) }}</div>
+                <div class="bg-base-200/50 rounded-lg p-3">
+                    <div class="flex items-center flex-wrap gap-x-4 gap-y-2 text-sm">
+                        <h4 class="font-semibold shrink-0">{{ $client->full_name }}'s Score:</h4>
+
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-lg font-bold text-primary">{{ $clientScore['engagement']['score'] }}</span>
+                            <span class="text-xs text-base-content/60">Engagement × 40%</span>
+                            <span class="text-xs font-medium">= {{ round($clientScore['engagement']['score'] * 0.4, 1) }}</span>
                         </div>
-                        <div>
-                            <div class="text-2xl font-bold text-secondary">{{ $clientScore['usage']['score'] }}</div>
-                            <div class="text-xs text-base-content/60">Usage × 30%</div>
-                            <div class="text-sm font-medium">= {{ round($clientScore['usage']['score'] * 0.3, 1) }}</div>
+
+                        <span class="text-base-content/30">+</span>
+
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-lg font-bold text-secondary">{{ $clientScore['usage']['score'] }}</span>
+                            <span class="text-xs text-base-content/60">Usage × 30%</span>
+                            <span class="text-xs font-medium">= {{ round($clientScore['usage']['score'] * 0.3, 1) }}</span>
                         </div>
-                        <div>
-                            <div class="text-2xl font-bold text-success">{{ $clientScore['revenue']['score'] }}</div>
-                            <div class="text-xs text-base-content/60">Revenue × 30%</div>
-                            <div class="text-sm font-medium">= {{ round($clientScore['revenue']['score'] * 0.3, 1) }}</div>
+
+                        <span class="text-base-content/30">+</span>
+
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-lg font-bold text-success">{{ $clientScore['revenue']['score'] }}</span>
+                            <span class="text-xs text-base-content/60">Revenue × 30%</span>
+                            <span class="text-xs font-medium">= {{ round($clientScore['revenue']['score'] * 0.3, 1) }}</span>
                         </div>
-                    </div>
-                    <div class="text-center mt-4 pt-4 border-t border-base-300">
-                        <span class="text-base-content/60">Total:</span>
-                        <span class="text-3xl font-bold ml-2">{{ $clientScore['overall'] }}</span>
-                        <span class="badge badge-{{ $clientScore['grade']['color'] }} ml-2">{{ $clientScore['grade']['label'] }}</span>
+
+                        <div class="ml-auto flex items-baseline gap-2 pl-3 border-l border-base-300">
+                            <span class="text-xs text-base-content/60">Total:</span>
+                            <span class="text-xl font-bold">{{ $clientScore['overall'] }}</span>
+                            <span class="badge badge-sm badge-{{ $clientScore['grade']['color'] }}">{{ $clientScore['grade']['label'] }}</span>
+                        </div>
                     </div>
                 </div>
 

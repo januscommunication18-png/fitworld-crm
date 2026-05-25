@@ -108,6 +108,11 @@
                 </a>
             </div>
 
+            <button type="button" class="btn btn-soft btn-secondary" onclick="openDrawer('tags-config', event)">
+                <span class="icon-[tabler--tags] size-5"></span>
+                {{ $trans['clients.configure_client_tags'] ?? 'Configure Client Tags' }}
+            </button>
+
             @if(auth()->user()->hasPermission('students.create'))
             <a href="{{ route('clients.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
@@ -227,8 +232,8 @@
                     <div class="flex items-start gap-4">
                         @php
                             $avatarBg = match($client->status) {
-                                'lead' => 'bg-warning text-warning-content',
-                                'member' => 'bg-success text-success-content',
+                                'inactive' => 'bg-warning text-warning-content',
+                                'active' => 'bg-success text-success-content',
                                 'at_risk' => 'bg-error text-error-content',
                                 default => 'bg-primary text-primary-content'
                             };
@@ -248,9 +253,8 @@
                                 </div>
                                 @php
                                     $statusBadge = match($client->status) {
-                                        'lead' => 'badge-warning',
-                                        'client' => 'badge-info',
-                                        'member' => 'badge-success',
+                                        'inactive' => 'badge-warning',
+                                        'active' => 'badge-success',
                                         'at_risk' => 'badge-error',
                                         default => 'badge-ghost'
                                     };
@@ -334,8 +338,8 @@
                                     <div class="flex items-center gap-3">
                                         @php
                                             $avatarBg = match($client->status) {
-                                                'lead' => 'bg-warning/10 text-warning',
-                                                'member' => 'bg-success/10 text-success',
+                                                'inactive' => 'bg-warning/10 text-warning',
+                                                'active' => 'bg-success/10 text-success',
                                                 'at_risk' => 'bg-error/10 text-error',
                                                 default => 'bg-primary/10 text-primary'
                                             };
@@ -356,9 +360,8 @@
                                 <td>
                                     @php
                                         $statusBadge = match($client->status) {
-                                            'lead' => 'badge-warning',
-                                            'client' => 'badge-info',
-                                            'member' => 'badge-success',
+                                            'inactive' => 'badge-warning',
+                                            'active' => 'badge-success',
                                             'at_risk' => 'badge-error',
                                             default => 'badge-ghost'
                                         };
@@ -408,17 +411,17 @@
                                             </a>
                                         </li>
                                         @endif
-                                        @if($client->status === 'lead')
+                                        @if($client->status === 'inactive')
                                             <li>
                                                 <form method="POST" action="{{ route('clients.convert-to-client', $client) }}" class="m-0">
                                                     @csrf
                                                     <button type="submit" class="w-full text-left flex items-center gap-2">
-                                                        <span class="icon-[tabler--user-check] size-4"></span> {{ $trans['clients.convert_to_client'] ?? 'Convert to Client' }}
+                                                        <span class="icon-[tabler--user-check] size-4"></span> {{ $trans['clients.mark_active'] ?? 'Mark Active' }}
                                                     </button>
                                                 </form>
                                             </li>
                                         @endif
-                                        @if($client->status !== 'member')
+                                        @if(!$client->is_member)
                                             <li>
                                                 <form method="POST" action="{{ route('clients.convert-to-member', $client) }}" class="m-0">
                                                     @csrf
@@ -460,5 +463,19 @@
 @foreach($clients as $client)
     @include('host.clients.partials.drawer', ['client' => $client])
 @endforeach
+
+{{-- Configure Client Tags Drawer --}}
+<x-tag-config-drawer
+    id="tags-config"
+    title="{{ $trans['clients.configure_client_tags'] ?? 'Configure Client Tags' }}"
+    :tags="$allTags ?? $tags"
+    :store-route="route('clients.tags.store')"
+    :update-route="route('clients.tags.update-tag', ['tag' => '__ID__'])"
+    :toggle-route="route('clients.tags.toggle-active', ['tag' => '__ID__'])"
+    :destroy-route="route('clients.tags.destroy', ['tag' => '__ID__'])"
+    add-label="{{ $trans['clients.add_new_tag'] ?? 'Add a new tag' }}"
+    existing-label="{{ $trans['clients.existing_tags'] ?? 'Existing tags' }}"
+    delete-confirm="{{ $trans['clients.confirm_delete_tag'] ?? 'Delete this tag? Clients tagged with it will lose this label.' }}"
+/>
 
 @endsection

@@ -38,7 +38,7 @@
                         </li>
                         <li><a href="{{ route('member.portal.dashboard', ['subdomain' => $host->subdomain]) }}" class="menu-item">
                             <span class="icon-[tabler--home] size-4"></span>
-                            {{ $trans['nav.dashboard'] ?? 'Home' }}
+                            {{ $trans['nav.home'] ?? 'Home' }}
                         </a></li>
                         <li><a href="{{ route('member.portal.bookings', ['subdomain' => $host->subdomain]) }}" class="menu-item">
                             <span class="icon-[tabler--calendar-check] size-4"></span>
@@ -71,7 +71,7 @@
             <a href="{{ route('member.portal.dashboard', ['subdomain' => $host->subdomain]) }}"
                class="tab {{ request()->routeIs('member.portal', 'member.portal.dashboard') ? 'tab-active' : '' }}">
                 <span class="icon-[tabler--home] size-4 mr-2"></span>
-                {{ $trans['nav.dashboard'] ?? 'Home' }}
+                {{ $trans['nav.home'] ?? 'Home' }}
             </a>
             <a href="{{ route('member.portal.bookings', ['subdomain' => $host->subdomain]) }}"
                class="tab {{ request()->routeIs('member.portal.bookings') ? 'tab-active' : '' }}">

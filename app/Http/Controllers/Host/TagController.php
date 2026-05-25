@@ -57,7 +57,7 @@ class TagController extends Controller
             $slug = $originalSlug . '-' . $counter++;
         }
 
-        Tag::create([
+        $tag = Tag::create([
             'host_id' => $host->id,
             'name' => $validated['name'],
             'slug' => $slug,
@@ -65,7 +65,19 @@ class TagController extends Controller
         ]);
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Tag created successfully.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Tag created successfully.',
+                'tag' => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'slug' => $tag->slug,
+                    'color' => $tag->color,
+                    'usage_count' => $tag->usage_count ?? 0,
+                    'is_preset' => (bool) $tag->is_preset,
+                    'is_active' => (bool) $tag->is_active,
+                ],
+            ]);
         }
 
         return back()->with('success', 'Tag created successfully.');
@@ -81,18 +93,57 @@ class TagController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'color' => ['required', 'string', 'regex:/^#[a-fA-F0-9]{6}$/'],
+            'is_active' => ['sometimes', 'boolean'],
         ]);
 
-        $tag->update([
+        $payload = [
             'name' => $validated['name'],
             'color' => $validated['color'],
-        ]);
+        ];
+        if (array_key_exists('is_active', $validated)) {
+            $payload['is_active'] = $validated['is_active'];
+        }
+
+        $tag->update($payload);
 
         if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'message' => 'Tag updated successfully.']);
+            return response()->json([
+                'success' => true,
+                'message' => 'Tag updated successfully.',
+                'tag' => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'color' => $tag->color,
+                    'is_active' => (bool) $tag->is_active,
+                    'is_preset' => (bool) $tag->is_preset,
+                ],
+            ]);
         }
 
         return back()->with('success', 'Tag updated successfully.');
+    }
+
+    /**
+     * Toggle a tag's active state. Used from the tag-config drawer for preset tags.
+     */
+    public function toggleActive(Request $request, Tag $tag)
+    {
+        $this->authorizeTag($tag);
+
+        $validated = $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $tag->update(['is_active' => $validated['is_active']]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'is_active' => $tag->is_active,
+            ]);
+        }
+
+        return back()->with('success', 'Tag updated.');
     }
 
     /**

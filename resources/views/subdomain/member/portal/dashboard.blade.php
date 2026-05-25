@@ -3,12 +3,7 @@
 @section('title', ($trans['member.portal.title'] ?? 'Member Portal') . ' — ' . $host->studio_name)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
-    @include('subdomain.member.portal._nav')
-
-    {{-- Portal Content --}}
-    <div class="flex-1 bg-base-200">
-        <div class="container-fixed py-8">
+<x-portal-shell :host="$host" :member="$member">
     {{-- Welcome Section --}}
     <div class="mb-8">
         <h1 class="text-2xl font-bold">{{ $trans['member.dashboard.welcome'] ?? 'Welcome back' }}, {{ $member->first_name }}!</h1>
@@ -300,9 +295,7 @@
         </div>
     </div>
     @endif
-        </div>
-    </div>
-</div>
+</x-portal-shell>
 @endsection
 
 @push('scripts')

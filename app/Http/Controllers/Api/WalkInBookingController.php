@@ -152,7 +152,7 @@ class WalkInBookingController extends Controller
             'last_name' => $request->last_name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'status' => Client::STATUS_CLIENT,
+            'status' => Client::STATUS_ACTIVE,
             'lead_source' => 'manual',
             'email_opt_in' => $request->boolean('send_emails', false),
             'sms_opt_in' => $request->boolean('send_sms', false),

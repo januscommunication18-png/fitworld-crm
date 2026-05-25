@@ -12,9 +12,6 @@
     {{-- Page Navigation Tabs --}}
     <div class="flex justify-center mb-6">
         <div class="tabs tabs-boxed bg-base-200 p-1">
-            <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="tab">
-                <span class="icon-[tabler--home] size-4 me-1"></span> {{ $trans['nav.dashboard'] ?? 'Home' }}
-            </a>
             <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="tab tab-active">
                 <span class="icon-[tabler--calendar] size-4 me-1"></span> {{ $trans['nav.schedule'] ?? 'Schedule' }}
             </a>
@@ -105,11 +102,6 @@
                                             {{ $trans['btn.join_waitlist'] ?? 'Join Waitlist' }}
                                         </a>
                                     @else
-                                        <a href="{{ route('subdomain.class', ['subdomain' => $host->subdomain, 'classSession' => $session->id]) }}"
-                                           class="btn btn-ghost btn-sm">
-                                            <span class="icon-[tabler--info-circle] size-4"></span>
-                                            {{ $trans['subdomain.class.details'] ?? 'Details' }}
-                                        </a>
                                         <form action="{{ route('booking.select-class-session', ['subdomain' => $host->subdomain, 'session' => $session->id]) }}" method="POST">
                                             @csrf
                                             <button type="submit" class="btn btn-primary btn-sm">

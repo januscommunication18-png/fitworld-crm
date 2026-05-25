@@ -19,14 +19,16 @@
             <p class="text-base-content/60 mt-1">{{ $trans['helpdesk.description'] ?? 'Manage service requests, inquiries, and customer tickets.' }}</p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{{ route('helpdesk.tags') }}" class="btn btn-ghost btn-sm">
+            <button type="button" class="btn btn-soft btn-secondary btn-sm" onclick="openDrawer('helpdesk-tags-config', event)">
                 <span class="icon-[tabler--tags] size-4"></span>
                 {{ $trans['helpdesk.manage_tags'] ?? 'Manage Tags' }}
-            </a>
+            </button>
+            @if(auth()->user()->hasPermission('helpdesk.create'))
             <a href="{{ route('helpdesk.create') }}" class="btn btn-primary">
                 <span class="icon-[tabler--plus] size-5"></span>
                 {{ $trans['helpdesk.new_ticket'] ?? 'New Ticket' }}
             </a>
+            @endif
         </div>
     </div>
 
@@ -134,6 +136,7 @@
                         @endforeach
                     </select>
                 </div>
+                @if($canSeeAllTickets ?? true)
                 <div class="w-40">
                     <label class="label-text" for="assigned">{{ $trans['helpdesk.assigned'] ?? 'Assigned' }}</label>
                     <select id="assigned" name="assigned" class="select w-full">
@@ -146,6 +149,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endif
                 <button type="submit" class="btn btn-primary">
                     <span class="icon-[tabler--filter] size-4"></span>
                     {{ $trans['btn.filter'] ?? 'Filter' }}
@@ -173,10 +177,12 @@
                             {{ $trans['helpdesk.create_or_wait'] ?? 'Create a new ticket or wait for customer inquiries.' }}
                         @endif
                     </p>
+                    @if(auth()->user()->hasPermission('helpdesk.create'))
                     <a href="{{ route('helpdesk.create') }}" class="btn btn-primary mt-4">
                         <span class="icon-[tabler--plus] size-4"></span>
                         {{ $trans['helpdesk.create_ticket'] ?? 'Create Ticket' }}
                     </a>
+                    @endif
                 </div>
             @else
                 <div class="overflow-x-auto">
@@ -196,7 +202,7 @@
                         <tbody>
                             @foreach($tickets as $ticket)
                                 <tr class="hover:bg-base-200/50 cursor-pointer" onclick="window.location='{{ route('helpdesk.show', $ticket) }}'">
-                                    <td class="font-mono text-sm text-base-content/60">{{ $ticket->id }}</td>
+                                    <td class="text-sm text-base-content/60">{{ $ticket->id }}</td>
                                     <td>
                                         <div class="flex items-center gap-3">
                                             <div class="avatar placeholder">
@@ -243,20 +249,13 @@
                                                 'resolved' => 'badge-success',
                                             ];
                                         @endphp
-                                        <span class="badge {{ $statusColors[$ticket->status] ?? 'badge-ghost' }}">
+                                        <span class="badge badge-sm {{ $statusColors[$ticket->status] ?? 'badge-ghost' }}">
                                             {{ $ticket->status_label }}
                                         </span>
                                     </td>
                                     <td>
                                         @if($ticket->assignedUser)
-                                            <div class="flex items-center gap-2">
-                                                <div class="avatar placeholder">
-                                                    <div class="bg-base-200 rounded-full w-6 h-6">
-                                                        <span class="text-xs">{{ strtoupper(substr($ticket->assignedUser->name, 0, 1)) }}</span>
-                                                    </div>
-                                                </div>
-                                                <span class="text-sm">{{ $ticket->assignedUser->name }}</span>
-                                            </div>
+                                            <span class="text-sm">{{ $ticket->assignedUser->name }}</span>
                                         @else
                                             <span class="text-base-content/40 text-sm">{{ $trans['helpdesk.unassigned'] ?? 'Unassigned' }}</span>
                                         @endif
@@ -265,36 +264,43 @@
                                         {{ $ticket->created_at->diffForHumans() }}
                                     </td>
                                     <td onclick="event.stopPropagation()">
-                                        <details class="dropdown dropdown-bottom dropdown-end">
-                                            <summary class="btn btn-ghost btn-sm btn-square list-none cursor-pointer">
-                                                <span class="icon-[tabler--dots-vertical] size-4"></span>
-                                            </summary>
-                                            <ul class="dropdown-content menu bg-base-100 rounded-box w-48 p-2 shadow-lg border border-base-300" style="z-index: 9999;">
-                                                <li><a href="{{ route('helpdesk.show', $ticket) }}">
-                                                    <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View' }}
-                                                </a></li>
-                                                @if(!$ticket->client_id)
-                                                    <li>
-                                                        <form action="{{ route('helpdesk.convert', $ticket) }}" method="POST">
-                                                            @csrf
-                                                            <button type="submit" class="w-full text-left">
-                                                                <span class="icon-[tabler--user-plus] size-4"></span> {{ $trans['helpdesk.convert_to_client'] ?? 'Convert to Client' }}
-                                                            </button>
-                                                        </form>
-                                                    </li>
-                                                @endif
-                                                <li class="menu-title pt-2 mt-2 border-t border-base-200"></li>
+                                        @php
+                                            $canEdit = auth()->user()->hasPermission('helpdesk.edit');
+                                            $canDelete = auth()->user()->hasPermission('helpdesk.delete');
+                                        @endphp
+                                        <x-actions-dropdown>
+                                            <li>
+                                                <a href="{{ route('helpdesk.show', $ticket) }}" class="flex items-center gap-2">
+                                                    <span class="icon-[tabler--eye] size-4"></span>
+                                                    {{ $trans['btn.view'] ?? 'View' }}
+                                                </a>
+                                            </li>
+                                            @if($canEdit && !$ticket->client_id)
                                                 <li>
-                                                    <form action="{{ route('helpdesk.destroy', $ticket) }}" method="POST" onsubmit="return confirm('{{ $trans['msg.confirm.delete_ticket'] ?? 'Are you sure you want to delete this ticket?' }}')">
+                                                    <form action="{{ route('helpdesk.convert', $ticket) }}" method="POST" class="m-0">
                                                         @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="text-error w-full text-left">
-                                                            <span class="icon-[tabler--trash] size-4"></span> {{ $trans['btn.delete'] ?? 'Delete' }}
+                                                        <button type="submit" class="w-full text-left flex items-center gap-2">
+                                                            <span class="icon-[tabler--user-plus] size-4"></span>
+                                                            {{ $trans['helpdesk.convert_to_client'] ?? 'Convert to Client' }}
                                                         </button>
                                                     </form>
                                                 </li>
-                                            </ul>
-                                        </details>
+                                            @endif
+                                            @if($canDelete)
+                                                <li class="divider my-1"></li>
+                                                <li>
+                                                    <form action="{{ route('helpdesk.destroy', $ticket) }}" method="POST" class="m-0"
+                                                          onsubmit="return confirm('{{ $trans['msg.confirm.delete_ticket'] ?? 'Are you sure you want to delete this ticket?' }}')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="w-full text-left flex items-center gap-2 text-error">
+                                                            <span class="icon-[tabler--trash] size-4"></span>
+                                                            {{ $trans['btn.delete'] ?? 'Delete' }}
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @endif
+                                        </x-actions-dropdown>
                                     </td>
                                 </tr>
                             @endforeach
@@ -312,4 +318,19 @@
         </div>
     </div>
 </div>
+
+{{-- Helpdesk Tags configuration drawer --}}
+<x-tag-config-drawer
+    id="helpdesk-tags-config"
+    title="{{ $trans['helpdesk.manage_tags'] ?? 'Manage Helpdesk Tags' }}"
+    user-tags-label="{{ $trans['helpdesk.tags'] ?? 'Helpdesk Tags' }}"
+    :tags="$tags"
+    :store-route="route('helpdesk.tags.store')"
+    :update-route="route('helpdesk.tags.update', ['tag' => '__ID__'])"
+    :destroy-route="route('helpdesk.tags.destroy', ['tag' => '__ID__'])"
+    :show-preset-section="false"
+    :show-active-toggle="false"
+    add-label="{{ $trans['helpdesk.add_new_tag'] ?? 'Add a new tag' }}"
+    delete-confirm="{{ $trans['helpdesk.confirm_delete_tag'] ?? 'Delete this tag? Tickets tagged with it will lose this label.' }}"
+/>
 @endsection

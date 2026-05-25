@@ -192,7 +192,7 @@ class ClientScoringService
 
         // Loyalty Score (0-250): Based on membership and duration
         $loyaltyScore = 0;
-        if ($client->status === 'member') {
+        if ($client->membership_status === \App\Models\Client::MEMBERSHIP_ACTIVE) {
             $memberSince = $client->created_at;
             $monthsAsMember = $memberSince->diffInMonths($now);
             $loyaltyScore = min(200, 50 + ($monthsAsMember * 5));

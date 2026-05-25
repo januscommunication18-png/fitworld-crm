@@ -3,28 +3,8 @@
 @section('title', 'Request a Class — ' . $host->studio_name)
 
 @section('content')
-@php
-    $logoUrl = $host->logo_path ? Storage::disk(config('filesystems.uploads'))->url($host->logo_path) : null;
-@endphp
 
-{{-- Header --}}
-<div class="bg-base-200 border-b border-base-300">
-    <div class="max-w-3xl mx-auto px-4 py-6">
-        <div class="flex items-center gap-4">
-            @if($logoUrl)
-                <img src="{{ $logoUrl }}" alt="{{ $host->studio_name }}" class="h-10 w-auto">
-            @else
-                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span class="icon-[tabler--building-community] size-5 text-primary"></span>
-                </div>
-            @endif
-            <div>
-                <h1 class="font-bold text-lg text-base-content">{{ $host->studio_name }}</h1>
-                <p class="text-sm text-base-content/60">Request a Class</p>
-            </div>
-        </div>
-    </div>
-</div>
+@include('subdomain.partials.navbar')
 
 {{-- Main Content --}}
 <div class="max-w-3xl mx-auto w-full px-4 py-8">
@@ -60,8 +40,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('subdomain.class-request.store', ['subdomain' => $host->subdomain]) }}" method="POST" class="space-y-6">
-                @csrf
+            <x-form-validate :action="route('subdomain.class-request.store', ['subdomain' => $host->subdomain])" class="space-y-6">
 
                 {{-- Contact Information --}}
                 <div class="space-y-4">
@@ -78,7 +57,10 @@
                             <input type="text" id="first_name" name="first_name"
                                    value="{{ old('first_name', $member?->first_name) }}"
                                    class="input input-bordered w-full @error('first_name') input-error @enderror"
-                                   placeholder="First name" required>
+                                   placeholder="First name" required minlength="2" maxlength="50"
+                                   pattern="[A-Za-zÀ-ÖØ-öø-ÿ' \-]+"
+                                   title="Letters only — no numbers or special characters.">
+                            <span class="error-message text-error text-sm mt-1 hidden">Letters only, at least 2 characters — no numbers.</span>
                             @error('first_name')
                                 <span class="text-error text-sm mt-1">{{ $message }}</span>
                             @enderror
@@ -91,7 +73,10 @@
                             <input type="text" id="last_name" name="last_name"
                                    value="{{ old('last_name', $member?->last_name) }}"
                                    class="input input-bordered w-full @error('last_name') input-error @enderror"
-                                   placeholder="Last name" required>
+                                   placeholder="Last name" required minlength="2" maxlength="50"
+                                   pattern="[A-Za-zÀ-ÖØ-öø-ÿ' \-]+"
+                                   title="Letters only — no numbers or special characters.">
+                            <span class="error-message text-error text-sm mt-1 hidden">Letters only, at least 2 characters — no numbers.</span>
                             @error('last_name')
                                 <span class="text-error text-sm mt-1">{{ $message }}</span>
                             @enderror
@@ -107,19 +92,21 @@
                                    value="{{ old('email', $member?->email) }}"
                                    class="input input-bordered w-full @error('email') input-error @enderror"
                                    placeholder="your@email.com" required {{ $member ? 'readonly' : '' }}>
+                            <span class="error-message text-error text-sm mt-1 hidden">Please enter a valid email address.</span>
                             @error('email')
                                 <span class="text-error text-sm mt-1">{{ $message }}</span>
                             @enderror
                         </div>
 
                         <div>
-                            <label for="phone" class="label">
-                                <span class="label-text font-medium">Phone Number <span class="text-error">*</span></span>
-                            </label>
-                            <input type="tel" id="phone" name="phone"
-                                   value="{{ old('phone', $member?->phone) }}"
-                                   class="input input-bordered w-full @error('phone') input-error @enderror"
-                                   placeholder="(555) 123-4567" required>
+                            <x-phone-input
+                                name="phone"
+                                :value="old('phone', $member?->phone)"
+                                label="Phone Number"
+                                :required="true"
+                                :host="$host"
+                                id-suffix="class-request"
+                            />
                             @error('phone')
                                 <span class="text-error text-sm mt-1">{{ $message }}</span>
                             @enderror
@@ -148,6 +135,7 @@
                                 </option>
                             @endforeach
                         </select>
+                        <span class="error-message text-error text-sm mt-1 hidden">Please choose a class.</span>
                         @error('class_plan_id')
                             <span class="text-error text-sm mt-1">{{ $message }}</span>
                         @enderror
@@ -185,14 +173,12 @@
                 </div>
 
                 {{-- Waitlist Checkbox --}}
-                <div class="form-control">
-                    <label class="label cursor-pointer justify-start gap-3">
-                        <input type="checkbox" name="waitlist_requested" value="1"
-                               class="checkbox checkbox-primary"
-                               {{ old('waitlist_requested') ? 'checked' : '' }}>
-                        <span class="label-text">Add me to the waitlist for this class</span>
-                    </label>
-                </div>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" name="waitlist_requested" value="1"
+                           class="checkbox checkbox-primary shrink-0"
+                           {{ old('waitlist_requested') ? 'checked' : '' }}>
+                    <span class="text-sm">Add me to the waitlist for this class</span>
+                </label>
 
                 {{-- Submit --}}
                 <div class="pt-4">
@@ -201,7 +187,7 @@
                         Create Request
                     </button>
                 </div>
-            </form>
+            </x-form-validate>
         </div>
     </div>
 </div>

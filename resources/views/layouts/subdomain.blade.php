@@ -97,17 +97,18 @@
 </head>
 <body class="bg-base-100 min-h-screen flex flex-col antialiased">
     {{-- Main Content --}}
-    <main class="flex-1">
+    <main class="flex-1 flex flex-col">
         @yield('content')
     </main>
 
     {{-- Footer --}}
-    <footer class="py-4 text-center">
+    <footer class="py-4 text-center border-t border-base-200">
         <p class="text-xs text-base-content/40">
             Powered by <a href="{{ config('app.url') }}" class="font-medium text-primary/70 hover:underline">{{ config('app.name') }}</a>
         </p>
     </footer>
 
+    <script src="{{ asset('js/drawer.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

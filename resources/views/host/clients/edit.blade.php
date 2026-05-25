@@ -15,21 +15,39 @@
 @endsection
 
 @section('content')
-<div class="max-w-4xl mx-auto">
-    <div class="flex items-center gap-4 mb-6">
-        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-sm btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+<div class="space-y-6">
+    {{-- Header --}}
+    <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold flex items-center gap-2">
                 <span class="icon-[tabler--user-edit] size-7"></span>
                 {{ $trans['clients.edit_client'] ?? 'Edit Client' }}
             </h1>
-            <p class="text-base-content/60 text-sm mt-1">{{ $trans['clients.update_information'] ?? 'Update' }} {{ $client->full_name }}{{ $trans['clients.information_suffix'] ?? "'s information" }}</p>
+            <p class="text-base-content/60 mt-1">{{ $trans['clients.update_information'] ?? 'Update' }} {{ $client->full_name }}{{ $trans['clients.information_suffix'] ?? "'s information" }}</p>
         </div>
+        <a href="{{ route('clients.show', $client) }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            {{ $trans['btn.back'] ?? 'Back' }}
+        </a>
     </div>
 
-    <form method="POST" action="{{ route('clients.update', $client) }}" class="space-y-6">
+    {{-- Validation error summary so the user sees what blocked the save,
+         even when the broken field lives inside a collapsed <details> section. --}}
+    @if($errors->any())
+        <div class="alert alert-error mb-6" role="alert">
+            <span class="icon-[tabler--alert-circle] size-5 shrink-0"></span>
+            <div class="flex-1">
+                <div class="font-semibold mb-1">Couldn't save — please fix the following:</div>
+                <ul class="list-disc list-inside text-sm space-y-0.5">
+                    @foreach($errors->all() as $err)
+                        <li>{{ $err }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('clients.update', $client) }}" class="space-y-6" id="client-edit-form">
         @csrf
         @method('PUT')
 
@@ -281,13 +299,27 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="label-text" for="preferred_contact_method">{{ $trans['field.preferred_contact_method'] ?? 'Preferred Contact Method' }}</label>
-                        <select id="preferred_contact_method" name="preferred_contact_method" class="select select-bordered w-full @error('preferred_contact_method') select-error @enderror">
+                        @php
+                            // The column is stored as a comma-separated string ("email,sms"); convert to array for the multi-select.
+                            $selectedContactMethods = is_array(old('preferred_contact_method'))
+                                ? old('preferred_contact_method')
+                                : array_values(array_filter(explode(',', (string) ($client->preferred_contact_method ?? ''))));
+                        @endphp
+                        <select id="preferred_contact_method" name="preferred_contact_method[]" class="hidden" multiple
+                            data-select='{
+                                "placeholder": "Select methods...",
+                                "toggleTag": "<button type=\"button\" aria-expanded=\"false\"></button>",
+                                "toggleClasses": "advance-select-toggle",
+                                "dropdownClasses": "advance-select-menu",
+                                "optionClasses": "advance-select-option selected:select-active",
+                                "optionTemplate": "<div class=\"flex justify-between items-center w-full\"><span data-title></span><span class=\"icon-[tabler--check] shrink-0 size-4 text-primary hidden selected:block\"></span></div>",
+                                "extraMarkup": "<span class=\"icon-[tabler--caret-up-down] shrink-0 size-4 text-base-content/50 absolute top-1/2 end-3 -translate-y-1/2\"></span>"
+                            }'>
                             @foreach($contactMethods as $key => $label)
-                                <option value="{{ $key }}" {{ old('preferred_contact_method', $client->preferred_contact_method) === $key ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
+                                <option value="{{ $key }}" {{ in_array($key, $selectedContactMethods) ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
+                        <p class="text-xs text-base-content/50 mt-1">Pick one or more methods.</p>
                         @error('preferred_contact_method')
                             <span class="text-error text-sm">{{ $message }}</span>
                         @enderror
@@ -452,7 +484,8 @@
             </div>
         </details>
 
-        {{-- Marketing Tracking (Collapsible) --}}
+        {{-- Marketing Tracking (UTM) — temporarily hidden --}}
+        @if(false)
         <details class="card bg-base-100 group">
             <summary class="card-body cursor-pointer list-none">
                 <div class="flex items-center justify-between">
@@ -527,6 +560,7 @@
                 </div>
             </div>
         </details>
+        @endif
 
         {{-- Tags --}}
         @if($tags->count() > 0)
@@ -625,6 +659,13 @@ document.addEventListener('DOMContentLoaded', function() {
         altFormat: 'F j, Y',
         dateFormat: 'Y-m-d',
         allowInput: true
+    });
+
+    // Auto-open any collapsed <details> whose inner field has a validation error,
+    // so the offending input is visible on page load after a failed save.
+    document.querySelectorAll('#client-edit-form .input-error, #client-edit-form .select-error, #client-edit-form .textarea-error').forEach(function(el) {
+        var details = el.closest('details');
+        if (details && !details.open) details.open = true;
     });
 });
 </script>

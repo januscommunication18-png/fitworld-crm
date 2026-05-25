@@ -45,8 +45,8 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         // Schedule view
         Route::get('/schedule', [BookingController::class, 'schedule'])->name('subdomain.schedule');
 
-        // Class details
-        Route::get('/class/{classSession}', [BookingController::class, 'classDetails'])->name('subdomain.class');
+        // Class plan (catalog) details — public marketing page for a class type
+        Route::get('/class-plan/{classPlan}', [BookingController::class, 'classPlanDetails'])->name('subdomain.class-plan');
 
         // Event details
         Route::get('/event/{event}', [BookingController::class, 'eventDetails'])->name('subdomain.event');
@@ -180,6 +180,12 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         // ─────────────────────────────────────────────────────────────
         // Member Portal (Protected)
         // ─────────────────────────────────────────────────────────────
+        // Guest helpdesk magic-link (signed) — for customers without a portal account.
+        Route::middleware('signed')->group(function () {
+            Route::get('/support/{ticket}', [\App\Http\Controllers\Subdomain\GuestHelpdeskController::class, 'show'])->name('guest.helpdesk.show');
+            Route::post('/support/{ticket}/reply', [\App\Http\Controllers\Subdomain\GuestHelpdeskController::class, 'reply'])->name('guest.helpdesk.reply');
+        });
+
         Route::middleware('auth.member')->prefix('portal')->group(function () {
             // Dashboard / Home
             Route::get('/', [MemberPortalController::class, 'dashboard'])->name('member.portal');
@@ -203,5 +209,12 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
             Route::get('/profile', [MemberPortalController::class, 'profile'])->name('member.portal.profile');
             Route::put('/profile', [MemberPortalController::class, 'updateProfile'])->name('member.portal.profile.update');
             Route::put('/profile/password', [MemberPortalController::class, 'changePassword'])->name('member.portal.profile.password');
+
+            // Support / Helpdesk
+            Route::get('/helpdesk', [\App\Http\Controllers\Subdomain\MemberHelpdeskController::class, 'index'])->name('member.portal.helpdesk');
+            Route::get('/helpdesk/new', [\App\Http\Controllers\Subdomain\MemberHelpdeskController::class, 'create'])->name('member.portal.helpdesk.create');
+            Route::post('/helpdesk', [\App\Http\Controllers\Subdomain\MemberHelpdeskController::class, 'store'])->name('member.portal.helpdesk.store');
+            Route::get('/helpdesk/{ticket}', [\App\Http\Controllers\Subdomain\MemberHelpdeskController::class, 'show'])->name('member.portal.helpdesk.show');
+            Route::post('/helpdesk/{ticket}/reply', [\App\Http\Controllers\Subdomain\MemberHelpdeskController::class, 'reply'])->name('member.portal.helpdesk.reply');
         });
     });

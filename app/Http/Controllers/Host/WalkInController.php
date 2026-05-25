@@ -1391,7 +1391,7 @@ class WalkInController extends Controller
             'last_name' => $validated['last_name'],
             'email' => $validated['email'] ?? null,
             'phone' => $validated['phone'] ?? null,
-            'status' => 'client',
+            'status' => \App\Models\Client::STATUS_ACTIVE,
         ]);
 
         return response()->json([

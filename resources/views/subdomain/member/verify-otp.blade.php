@@ -3,7 +3,7 @@
 @section('title', 'Verify Code — ' . $host->studio_name)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
+<div class="flex flex-col flex-1">
     {{-- Header --}}
     <nav class="bg-base-100 border-b border-base-200" style="height: 75px;">
         <div class="container-fixed h-full">
@@ -34,11 +34,11 @@
     </nav>
 
     {{-- Verify Content --}}
-    <div class="flex-1 flex items-center justify-center py-12 px-4">
+    <div class="flex-1 flex items-center justify-center py-4 px-4">
         <div class="w-full max-w-md">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <span class="icon-[tabler--mail-check] size-8 text-primary"></span>
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
+                    <span class="icon-[tabler--mail-check] size-6 text-primary"></span>
                 </div>
                 <h1 class="text-2xl font-bold">Check Your Email</h1>
                 <p class="text-base-content/60 mt-2">
@@ -107,7 +107,7 @@
                 </div>
             </div>
 
-            <p class="text-center text-sm text-base-content/60 mt-6">
+            <p class="text-center text-sm text-base-content/60 mt-3">
                 Wrong email?
                 <a href="{{ route('member.login', ['subdomain' => $host->subdomain]) }}"
                    class="text-primary hover:underline">

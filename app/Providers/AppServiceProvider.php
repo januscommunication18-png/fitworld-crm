@@ -19,6 +19,7 @@ use App\Observers\ClientObserver;
 use App\Observers\HelpdeskTicketObserver;
 use App\Observers\WaitlistEntryObserver;
 use App\View\Composers\TranslationViewComposer;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;

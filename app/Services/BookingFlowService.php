@@ -153,7 +153,7 @@ class BookingFlowService
                 'last_name' => $contact['last_name'],
                 'email' => strtolower($contact['email']),
                 'phone' => $contact['phone'],
-                'status' => Client::STATUS_LEAD,
+                'status' => Client::STATUS_INACTIVE,
                 'lead_source' => Client::SOURCE_WEBSITE,
             ]);
         } else {

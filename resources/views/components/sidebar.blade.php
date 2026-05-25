@@ -257,9 +257,19 @@
             @endif
 
             {{-- Help Desk --}}
-            @if($navHelpdesk && $user->hasPermission('students.view'))
             @php
-                $openTicketCount = auth()->user()?->host?->helpdeskTickets()->unresolved()->count() ?? 0;
+                $canSeeAllHelpdesk = $user->hasPermission('helpdesk.view');
+                $canSeeAssignedHelpdesk = $user->hasPermission('helpdesk.view_assigned');
+            @endphp
+            @if($navHelpdesk && ($canSeeAllHelpdesk || $canSeeAssignedHelpdesk))
+            @php
+                // Match the controller's scoping: admins see all unresolved tickets,
+                // everyone else sees only the unresolved tickets assigned to them.
+                $helpdeskCountQuery = auth()->user()?->host?->helpdeskTickets()->unresolved();
+                if ($helpdeskCountQuery && !$canSeeAllHelpdesk) {
+                    $helpdeskCountQuery->where('assigned_user_id', auth()->id());
+                }
+                $openTicketCount = $helpdeskCountQuery?->count() ?? 0;
             @endphp
             <li class="nav-item {{ request()->is('helpdesk*') ? 'active' : '' }} {{ $sidebarDisabled ? 'opacity-50 pointer-events-none' : '' }}" data-nav="helpdesk">
                 <a href="{{ url('/helpdesk') }}" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-base-content/5 transition-colors">

@@ -383,6 +383,7 @@ class User extends Authenticatable implements MustVerifyEmail
                 'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.publish', 'schedule.cancel',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.waitlist', 'bookings.attendance', 'bookings.comp',
                 'students.view', 'students.view_all', 'students.create', 'students.edit', 'students.notes', 'students.export',
+                'helpdesk.view', 'helpdesk.view_assigned', 'helpdesk.create', 'helpdesk.edit', 'helpdesk.delete', 'helpdesk.assign', 'helpdesk.reply', 'helpdesk.view_client',
                 'offers.intro', 'offers.packs', 'offers.memberships', 'offers.promos',
                 'insights.attendance', 'insights.revenue',
                 'studio.profile', 'studio.locations', 'studio.rooms', 'studio.class_types', 'studio.booking_page', 'studio.policies', 'studio.client_settings',
@@ -397,6 +398,8 @@ class User extends Authenticatable implements MustVerifyEmail
                 'schedule.view', 'schedule.create', 'schedule.edit', 'schedule.publish', 'schedule.cancel',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.waitlist', 'bookings.attendance', 'bookings.comp',
                 'students.view', 'students.create', 'students.edit', 'students.notes',
+                // Manager: full helpdesk except destructive delete.
+                'helpdesk.view', 'helpdesk.view_assigned', 'helpdesk.create', 'helpdesk.edit', 'helpdesk.assign', 'helpdesk.reply', 'helpdesk.view_client',
                 'insights.attendance', 'insights.revenue',
                 'team.view', 'team.instructors',
                 'communication.manage',
@@ -408,6 +411,8 @@ class User extends Authenticatable implements MustVerifyEmail
                 'schedule.view',
                 'bookings.view', 'bookings.create', 'bookings.cancel', 'bookings.attendance',
                 'students.view', 'students.edit', 'students.notes',
+                // Staff: assigned-only by default — can see and reply to tickets assigned to them.
+                'helpdesk.view_assigned', 'helpdesk.reply', 'helpdesk.edit',
             ],
             self::ROLE_INSTRUCTOR => [
                 'nav.dashboard', 'nav.schedule', 'nav.bookings', 'nav.settings',
@@ -464,6 +469,16 @@ class User extends Authenticatable implements MustVerifyEmail
                 'students.edit' => 'Edit client profiles',
                 'students.notes' => 'Add client notes and tags',
                 'students.export' => 'Export clients',
+            ],
+            'helpdesk' => [
+                'helpdesk.view' => 'View all helpdesk tickets',
+                'helpdesk.view_assigned' => 'View only tickets assigned to me',
+                'helpdesk.create' => 'Create helpdesk tickets',
+                'helpdesk.edit' => 'Edit ticket status, tags, and details',
+                'helpdesk.delete' => 'Delete helpdesk tickets',
+                'helpdesk.assign' => 'Assign tickets to other team members',
+                'helpdesk.reply' => 'Reply to helpdesk tickets',
+                'helpdesk.view_client' => 'Open the linked client profile from a ticket',
             ],
             'offers' => [
                 'offers.intro' => 'Manage intro offers',

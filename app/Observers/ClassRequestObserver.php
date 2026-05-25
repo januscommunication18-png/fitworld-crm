@@ -40,10 +40,10 @@ class ClassRequestObserver
             return;
         }
 
-        // Only convert if currently a lead
-        if ($client->status === Client::STATUS_LEAD) {
+        // Promote inactive clients to active when they engage by booking a class.
+        if ($client->status === Client::STATUS_INACTIVE) {
             $client->update([
-                'status' => Client::STATUS_CLIENT,
+                'status' => Client::STATUS_ACTIVE,
                 'converted_at' => now(),
             ]);
         }

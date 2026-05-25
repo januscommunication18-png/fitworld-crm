@@ -13,29 +13,31 @@
 @endsection
 
 @section('content')
-<div class="max-w-2xl mx-auto">
-    {{-- Page Header --}}
-    <div class="flex items-center gap-4 mb-6">
-        <a href="{{ route('clients.index') }}" class="btn btn-ghost btn-sm btn-circle">
-            <span class="icon-[tabler--arrow-left] size-5"></span>
-        </a>
+<div class="space-y-6">
+    {{-- Header --}}
+    <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold">{{ $trans['clients.add_new_client'] ?? 'Add New Client' }}</h1>
-            <p class="text-base-content/60 text-sm mt-1">{{ $trans['clients.create_description'] ?? 'Create a new client profile for your studio' }}</p>
+            <p class="text-base-content/60 mt-1">{{ $trans['clients.create_description'] ?? 'Create a new client profile for your studio' }}</p>
         </div>
+        <a href="{{ route('clients.index') }}" class="btn btn-ghost btn-sm gap-1.5">
+            <span class="icon-[tabler--arrow-left] size-4"></span>
+            {{ $trans['btn.back'] ?? 'Back' }}
+        </a>
     </div>
 
     <form method="POST" action="{{ route('clients.store') }}" class="space-y-6">
         @csrf
 
-        {{-- Basic Information --}}
-        <div class="card">
+        {{-- Card 1: Basic Information --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">1</span>
+                    <h3 class="card-title">{{ $trans['clients.basic_information'] ?? 'Basic Information' }}</h3>
+                </div>
+            </div>
             <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <span class="icon-[tabler--user] size-5 mr-1"></span>
-                    {{ $trans['clients.basic_information'] ?? 'Basic Information' }}
-                </h5>
-
                 <div class="space-y-4">
                     <div>
                         <label class="label-text" for="first_name">{{ $trans['field.first_name'] ?? 'First Name' }} <span class="text-error">*</span></label>
@@ -151,38 +153,27 @@
             </div>
         </div>
 
-        {{-- Status & Source --}}
-        <div class="card">
+        {{-- Card 2: Status & Source --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">2</span>
+                    <h3 class="card-title">{{ $trans['clients.status_source'] ?? 'Status & Source' }}</h3>
+                </div>
+            </div>
             <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <span class="icon-[tabler--tag] size-5 mr-1"></span>
-                    {{ $trans['clients.status_source'] ?? 'Status & Source' }}
-                </h5>
-
-                {{-- Status Selection - Radio Custom Option Cards --}}
+                {{-- Status Selection --}}
                 <div class="mb-4">
-                    <label class="label-text mb-2 block">{{ $trans['clients.client_status'] ?? 'Client Status' }} <span class="text-error">*</span></label>
-                    <div class="flex w-full items-start gap-3 flex-wrap sm:flex-nowrap">
-                        @foreach($statuses as $key => $label)
-                            @php
-                                $icons = [
-                                    'lead' => 'icon-[tabler--user-search]',
-                                    'client' => 'icon-[tabler--user]',
-                                    'member' => 'icon-[tabler--user-check]',
-                                    'at_risk' => 'icon-[tabler--alert-triangle]'
-                                ];
-                                $icon = $icons[$key] ?? 'icon-[tabler--user]';
-                            @endphp
-                            <label class="custom-option text-center flex sm:w-1/4 flex-col items-center gap-2">
-                                <span class="{{ $icon }} size-8"></span>
-                                <span class="label-text">
-                                    <span class="text-sm font-medium">{{ $label }}</span>
-                                </span>
-                                <input type="radio" name="status" value="{{ $key }}" class="radio radio-primary"
-                                       {{ old('status', 'lead') === $key ? 'checked' : '' }} required>
-                            </label>
-                        @endforeach
-                    </div>
+                    <label class="label-text" for="status">{{ $trans['clients.client_status'] ?? 'Client Status' }} <span class="text-error">*</span></label>
+                    <x-studio-select
+                        name="status"
+                        :options="$statuses"
+                        :selected="old('status', \App\Models\Client::STATUS_ACTIVE)"
+                        placeholder="Select status..."
+                        :required="true"
+                        id="status"
+                    />
+                    <p class="text-xs text-base-content/60 mt-1">{{ $trans['clients.status_helper'] ?? 'Track the current engagement level of this client with your studio.' }}</p>
                     @error('status')
                         <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -222,21 +213,37 @@
             </div>
         </div>
 
-        {{-- Contact Details (Collapsible) --}}
-        <details class="card bg-base-100 group" open>
-            <summary class="card-body cursor-pointer list-none">
-                <div class="flex items-center justify-between">
-                    <h5 class="card-title mb-0">
-                        <span class="icon-[tabler--map-pin] size-5 mr-1"></span>
-                        {{ $trans['clients.contact_details'] ?? 'Contact Details' }}
-                    </h5>
-                    <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
+        {{-- Card 3: Contact Details --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">3</span>
+                    <h3 class="card-title">{{ $trans['clients.contact_details'] ?? 'Contact Details' }}</h3>
                 </div>
-            </summary>
-            <div class="card-body pt-0">
+            </div>
+            <div class="card-body">
                 <div class="space-y-4">
                     <div>
                         <x-phone-input name="secondary_phone" :value="old('secondary_phone')" label="{{ $trans['field.secondary_phone'] ?? 'Secondary Phone' }}" id-suffix="client-create-secondary" />
+                    </div>
+
+                    {{-- Quick Address Search & Validate --}}
+                    <div class="relative" id="client-address-search-wrapper">
+                        <label class="label-text font-medium" for="client-address-search">
+                            <span class="icon-[tabler--search] size-4 mr-1"></span>
+                            {{ $trans['common.quick_address_search'] ?? 'Quick Address Search' }}
+                        </label>
+                        <div class="flex gap-2 mt-1">
+                            <div class="relative flex-1">
+                                <input type="text" id="client-address-search" class="input w-full pr-10" placeholder="{{ $trans['common.address_search_placeholder'] ?? 'Search address, city, or zip code...' }}" autocomplete="off" />
+                                <span id="client-search-loading" class="loading loading-spinner loading-xs absolute top-1/2 right-3 -translate-y-1/2 text-primary hidden"></span>
+                            </div>
+                            <button type="button" id="client-validate-btn" class="btn btn-outline btn-primary shrink-0" onclick="validateClientAddress()">
+                                <span class="icon-[tabler--check] size-4"></span> {{ $trans['btn.validate'] ?? 'Validate' }}
+                            </button>
+                        </div>
+                        <div id="client-address-suggestions" class="absolute z-50 w-full mt-1 bg-base-100 border border-base-300 rounded-lg shadow-lg max-h-72 overflow-y-auto hidden"></div>
+                        <div id="client-validation-msg" class="mt-2 hidden"></div>
                     </div>
 
                     <div>
@@ -245,7 +252,7 @@
                                class="input w-full" placeholder="{{ $trans['clients.street_address'] ?? 'Street address' }}">
                     </div>
 
-                    <div
+                    <div>
                         <label class="label-text" for="address_line_2">{{ $trans['field.address_line_2'] ?? 'Address Line 2' }}</label>
                         <input type="text" id="address_line_2" name="address_line_2" value="{{ old('address_line_2') }}"
                                class="input w-full" placeholder="{{ $trans['clients.apt_suite'] ?? 'Apt, suite, unit, etc.' }}">
@@ -272,20 +279,17 @@
                     </div>
                 </div>
             </div>
-        </details>
+        </div>
 
-        {{-- Communication Preferences (Collapsible) --}}
-        <details class="card bg-base-100 group" open>
-            <summary class="card-body cursor-pointer list-none">
-                <div class="flex items-center justify-between">
-                    <h5 class="card-title mb-0">
-                        <span class="icon-[tabler--mail] size-5 mr-1"></span>
-                        {{ $trans['clients.communication_preferences'] ?? 'Communication Preferences' }}
-                    </h5>
-                    <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
+        {{-- Card 4: Communication Preferences --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">4</span>
+                    <h3 class="card-title">{{ $trans['clients.communication_preferences'] ?? 'Communication Preferences' }}</h3>
                 </div>
-            </summary>
-            <div class="card-body pt-0 space-y-4">
+            </div>
+            <div class="card-body space-y-4">
                 <div>
                     <label class="label-text" for="preferred_contact_method">{{ $trans['field.preferred_contact_method'] ?? 'Preferred Contact Method' }}</label>
                     <select id="preferred_contact_method" name="preferred_contact_method[]" class="hidden" multiple
@@ -335,20 +339,17 @@
                     </label>
                 </div>
             </div>
-        </details>
+        </div>
 
-        {{-- Emergency Contact (Collapsible) --}}
-        <details class="card bg-base-100 group" open>
-            <summary class="card-body cursor-pointer list-none">
-                <div class="flex items-center justify-between">
-                    <h5 class="card-title mb-0">
-                        <span class="icon-[tabler--emergency-bed] size-5 mr-1"></span>
-                        {{ $trans['clients.emergency_contact'] ?? 'Emergency Contact' }}
-                    </h5>
-                    <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
+        {{-- Card 5: Emergency Contact --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">5</span>
+                    <h3 class="card-title">{{ $trans['clients.emergency_contact'] ?? 'Emergency Contact' }}</h3>
                 </div>
-            </summary>
-            <div class="card-body pt-0">
+            </div>
+            <div class="card-body">
                 <div class="space-y-4">
                     <div>
                         <label class="label-text" for="emergency_contact_name">{{ $trans['field.contact_name'] ?? 'Contact Name' }}</label>
@@ -373,20 +374,17 @@
                     </div>
                 </div>
             </div>
-        </details>
+        </div>
 
-        {{-- Health & Fitness (Collapsible) --}}
-        <details class="card bg-base-100 group" open>
-            <summary class="card-body cursor-pointer list-none">
-                <div class="flex items-center justify-between">
-                    <h5 class="card-title mb-0">
-                        <span class="icon-[tabler--heartbeat] size-5 mr-1"></span>
-                        {{ $trans['clients.health_fitness'] ?? 'Health & Fitness' }}
-                    </h5>
-                    <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
+        {{-- Card 6: Health & Fitness --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">6</span>
+                    <h3 class="card-title">{{ $trans['clients.health_fitness'] ?? 'Health & Fitness' }}</h3>
                 </div>
-            </summary>
-            <div class="card-body pt-0">
+            </div>
+            <div class="card-body">
                 <div class="space-y-4">
                     <div>
                         <label class="label-text" for="experience_level">{{ $trans['field.experience_level'] ?? 'Experience Level' }}</label>
@@ -443,22 +441,20 @@
                     </div>
                 </div>
             </div>
-        </details>
+        </div>
 
-        {{-- Marketing/UTM (Collapsible) --}}
-        <details class="card bg-base-100 group" open>
-            <summary class="card-body cursor-pointer list-none">
-                <div class="flex items-center justify-between">
-                    <h5 class="card-title mb-0">
-                        <span class="icon-[tabler--chart-bar] size-5 mr-1"></span>
-                        {{ $trans['clients.marketing_tracking'] ?? 'Marketing Tracking (UTM)' }}
-                    </h5>
-                    <span class="icon-[tabler--chevron-down] size-5 transition-transform group-open:rotate-180"></span>
+        {{-- Card 7: Marketing Tracking (UTM) — temporarily hidden --}}
+        @if(false)
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">7</span>
+                    <h3 class="card-title">{{ $trans['clients.marketing_tracking'] ?? 'Marketing Tracking (UTM)' }}</h3>
                 </div>
-            </summary>
-            <div class="card-body pt-0">
+            </div>
+            <div class="card-body">
                 <div class="space-y-4">
-                    <div
+                    <div>
                         <label class="label-text" for="source_url">{{ $trans['field.source_url'] ?? 'Source URL' }}</label>
                         <input type="url" id="source_url" name="source_url" value="{{ old('source_url') }}"
                                class="input w-full" placeholder="https://...">
@@ -495,16 +491,22 @@
                     </div>
                 </div>
             </div>
-        </details>
+        </div>
+        @endif
 
-        {{-- Tags --}}
+        {{-- Card 8: Tags --}}
         @if($tags->count() > 0)
-        <div class="card">
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center justify-between gap-3 w-full">
+                    <div class="flex items-center gap-2">
+                        <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">8</span>
+                        <h3 class="card-title">{{ $trans['field.tags'] ?? 'Tags' }}</h3>
+                    </div>
+                    <p class="text-sm text-base-content/60 text-right">{{ $trans['clients.tags_multi_helper'] ?? 'You can add multiple tags — click each one to apply.' }}</p>
+                </div>
+            </div>
             <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <span class="icon-[tabler--tags] size-5 mr-1"></span>
-                    {{ $trans['field.tags'] ?? 'Tags' }}
-                </h5>
                 <div class="flex flex-wrap gap-2">
                     @foreach($tags as $tag)
                         <label class="cursor-pointer">
@@ -522,15 +524,16 @@
         </div>
         @endif
 
-        {{-- Custom Fields --}}
+        {{-- Card 9: Additional Information (Custom Fields) --}}
         @if($customFields['sections']->count() > 0 || $customFields['unsectionedFields']->count() > 0)
-        <div class="card">
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">9</span>
+                    <h3 class="card-title">{{ $trans['clients.additional_information'] ?? 'Additional Information' }}</h3>
+                </div>
+            </div>
             <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <span class="icon-[tabler--forms] size-5 mr-1"></span>
-                    {{ $trans['clients.additional_information'] ?? 'Additional Information' }}
-                </h5>
-
                 {{-- Unsectioned Fields --}}
                 @if($customFields['unsectionedFields']->count() > 0)
                 <div class="space-y-4 mb-6">
@@ -557,13 +560,15 @@
         </div>
         @endif
 
-        {{-- Internal Notes --}}
-        <div class="card">
+        {{-- Card 10: Internal Notes --}}
+        <div class="card bg-base-100">
+            <div class="card-header">
+                <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center size-6 rounded-full bg-primary text-primary-content text-sm font-bold">10</span>
+                    <h3 class="card-title">{{ $trans['clients.internal_notes'] ?? 'Internal Notes' }}</h3>
+                </div>
+            </div>
             <div class="card-body">
-                <h5 class="card-title mb-4">
-                    <span class="icon-[tabler--notes] size-5 mr-1"></span>
-                    {{ $trans['clients.internal_notes'] ?? 'Internal Notes' }}
-                </h5>
                 <textarea id="notes" name="notes" rows="3" class="textarea textarea-bordered w-full"
                           placeholder="{{ $trans['clients.internal_notes_placeholder'] ?? 'Add any internal notes about this client...' }}">{{ old('notes') }}</textarea>
                 <p class="text-base-content/50 text-sm mt-2">{{ $trans['clients.notes_visibility'] ?? 'These notes are only visible to staff members.' }}</p>
@@ -614,6 +619,131 @@ document.addEventListener('DOMContentLoaded', function() {
             dobDay.value = parseInt(parts[2]);
         }
     }
+
+    // ---------- Quick Address Search (autocomplete) ----------
+    var addrSearchInput = document.getElementById('client-address-search');
+    var addrSuggestions = document.getElementById('client-address-suggestions');
+    var addrLoading = document.getElementById('client-search-loading');
+    var addrSearchTimer;
+
+    if (addrSearchInput) {
+        addrSearchInput.addEventListener('input', function() {
+            clearTimeout(addrSearchTimer);
+            var query = this.value.trim();
+
+            if (query.length < 3) {
+                addrSuggestions.classList.add('hidden');
+                return;
+            }
+
+            addrLoading.classList.remove('hidden');
+
+            addrSearchTimer = setTimeout(function() {
+                fetch('/api/v1/address/autocomplete?q=' + encodeURIComponent(query))
+                    .then(function(r) { return r.json(); })
+                    .then(function(results) {
+                        addrLoading.classList.add('hidden');
+
+                        if (!results || results.length === 0) {
+                            addrSuggestions.innerHTML = '<div class="px-4 py-3 text-base-content/50 text-sm">No addresses found.</div>';
+                            addrSuggestions.classList.remove('hidden');
+                            return;
+                        }
+
+                        addrSuggestions.innerHTML = results.map(function(r, i) {
+                            return '<div class="client-addr-sug px-4 py-3 hover:bg-base-200 cursor-pointer border-b border-base-200 last:border-b-0" data-idx="' + i + '">' +
+                                '<div class="font-medium text-sm">' + (r.label || r.street_line || '') + '</div>' +
+                                (r.street_line ? '<div class="text-xs text-base-content/60">' + (r.city || '') + ', ' + (r.state || '') + ' ' + (r.zipcode || '') + '</div>' : '') +
+                            '</div>';
+                        }).join('');
+                        addrSuggestions.classList.remove('hidden');
+
+                        addrSuggestions.querySelectorAll('.client-addr-sug').forEach(function(item) {
+                            item.addEventListener('click', function() {
+                                var idx = parseInt(this.dataset.idx);
+                                applyClientAddress(results[idx]);
+                                addrSearchInput.value = '';
+                                addrSuggestions.classList.add('hidden');
+                            });
+                        });
+                    })
+                    .catch(function() {
+                        addrLoading.classList.add('hidden');
+                        addrSuggestions.classList.add('hidden');
+                    });
+            }, 300);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!addrSearchInput.contains(e.target) && !addrSuggestions.contains(e.target)) {
+                addrSuggestions.classList.add('hidden');
+            }
+        });
+    }
 });
+
+// Apply a chosen address suggestion into the client form fields.
+function applyClientAddress(result) {
+    if (!result) return;
+    if (result.street_line) document.getElementById('address_line_1').value = result.street_line;
+    if (result.city) document.getElementById('city').value = result.city;
+    if (result.state_name) document.getElementById('state_province').value = result.state_name;
+    else if (result.state) document.getElementById('state_province').value = result.state;
+    if (result.zipcode) document.getElementById('postal_code').value = result.zipcode;
+    if (result.country) document.getElementById('country').value = result.country;
+}
+
+// Validate the typed-in address via the server.
+function validateClientAddress() {
+    var street = (document.getElementById('address_line_1')?.value || '').trim();
+    var city = (document.getElementById('city')?.value || '').trim();
+    var state = (document.getElementById('state_province')?.value || '').trim();
+    var zipcode = (document.getElementById('postal_code')?.value || '').trim();
+    var msgDiv = document.getElementById('client-validation-msg');
+    var btn = document.getElementById('client-validate-btn');
+
+    if (!street && !city && !zipcode) {
+        msgDiv.innerHTML = '<div class="alert alert-warning alert-sm"><span class="icon-[tabler--alert-triangle] size-4"></span><span class="text-sm">Enter an address first</span></div>';
+        msgDiv.classList.remove('hidden');
+        setTimeout(function() { msgDiv.classList.add('hidden'); }, 3000);
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Validating...';
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || document.querySelector('input[name="_token"]')?.value;
+
+    fetch('/api/v1/address/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+        body: JSON.stringify({ street: street, city: city, state: state, zipcode: zipcode })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.valid) {
+            if (result.street) document.getElementById('address_line_1').value = result.street;
+            if (result.city) document.getElementById('city').value = result.city;
+            if (result.state_name) document.getElementById('state_province').value = result.state_name;
+            else if (result.state) document.getElementById('state_province').value = result.state;
+            if (result.zipcode) document.getElementById('postal_code').value = result.zipcode;
+
+            msgDiv.innerHTML = '<div class="alert alert-success alert-sm"><span class="icon-[tabler--check] size-4"></span><span class="text-sm">Address validated and updated</span></div>';
+        } else {
+            msgDiv.innerHTML = '<div class="alert alert-error alert-sm"><span class="icon-[tabler--x] size-4"></span><span class="text-sm">Could not validate this address</span></div>';
+        }
+        msgDiv.classList.remove('hidden');
+        setTimeout(function() { msgDiv.classList.add('hidden'); }, 5000);
+    })
+    .catch(function() {
+        msgDiv.innerHTML = '<div class="alert alert-error alert-sm"><span class="icon-[tabler--x] size-4"></span><span class="text-sm">Validation failed</span></div>';
+        msgDiv.classList.remove('hidden');
+        setTimeout(function() { msgDiv.classList.add('hidden'); }, 5000);
+    })
+    .finally(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="icon-[tabler--check] size-4"></span> Validate';
+    });
+}
 </script>
 @endpush

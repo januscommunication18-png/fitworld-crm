@@ -3,7 +3,7 @@
 @section('title', 'Create Account — ' . $host->studio_name)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
+<div class="flex flex-col flex-1">
     {{-- Header --}}
     <nav class="bg-base-100 border-b border-base-200" style="height: 75px;">
         <div class="container-fixed h-full">
@@ -34,11 +34,11 @@
     </nav>
 
     {{-- Sign Up Content --}}
-    <div class="flex-1 flex items-center justify-center py-12 px-4">
+    <div class="flex-1 flex items-center justify-center py-4 px-4">
         <div class="w-full max-w-md">
-            <div class="text-center mb-8">
+            <div class="text-center mb-4">
                 <h1 class="text-2xl font-bold">Create Your Account</h1>
-                <p class="text-base-content/60 mt-2">Join {{ $host->studio_name }} to book classes and manage your membership</p>
+                <p class="text-base-content/60 mt-1 text-sm">Join {{ $host->studio_name }} to book classes and manage your membership</p>
             </div>
 
             @if(session('status'))
@@ -105,11 +105,13 @@
                             </div>
 
                             <div>
-                                <label class="label-text" for="phone">Phone Number</label>
-                                <input type="tel" id="phone" name="phone"
-                                       value="{{ old('phone') }}"
-                                       placeholder="(optional)"
-                                       class="input input-bordered w-full mt-1 @error('phone') input-error @enderror">
+                                <x-phone-input
+                                    name="phone"
+                                    :value="old('phone')"
+                                    label="Phone Number"
+                                    :host="$host"
+                                    id-suffix="member-signup"
+                                />
                                 @error('phone')
                                     <p class="text-error text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -130,7 +132,7 @@
                 </div>
             </div>
 
-            <p class="text-center text-sm text-base-content/60 mt-6">
+            <p class="text-center text-sm text-base-content/60 mt-3">
                 Already have an account?
                 <a href="{{ route('member.login', ['subdomain' => $host->subdomain]) }}"
                    class="text-primary hover:underline font-medium">

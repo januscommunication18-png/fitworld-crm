@@ -219,7 +219,7 @@ class ScheduledMembershipCommand extends Command
                     'last_name' => "Tester {$i}",
                     'email' => $email,
                     'phone' => "555-000-000{$i}",
-                    'status' => Client::STATUS_MEMBER,
+                    'status' => Client::STATUS_ACTIVE,
                     'membership_status' => Client::MEMBERSHIP_ACTIVE,
                 ]);
                 $this->info("Created test client: {$client->full_name}");

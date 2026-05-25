@@ -289,7 +289,7 @@ class OneOnOnePublicController extends Controller
                 'last_name' => $validated['last_name'],
                 'email' => strtolower($validated['email']),
                 'phone' => $validated['phone'] ?? null,
-                'status' => Client::STATUS_LEAD,
+                'status' => Client::STATUS_INACTIVE,
                 'lead_source' => Client::SOURCE_WEBSITE,
                 'email_opt_in' => $request->boolean('email_opt_in'),
                 'sms_opt_in' => $request->boolean('sms_opt_in'),

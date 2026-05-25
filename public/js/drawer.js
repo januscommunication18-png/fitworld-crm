@@ -19,6 +19,13 @@ function openDrawer(drawerId, event) {
         return;
     }
 
+    // Close any open actions-dropdowns so they don't float above the drawer.
+    document.querySelectorAll('details.js-actions-dropdown[open]').forEach(function (d) {
+        d.removeAttribute('open');
+        const menu = d.querySelector('.js-actions-menu');
+        if (menu) menu.classList.add('hidden');
+    });
+
     // Show the drawer
     drawer.classList.remove('hidden');
     document.body.style.overflow = 'hidden';

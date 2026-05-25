@@ -665,7 +665,7 @@ class SettingsController extends Controller
 
         // Get current client settings or defaults
         $settings = $host->client_settings ?? [
-            'default_status' => 'lead',
+            'default_status' => \App\Models\Client::STATUS_INACTIVE,
             'auto_archive_days' => null,
             'require_phone' => false,
             'require_address' => false,

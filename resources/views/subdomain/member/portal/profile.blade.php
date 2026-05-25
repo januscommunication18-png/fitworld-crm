@@ -3,12 +3,8 @@
 @section('title', 'My Profile — ' . $host->studio_name)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
-    @include('subdomain.member.portal._nav')
-
-    <div class="flex-1 bg-base-200">
-        <div class="container-fixed py-8">
-            <h1 class="text-2xl font-bold mb-6">My Profile</h1>
+<x-portal-shell :host="$host" :member="$member">
+    <h1 class="text-2xl font-bold mb-6">My Profile</h1>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {{-- Profile Form --}}
@@ -176,7 +172,7 @@
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-base-content/60">Status</span>
-                                    <span class="badge badge-sm {{ $member->status === 'member' ? 'badge-success' : 'badge-neutral' }}">
+                                    <span class="badge badge-sm {{ $member->is_member ? 'badge-success' : 'badge-neutral' }}">
                                         {{ ucfirst($member->status) }}
                                     </span>
                                 </div>
@@ -191,7 +187,5 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+</x-portal-shell>
 @endsection

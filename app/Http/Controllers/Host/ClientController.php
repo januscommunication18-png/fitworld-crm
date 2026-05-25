@@ -33,15 +33,27 @@ class ClientController extends Controller
     {
         $host = $this->getHost();
         $authUser = auth()->user();
+        // Backfill the default tag set for hosts that don't have them yet (no-op for hosts that do).
+        Tag::ensureDefaultsForHost($host->id);
+
         // Users with `students.view_all` can browse the full directory.
         // Everyone else must search by exact full name to look up a client.
         $restrictedView = !$authUser->hasPermission('students.view_all', $host);
         $search = trim((string) $request->get('search', ''));
 
+        // All tags (including inactive) for the config drawer; active-only for filter dropdowns.
+        // Ordered with user-added tags first, then presets, both alphabetical within group.
+        $allTags = Tag::forHost($host->id)
+            ->orderBy('is_preset')
+            ->orderBy('name')
+            ->get();
+        $activeTags = $allTags->where('is_active', true)->values();
+
         if ($restrictedView && $search === '') {
             return view('host.clients.index', [
                 'clients' => new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25),
-                'tags' => Tag::forHost($host->id)->orderBy('name')->get(),
+                'tags' => $activeTags,
+                'allTags' => $allTags,
                 'filters' => $request->only(['search', 'status', 'source', 'tag']),
                 'statuses' => Client::getStatuses(),
                 'sources' => Client::getLeadSources(),
@@ -84,11 +96,11 @@ class ClientController extends Controller
         $query->orderBy($sortField, $sortDirection);
 
         $clients = $query->with('tags')->paginate(25)->withQueryString();
-        $tags = Tag::forHost($host->id)->orderBy('name')->get();
 
         return view('host.clients.index', [
             'clients' => $clients,
-            'tags' => $tags,
+            'tags' => $activeTags,
+            'allTags' => $allTags,
             'filters' => $request->only(['search', 'status', 'source', 'tag']),
             'statuses' => Client::getStatuses(),
             'sources' => Client::getLeadSources(),
@@ -797,9 +809,31 @@ class ClientController extends Controller
 
         $client->update($updateData);
 
-        // Sync tags
+        // Sync tags — read directly from the raw request to sidestep edge cases
+        // where the validator might drop the key, then constrain to tags that
+        // actually belong to this host.
+        $host = $this->getHost();
         $oldTags = $client->tags()->pluck('tags.id')->toArray();
-        $newTags = $validated['tags'] ?? [];
+        $submittedTagIds = collect((array) $request->input('tags', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->all();
+        $newTags = $submittedTagIds
+            ? Tag::whereIn('id', $submittedTagIds)
+                ->where('host_id', $host->id)
+                ->pluck('id')
+                ->toArray()
+            : [];
+
+        \Illuminate\Support\Facades\Log::debug('Client update tags sync', [
+            'client_id' => $client->id,
+            'host_id' => $host->id,
+            'submitted' => $submittedTagIds,
+            'resolved' => $newTags,
+            'old' => $oldTags,
+            'request_has_tags' => $request->has('tags'),
+        ]);
+
         $client->tags()->sync($newTags);
 
         // Update usage counts for affected tags
@@ -1068,9 +1102,7 @@ class ClientController extends Controller
             $usageScore += 30;
         } elseif ($client->membership_status === 'paused') {
             $usageScore += 15;
-        } elseif ($client->status === 'member') {
-            $usageScore += 20;
-        } elseif ($client->status === 'client') {
+        } elseif ($client->status === Client::STATUS_ACTIVE) {
             $usageScore += 10;
         }
 

@@ -3,13 +3,9 @@
 @section('title', 'My Schedule — ' . $host->studio_name)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
-    @include('subdomain.member.portal._nav')
-
-    <div class="flex-1 bg-base-200">
-        <div class="container-fixed py-8">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold">My Schedule</h1>
+<x-portal-shell :host="$host" :member="$member">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold">My Schedule</h1>
                 <a href="{{ route('booking.select-type', ['subdomain' => $host->subdomain]) }}" class="btn btn-primary btn-sm">
                     <span class="icon-[tabler--plus] size-4"></span>
                     Book Now
@@ -106,7 +102,5 @@
                     </div>
                 </div>
             @endif
-        </div>
-    </div>
-</div>
+</x-portal-shell>
 @endsection

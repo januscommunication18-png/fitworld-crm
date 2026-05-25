@@ -60,6 +60,7 @@
     @php
         $emailHeader = $host->booking_settings['email_header_html'] ?? '';
         $emailFooter = $host->booking_settings['email_footer_html'] ?? '';
+        $emailShowLogo = (bool) ($host->booking_settings['email_header_show_logo'] ?? false);
     @endphp
     <div class="card bg-base-100">
         <details class="group">
@@ -104,6 +105,34 @@
                             </div>
                             <input type="hidden" name="email_header_html" id="email_header_html" value="{{ $emailHeader }}" />
                             <p class="text-xs text-base-content/50 mt-1">Leave empty to use default (studio name).</p>
+
+                            {{-- Studio Logo toggle --}}
+                            <div class="flex items-start gap-3 mt-3 p-3 rounded-lg bg-base-200/40 border border-base-content/10">
+                                <label class="switch switch-primary switch-sm mt-0.5 shrink-0">
+                                    <input type="checkbox" name="email_header_show_logo" value="1" {{ $emailShowLogo ? 'checked' : '' }}>
+                                    <span class="switch-indicator"></span>
+                                </label>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium">Show studio logo in email header</span>
+                                        @if(empty($host->logo_url))
+                                            <span class="badge badge-xs badge-warning">No logo uploaded</span>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-base-content/60 mt-0.5">
+                                        @if($host->logo_url)
+                                            Renders your logo above the header HTML in every email.
+                                        @else
+                                            Upload a logo on the studio profile first, then enable this.
+                                        @endif
+                                    </p>
+                                    @if($host->logo_url)
+                                        <div class="mt-2 p-2 inline-block bg-base-100 rounded border border-base-content/10">
+                                            <img src="{{ $host->logo_url }}" alt="Studio logo preview" style="max-height: 40px; max-width: 160px;">
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Footer --}}
@@ -135,6 +164,7 @@
             'transactional' => ['label' => 'Transactional', 'icon' => 'icon-[tabler--receipt]', 'description' => 'Emails sent after bookings and payments'],
             'automation' => ['label' => 'Automation', 'icon' => 'icon-[tabler--robot]', 'description' => 'Automated emails triggered by schedules and client activity'],
             'engagement' => ['label' => 'Client Engagement', 'icon' => 'icon-[tabler--users]', 'description' => 'Emails for intake forms and client communication'],
+            'team_notification' => ['label' => 'Team Notifications', 'icon' => 'icon-[tabler--bell-ringing]', 'description' => 'Internal alerts sent to staff when something happens on the public booking side'],
             'team' => ['label' => 'Team', 'icon' => 'icon-[tabler--users-group]', 'description' => 'Emails for team member invitations'],
             'authentication' => ['label' => 'Authentication', 'icon' => 'icon-[tabler--lock]', 'description' => 'Password reset and login verification emails'],
         ];

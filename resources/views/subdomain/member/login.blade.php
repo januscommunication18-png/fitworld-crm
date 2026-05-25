@@ -3,7 +3,7 @@
 @section('title', ($trans['subdomain.auth.login'] ?? 'Member Login') . ' — ' . $host->studio_name)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
+<div class="flex flex-col flex-1">
     {{-- Header --}}
     <nav class="bg-base-100 border-b border-base-200" style="height: 75px;">
         <div class="container-fixed h-full">
@@ -34,11 +34,11 @@
     </nav>
 
     {{-- Login Content --}}
-    <div class="flex-1 flex items-center justify-center py-12 px-4">
+    <div class="flex-1 flex items-center justify-center py-4 px-4">
         <div class="w-full max-w-md">
-            <div class="text-center mb-8">
+            <div class="text-center mb-4">
                 <h1 class="text-2xl font-bold">{{ $trans['member.dashboard.welcome'] ?? 'Welcome Back' }}</h1>
-                <p class="text-base-content/60 mt-2">{{ $trans['subdomain.auth.sign_in_access'] ?? 'Sign in to access your member portal' }}</p>
+                <p class="text-base-content/60 mt-1 text-sm">{{ $trans['subdomain.auth.sign_in_access'] ?? 'Sign in to access your member portal' }}</p>
             </div>
 
             @if(session('status'))
@@ -126,7 +126,7 @@
                 </div>
             </div>
 
-            <p class="text-center text-sm text-base-content/60 mt-6">
+            <p class="text-center text-sm text-base-content/60 mt-3">
                 {{ $trans['subdomain.auth.no_account'] ?? "Don't have an account?" }}
                 <a href="{{ route('member.signup', ['subdomain' => $host->subdomain]) }}"
                    class="text-primary hover:underline font-medium">

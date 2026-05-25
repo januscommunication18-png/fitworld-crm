@@ -25,10 +25,6 @@
         {{-- Page Navigation Tabs --}}
         <div class="flex justify-center mt-8">
             <div class="tabs tabs-boxed bg-base-100 shadow-sm p-1.5 border border-base-200">
-                <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="tab gap-2">
-                    <span class="icon-[tabler--home] size-4"></span>
-                    <span class="hidden sm:inline">{{ $trans['nav.dashboard'] ?? 'Home' }}</span>
-                </a>
                 <a href="{{ route('subdomain.schedule', ['subdomain' => $host->subdomain]) }}" class="tab gap-2">
                     <span class="icon-[tabler--calendar] size-4"></span>
                     <span class="hidden sm:inline">{{ $trans['nav.schedule'] ?? 'Schedule' }}</span>

@@ -19,12 +19,8 @@
     };
 @endphp
 
-<div class="min-h-screen flex flex-col">
-    @include('subdomain.member.portal._nav')
-
-    <div class="flex-1 bg-base-200">
-        <div class="container-fixed py-8">
-            {{-- Active Membership Banner --}}
+<x-portal-shell :host="$host" :member="$member">
+    {{-- Active Membership Banner --}}
             @if($activeMemberships->count() > 0)
             <div class="alert bg-success/10 text-success border-success/20 mb-6">
                 <span class="icon-[tabler--id-badge-2] size-5"></span>
@@ -262,7 +258,5 @@
                 </div>
             </div>
             @endif
-        </div>
-    </div>
-</div>
+</x-portal-shell>
 @endsection

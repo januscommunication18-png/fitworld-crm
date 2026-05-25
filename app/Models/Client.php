@@ -19,9 +19,8 @@ class Client extends Model implements AuthenticatableContract
     use HasFactory, Authenticatable, Notifiable;
 
     // Status constants
-    const STATUS_LEAD = 'lead';
-    const STATUS_CLIENT = 'client';
-    const STATUS_MEMBER = 'member';
+    const STATUS_ACTIVE = 'active';
+    const STATUS_INACTIVE = 'inactive';
     const STATUS_AT_RISK = 'at_risk';
 
     // Membership status constants
@@ -313,14 +312,19 @@ class Client extends Model implements AuthenticatableContract
         return strtoupper(substr($this->first_name, 0, 1) . substr($this->last_name, 0, 1));
     }
 
-    public function getIsLeadAttribute(): bool
+    public function getIsActiveAttribute(): bool
     {
-        return $this->status === self::STATUS_LEAD;
+        return $this->status === self::STATUS_ACTIVE;
+    }
+
+    public function getIsInactiveAttribute(): bool
+    {
+        return $this->status === self::STATUS_INACTIVE;
     }
 
     public function getIsMemberAttribute(): bool
     {
-        return $this->status === self::STATUS_MEMBER || $this->membership_status === self::MEMBERSHIP_ACTIVE;
+        return $this->membership_status === self::MEMBERSHIP_ACTIVE;
     }
 
     public function getIsAtRiskAttribute(): bool
@@ -372,15 +376,25 @@ class Client extends Model implements AuthenticatableContract
 
     public function scopeLeads(Builder $query): Builder
     {
-        return $query->where('status', self::STATUS_LEAD);
+        // Leads are clients captured via a marketing/acquisition channel
+        // (anything other than a manual staff-created entry).
+        return $query->where('lead_source', '!=', self::SOURCE_MANUAL)
+            ->whereNotNull('lead_source');
+    }
+
+    public function scopeInactive(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_INACTIVE);
+    }
+
+    public function scopeActiveStatus(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_ACTIVE);
     }
 
     public function scopeMembers(Builder $query): Builder
     {
-        return $query->where(function ($q) {
-            $q->where('status', self::STATUS_MEMBER)
-              ->orWhere('membership_status', self::MEMBERSHIP_ACTIVE);
-        });
+        return $query->where('membership_status', self::MEMBERSHIP_ACTIVE);
     }
 
     public function scopeAtRisk(Builder $query): Builder
@@ -430,7 +444,7 @@ class Client extends Model implements AuthenticatableContract
     public function convertToClient(): void
     {
         $this->update([
-            'status' => self::STATUS_CLIENT,
+            'status' => self::STATUS_ACTIVE,
             'converted_at' => now(),
         ]);
     }
@@ -438,7 +452,7 @@ class Client extends Model implements AuthenticatableContract
     public function convertToMember(): void
     {
         $this->update([
-            'status' => self::STATUS_MEMBER,
+            'status' => self::STATUS_ACTIVE,
             'membership_status' => self::MEMBERSHIP_ACTIVE,
             'converted_at' => $this->converted_at ?? now(),
         ]);
@@ -451,11 +465,7 @@ class Client extends Model implements AuthenticatableContract
 
     public function clearAtRisk(): void
     {
-        $this->update([
-            'status' => $this->membership_status === self::MEMBERSHIP_ACTIVE
-                ? self::STATUS_MEMBER
-                : self::STATUS_CLIENT,
-        ]);
+        $this->update(['status' => self::STATUS_ACTIVE]);
     }
 
     public function recordVisit(): void
@@ -495,9 +505,8 @@ class Client extends Model implements AuthenticatableContract
     public static function getStatuses(): array
     {
         return [
-            self::STATUS_LEAD => 'Lead',
-            self::STATUS_CLIENT => 'Client',
-            self::STATUS_MEMBER => 'Member',
+            self::STATUS_ACTIVE => 'Active Client',
+            self::STATUS_INACTIVE => 'Inactive Client',
             self::STATUS_AT_RISK => 'At Risk',
         ];
     }

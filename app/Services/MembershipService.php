@@ -73,7 +73,7 @@ class MembershipService
 
             // Update client status
             $client->update([
-                'status' => Client::STATUS_MEMBER,
+                'status' => Client::STATUS_ACTIVE,
                 'membership_status' => Client::MEMBERSHIP_ACTIVE,
                 'membership_plan_id' => $plan->id,
                 'membership_start_date' => $membership->current_period_start,
@@ -205,7 +205,7 @@ class MembershipService
 
             // Update client status
             $membership->client->update([
-                'status' => Client::STATUS_CLIENT,
+                'status' => Client::STATUS_ACTIVE,
                 'membership_status' => Client::MEMBERSHIP_CANCELLED,
             ]);
 

@@ -174,7 +174,7 @@ class OneOnOneBookingService
                     'last_name' => $guestData['last_name'],
                     'email' => $guestData['email'],
                     'phone' => $guestData['phone'] ?? null,
-                    'status' => Client::STATUS_LEAD ?? 'lead',
+                    'status' => Client::STATUS_INACTIVE,
                     'lead_source' => 'one_on_one_booking',
                 ]);
             }

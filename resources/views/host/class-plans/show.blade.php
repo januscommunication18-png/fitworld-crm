@@ -81,6 +81,12 @@
                 <span class="badge badge-sm badge-primary ml-1">{{ $totalUpcoming }}</span>
             @endif
         </button>
+        <button class="tab {{ $tab === 'email-workflow' ? 'tab-active' : '' }}" data-tab="email-workflow" role="tab">
+            <span class="icon-[tabler--mail-forward] size-4 mr-2"></span>Email Workflow
+            @if(!empty($assignedNotificationUserIds))
+                <span class="badge badge-sm badge-primary ml-1">{{ count($assignedNotificationUserIds) }}</span>
+            @endif
+        </button>
     </div>
 
     {{-- Tab Contents --}}
@@ -698,6 +704,78 @@
                     </div>
                 @endif
             @endif
+        </div>
+
+        {{-- Email Workflow Tab --}}
+        <div class="tab-content {{ $tab === 'email-workflow' ? 'active' : 'hidden' }}" data-content="email-workflow">
+            <div class="card bg-base-100">
+                <div class="card-header">
+                    <div class="flex items-center gap-2">
+                        <span class="icon-[tabler--mail-forward] size-5 text-primary"></span>
+                        <h2 class="card-title">Email Workflow</h2>
+                    </div>
+                </div>
+                <div class="card-body space-y-4">
+                    <div class="alert alert-soft alert-info" role="alert">
+                        <span class="icon-[tabler--info-circle] size-5"></span>
+                        <div class="text-sm">
+                            When someone submits a class-request from the public booking page for this class, the requester receives a confirmation email automatically.
+                            Pick which team members should also receive a notification email so they can follow up.
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('class-plans.email-workflow.update', $classPlan) }}" class="space-y-4">
+                        @csrf
+                        @method('PUT')
+
+                        @php $notifIds = old('notification_user_ids', $assignedNotificationUserIds ?? []); @endphp
+                        @if(($notificationUsers ?? collect())->isEmpty())
+                            <p class="text-sm text-base-content/60">No team members on this studio yet. Add team members under Settings → Team to enable notifications.</p>
+                        @else
+                            <div>
+                                <label class="label-text font-medium">Notify team members on info request</label>
+                                <p class="text-xs text-base-content/60 mb-2">Select one or more — leave blank to disable team notifications for this class.</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-1">
+                                    @foreach($notificationUsers as $u)
+                                        @php
+                                            $uid = $u->id;
+                                            $uname = $u->name ?? trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? ''));
+                                            $uemail = $u->email ?? '';
+                                        @endphp
+                                        <label class="flex items-center gap-3 p-2 rounded-lg border border-base-300 cursor-pointer hover:bg-base-200/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 transition">
+                                            <input type="checkbox" name="notification_user_ids[]" value="{{ $uid }}"
+                                                   class="checkbox checkbox-primary checkbox-sm"
+                                                   {{ in_array($uid, $notifIds) ? 'checked' : '' }}>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="text-sm font-medium truncate">{{ $uname }}</div>
+                                                @if($uemail)
+                                                    <div class="text-xs text-base-content/60 truncate">{{ $uemail }}</div>
+                                                @endif
+                                            </div>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-2 pt-2 border-t border-base-200">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="icon-[tabler--device-floppy] size-4"></span>
+                                    Save Email Workflow
+                                </button>
+                            </div>
+                        @endif
+                    </form>
+
+                    <div class="text-xs text-base-content/60 border-t border-base-200 pt-3">
+                        <span class="icon-[tabler--mail-cog] size-4 inline-block align-middle mr-1"></span>
+                        Customize both emails in
+                        <a href="{{ route('settings.communication.email-templates') }}" class="link link-primary" target="_blank">
+                            Settings → Communication → Email Templates
+                        </a>
+                        — see <strong>Class Request Received</strong> (customer) and <strong>Class Request — Team Notification</strong> (staff).
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

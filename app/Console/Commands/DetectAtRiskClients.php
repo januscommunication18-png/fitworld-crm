@@ -71,7 +71,7 @@ class DetectAtRiskClients extends Command
         // Find clients/members who should be marked as at-risk
         $atRiskClients = Client::where('host_id', $host->id)
             ->whereNull('archived_at')
-            ->whereIn('status', [Client::STATUS_CLIENT, Client::STATUS_MEMBER])
+            ->where('status', Client::STATUS_ACTIVE)
             ->where(function ($query) use ($inactivityDate, $membershipExpiryDate) {
                 // Condition 1: No activity in X days (last_visit_at is null or old)
                 $query->where(function ($q) use ($inactivityDate) {

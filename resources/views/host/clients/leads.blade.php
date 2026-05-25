@@ -60,7 +60,7 @@
                     </div>
                     <div>
                         @php
-                            $convertedThisMonth = \App\Models\Client::forHost($hostId)->whereIn('status', ['client', 'member'])->where('converted_at', '>=', now()->startOfMonth())->count();
+                            $convertedThisMonth = \App\Models\Client::forHost($hostId)->where('status', \App\Models\Client::STATUS_ACTIVE)->where('converted_at', '>=', now()->startOfMonth())->count();
                         @endphp
                         <p class="text-2xl font-bold">{{ $convertedThisMonth }}</p>
                         <p class="text-xs text-base-content/60">{{ $trans['clients.converted_this_month'] ?? 'Converted This Month' }}</p>

@@ -179,8 +179,8 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge badge-soft badge-sm {{ $client->status === 'member' ? 'badge-success' : ($client->status === 'at_risk' ? 'badge-error' : 'badge-neutral') }}">
-                                                    {{ ucfirst($client->status) }}
+                                                <span class="badge badge-soft badge-sm {{ $client->status === 'active' ? 'badge-success' : ($client->status === 'at_risk' ? 'badge-error' : ($client->status === 'inactive' ? 'badge-warning' : 'badge-neutral')) }}">
+                                                    {{ ucfirst(str_replace('_', ' ', $client->status)) }}
                                                 </span>
                                             </td>
                                             <td>${{ number_format($client->total_spent, 0) }}</td>

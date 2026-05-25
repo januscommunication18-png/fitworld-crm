@@ -21,10 +21,14 @@
 
 {{-- Navigation Bar - 75px height --}}
 <nav class="bg-base-100 border-b border-base-200 sticky top-0 z-40" style="height: 75px;">
-    <div class="container-fixed h-full">
+    <div class="w-full h-full px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-full">
-            {{-- Left: Logo --}}
-            <div class="flex items-center">
+            {{-- Left: Logo + Home link --}}
+            @php
+                $currentRoute = \Illuminate\Support\Facades\Route::currentRouteName();
+                $homeActive = $currentRoute === 'subdomain.home';
+            @endphp
+            <div class="flex items-center gap-4">
                 @if($host->logo_url)
                     <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}" class="flex items-center">
                         <img src="{{ $host->logo_url }}" alt="{{ $host->studio_name }}" class="h-12 w-auto max-w-[180px] object-contain">
@@ -37,6 +41,11 @@
                         <span class="font-bold text-lg hidden sm:inline">{{ $host->studio_name }}</span>
                     </a>
                 @endif
+                <a href="{{ route('subdomain.home', ['subdomain' => $host->subdomain]) }}"
+                   class="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors {{ $homeActive ? 'text-primary bg-primary/10' : 'text-base-content/70 hover:text-base-content hover:bg-base-200' }}">
+                    <span class="icon-[tabler--home] size-4"></span>
+                    {{ $trans['nav.home'] ?? 'Home' }}
+                </a>
             </div>
 
             {{-- Right: Language Picker + Currency Picker + Request Booking + Member Login --}}

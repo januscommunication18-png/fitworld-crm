@@ -69,7 +69,7 @@
                                     @endif
                                     <div>
                                         <span class="text-base-content/60">Status:</span>
-                                        <span class="badge badge-sm ml-1 {{ $booking->client->status === 'member' ? 'badge-success' : 'badge-ghost' }}">
+                                        <span class="badge badge-sm ml-1 {{ $booking->client->is_member ? 'badge-success' : 'badge-ghost' }}">
                                             {{ ucfirst($booking->client->status) }}
                                         </span>
                                     </div>

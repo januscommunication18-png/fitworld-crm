@@ -159,22 +159,42 @@ class BookingController extends Controller
     }
 
     /**
-     * Display class session details
+     * Display class plan (catalog) details — a public marketing page for a class type.
      */
-    public function classDetails(Request $request, string $subdomain, ClassSession $classSession)
+    public function classPlanDetails(Request $request, string $subdomain, ClassPlan $classPlan)
     {
         $host = $this->getHost($request);
 
-        // Ensure the class belongs to this studio
-        if ($classSession->host_id !== $host->id) {
+        if ($classPlan->host_id !== $host->id) {
             abort(404);
         }
 
-        $classSession->load(['classPlan', 'primaryInstructor', 'room.location']);
+        if (!$classPlan->is_active || !($classPlan->is_visible_on_booking_page ?? true)) {
+            abort(404);
+        }
 
-        return view('subdomain.class-details', [
+        // Instructors who teach this plan (active assignments only).
+        $classPlan->load(['instructors' => function ($q) {
+            $q->wherePivot('is_active', true);
+        }]);
+
+        // Next handful of upcoming sessions of this class plan.
+        $upcomingSessions = ClassSession::where('host_id', $host->id)
+            ->where('class_plan_id', $classPlan->id)
+            ->where('start_time', '>=', now())
+            ->with(['primaryInstructor', 'room.location'])
+            ->withCount('bookings')
+            ->orderBy('start_time')
+            ->limit(8)
+            ->get();
+
+        $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+
+        return view('subdomain.class-plan-details', [
             'host' => $host,
-            'session' => $classSession,
+            'classPlan' => $classPlan,
+            'upcomingSessions' => $upcomingSessions,
+            'selectedCurrency' => $selectedCurrency,
         ]);
     }
 

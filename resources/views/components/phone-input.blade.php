@@ -23,13 +23,17 @@
     'label' => 'Phone Number',
     'required' => false,
     'idSuffix' => null,
+    'host' => null, // Optional host model — for public pages where auth()->user() is null
 ])
 
 @php
     $uid = str_replace('-', '_', $idSuffix ?? 'ph_' . substr(uniqid(), -5));
-    $host = auth()->user()->currentHost() ?? auth()->user()->host;
-    $opCountries = $host->operating_countries ?? [$host->country ?? 'US'];
-    $defaultCountry = $host->country ?? ($opCountries[0] ?? 'US');
+    if (!$host) {
+        $authUser = auth()->user();
+        $host = $authUser ? ($authUser->currentHost() ?? $authUser->host ?? null) : null;
+    }
+    $opCountries = $host?->operating_countries ?? [$host?->country ?? 'US'];
+    $defaultCountry = $host?->country ?? ($opCountries[0] ?? 'US');
 
     $countryData = [
         'US' => ['flag' => '🇺🇸', 'code' => '+1', 'label' => 'US'],
