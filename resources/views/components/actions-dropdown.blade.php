@@ -50,19 +50,36 @@
 @push('scripts')
 <script>
 (function () {
+    // Track menu-to-details mapping after teleporting menus to <body>.
+    function getMenuFor(details) {
+        return details._actionsMenu || details.querySelector('.js-actions-menu');
+    }
+
     function closeAll(except) {
         document.querySelectorAll('details.js-actions-dropdown[open]').forEach(function (d) {
             if (d === except) return;
             d.removeAttribute('open');
-            var menu = d.querySelector('.js-actions-menu');
+            var menu = getMenuFor(d);
             if (menu) menu.classList.add('hidden');
         });
     }
 
     function positionMenu(details) {
         var summary = details.querySelector('summary');
-        var menu = details.querySelector('.js-actions-menu');
+        var menu = getMenuFor(details);
         if (!summary || !menu) return;
+
+        // Teleport the menu to <body> so it escapes any ancestor that creates
+        // a containing block for position:fixed (e.g. an element with CSS
+        // `transform`, `filter`, or `perspective` — the slide-in drawer uses
+        // `transform: translate-x-*` for its animation, which would otherwise
+        // make `position: fixed` resolve relative to the drawer and push the
+        // menu off-screen).
+        if (menu.parentNode !== document.body) {
+            details._actionsMenu = menu;
+            document.body.appendChild(menu);
+        }
+
         var rect = summary.getBoundingClientRect();
         menu.classList.remove('hidden');
         var menuRect = menu.getBoundingClientRect();
@@ -86,18 +103,21 @@
             closeAll(d);
             positionMenu(d);
         } else {
-            var menu = d.querySelector('.js-actions-menu');
+            var menu = getMenuFor(d);
             if (menu) menu.classList.add('hidden');
         }
     }, true);
 
     document.addEventListener('click', function (e) {
         document.querySelectorAll('details.js-actions-dropdown[open]').forEach(function (d) {
-            if (!d.contains(e.target)) {
-                d.removeAttribute('open');
-                var menu = d.querySelector('.js-actions-menu');
-                if (menu) menu.classList.add('hidden');
-            }
+            var menu = getMenuFor(d);
+            // The menu was teleported to <body>, so it's no longer inside
+            // the <details> element. Treat clicks inside the menu as inside
+            // the dropdown, not outside.
+            if (d.contains(e.target)) return;
+            if (menu && menu.contains(e.target)) return;
+            d.removeAttribute('open');
+            if (menu) menu.classList.add('hidden');
         });
     });
 
@@ -106,14 +126,20 @@
     // fires first, but the dropdown collapses regardless of whether the handler
     // calls stopPropagation.
     document.addEventListener('click', function (e) {
-        var details = e.target.closest('details.js-actions-dropdown');
-        if (!details || !details.open) return;
         var actionable = e.target.closest('.js-actions-menu a, .js-actions-menu button');
         if (!actionable) return;
+        var menu = actionable.closest('.js-actions-menu');
+        // Find the <details> this menu belongs to. After teleport the menu is
+        // no longer a DOM child of details, so we scan open dropdowns for the
+        // one that owns this menu reference.
+        var owner = null;
+        document.querySelectorAll('details.js-actions-dropdown[open]').forEach(function (d) {
+            if (getMenuFor(d) === menu) owner = d;
+        });
+        if (!owner) return;
         setTimeout(function () {
-            details.removeAttribute('open');
-            var menu = details.querySelector('.js-actions-menu');
-            if (menu) menu.classList.add('hidden');
+            owner.removeAttribute('open');
+            menu.classList.add('hidden');
         }, 0);
     }, true);
 

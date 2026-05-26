@@ -351,6 +351,14 @@ class Host extends Model
             'house_rules' => null,
             'liability_waiver_url' => null,
             'arrival_instructions' => null,
+
+            // Self Check-in Policy (member portal)
+            'allow_self_checkin' => true,
+            // Window in minutes BEFORE the session starts during which the
+            // member can check themselves in. After the session start time,
+            // self check-in is still allowed up to self_checkin_late_minutes.
+            'self_checkin_window_minutes' => 30,
+            'self_checkin_late_minutes' => 30,
         ];
     }
 

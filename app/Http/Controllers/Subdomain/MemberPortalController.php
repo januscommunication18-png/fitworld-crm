@@ -217,7 +217,12 @@ class MemberPortalController extends Controller
 
         $query = Booking::where('client_id', $member->id)
             ->where('host_id', $host->id)
-            ->with(['bookable']);
+            ->with([
+                'bookable',
+                'bookable.classPlan.instructors',
+                'bookable.primaryInstructor',
+                'bookable.room.location',
+            ]);
 
         if ($filter === 'upcoming') {
             $query->whereHas('bookable', function ($q) {
@@ -241,6 +246,34 @@ class MemberPortalController extends Controller
     }
 
     /**
+     * Cancel a booking from the member portal. Member must own the booking,
+     * studio policy must allow cancellations (Booking::canBeCancelled).
+     */
+    public function cancelBooking(Request $request, string $subdomain, Booking $booking)
+    {
+        $host = $this->getHost($request);
+        $member = $this->getMember();
+
+        if ($booking->client_id !== $member->id || $booking->host_id !== $host->id) {
+            abort(403);
+        }
+
+        if (!$booking->canBeCancelled()) {
+            return back()->with('error', 'This booking can no longer be cancelled.');
+        }
+
+        $reason = (string) $request->input('reason', '');
+        // Members aren't Users — there's no User id we can record as the
+        // canceller. Stash an actor marker in cancellation_notes so the host
+        // dashboard can attribute the cancel to the member rather than
+        // misreading null as "Staff (user removed)".
+        $notes = 'Cancelled by member: ' . ($member->full_name ?? 'Unknown');
+        $booking->cancel($reason !== '' ? $reason : null, $notes, null);
+
+        return back()->with('success', 'Booking cancelled.');
+    }
+
+    /**
      * Self check-in for a booking
      */
     public function selfCheckIn(Request $request, string $subdomain, Booking $booking)
@@ -253,22 +286,19 @@ class MemberPortalController extends Controller
             abort(403);
         }
 
-        if ($booking->status !== Booking::STATUS_CONFIRMED) {
-            return back()->with('error', 'This booking cannot be checked in.');
-        }
-
-        if ($booking->checked_in_at) {
-            return back()->with('info', 'You are already checked in.');
-        }
-
-        // Only allow check-in within 30 minutes before the session starts
-        $bookable = $booking->bookable;
-        if ($bookable && $bookable->start_time) {
-            $windowStart = $bookable->start_time->copy()->subMinutes(30);
-            $windowEnd = $bookable->start_time->copy()->addMinutes(30);
-            if (now()->lt($windowStart)) {
-                return back()->with('error', 'Check-in is available 30 minutes before your session starts.');
-            }
+        $state = $booking->selfCheckInState();
+        if (!$state['allowed']) {
+            $messages = [
+                'disabled' => 'Self check-in is not available at this studio.',
+                'not_confirmed' => 'This booking cannot be checked in.',
+                'already' => 'You are already checked in.',
+                'no_session_time' => 'This booking has no scheduled time.',
+                'too_early' => 'Check-in opens '
+                    . ($state['opens_at'] ?? now())->diffForHumans(),
+                'too_late' => 'Check-in window for this session has closed.',
+            ];
+            $flashKey = $state['reason'] === 'already' ? 'info' : 'error';
+            return back()->with($flashKey, $messages[$state['reason']] ?? 'Check-in is not available right now.');
         }
 
         $booking->update([
@@ -347,9 +377,34 @@ class MemberPortalController extends Controller
             'date_of_birth' => 'nullable|date',
             'emergency_contact_name' => 'nullable|string|max:255',
             'emergency_contact_phone' => 'nullable|string|max:50',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'remove_profile_photo' => 'nullable|in:1',
         ]);
 
-        $member->update($validated);
+        $disk = config('filesystems.uploads');
+
+        // Remove existing photo if requested or replaced.
+        if (($validated['remove_profile_photo'] ?? null) === '1' || $request->hasFile('profile_photo')) {
+            if ($member->profile_photo) {
+                try {
+                    \Storage::disk($disk)->delete($member->profile_photo);
+                } catch (\Throwable $e) {
+                    // Ignore — file may live on a different disk or be missing.
+                }
+            }
+            $member->profile_photo = null;
+        }
+
+        if ($request->hasFile('profile_photo')) {
+            $path = $request->file('profile_photo')
+                ->storePublicly($host->getStoragePath('client-photos'), $disk);
+            $member->profile_photo = $path;
+        }
+
+        $member->fill(collect($validated)->only([
+            'first_name', 'last_name', 'email', 'phone', 'date_of_birth',
+            'emergency_contact_name', 'emergency_contact_phone',
+        ])->all())->save();
 
         return back()->with('success', 'Profile updated successfully.');
     }

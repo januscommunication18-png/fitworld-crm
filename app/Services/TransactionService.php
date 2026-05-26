@@ -179,6 +179,16 @@ class TransactionService
             if (!$transaction->booking_id) {
                 $transaction->update(['booking_id' => $existing->id]);
             }
+
+            // If the booking was created earlier while the transaction was
+            // still pending, its price_paid is null. Now that the transaction
+            // is paid, stamp the price so the booking detail page shows the
+            // actual amount received instead of "$0.00".
+            if ($existing->price_paid === null && $transaction->status === Transaction::STATUS_PAID) {
+                $newPrice = $pricePaid !== null ? $pricePaid : (float) $transaction->total_amount;
+                $existing->update(['price_paid' => $newPrice]);
+            }
+
             return $existing;
         }
 
@@ -187,6 +197,9 @@ class TransactionService
         $type = $bookingType ?? (($transaction->metadata['class_booking_type'] ?? null) === 'series'
             ? Booking::TYPE_SERIES
             : Booking::TYPE_SINGLE);
+        // Series bookings get a shared identifier so the index view can fold
+        // them into a single row per purchase. Singletons stay null.
+        $seriesId = $type === Booking::TYPE_SERIES ? 'TX-' . $transaction->id : null;
 
         $booking = Booking::create([
             'host_id' => $transaction->host_id,
@@ -194,6 +207,7 @@ class TransactionService
             'bookable_type' => get_class($bookable),
             'bookable_id' => $bookable->id,
             'booking_type' => $type,
+            'series_id' => $seriesId,
             'status' => $isWaitlist ? Booking::STATUS_WAITLISTED : Booking::STATUS_CONFIRMED,
             'booked_at' => now(),
             'booking_source' => Booking::SOURCE_ONLINE,

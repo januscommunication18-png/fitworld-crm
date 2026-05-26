@@ -61,6 +61,7 @@ class Booking extends Model
         'bookable_type',
         'bookable_id',
         'booking_type',
+        'series_id',
         'status',
         'booking_source',
         'intake_status',
@@ -286,6 +287,51 @@ class Booking extends Model
     public function isCancelled(): bool
     {
         return $this->status === self::STATUS_CANCELLED;
+    }
+
+    /**
+     * Can the member self-check-in right now? Combines studio policy + the
+     * configured check-in window around the session's start time.
+     * Returns ['allowed' => bool, 'reason' => string|null] so callers can show
+     * a helpful message ("Check-in opens in 12m", "Check-in window closed", etc.).
+     */
+    public function selfCheckInState(): array
+    {
+        $host = $this->host;
+        if (!$host || !$host->getPolicy('allow_self_checkin', true)) {
+            return ['allowed' => false, 'reason' => 'disabled'];
+        }
+        if ($this->status !== self::STATUS_CONFIRMED) {
+            return ['allowed' => false, 'reason' => 'not_confirmed'];
+        }
+        if ($this->checked_in_at) {
+            return ['allowed' => false, 'reason' => 'already'];
+        }
+
+        $bookable = $this->bookable;
+        if (!$bookable || !$bookable->start_time) {
+            return ['allowed' => false, 'reason' => 'no_session_time'];
+        }
+
+        $start = $bookable->start_time;
+        $beforeMinutes = (int) $host->getPolicy('self_checkin_window_minutes', 30);
+        $afterMinutes = (int) $host->getPolicy('self_checkin_late_minutes', 30);
+        $opensAt = $start->copy()->subMinutes($beforeMinutes);
+        $closesAt = $start->copy()->addMinutes($afterMinutes);
+
+        if (now()->lt($opensAt)) {
+            return ['allowed' => false, 'reason' => 'too_early', 'opens_at' => $opensAt];
+        }
+        if (now()->gt($closesAt)) {
+            return ['allowed' => false, 'reason' => 'too_late', 'closed_at' => $closesAt];
+        }
+
+        return ['allowed' => true, 'reason' => null];
+    }
+
+    public function canSelfCheckIn(): bool
+    {
+        return $this->selfCheckInState()['allowed'];
     }
 
     /**

@@ -206,22 +206,26 @@
                         </thead>
                         <tbody>
                             @foreach($bookings as $booking)
+                            @php
+                                $isSeriesRow = $booking->series_id && isset($seriesAggregates[$booking->series_id]);
+                                $agg = $isSeriesRow ? $seriesAggregates[$booking->series_id] : null;
+                            @endphp
                             <tr class="hover:bg-base-200/50">
                                 <td>
-                                    <div class="font-medium">
-                                        @if($booking->bookable && $booking->bookable->start_time)
-                                            {{ $booking->bookable->start_time->format('M j, Y') }}
-                                        @else
-                                            {{ $booking->booked_at?->format('M j, Y') ?? '-' }}
-                                        @endif
-                                    </div>
-                                    <div class="text-sm text-base-content/60">
-                                        @if($booking->bookable && $booking->bookable->start_time)
-                                            {{ $booking->bookable->start_time->format('g:i A') }}
-                                        @else
-                                            -
-                                        @endif
-                                    </div>
+                                    @if($isSeriesRow && $agg['first_session_at'])
+                                        <div class="font-medium">
+                                            {{ \Carbon\Carbon::parse($agg['first_session_at'])->format('M j') }} – {{ \Carbon\Carbon::parse($agg['last_session_at'])->format('M j, Y') }}
+                                        </div>
+                                        <div class="text-sm text-base-content/60">
+                                            {{ $agg['total'] }} {{ $agg['total'] === 1 ? 'session' : 'sessions' }}
+                                        </div>
+                                    @elseif($booking->bookable && $booking->bookable->start_time)
+                                        <div class="font-medium">{{ $booking->bookable->start_time->format('M j, Y') }}</div>
+                                        <div class="text-sm text-base-content/60">{{ $booking->bookable->start_time->format('g:i A') }}</div>
+                                    @else
+                                        <div class="font-medium">{{ $booking->booked_at?->format('M j, Y') ?? '-' }}</div>
+                                        <div class="text-sm text-base-content/60">-</div>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($booking->client)
@@ -238,18 +242,24 @@
                                 </td>
                                 <td>
                                     <div class="font-medium">
-                                        @if($booking->bookable)
+                                        @if($isSeriesRow && $booking->bookable && method_exists($booking->bookable, 'classPlan') && $booking->bookable->classPlan)
+                                            {{ $booking->bookable->classPlan->name }}
+                                        @elseif($booking->bookable)
                                             {{ $booking->bookable->display_title ?? $booking->bookable->title ?? ($trans['common.unknown'] ?? 'Unknown') }}
                                         @else
                                             <span class="text-base-content/50">{{ $trans['common.deleted'] ?? 'Deleted' }}</span>
                                         @endif
                                     </div>
                                     <div class="text-sm text-base-content/60">
-                                        {{ class_basename($booking->bookable_type ?? '') }}
+                                        @if($isSeriesRow)
+                                            {{ $trans['bookings.series_purchase'] ?? 'Series purchase' }}
+                                        @else
+                                            {{ class_basename($booking->bookable_type ?? '') }}
+                                        @endif
                                     </div>
                                 </td>
                                 <td>
-                                    @if($booking->booking_type === \App\Models\Booking::TYPE_SERIES)
+                                    @if($isSeriesRow)
                                         <span class="badge badge-sm badge-accent badge-soft">
                                             <span class="icon-[tabler--calendar-repeat] size-3"></span>
                                             {{ $trans['bookings.type_series'] ?? 'Series' }}
@@ -270,18 +280,34 @@
                                     <span class="badge badge-sm {{ $booking->payment_method_badge_class }} badge-soft">
                                         {{ $booking->payment_display_label }}
                                     </span>
-                                    @if($booking->price_paid)
+                                    @if($isSeriesRow && $agg['total_paid'] > 0)
+                                        @php
+                                            $currencySymbol = \App\Models\MembershipPlan::getCurrencySymbol($booking->client?->currency ?? 'USD');
+                                        @endphp
+                                        <div class="text-sm text-base-content/60">{{ $currencySymbol }}{{ number_format($agg['total_paid'], 2) }}</div>
+                                    @elseif($booking->price_paid)
                                         <div class="text-sm text-base-content/60">{{ $booking->formatted_price_paid }}</div>
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge badge-sm {{ $booking->status_badge_class }} badge-soft">
-                                        {{ $statuses[$booking->status] ?? $booking->status }}
-                                    </span>
-                                    @if($booking->isCheckedIn())
-                                        <div class="text-xs text-success mt-0.5">
-                                            <span class="icon-[tabler--check] size-3"></span> {{ $trans['bookings.checked_in'] ?? 'Checked in' }}
-                                        </div>
+                                    @if($isSeriesRow)
+                                        @if($agg['cancelled'] === $agg['total'])
+                                            <span class="badge badge-sm badge-neutral badge-soft">{{ $trans['bookings.all_cancelled'] ?? 'All cancelled' }}</span>
+                                        @else
+                                            <span class="badge badge-sm badge-success badge-soft">{{ $agg['confirmed'] }}/{{ $agg['total'] }} {{ $trans['bookings.confirmed'] ?? 'confirmed' }}</span>
+                                            @if($agg['cancelled'] > 0)
+                                                <div class="text-xs text-base-content/60 mt-0.5">{{ $agg['cancelled'] }} {{ $trans['bookings.cancelled_count'] ?? 'cancelled' }}</div>
+                                            @endif
+                                        @endif
+                                    @else
+                                        <span class="badge badge-sm {{ $booking->status_badge_class }} badge-soft">
+                                            {{ $statuses[$booking->status] ?? $booking->status }}
+                                        </span>
+                                        @if($booking->isCheckedIn())
+                                            <div class="text-xs text-success mt-0.5">
+                                                <span class="icon-[tabler--check] size-3"></span> {{ $trans['bookings.checked_in'] ?? 'Checked in' }}
+                                            </div>
+                                        @endif
                                     @endif
                                 </td>
                                 <td class="text-center">
@@ -301,16 +327,24 @@
                                 </td>
                                 <td>
                                     <x-actions-dropdown size="xs">
-                                        <li>
-                                            <button type="button" onclick="openDrawer('booking-{{ $booking->id }}', event)">
-                                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['bookings.quick_view'] ?? 'Quick View' }}
-                                            </button>
-                                        </li>
-                                        <li>
-                                            <a href="{{ route('bookings.show', $booking) }}">
-                                                <span class="icon-[tabler--external-link] size-4"></span> {{ $trans['bookings.view_details'] ?? 'View Details' }}
-                                            </a>
-                                        </li>
+                                        @if($isSeriesRow)
+                                            <li>
+                                                <button type="button" onclick="openDrawer('series-{{ $booking->series_id }}', event)">
+                                                    <span class="icon-[tabler--list-details] size-4"></span> {{ $trans['bookings.view_sessions'] ?? 'View Sessions' }}
+                                                </button>
+                                            </li>
+                                        @else
+                                            <li>
+                                                <button type="button" onclick="openDrawer('booking-{{ $booking->id }}', event)">
+                                                    <span class="icon-[tabler--eye] size-4"></span> {{ $trans['bookings.quick_view'] ?? 'Quick View' }}
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <a href="{{ route('bookings.show', $booking) }}">
+                                                    <span class="icon-[tabler--external-link] size-4"></span> {{ $trans['bookings.view_details'] ?? 'View Details' }}
+                                                </a>
+                                            </li>
+                                        @endif
                                         @if($booking->client)
                                             <li>
                                                 <a href="{{ route('clients.show', $booking->client) }}">
@@ -318,14 +352,14 @@
                                                 </a>
                                             </li>
                                         @endif
-                                        @if($booking->bookable && $booking->bookable_type === 'App\\Models\\ClassSession')
+                                        @if(!$isSeriesRow && $booking->bookable && $booking->bookable_type === 'App\\Models\\ClassSession')
                                             <li>
                                                 <a href="{{ route('class-sessions.show', $booking->bookable_id) }}">
                                                     <span class="icon-[tabler--calendar-event] size-4"></span> {{ $trans['bookings.view_session'] ?? 'View Session' }}
                                                 </a>
                                             </li>
                                         @endif
-                                        @if($booking->canBeCancelled() && auth()->user()->hasPermission('bookings.cancel'))
+                                        @if(!$isSeriesRow && $booking->canBeCancelled() && auth()->user()->hasPermission('bookings.cancel'))
                                             <li>
                                                 <button type="button" class="w-full text-left flex items-center gap-2 text-error"
                                                         onclick="openCancelModal({{ $booking->id }}, {{ $booking->isLateCancellation() ? 'true' : 'false' }})">
@@ -352,9 +386,18 @@
     </div>
 </div>
 
-{{-- Booking Details Drawers --}}
+{{-- Booking Details Drawers (singletons + representative rows) --}}
 @foreach($bookings as $booking)
     @include('host.bookings.partials.drawer', ['booking' => $booking])
+@endforeach
+
+{{-- Series Sessions Drawers (one per series id on this page) --}}
+@foreach(($seriesSessions ?? []) as $sid => $sessions)
+    @include('host.bookings.partials.series-drawer', [
+        'seriesId' => $sid,
+        'sessions' => $sessions,
+        'aggregate' => $seriesAggregates[$sid] ?? null,
+    ])
 @endforeach
 
 {{-- Cancel Booking Modal (shared) --}}

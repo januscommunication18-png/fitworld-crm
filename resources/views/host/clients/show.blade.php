@@ -20,11 +20,19 @@
             <a href="{{ route('clients.index') }}" class="btn btn-ghost btn-sm btn-circle mt-1">
                 <span class="icon-[tabler--arrow-left] size-5"></span>
             </a>
-            <div class="avatar placeholder">
-                <div class="bg-primary/10 text-primary w-16 h-16 rounded-full">
-                    <span class="text-xl font-bold">{{ $client->initials }}</span>
+            @if($client->avatar_url)
+                <div class="avatar">
+                    <div class="w-16 h-16 rounded-full">
+                        <img src="{{ $client->avatar_url }}" alt="{{ $client->full_name }}" class="object-cover w-full h-full">
+                    </div>
                 </div>
-            </div>
+            @else
+                <div class="avatar placeholder">
+                    <div class="bg-primary/10 text-primary w-16 h-16 rounded-full">
+                        <span class="text-xl font-bold">{{ $client->initials }}</span>
+                    </div>
+                </div>
+            @endif
             <div>
                 <h1 class="text-2xl font-bold">{{ $client->full_name }}</h1>
                 <div class="flex flex-wrap items-center gap-3 text-base-content/60">

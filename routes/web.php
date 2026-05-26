@@ -635,6 +635,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/bookings/no-shows', [BookingController::class, 'noShows'])->name('bookings.no-shows');
     Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('bookings.show');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
+    Route::post('/bookings/{booking}/reactivate', [BookingController::class, 'reactivate'])->name('bookings.reactivate');
     Route::post('/bookings/{booking}/resend-intake', [BookingController::class, 'resendIntake'])->name('bookings.resend-intake');
 
     // Marketing - Segments

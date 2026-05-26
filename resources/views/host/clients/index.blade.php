@@ -238,11 +238,19 @@
                                 default => 'bg-primary text-primary-content'
                             };
                         @endphp
-                        <div class="avatar placeholder">
-                            <div class="{{ $avatarBg }} size-14 rounded-full font-bold text-lg">
-                                {{ $client->initials }}
+                        @if($client->avatar_url)
+                            <div class="avatar">
+                                <div class="size-14 rounded-full">
+                                    <img src="{{ $client->avatar_url }}" alt="{{ $client->full_name }}" class="object-cover w-full h-full">
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            <div class="avatar placeholder">
+                                <div class="{{ $avatarBg }} size-14 rounded-full font-bold text-lg">
+                                    {{ $client->initials }}
+                                </div>
+                            </div>
+                        @endif
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2">
                                 <div>
@@ -344,11 +352,19 @@
                                                 default => 'bg-primary/10 text-primary'
                                             };
                                         @endphp
-                                        <div class="avatar placeholder">
-                                            <div class="{{ $avatarBg }} w-10 h-10 rounded-full">
-                                                <span class="text-sm font-semibold">{{ $client->initials }}</span>
+                                        @if($client->avatar_url)
+                                            <div class="avatar">
+                                                <div class="w-10 h-10 rounded-full">
+                                                    <img src="{{ $client->avatar_url }}" alt="{{ $client->full_name }}" class="object-cover w-full h-full">
+                                                </div>
                                             </div>
-                                        </div>
+                                        @else
+                                            <div class="avatar placeholder">
+                                                <div class="{{ $avatarBg }} w-10 h-10 rounded-full">
+                                                    <span class="text-sm font-semibold">{{ $client->initials }}</span>
+                                                </div>
+                                            </div>
+                                        @endif
                                         <div>
                                             <a href="{{ route('clients.show', $client) }}" class="font-medium hover:text-primary">
                                                 {{ $client->full_name }}
