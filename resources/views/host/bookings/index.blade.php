@@ -196,11 +196,12 @@
                                 <th>{{ $trans['bookings.date_time'] ?? 'Date/Time' }}</th>
                                 <th>{{ $trans['field.client'] ?? 'Client' }}</th>
                                 <th>{{ $trans['bookings.class_service'] ?? 'Class/Service' }}</th>
+                                <th>{{ $trans['bookings.type'] ?? 'Type' }}</th>
                                 <th>{{ $trans['bookings.source'] ?? 'Source' }}</th>
                                 <th>{{ $trans['bookings.payment'] ?? 'Payment' }}</th>
                                 <th>{{ $trans['common.status'] ?? 'Status' }}</th>
                                 <th class="text-center">{{ $trans['schedule.intake'] ?? 'Intake' }}</th>
-                                <th></th>
+                                <th class="w-16 text-right">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -248,13 +249,26 @@
                                     </div>
                                 </td>
                                 <td>
+                                    @if($booking->booking_type === \App\Models\Booking::TYPE_SERIES)
+                                        <span class="badge badge-sm badge-accent badge-soft">
+                                            <span class="icon-[tabler--calendar-repeat] size-3"></span>
+                                            {{ $trans['bookings.type_series'] ?? 'Series' }}
+                                        </span>
+                                    @else
+                                        <span class="badge badge-sm badge-ghost badge-soft">
+                                            <span class="icon-[tabler--calendar-event] size-3"></span>
+                                            {{ $trans['bookings.type_single'] ?? 'Single' }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td>
                                     <span class="badge badge-sm {{ $booking->source_badge_class }} badge-soft">
                                         {{ $sources[$booking->booking_source] ?? $booking->booking_source }}
                                     </span>
                                 </td>
                                 <td>
                                     <span class="badge badge-sm {{ $booking->payment_method_badge_class }} badge-soft">
-                                        {{ $paymentMethods[$booking->payment_method] ?? $booking->payment_method }}
+                                        {{ $booking->payment_display_label }}
                                     </span>
                                     @if($booking->price_paid)
                                         <div class="text-sm text-base-content/60">{{ $booking->formatted_price_paid }}</div>
@@ -286,37 +300,40 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="flex items-center gap-1">
-                                        <button type="button" class="btn btn-ghost btn-xs btn-square" title="{{ $trans['bookings.view_details'] ?? 'View Details' }}" onclick="openDrawer('booking-{{ $booking->id }}', event)">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                        </button>
-                                        <div class="dropdown relative inline-flex [--trigger:hover] [--placement:bottom-end]">
-                                            <button type="button" class="dropdown-toggle btn btn-ghost btn-xs btn-square" aria-haspopup="menu" aria-expanded="false" aria-label="{{ $trans['common.actions'] ?? 'Actions' }}">
-                                                <span class="icon-[tabler--dots] size-4"></span>
+                                    <x-actions-dropdown size="xs">
+                                        <li>
+                                            <button type="button" onclick="openDrawer('booking-{{ $booking->id }}', event)">
+                                                <span class="icon-[tabler--eye] size-4"></span> {{ $trans['bookings.quick_view'] ?? 'Quick View' }}
                                             </button>
-                                            <ul class="dropdown-menu dropdown-open:opacity-100 hidden min-w-40" role="menu">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('bookings.show', $booking) }}">
-                                                        <span class="icon-[tabler--eye] size-4 me-2"></span>{{ $trans['bookings.view_details'] ?? 'View Details' }}
-                                                    </a>
-                                                </li>
-                                                @if($booking->client)
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('clients.show', $booking->client) }}">
-                                                        <span class="icon-[tabler--user] size-4 me-2"></span>{{ $trans['bookings.view_client'] ?? 'View Client' }}
-                                                    </a>
-                                                </li>
-                                                @endif
-                                                @if($booking->bookable && $booking->bookable_type === 'App\\Models\\ClassSession')
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('class-sessions.show', $booking->bookable_id) }}">
-                                                        <span class="icon-[tabler--calendar-event] size-4 me-2"></span>{{ $trans['bookings.view_session'] ?? 'View Session' }}
-                                                    </a>
-                                                </li>
-                                                @endif
-                                            </ul>
-                                        </div>
-                                    </div>
+                                        </li>
+                                        <li>
+                                            <a href="{{ route('bookings.show', $booking) }}">
+                                                <span class="icon-[tabler--external-link] size-4"></span> {{ $trans['bookings.view_details'] ?? 'View Details' }}
+                                            </a>
+                                        </li>
+                                        @if($booking->client)
+                                            <li>
+                                                <a href="{{ route('clients.show', $booking->client) }}">
+                                                    <span class="icon-[tabler--user] size-4"></span> {{ $trans['bookings.view_client'] ?? 'View Client' }}
+                                                </a>
+                                            </li>
+                                        @endif
+                                        @if($booking->bookable && $booking->bookable_type === 'App\\Models\\ClassSession')
+                                            <li>
+                                                <a href="{{ route('class-sessions.show', $booking->bookable_id) }}">
+                                                    <span class="icon-[tabler--calendar-event] size-4"></span> {{ $trans['bookings.view_session'] ?? 'View Session' }}
+                                                </a>
+                                            </li>
+                                        @endif
+                                        @if($booking->canBeCancelled() && auth()->user()->hasPermission('bookings.cancel'))
+                                            <li>
+                                                <button type="button" class="w-full text-left flex items-center gap-2 text-error"
+                                                        onclick="openCancelModal({{ $booking->id }}, {{ $booking->isLateCancellation() ? 'true' : 'false' }})">
+                                                    <span class="icon-[tabler--x] size-4"></span> {{ $trans['btn.cancel_booking'] ?? 'Cancel Booking' }}
+                                                </button>
+                                            </li>
+                                        @endif
+                                    </x-actions-dropdown>
                                 </td>
                             </tr>
                             @endforeach

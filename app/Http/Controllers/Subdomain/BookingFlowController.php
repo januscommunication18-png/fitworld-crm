@@ -1139,6 +1139,8 @@ class BookingFlowController extends Controller
         // Clear booking state
         $this->bookingService->clearState($request);
 
+        $this->markTransactionViewable($request, $transaction);
+
         return redirect()->route('booking.confirmation', [
             'subdomain' => $host->subdomain,
             'transaction' => $transaction->id,
@@ -1202,6 +1204,8 @@ class BookingFlowController extends Controller
 
         // Clear booking state
         $this->bookingService->clearState($request);
+
+        $this->markTransactionViewable($request, $transaction);
 
         return redirect()->route('booking.confirmation', [
             'subdomain' => $host->subdomain,
@@ -1393,6 +1397,8 @@ class BookingFlowController extends Controller
         // Clear booking state
         $this->bookingService->clearState($request);
 
+        $this->markTransactionViewable($request, $transaction);
+
         return redirect()->route('booking.confirmation', [
             'subdomain' => $host->subdomain,
             'transaction' => $transactionId,
@@ -1441,6 +1447,15 @@ class BookingFlowController extends Controller
                 ->with('error', 'Transaction not found.');
         }
 
+        // Authorize: confirmation pages must not be viewable just by guessing a
+        // transaction id. The link is valid only for (a) the browser session
+        // that completed the booking, or (b) a logged-in member portal user
+        // whose client matches this transaction's client.
+        if (!$this->canViewConfirmation($request, $transaction)) {
+            return redirect()->route('subdomain.home', ['subdomain' => $host->subdomain])
+                ->with('error', 'You do not have access to this booking confirmation.');
+        }
+
         // Get payment instructions for manual payments
         $paymentInstructions = null;
         if ($transaction->payment_method === Transaction::METHOD_MANUAL && $transaction->manual_method) {
@@ -1452,6 +1467,50 @@ class BookingFlowController extends Controller
             'transaction' => $transaction,
             'paymentInstructions' => $paymentInstructions,
         ]);
+    }
+
+    /**
+     * Grant the current browser session permission to view a transaction's
+     * confirmation page. Stores a small rolling list of recent transaction ids
+     * so multiple back-to-back bookings in the same session still work.
+     */
+    protected function markTransactionViewable(Request $request, Transaction $transaction): void
+    {
+        $key = 'booking.viewable_confirmations';
+        $allowed = $request->session()->get($key, []);
+        $allowed[] = (string) $transaction->id;
+        if (!empty($transaction->transaction_id)) {
+            $allowed[] = (string) $transaction->transaction_id;
+        }
+        $allowed = array_values(array_unique($allowed));
+        // Keep the list bounded — only the last ~10 booking ids matter.
+        if (count($allowed) > 20) {
+            $allowed = array_slice($allowed, -20);
+        }
+        $request->session()->put($key, $allowed);
+    }
+
+    /**
+     * Decide whether the current request is allowed to view a transaction's
+     * confirmation page. Allowed if the transaction is in the session's
+     * viewable list, or if a logged-in member owns it.
+     */
+    protected function canViewConfirmation(Request $request, Transaction $transaction): bool
+    {
+        $allowed = $request->session()->get('booking.viewable_confirmations', []);
+        if (in_array((string) $transaction->id, $allowed, true)) {
+            return true;
+        }
+        if (!empty($transaction->transaction_id) && in_array((string) $transaction->transaction_id, $allowed, true)) {
+            return true;
+        }
+
+        $member = Auth::guard('member')->user();
+        if ($member && (int) $member->getKey() === (int) $transaction->client_id) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

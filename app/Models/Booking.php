@@ -52,11 +52,15 @@ class Booking extends Model
     const CHECKIN_SELF = 'self';
     const CHECKIN_CARD_READER = 'card_reader';
 
+    const TYPE_SINGLE = 'single';
+    const TYPE_SERIES = 'series';
+
     protected $fillable = [
         'host_id',
         'client_id',
         'bookable_type',
         'bookable_id',
+        'booking_type',
         'status',
         'booking_source',
         'intake_status',
@@ -180,6 +184,68 @@ class Booking extends Model
             self::STATUS_NO_SHOW => 'badge-error',
             default => 'badge-neutral',
         };
+    }
+
+    /**
+     * Short human label for the payment method, e.g. 'Cash' / 'Card' / 'Bank
+     * Transfer'. Drops verbose qualifiers ("Pay at Studio", "Card (Stripe)")
+     * so it composes cleanly inside "Paid (X)".
+     */
+    public function getPaymentMethodShortLabelAttribute(): string
+    {
+        return match ($this->payment_method) {
+            self::PAYMENT_STRIPE => 'Card',
+            self::PAYMENT_CASH => 'Cash',
+            self::PAYMENT_MEMBERSHIP => 'Membership',
+            self::PAYMENT_PACK => 'Class Pack',
+            self::PAYMENT_COMP => 'Comp',
+            self::PAYMENT_MANUAL => 'Manual',
+            self::PAYMENT_VENMO => 'Venmo',
+            self::PAYMENT_ZELLE => 'Zelle',
+            self::PAYMENT_PAYPAL => 'PayPal',
+            self::PAYMENT_CASH_APP => 'Cash App',
+            self::PAYMENT_BANK_TRANSFER => 'Bank Transfer',
+            self::PAYMENT_CHECK => 'Check',
+            self::PAYMENT_OTHER => 'Other',
+            default => (string) $this->payment_method,
+        };
+    }
+
+    /**
+     * Compose the payment cell label based on actual state:
+     *   - Confirmed + price_paid > 0  → "Paid (Cash)" / "Paid (Card)" / ...
+     *   - Confirmed + free (membership/pack/comp/0 paid) → method short label
+     *   - Waitlisted / Pending payment → method label as-chosen (e.g. "Pay at Studio (Cash)")
+     *   - Cancelled → method short label
+     */
+    public function getPaymentDisplayLabelAttribute(): string
+    {
+        $isFreeMethod = in_array($this->payment_method, [
+            self::PAYMENT_MEMBERSHIP,
+            self::PAYMENT_PACK,
+            self::PAYMENT_COMP,
+        ], true);
+
+        if ($this->status === self::STATUS_CONFIRMED) {
+            if (((float) $this->price_paid) > 0) {
+                return 'Paid (' . $this->payment_method_short_label . ')';
+            }
+            if ($isFreeMethod) {
+                return $this->payment_method_short_label;
+            }
+            // Confirmed with no recorded amount — treat as paid offline.
+            return 'Paid (' . $this->payment_method_short_label . ')';
+        }
+
+        if ($this->status === self::STATUS_WAITLISTED) {
+            return self::getPaymentMethods()[$this->payment_method] ?? $this->payment_method;
+        }
+
+        if ($this->status === self::STATUS_CANCELLED) {
+            return $this->payment_method_short_label;
+        }
+
+        return self::getPaymentMethods()[$this->payment_method] ?? $this->payment_method;
     }
 
     /**

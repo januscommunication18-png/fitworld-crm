@@ -68,7 +68,7 @@
                             <th>Amount</th>
                             <th>Payment</th>
                             <th>Status</th>
-                            <th>Actions</th>
+                            <th class="w-16 text-right">{{ $trans['common.actions'] ?? 'Actions' }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -136,34 +136,38 @@
                                 </span>
                             </td>
                             <td>
-                                <div class="flex items-center gap-2">
+                                <x-actions-dropdown size="xs">
+                                    <li><a href="{{ route('payments.transactions.show', $transaction) }}">
+                                        <span class="icon-[tabler--eye] size-4"></span> {{ $trans['btn.view'] ?? 'View Details' }}
+                                    </a></li>
+
                                     @if($transaction->status === 'pending')
-                                        {{-- View Details --}}
-                                        <a href="{{ route('payments.transactions.show', $transaction) }}" class="btn btn-ghost btn-sm">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                        </a>
-
-                                        {{-- Confirm Payment Button --}}
-                                        <button type="button"
-                                                class="btn btn-success btn-sm gap-1"
-                                                onclick="openConfirmModal('{{ $transaction->id }}', '{{ $transaction->invoice?->invoice_number ?? $transaction->transaction_id }}', '{{ $transaction->formatted_total }}')">
-                                            <span class="icon-[tabler--check] size-4"></span>
-                                            {{ $trans['btn.confirm'] ?? 'Confirm' }}
-                                        </button>
-
-                                        {{-- Cancel Button --}}
-                                        <button type="button"
-                                                class="btn btn-ghost btn-sm text-error"
-                                                onclick="openCancelModal('{{ $transaction->id }}', '{{ $transaction->invoice?->invoice_number ?? $transaction->transaction_id }}')">
-                                            <span class="icon-[tabler--x] size-4"></span>
-                                        </button>
-                                    @else
-                                        {{-- View Details --}}
-                                        <a href="{{ route('payments.transactions.show', $transaction) }}" class="btn btn-ghost btn-sm">
-                                            <span class="icon-[tabler--eye] size-4"></span>
-                                        </a>
+                                        <li>
+                                            <button type="button" class="w-full text-left flex items-center gap-2 text-success"
+                                                    onclick="openConfirmModal('{{ $transaction->id }}', '{{ $transaction->invoice?->invoice_number ?? $transaction->transaction_id }}', '{{ $transaction->formatted_total }}')">
+                                                <span class="icon-[tabler--check] size-4"></span> {{ $trans['btn.confirm'] ?? 'Confirm Payment' }}
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="w-full text-left flex items-center gap-2 text-error"
+                                                    onclick="openCancelModal('{{ $transaction->id }}', '{{ $transaction->invoice?->invoice_number ?? $transaction->transaction_id }}')">
+                                                <span class="icon-[tabler--x] size-4"></span> {{ $trans['btn.cancel'] ?? 'Cancel' }}
+                                            </button>
+                                        </li>
                                     @endif
-                                </div>
+
+                                    @if($transaction->client?->email)
+                                        <li>
+                                            <form action="{{ route('payments.transactions.resend-confirmation', $transaction) }}" method="POST"
+                                                  onsubmit="return confirm('Resend the confirmation email to {{ $transaction->client->email }}?')">
+                                                @csrf
+                                                <button type="submit" class="w-full text-left flex items-center gap-2">
+                                                    <span class="icon-[tabler--mail-forward] size-4"></span> Resend Email
+                                                </button>
+                                            </form>
+                                        </li>
+                                    @endif
+                                </x-actions-dropdown>
                             </td>
                         </tr>
                         @endforeach

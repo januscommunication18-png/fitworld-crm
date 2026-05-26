@@ -623,6 +623,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments/transactions/{transaction}', [PaymentController::class, 'showTransaction'])->name('payments.transactions.show');
     Route::post('/payments/transactions/{transaction}/confirm', [PaymentController::class, 'confirmPayment'])->name('payments.transactions.confirm');
     Route::post('/payments/transactions/{transaction}/cancel', [PaymentController::class, 'cancelTransaction'])->name('payments.transactions.cancel');
+    Route::post('/payments/transactions/{transaction}/resend-confirmation', [PaymentController::class, 'resendConfirmation'])->name('payments.transactions.resend-confirmation');
     Route::post('/payments/transactions/{transaction}/toggle-hide', [PaymentController::class, 'toggleHideFromBooks'])->name('payments.transactions.toggle-hide');
     Route::get('/payments/memberships', [PaymentController::class, 'memberships'])->name('payments.memberships');
     Route::get('/payments/class-packs', [PaymentController::class, 'classPacks'])->name('payments.class-packs');

@@ -124,6 +124,32 @@ class PaymentController extends Controller
     }
 
     /**
+     * Resend the confirmation email for a transaction. Useful when the host
+     * has customized the email template after the original send, or when the
+     * first send failed silently (no client email at the time, mail server
+     * outage, etc.). Re-runs sendConfirmationEmail with the current booking
+     * (if any) so the customer receives the latest template + attachments.
+     */
+    public function resendConfirmation(Request $request, Transaction $transaction)
+    {
+        $host = $this->getHost();
+
+        if ($transaction->host_id !== $host->id) {
+            abort(403);
+        }
+
+        $transaction->load(['client', 'host', 'booking', 'invoice', 'purchasable']);
+
+        if (!$transaction->client?->email) {
+            return back()->with('error', 'Cannot resend — this transaction has no client email on file.');
+        }
+
+        $this->transactionService->sendConfirmationEmail($transaction, $transaction->booking);
+
+        return back()->with('success', 'Confirmation email resent to ' . $transaction->client->email . '.');
+    }
+
+    /**
      * Cancel a transaction
      */
     public function cancelTransaction(Request $request, Transaction $transaction)

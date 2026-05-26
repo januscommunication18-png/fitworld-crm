@@ -345,19 +345,17 @@
                                         </div>
 
                                         <div class="form-control">
-                                            <label class="label" for="phone">
-                                                <span class="label-text font-medium">Phone <span class="text-error">*</span></span>
-                                            </label>
-                                            <div class="relative">
-                                                <span class="icon-[tabler--phone] size-5 absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40"></span>
-                                                <input type="tel" id="phone" name="phone"
-                                                       value="{{ old('phone', $prefillData['phone'] ?? '') }}"
-                                                       required
-                                                       inputmode="numeric"
-                                                       pattern="[0-9+ ()-]*"
-                                                       placeholder="1234567890"
-                                                       class="input input-bordered w-full pl-10 focus:input-primary @error('phone') input-error @enderror">
-                                            </div>
+                                            <x-phone-input
+                                                name="phone"
+                                                :value="old('phone', $prefillData['phone'] ?? '')"
+                                                label="Phone"
+                                                :required="true"
+                                                :host="$host"
+                                                id-suffix="booking-contact"
+                                            />
+                                            @error('phone')
+                                                <p class="text-error text-sm mt-1">{{ $message }}</p>
+                                            @enderror
                                         </div>
                                     </div>
 

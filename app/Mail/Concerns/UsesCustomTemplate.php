@@ -23,21 +23,27 @@ trait UsesCustomTemplate
             return null;
         }
 
-        $subject = $template->subject;
-        $body = $template->body_html;
+        return $this->renderTemplateStrings($template->subject, $template->body_html, $host, $variables);
+    }
 
-        // Replace variables
+    /**
+     * Render explicit subject/body strings through the same layout wrapper
+     * the custom-template path uses, so default-template emails look
+     * identical to customized ones (matching the editor preview).
+     */
+    protected function renderTemplateStrings(string $subjectTemplate, string $bodyTemplate, Host $host, array $variables): static
+    {
+        $subject = $subjectTemplate;
+        $body = $bodyTemplate;
+
         foreach ($variables as $key => $value) {
             $placeholder = '{{' . $key . '}}';
             $subject = str_replace($placeholder, $value ?? '', $subject);
             $body = str_replace($placeholder, $value ?? '', $body);
         }
 
-        // Wrap in email layout
-        $html = $this->wrapInLayout($body, $host);
-
         $this->subject($subject);
-        $this->html($html);
+        $this->html($this->wrapInLayout($body, $host));
 
         return $this;
     }

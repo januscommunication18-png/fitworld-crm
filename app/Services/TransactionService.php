@@ -77,6 +77,22 @@ class TransactionService
                     'using_membership' => $selectedItem['using_membership'] ?? false,
                     'membership_id' => $selectedItem['membership_id'] ?? null,
                     'membership_name' => $selectedItem['membership_name'] ?? null,
+                    // Series-specific (class_plan with class_booking_type=series).
+                    // Captured here so the confirmation email can show the date
+                    // range and session count even after the booking session is cleared.
+                    'class_booking_type' => $selectedItem['class_booking_type'] ?? null,
+                    'billing_period' => $selectedItem['billing_period'] ?? null,
+                    'series_summary' => $selectedItem['series_summary'] ?? null,
+                    // Direct id of the underlying class/service plan — kept
+                    // alongside the polymorphic purchasable link as a
+                    // belt-and-braces reference for emails / reports.
+                    'class_plan_id' => $selectedItem['class_plan_id'] ?? null,
+                    'service_plan_id' => $selectedItem['service_plan_id'] ?? null,
+                    // For single class_plan bookings the customer picks a
+                    // specific session at contact-info step — record it so we
+                    // can create the booking when payment is confirmed.
+                    'class_session_id' => $selectedItem['class_session_id'] ?? null,
+                    'service_slot_id' => $selectedItem['service_slot_id'] ?? null,
                 ],
             ]);
 
@@ -95,49 +111,179 @@ class TransactionService
     }
 
     /**
-     * Create a booking after successful payment
+     * Create booking(s) after successful payment.
+     * Returns the (first) Booking row created, or null if none could be made.
+     *
+     * Behavior by purchasable type:
+     *   ClassSession / ServiceSlot      → one booking against that exact slot
+     *   ClassPlan + class_session_id    → one booking against the chosen session
+     *   ClassPlan + class_booking_type=series → one booking per published
+     *                                            session inside the billing window
      */
     public function createBookingFromTransaction(Transaction $transaction): ?Booking
     {
         $purchasable = $transaction->purchasable;
-
         if (!$purchasable) {
             return null;
         }
 
-        // Only create bookings for class sessions and service slots
-        if (!($purchasable instanceof ClassSession) && !($purchasable instanceof ServiceSlot)) {
-            return null;
+        if ($purchasable instanceof ClassSession || $purchasable instanceof ServiceSlot) {
+            return $this->createBookingForBookable($transaction, $purchasable);
+        }
+
+        if ($purchasable instanceof \App\Models\ClassPlan) {
+            $metadata = $transaction->metadata ?? [];
+
+            if (($metadata['class_booking_type'] ?? 'single') === 'series') {
+                return $this->createSeriesBookings($transaction, $purchasable, $metadata);
+            }
+
+            $sessionId = $metadata['class_session_id'] ?? null;
+            if (!$sessionId) {
+                Log::warning('Cannot auto-book single class_plan transaction — no class_session_id in metadata', [
+                    'transaction_id' => $transaction->id,
+                ]);
+                return null;
+            }
+
+            $session = ClassSession::where('host_id', $transaction->host_id)->find($sessionId);
+            if (!$session) {
+                Log::warning('Class session referenced by transaction is missing', [
+                    'transaction_id' => $transaction->id,
+                    'class_session_id' => $sessionId,
+                ]);
+                return null;
+            }
+
+            return $this->createBookingForBookable($transaction, $session);
+        }
+
+        return null;
+    }
+
+    /**
+     * Create one booking row pointing at a specific bookable (ClassSession or ServiceSlot).
+     * Idempotent: if a non-cancelled booking already exists for this
+     * (host, client, bookable) tuple, returns it instead of creating a duplicate
+     * — so re-confirming a transaction never double-books.
+     */
+    protected function createBookingForBookable(Transaction $transaction, $bookable, ?float $pricePaid = null, ?string $bookingType = null): Booking
+    {
+        $existing = Booking::where('host_id', $transaction->host_id)
+            ->where('client_id', $transaction->client_id)
+            ->where('bookable_type', get_class($bookable))
+            ->where('bookable_id', $bookable->id)
+            ->whereNotIn('status', [Booking::STATUS_CANCELLED])
+            ->first();
+        if ($existing) {
+            if (!$transaction->booking_id) {
+                $transaction->update(['booking_id' => $existing->id]);
+            }
+            return $existing;
         }
 
         $isWaitlist = $transaction->metadata['is_waitlist'] ?? false;
-
-        // Map transaction payment method to booking payment method
-        $paymentMethod = $transaction->payment_method;
-        if ($paymentMethod === Transaction::METHOD_MANUAL) {
-            // For manual payments, use the specific manual method or default to 'manual'
-            $paymentMethod = $transaction->manual_method ?? Booking::PAYMENT_MANUAL;
-        } elseif ($paymentMethod === Transaction::METHOD_STRIPE) {
-            $paymentMethod = Booking::PAYMENT_STRIPE;
-        }
+        $paymentMethod = $this->bookingPaymentMethodFor($transaction);
+        $type = $bookingType ?? (($transaction->metadata['class_booking_type'] ?? null) === 'series'
+            ? Booking::TYPE_SERIES
+            : Booking::TYPE_SINGLE);
 
         $booking = Booking::create([
             'host_id' => $transaction->host_id,
             'client_id' => $transaction->client_id,
-            'bookable_type' => get_class($purchasable),
-            'bookable_id' => $purchasable->id,
+            'bookable_type' => get_class($bookable),
+            'bookable_id' => $bookable->id,
+            'booking_type' => $type,
             'status' => $isWaitlist ? Booking::STATUS_WAITLISTED : Booking::STATUS_CONFIRMED,
             'booked_at' => now(),
-            'source' => 'website',
+            'booking_source' => Booking::SOURCE_ONLINE,
             'payment_method' => $paymentMethod,
-            'price_paid' => $transaction->status === Transaction::STATUS_PAID ? $transaction->total_amount : null,
+            'price_paid' => $pricePaid !== null
+                ? $pricePaid
+                : ($transaction->status === Transaction::STATUS_PAID ? $transaction->total_amount : null),
             'notes' => $isWaitlist ? 'Added to waitlist from public booking' : null,
         ]);
 
-        // Link booking to transaction
-        $transaction->update(['booking_id' => $booking->id]);
+        // Only stamp transaction.booking_id once — it points at the primary booking.
+        if (!$transaction->booking_id) {
+            $transaction->update(['booking_id' => $booking->id]);
+        }
 
         return $booking;
+    }
+
+    /**
+     * For a class_plan series transaction, create one Booking per published
+     * session of the plan inside the billing window. Returns the first one
+     * (or null if no sessions fall in range).
+     */
+    protected function createSeriesBookings(Transaction $transaction, \App\Models\ClassPlan $plan, array $metadata): ?Booking
+    {
+        $months = $this->resolveSeriesMonths($metadata);
+        if (!$months) {
+            Log::warning('Series class_plan transaction has no resolvable billing period', [
+                'transaction_id' => $transaction->id,
+            ]);
+            return null;
+        }
+
+        $rangeStart = $transaction->created_at ?? now();
+        $rangeEnd = $rangeStart->copy()->addMonths($months);
+
+        $sessions = ClassSession::where('host_id', $transaction->host_id)
+            ->where('class_plan_id', $plan->id)
+            ->where('status', ClassSession::STATUS_PUBLISHED)
+            ->whereBetween('start_time', [$rangeStart, $rangeEnd])
+            ->orderBy('start_time')
+            ->get();
+
+        if ($sessions->isEmpty()) {
+            Log::info('Series class_plan transaction confirmed but no published sessions found in range', [
+                'transaction_id' => $transaction->id,
+                'class_plan_id' => $plan->id,
+                'range_start' => $rangeStart->toDateTimeString(),
+                'range_end' => $rangeEnd->toDateTimeString(),
+            ]);
+            return null;
+        }
+
+        // Split the paid amount across the sessions so per-booking price_paid
+        // reflects a fair share rather than the full series total on each row.
+        $perSessionPrice = $transaction->status === Transaction::STATUS_PAID && $sessions->count() > 0
+            ? round(((float) $transaction->total_amount) / $sessions->count(), 2)
+            : null;
+
+        $firstBooking = null;
+        foreach ($sessions as $session) {
+            $booking = $this->createBookingForBookable($transaction, $session, $perSessionPrice, Booking::TYPE_SERIES);
+            $firstBooking = $firstBooking ?? $booking;
+        }
+
+        return $firstBooking;
+    }
+
+    /**
+     * Pull the billing period (in months) for a series transaction, looking
+     * at the explicit metadata key first, then digging it out of item_name.
+     */
+    protected function resolveSeriesMonths(array $metadata): ?int
+    {
+        if (!empty($metadata['billing_period']) && preg_match('/(\d+)/', $metadata['billing_period'], $m)) {
+            return (int) $m[1];
+        }
+        if (is_string($metadata['item_name'] ?? null) && preg_match('/(\d+)\s*Month/i', $metadata['item_name'], $m)) {
+            return (int) $m[1];
+        }
+        return null;
+    }
+
+    protected function bookingPaymentMethodFor(Transaction $transaction): string
+    {
+        return match ($transaction->payment_method) {
+            Transaction::METHOD_MANUAL => $transaction->manual_method ?? Booking::PAYMENT_MANUAL,
+            Transaction::METHOD_STRIPE => Booking::PAYMENT_STRIPE,
+            default => $transaction->payment_method,
+        };
     }
 
     /**
@@ -165,7 +311,7 @@ class TransactionService
             'bookable_id' => $purchasable->id,
             'status' => $isWaitlist ? Booking::STATUS_WAITLISTED : Booking::STATUS_CONFIRMED,
             'booked_at' => now(),
-            'booking_source' => 'online',
+            'booking_source' => Booking::SOURCE_ONLINE,
             'payment_method' => Booking::PAYMENT_MEMBERSHIP,
             'customer_membership_id' => $membership->id,
             'credits_used' => 1,
@@ -568,6 +714,11 @@ class TransactionService
             'service_slot' => ServiceSlot::find($id),
             'membership_plan' => MembershipPlan::find($id),
             'class_pack' => ClassPack::find($id),
+            // class_plan bookings (both single + series) — the purchasable
+            // points at the class plan so confirmation emails / reports can
+            // navigate back to it.
+            'class_plan' => \App\Models\ClassPlan::find($selectedItem['class_plan_id'] ?? $id),
+            'service_plan' => \App\Models\ServicePlan::find($selectedItem['service_plan_id'] ?? $id),
             default => null,
         };
     }

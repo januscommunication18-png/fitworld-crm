@@ -280,6 +280,18 @@
                             Cancel Transaction
                         </button>
                         @endif
+
+                        @if($transaction->client?->email)
+                        <form action="{{ route('payments.transactions.resend-confirmation', $transaction) }}"
+                              method="POST"
+                              onsubmit="return confirm('Resend the confirmation email to {{ $transaction->client->email }}? It will use your current email template.')">
+                            @csrf
+                            <button type="submit" class="btn btn-outline w-full">
+                                <span class="icon-[tabler--mail-forward] size-4"></span>
+                                Resend Confirmation Email
+                            </button>
+                        </form>
+                        @endif
                     </div>
                 </div>
             </div>

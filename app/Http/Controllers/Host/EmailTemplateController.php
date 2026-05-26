@@ -17,7 +17,7 @@ class EmailTemplateController extends Controller
         return [
             'booking_confirmation' => [
                 'name' => 'Booking Confirmation',
-                'description' => 'Sent when a booking is confirmed',
+                'description' => 'Sent when a booking is confirmed and payment has been received',
                 'category' => 'transactional',
                 'variables' => [
                     'customer_name' => 'Customer\'s full name',
@@ -32,6 +32,28 @@ class EmailTemplateController extends Controller
                     'studio_phone' => 'Studio phone number',
                     'studio_email' => 'Studio email address',
                     'cancellation_policy' => 'Cancellation policy text',
+                ],
+            ],
+            'booking_received' => [
+                'name' => 'Booking Received (Pending Payment)',
+                'description' => 'Sent when a booking is created but payment is still pending (e.g., manual / cash / bank transfer)',
+                'category' => 'transactional',
+                'variables' => [
+                    'customer_name' => 'Customer\'s full name',
+                    'customer_email' => 'Customer\'s email address',
+                    'booking_id' => 'Booking reference ID',
+                    'class_name' => 'Name of the class/service',
+                    'class_date' => 'Date of the class',
+                    'class_time' => 'Time of the class',
+                    'instructor_name' => 'Instructor\'s name',
+                    'location' => 'Location/address',
+                    'transaction_id' => 'Transaction reference ID',
+                    'payment_method' => 'Payment method chosen (e.g., Cash, Bank Transfer)',
+                    'total_amount' => 'Total amount due',
+                    'payment_instructions' => 'How the customer should pay',
+                    'studio_name' => 'Your studio name',
+                    'studio_phone' => 'Studio phone number',
+                    'studio_email' => 'Studio email address',
                 ],
             ],
             'payment_receipt' => [
@@ -312,8 +334,8 @@ class EmailTemplateController extends Controller
         $template = EmailTemplate::forHost($host->id)->where('key', $key)->first();
 
         // Default subject based on template type
-        $defaultSubject = $this->getDefaultSubject($key);
-        $defaultBody = $this->getDefaultTemplateHtml($key);
+        $defaultSubject = self::getDefaultSubject($key);
+        $defaultBody = self::getDefaultTemplateHtml($key);
 
         return view('host.settings.communication.email-templates.edit', [
             'template' => $template,
@@ -327,10 +349,11 @@ class EmailTemplateController extends Controller
     /**
      * Get default subject for a template key
      */
-    protected function getDefaultSubject(string $key): string
+    public static function getDefaultSubject(string $key): string
     {
         $subjects = [
             'booking_confirmation' => 'Your Booking is Confirmed - {{class_name}}',
+            'booking_received' => 'Booking Received — Payment Required ({{class_name}})',
             'payment_receipt' => 'Payment Receipt - Invoice #{{invoice_number}}',
             'waitlist_confirmation' => "You're on the Waitlist - {{class_name}}",
             'waitlist_spot_available' => 'A Spot is Available! - {{class_name}}',
@@ -420,8 +443,8 @@ class EmailTemplateController extends Controller
                 $subject = $subject ?: $template->subject;
                 $bodyContent = $bodyContent ?: $template->body_html;
             } else {
-                $subject = $subject ?: $this->getDefaultSubject($key);
-                $bodyContent = $bodyContent ?: $this->getDefaultTemplateHtml($key);
+                $subject = $subject ?: self::getDefaultSubject($key);
+                $bodyContent = $bodyContent ?: self::getDefaultTemplateHtml($key);
             }
         }
 
@@ -613,6 +636,7 @@ class EmailTemplateController extends Controller
             'total_amount' => '$27.50',
             'transaction_id' => 'TXN_' . strtoupper(substr(md5(time()), 0, 12)),
             'payment_date' => now()->format('F j, Y'),
+            'payment_instructions' => 'Please complete your payment using the method you selected to secure your booking. Contact the studio if you need payment details.',
             'download_invoice_link' => url('/portal/invoices/sample/download'),
             'position_number' => '3',
             'confirm_link' => url('/book/confirm/sample'),
@@ -651,7 +675,7 @@ class EmailTemplateController extends Controller
     /**
      * Get default template HTML for a key
      */
-    protected function getDefaultTemplateHtml(string $key): string
+    public static function getDefaultTemplateHtml(string $key): string
     {
         $defaults = [
             'booking_confirmation' => '<h2>Booking Confirmed!</h2>
@@ -666,6 +690,24 @@ class EmailTemplateController extends Controller
 </ul>
 <p>Booking Reference: {{booking_id}}</p>
 <p>See you soon!</p>
+<p>{{studio_name}}</p>',
+
+            'booking_received' => '<h2>Booking Received</h2>
+<p>Hi {{customer_name}},</p>
+<p>We\'ve received your booking request. Please complete payment to secure your spot.</p>
+<ul>
+    <li><strong>Booking ID:</strong> {{booking_id}}</li>
+    <li><strong>Class:</strong> {{class_name}}</li>
+    <li><strong>Date:</strong> {{class_date}}</li>
+    <li><strong>Time:</strong> {{class_time}}</li>
+    <li><strong>Instructor:</strong> {{instructor_name}}</li>
+    <li><strong>Location:</strong> {{location}}</li>
+    <li><strong>Amount Due:</strong> {{total_amount}}</li>
+    <li><strong>Payment Method:</strong> {{payment_method}}</li>
+    <li><strong>Transaction ID:</strong> {{transaction_id}}</li>
+</ul>
+<p>{{payment_instructions}}</p>
+<p>If you have any questions, reply to this email or call us at {{studio_phone}}.</p>
 <p>{{studio_name}}</p>',
 
             'payment_receipt' => '<h2>Payment Receipt</h2>
