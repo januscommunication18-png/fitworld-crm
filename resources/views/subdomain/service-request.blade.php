@@ -55,114 +55,65 @@
             <form action="{{ route('subdomain.service-request.store', ['subdomain' => $host->subdomain]) }}" method="POST" class="space-y-6">
                 @csrf
 
-                {{-- Booking Type Selection --}}
+                {{-- Offering Selection --}}
                 <div class="space-y-4">
                     <h3 class="font-semibold text-base-content flex items-center gap-2">
                         <span class="icon-[tabler--category] size-5 text-primary"></span>
-                        What would you like to book?
+                        What would you like to ask about?
                     </h3>
 
-                    {{-- Type Tabs --}}
-                    <div class="tabs tabs-boxed bg-base-200 p-1 w-fit">
-                        <button type="button" id="tab-service" class="tab tab-active" onclick="switchTab('service')">
-                            <span class="icon-[tabler--sparkles] size-4 mr-1"></span>
-                            Service
-                        </button>
-                        <button type="button" id="tab-class" class="tab" onclick="switchTab('class')">
-                            <span class="icon-[tabler--yoga] size-4 mr-1"></span>
-                            Class
-                        </button>
-                    </div>
+                    @php $selectedAlias = old('requested_type_alias', $selectedAlias ?? null); @endphp
 
-                    <input type="hidden" name="booking_type" id="booking_type" value="{{ old('booking_type', 'service') }}">
+                    @if(!empty($offeringsByType))
+                        @php $selectedOfferingId = old('requested_offering_id', $selectedOfferingId ?? null); @endphp
 
-                    {{-- Service Dropdown --}}
-                    <div id="service-section" class="{{ old('booking_type') === 'class' ? 'hidden' : '' }}">
-                        <label class="label">
-                            <span class="label-text font-medium">Service <span class="text-error">*</span></span>
-                        </label>
-                        <div class="relative w-full" id="service-dropdown">
-                            <div class="select select-bordered w-full flex items-center justify-between cursor-pointer" id="service-display" onclick="toggleDropdown('service')">
-                                <span id="service-text">{{ $selectedServicePlan ? $selectedServicePlan->name : 'Search or select a service...' }}</span>
-                                <span class="icon-[tabler--chevron-down] size-4"></span>
-                            </div>
-                            <div id="service-dropdown-content" class="hidden absolute left-0 right-0 bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
-                                <div class="p-2 border-b border-base-200">
-                                    <input type="text" id="service-search" placeholder="Search services..."
-                                           class="input input-bordered input-sm w-full"
-                                           onkeyup="filterServices()">
-                                </div>
-                                <ul class="menu p-2 max-h-60 overflow-y-auto" id="service-list">
-                                    @foreach($servicePlans as $plan)
-                                    <li>
-                                        <a href="javascript:void(0)"
-                                           onclick="selectService({{ $plan->id }}, '{{ addslashes($plan->name) }}', {{ $plan->price ?? 0 }}, {{ $plan->duration_minutes ?? 0 }})"
-                                           class="service-item flex justify-between items-center"
-                                           data-name="{{ strtolower($plan->name) }}">
-                                            <span>{{ $plan->name }}</span>
-                                            <span class="text-sm text-base-content/60">
-                                                @php $servicePrice = $plan->getPriceForCurrency($selectedCurrency); @endphp
-                                                @if($servicePrice){{ $currencySymbol }}{{ number_format($servicePrice, 0) }}@endif
-                                                @if($plan->duration_minutes) · {{ $plan->duration_minutes }}min @endif
-                                            </span>
-                                        </a>
-                                    </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </div>
-                        <input type="hidden" name="service_plan_id" id="service_plan_id" value="{{ old('service_plan_id', $selectedServicePlan?->id) }}">
-                        @error('service_plan_id')
-                            <span class="text-error text-sm mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    {{-- Class Dropdown --}}
-                    <div id="class-section" class="{{ old('booking_type') !== 'class' ? 'hidden' : '' }}">
-                        <label class="label">
-                            <span class="label-text font-medium">Class <span class="text-error">*</span></span>
-                        </label>
-                        <div class="relative w-full" id="class-dropdown">
-                            <div class="select select-bordered w-full flex items-center justify-between cursor-pointer" id="class-display" onclick="toggleDropdown('class')">
-                                <span id="class-text">Search or select a class...</span>
-                                <span class="icon-[tabler--chevron-down] size-4"></span>
-                            </div>
-                            <div id="class-dropdown-content" class="hidden absolute left-0 right-0 bg-base-100 rounded-box shadow-lg border border-base-200 w-full mt-1 z-50 max-h-80 overflow-hidden">
-                                <div class="p-2 border-b border-base-200">
-                                    <input type="text" id="class-search" placeholder="Search classes..."
-                                           class="input input-bordered input-sm w-full"
-                                           onkeyup="filterClasses()">
-                                </div>
-                                <ul class="menu p-2 max-h-60 overflow-y-auto" id="class-list">
-                                    @foreach($classPlans ?? [] as $plan)
-                                    <li>
-                                        <a href="javascript:void(0)"
-                                           onclick="selectClass({{ $plan->id }}, '{{ addslashes($plan->name) }}')"
-                                           class="class-item"
-                                           data-name="{{ strtolower($plan->name) }}">
-                                            <span>{{ $plan->name }}</span>
-                                        </a>
-                                    </li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        </div>
-                        <input type="hidden" name="class_plan_id" id="class_plan_id" value="{{ old('class_plan_id') }}">
-                        @error('class_plan_id')
-                            <span class="text-error text-sm mt-1">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    {{-- Selected Item Info --}}
-                    <div id="selected-info" class="alert bg-primary/10 border-primary/20 {{ !$selectedServicePlan ? 'hidden' : '' }}">
-                        <span class="icon-[tabler--info-circle] size-5 text-primary"></span>
+                        {{-- Step 1: Category --}}
                         <div>
-                            <span class="font-medium" id="selected-name">{{ $selectedServicePlan?->name }}</span>
-                            <p class="text-sm mt-1" id="selected-details">
-                                @if($selectedServicePlan?->description){{ $selectedServicePlan->description }}@endif
-                            </p>
+                            <label for="requested_type_alias" class="label">
+                                <span class="label-text font-medium">Category <span class="text-error">*</span></span>
+                            </label>
+                            <select id="requested_type_alias" name="requested_type_alias"
+                                    class="select select-bordered w-full @error('requested_type_alias') select-error @enderror" required>
+                                <option value="">Select a category...</option>
+                                @foreach($offeringsByType as $alias => $group)
+                                    <option value="{{ $alias }}" {{ $selectedAlias === $alias ? 'selected' : '' }}>{{ $group['label'] }}</option>
+                                @endforeach
+                            </select>
+                            @error('requested_type_alias')
+                                <span class="text-error text-sm mt-1">{{ $message }}</span>
+                            @enderror
                         </div>
-                    </div>
+
+                        {{-- Step 2: Per-category offering picker. Only the one matching the
+                              chosen category is shown; its inner select writes the value into
+                              the single hidden #requested_offering_id input the form posts. --}}
+                        <input type="hidden" name="requested_offering_id" id="requested_offering_id" value="{{ $selectedOfferingId }}">
+                        <div id="offering-pickers" class="{{ $selectedAlias ? '' : 'hidden' }}">
+                            @foreach($offeringsByType as $alias => $group)
+                                @php $isActiveAlias = $selectedAlias === $alias; @endphp
+                                <div data-offering-picker="{{ $alias }}" class="{{ $isActiveAlias ? '' : 'hidden' }}">
+                                    <label class="label">
+                                        <span class="label-text font-medium">{{ $group['label'] }} <span class="text-error">*</span></span>
+                                    </label>
+                                    <select data-inner-offering
+                                            class="select select-bordered w-full @error('requested_offering_id') select-error @enderror">
+                                        <option value="">Select a {{ strtolower($group['label']) }}...</option>
+                                        @foreach($group['items'] as $item)
+                                            <option value="{{ $item->id }}" {{ $isActiveAlias && (string) $selectedOfferingId === (string) $item->id ? 'selected' : '' }}>{{ $item->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endforeach
+                            @error('requested_offering_id')
+                                <span class="text-error text-sm mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    @else
+                        <div class="alert alert-info">
+                            <span class="icon-[tabler--info-circle] size-5"></span>
+                            <span>Tell us what you're interested in using the message box below and we'll be in touch.</span>
+                        </div>
+                    @endif
                 </div>
 
                 {{-- Contact Information --}}
@@ -282,134 +233,48 @@
 </div>
 
 <script>
-function switchTab(type) {
-    const serviceTab = document.getElementById('tab-service');
-    const classTab = document.getElementById('tab-class');
-    const serviceSection = document.getElementById('service-section');
-    const classSection = document.getElementById('class-section');
-    const bookingType = document.getElementById('booking_type');
+// Two-step offering picker: the category select drives which inner picker is
+// shown. Each inner select copies its value into the single hidden
+// #requested_offering_id input that the form actually posts; switching category
+// clears the previous selection so the server never gets a value from the
+// wrong type.
+document.addEventListener('DOMContentLoaded', function () {
+    const typeSelect = document.getElementById('requested_type_alias');
+    const offeringHidden = document.getElementById('requested_offering_id');
+    const pickersWrap = document.getElementById('offering-pickers');
+    if (!typeSelect || !offeringHidden || !pickersWrap) return;
 
-    // Close any open dropdowns
-    closeAllDropdowns();
+    const pickers = pickersWrap.querySelectorAll('[data-offering-picker]');
 
-    if (type === 'service') {
-        serviceTab.classList.add('tab-active');
-        classTab.classList.remove('tab-active');
-        serviceSection.classList.remove('hidden');
-        classSection.classList.add('hidden');
-        bookingType.value = 'service';
-    } else {
-        classTab.classList.add('tab-active');
-        serviceTab.classList.remove('tab-active');
-        classSection.classList.remove('hidden');
-        serviceSection.classList.add('hidden');
-        bookingType.value = 'class';
+    function showPickerFor(alias) {
+        pickers.forEach(p => {
+            const matches = p.dataset.offeringPicker === alias;
+            p.classList.toggle('hidden', !matches);
+            if (!matches) {
+                const inner = p.querySelector('[data-inner-offering]');
+                if (inner && inner.value) inner.value = '';
+            }
+        });
+        pickersWrap.classList.toggle('hidden', !alias);
     }
 
-    // Hide selected info when switching
-    document.getElementById('selected-info').classList.add('hidden');
-}
-
-function toggleDropdown(type) {
-    const dropdown = document.getElementById(type + '-dropdown-content');
-    const isHidden = dropdown.classList.contains('hidden');
-
-    // Close all dropdowns first
-    closeAllDropdowns();
-
-    // Toggle this one
-    if (isHidden) {
-        dropdown.classList.remove('hidden');
-        // Focus search input
-        setTimeout(() => {
-            document.getElementById(type + '-search').focus();
-        }, 50);
-    }
-}
-
-function closeAllDropdowns() {
-    document.getElementById('service-dropdown-content')?.classList.add('hidden');
-    document.getElementById('class-dropdown-content')?.classList.add('hidden');
-}
-
-function selectService(id, name, price, duration) {
-    document.getElementById('service_plan_id').value = id;
-    document.getElementById('service-text').textContent = name;
-
-    // Show selected info
-    const infoDiv = document.getElementById('selected-info');
-    document.getElementById('selected-name').textContent = name;
-    let details = '';
-    if (price > 0) details += '$' + price;
-    if (duration > 0) details += (details ? ' · ' : '') + duration + ' minutes';
-    document.getElementById('selected-details').textContent = details;
-    infoDiv.classList.remove('hidden');
-
-    // Close dropdown
-    closeAllDropdowns();
-}
-
-function selectClass(id, name) {
-    document.getElementById('class_plan_id').value = id;
-    document.getElementById('class-text').textContent = name;
-
-    // Show selected info
-    const infoDiv = document.getElementById('selected-info');
-    document.getElementById('selected-name').textContent = name;
-    document.getElementById('selected-details').textContent = 'Group fitness class';
-    infoDiv.classList.remove('hidden');
-
-    // Close dropdown
-    closeAllDropdowns();
-}
-
-function filterServices() {
-    const search = document.getElementById('service-search').value.toLowerCase();
-    const items = document.querySelectorAll('.service-item');
-
-    items.forEach(item => {
-        const name = item.getAttribute('data-name');
-        if (name.includes(search)) {
-            item.parentElement.style.display = '';
-        } else {
-            item.parentElement.style.display = 'none';
-        }
+    typeSelect.addEventListener('change', function () {
+        offeringHidden.value = '';
+        showPickerFor(this.value);
     });
-}
 
-function filterClasses() {
-    const search = document.getElementById('class-search').value.toLowerCase();
-    const items = document.querySelectorAll('.class-item');
-
-    items.forEach(item => {
-        const name = item.getAttribute('data-name');
-        if (name.includes(search)) {
-            item.parentElement.style.display = '';
-        } else {
-            item.parentElement.style.display = 'none';
-        }
+    pickers.forEach(picker => {
+        const inner = picker.querySelector('[data-inner-offering]');
+        if (!inner) return;
+        inner.addEventListener('change', function () {
+            if (picker.dataset.offeringPicker === typeSelect.value) {
+                offeringHidden.value = this.value || '';
+            }
+        });
     });
-}
 
-// Close dropdowns when clicking outside
-document.addEventListener('click', function(e) {
-    const serviceDropdown = document.getElementById('service-dropdown');
-    const classDropdown = document.getElementById('class-dropdown');
-
-    if (serviceDropdown && !serviceDropdown.contains(e.target)) {
-        document.getElementById('service-dropdown-content')?.classList.add('hidden');
-    }
-    if (classDropdown && !classDropdown.contains(e.target)) {
-        document.getElementById('class-dropdown-content')?.classList.add('hidden');
-    }
-});
-
-// Initialize based on old input
-document.addEventListener('DOMContentLoaded', function() {
-    const bookingType = '{{ old('booking_type', 'service') }}';
-    if (bookingType === 'class') {
-        switchTab('class');
-    }
+    // Initial state (handles pre-selection and validation round-trips).
+    showPickerFor(typeSelect.value);
 });
 </script>
 @endsection

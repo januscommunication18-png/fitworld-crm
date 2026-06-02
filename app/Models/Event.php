@@ -225,6 +225,25 @@ class Event extends Model
         return implode(', ', $parts);
     }
 
+    /**
+     * Public URL for the event's cover image. cover_image may be stored either
+     * as a ready-to-use public path (e.g. "/storage/…") or as a disk-relative
+     * path; only wrap the latter in Storage::url() so we never produce a
+     * doubled "/storage/storage/…" URL.
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->cover_image) {
+            return null;
+        }
+
+        if (\Illuminate\Support\Str::startsWith($this->cover_image, ['http://', 'https://', '/'])) {
+            return $this->cover_image;
+        }
+
+        return \Illuminate\Support\Facades\Storage::disk(config('filesystems.uploads'))->url($this->cover_image);
+    }
+
     public function getFormattedDateAttribute(): string
     {
         if (!$this->start_datetime || !$this->end_datetime) {

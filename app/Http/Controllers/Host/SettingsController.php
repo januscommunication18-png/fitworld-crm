@@ -786,6 +786,7 @@ class SettingsController extends Controller
 
         $validated = $request->validate([
             'accept_cards' => 'boolean',
+            'card_processor' => 'nullable|in:stripe_platform,stripe_own,square,paypal_own',
             'accept_cash' => 'boolean',
             'currency' => 'nullable|string|size:3',
             'send_receipts' => 'boolean',
@@ -794,6 +795,18 @@ class SettingsController extends Controller
             'manual_methods' => 'nullable|array',
             'manual_methods.*.enabled' => 'boolean',
             'manual_methods.*.instructions' => 'nullable|string|max:500',
+            // Card-processor credentials (stored on host columns, not in the JSON).
+            'stripe_own_publishable_key' => 'nullable|string|max:255',
+            'stripe_own_secret_key' => 'nullable|string|max:255',
+            'stripe_own_webhook_secret' => 'nullable|string|max:255',
+            'square_environment' => 'nullable|in:sandbox,production',
+            'square_application_id' => 'nullable|string|max:255',
+            'square_access_token' => 'nullable|string|max:512',
+            'square_location_id' => 'nullable|string|max:255',
+            'paypal_environment' => 'nullable|in:sandbox,live',
+            'paypal_client_id' => 'nullable|string|max:255',
+            'paypal_client_secret' => 'nullable|string|max:255',
+            'paypal_webhook_id' => 'nullable|string|max:255',
         ]);
 
         // Ensure boolean fields are properly cast
@@ -808,7 +821,33 @@ class SettingsController extends Controller
             }
         }
 
-        $host->update(['payment_settings' => $validated]);
+        // Credentials live in dedicated (encrypted) host columns, never in the
+        // payment_settings JSON blob.
+        $credentialKeys = [
+            'stripe_own_publishable_key', 'stripe_own_secret_key', 'stripe_own_webhook_secret',
+            'square_environment', 'square_application_id', 'square_access_token', 'square_location_id',
+            'paypal_environment', 'paypal_client_id', 'paypal_client_secret', 'paypal_webhook_id',
+        ];
+        $host->payment_settings = \Illuminate\Support\Arr::except($validated, $credentialKeys);
+
+        // Non-secret credentials round-trip through the form, so set them directly.
+        $host->stripe_own_publishable_key = $validated['stripe_own_publishable_key'] ?? null;
+        $host->square_environment = $validated['square_environment'] ?? null;
+        $host->square_application_id = $validated['square_application_id'] ?? null;
+        $host->square_location_id = $validated['square_location_id'] ?? null;
+        $host->paypal_environment = $validated['paypal_environment'] ?? null;
+        $host->paypal_client_id = $validated['paypal_client_id'] ?? null;
+        $host->paypal_webhook_id = $validated['paypal_webhook_id'] ?? null;
+
+        // Secrets are write-only in the UI: only overwrite when a new value is
+        // submitted, so an empty field keeps the currently stored secret.
+        foreach (['stripe_own_secret_key', 'stripe_own_webhook_secret', 'square_access_token', 'paypal_client_secret'] as $secret) {
+            if (!empty($validated[$secret])) {
+                $host->{$secret} = $validated[$secret];
+            }
+        }
+
+        $host->save();
 
         return response()->json([
             'success' => true,

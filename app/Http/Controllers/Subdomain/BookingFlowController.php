@@ -7,6 +7,8 @@ use App\Models\ClassPack;
 use App\Models\ClassPlan;
 use App\Models\ClassSession;
 use App\Models\Client;
+use App\Models\Event;
+use App\Models\EventAttendee;
 use App\Models\Host;
 use App\Models\CustomerMembership;
 use App\Models\MembershipPlan;
@@ -494,21 +496,115 @@ class BookingFlowController extends Controller
 
         // Get selected currency from session
         $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $price = $servicePlan->getPriceForCurrency($currency) ?? (float) ($servicePlan->price ?? 0);
 
-        // Store in booking state
+        // Store in booking state — default to single. Series shape mirrors class_plan.
         $this->bookingService->setBookingType($request, 'service_booking');
         $this->bookingService->setSelectedItem($request, [
             'type' => 'service_plan',
             'id' => $servicePlan->id,
+            'service_plan_id' => $servicePlan->id,
             'name' => $servicePlan->name,
-            'price' => $servicePlan->price ?? 0,
+            'price' => $price,
+            'original_price' => $price,
             'currency' => $currency,
             'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
             'duration' => $servicePlan->duration_minutes,
             'description' => $servicePlan->description,
+            'service_booking_type' => 'single',
+            'billing_discounts' => $this->buildServiceBillingDiscountsForCurrency($servicePlan, $currency),
+            'has_series_option' => $servicePlan->hasSeriesOptionForCurrency($currency),
         ]);
 
         return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
+     * Build the [period => total] map a service plan exposes for the chosen
+     * currency. Mirrors buildBillingDiscountsForCurrency for class plans.
+     *
+     * @return array<string, float>
+     */
+    protected function buildServiceBillingDiscountsForCurrency(ServicePlan $servicePlan, string $currency): array
+    {
+        $out = [];
+        foreach (['1', '3', '6', '9', '12'] as $months) {
+            $out[$months] = $servicePlan->getBillingPeriodTotalForCurrency($months, $currency);
+        }
+        return $out;
+    }
+
+    /**
+     * Update service-plan booking type (AJAX from contact page) — mirrors
+     * processClassPlanType for the service-plan flavour.
+     */
+    public function processServicePlanType(Request $request)
+    {
+        $host = $this->getHost($request);
+        $servicePlanId = $request->route('servicePlan');
+
+        $servicePlan = ServicePlan::where('host_id', $host->id)
+            ->where('is_active', true)
+            ->findOrFail($servicePlanId);
+
+        $validated = $request->validate([
+            'service_booking_type' => 'required|in:single,series',
+            'billing_period' => 'required_if:service_booking_type,series|nullable|integer|in:1,3,6,9,12',
+        ]);
+
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $currencySymbol = MembershipPlan::getCurrencySymbol($currency);
+        $bookingType = $validated['service_booking_type'];
+        $basePrice = $servicePlan->getPriceForCurrency($currency) ?? (float) ($servicePlan->price ?? 0);
+
+        if ($bookingType === 'single') {
+            $this->bookingService->setBookingType($request, 'service_booking');
+            $this->bookingService->setSelectedItem($request, [
+                'type' => 'service_plan',
+                'id' => $servicePlan->id,
+                'service_plan_id' => $servicePlan->id,
+                'name' => $servicePlan->name,
+                'price' => $basePrice,
+                'original_price' => $basePrice,
+                'currency' => $currency,
+                'currency_symbol' => $currencySymbol,
+                'duration' => $servicePlan->duration_minutes,
+                'description' => $servicePlan->description,
+                'service_booking_type' => 'single',
+                'billing_discounts' => $this->buildServiceBillingDiscountsForCurrency($servicePlan, $currency),
+                'has_series_option' => $servicePlan->hasSeriesOptionForCurrency($currency),
+            ]);
+        } else {
+            $billingPeriod = (int) $validated['billing_period'];
+            $totalPrice = $servicePlan->getBillingPeriodTotalForCurrency($billingPeriod, $currency);
+            if ($totalPrice <= 0) {
+                $totalPrice = $basePrice * $billingPeriod;
+            }
+
+            $this->bookingService->setBookingType($request, 'service_booking');
+            $this->bookingService->setSelectedItem($request, [
+                'type' => 'service_plan',
+                'id' => $servicePlan->id,
+                'service_plan_id' => $servicePlan->id,
+                'name' => $servicePlan->name . ' — ' . $billingPeriod . ' Month Series',
+                'price' => $totalPrice,
+                'original_price' => $basePrice * $billingPeriod,
+                'currency' => $currency,
+                'currency_symbol' => $currencySymbol,
+                'duration' => $servicePlan->duration_minutes,
+                'description' => $servicePlan->description,
+                'service_booking_type' => 'series',
+                'billing_period' => $billingPeriod . ' months',
+                'billing_discounts' => $this->buildServiceBillingDiscountsForCurrency($servicePlan, $currency),
+                'has_series_option' => true,
+            ]);
+        }
+
+        $state = $this->bookingService->getState($request);
+        return response()->json([
+            'success' => true,
+            'item' => $state['selected_item'] ?? null,
+        ]);
     }
 
     /**
@@ -595,6 +691,7 @@ class BookingFlowController extends Controller
             'id' => $plan->id,
             'name' => $plan->name,
             'price' => $price,
+            'original_price' => $price,
             'currency' => $currency,
             'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
             'billing_period' => $plan->interval === 'monthly' ? 'per month' : 'per year',
@@ -602,9 +699,88 @@ class BookingFlowController extends Controller
             'membership_type' => $plan->type, // unlimited or credits
             'credits_per_cycle' => $plan->credits_per_cycle,
             'description' => $plan->description,
+            // Multi-month prepay options for the contact-page period picker.
+            'membership_billing_discounts' => $this->buildMembershipBillingDiscountsForCurrency($plan, $currency),
+            'has_billing_options' => $plan->hasBillingPeriodOptionsForCurrency($currency),
+            'selected_months' => 1,
         ]);
 
         return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
+     * Flatten a membership plan's billing_discounts to a plain [months => total]
+     * map for the selected currency. Guarantees a "1 month" base entry so the
+     * picker always has a default option.
+     *
+     * @return array<string, float>
+     */
+    protected function buildMembershipBillingDiscountsForCurrency(MembershipPlan $plan, string $currency): array
+    {
+        $out = [];
+        foreach (['1', '3', '6', '9', '12'] as $months) {
+            $out[$months] = $plan->getBillingPeriodTotalForCurrency($months, $currency);
+        }
+        if (($out['1'] ?? 0) <= 0) {
+            $out['1'] = (float) ($plan->getPriceForCurrency($currency) ?? 0);
+        }
+        return $out;
+    }
+
+    /**
+     * Update membership billing period (AJAX from the contact page). Recomputes
+     * the price for the chosen prepay window and stores it on the booking state.
+     */
+    public function processMembershipPlanType(Request $request)
+    {
+        $host = $this->getHost($request);
+        $planId = $request->route('plan');
+
+        $plan = MembershipPlan::where('host_id', $host->id)
+            ->where('status', 'active')
+            ->findOrFail($planId);
+
+        $validated = $request->validate([
+            'billing_period' => 'required|integer|in:1,3,6,9,12',
+        ]);
+
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+        $currencySymbol = MembershipPlan::getCurrencySymbol($currency);
+        $months = (int) $validated['billing_period'];
+
+        $basePrice = $plan->getPriceForCurrency($currency) ?? 0;
+        $total = $plan->getBillingPeriodTotalForCurrency($months, $currency);
+        if ($total <= 0) {
+            $total = $months === 1 ? $basePrice : $basePrice * $months;
+        }
+
+        $intervalLabel = $plan->interval === 'monthly' ? 'per month' : 'per year';
+
+        $this->bookingService->setBookingType($request, 'membership_plan');
+        $this->bookingService->setSelectedItem($request, [
+            'type' => 'membership_plan',
+            'id' => $plan->id,
+            'name' => $plan->name . ($months > 1 ? " — {$months} Month Plan" : ''),
+            'price' => $total,
+            'original_price' => $basePrice,
+            'currency' => $currency,
+            'currency_symbol' => $currencySymbol,
+            // "N months" for prepay windows so the transaction metadata can be
+            // parsed back to a month count when activating the membership.
+            'billing_period' => $months > 1 ? "{$months} months" : $intervalLabel,
+            'interval' => $plan->interval,
+            'membership_type' => $plan->type,
+            'credits_per_cycle' => $plan->credits_per_cycle,
+            'description' => $plan->description,
+            'membership_billing_discounts' => $this->buildMembershipBillingDiscountsForCurrency($plan, $currency),
+            'has_billing_options' => $plan->hasBillingPeriodOptionsForCurrency($currency),
+            'selected_months' => $months,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'item' => $this->bookingService->getState($request)['selected_item'],
+        ]);
     }
 
     /**
@@ -653,6 +829,59 @@ class BookingFlowController extends Controller
     }
 
     /**
+     * Enter the booking flow for a (free) event registration. Mirrors the
+     * membership/class-pack entry points: validates the event, stores it as the
+     * selected item, then hands off to the shared contact-info step. Events have
+     * no price, so the flow finalises right after contact info (see
+     * saveContactInfo) instead of going through the payment step.
+     */
+    public function selectEvent(Request $request)
+    {
+        $host = $this->getHost($request);
+        if ($redirect = $this->requiresMemberAuth($request, $host)) return $redirect;
+
+        $eventId = $request->route('event');
+        $event = Event::where('id', $eventId)
+            ->where('host_id', $host->id)
+            ->where('visibility', 'public')
+            ->where('status', Event::STATUS_PUBLISHED)
+            ->firstOrFail();
+
+        // Block registration for events that have already started.
+        if ($event->start_datetime < now()) {
+            return redirect()->route('subdomain.event', ['subdomain' => $host->subdomain, 'event' => $event->id])
+                ->with('error', 'This event is no longer accepting registrations.');
+        }
+
+        // Block when the event is at capacity.
+        if ($event->capacity && $event->registeredAttendees()->count() >= $event->capacity) {
+            return redirect()->route('subdomain.event', ['subdomain' => $host->subdomain, 'event' => $event->id])
+                ->with('error', 'Sorry, this event is full.');
+        }
+
+        $currency = $request->session()->get("currency_{$host->id}", $host->default_currency ?? 'USD');
+
+        // Build a human-readable location for the summary/confirmation views.
+        $location = $event->event_type === 'online'
+            ? ($event->online_platform ? 'Online · ' . $event->online_platform : 'Online')
+            : ($event->venue_name ?: $event->full_address ?: null);
+
+        $this->bookingService->setBookingType($request, 'event');
+        $this->bookingService->setSelectedItem($request, [
+            'type' => 'event',
+            'id' => $event->id,
+            'name' => $event->title,
+            'price' => 0,
+            'currency' => $currency,
+            'currency_symbol' => MembershipPlan::getCurrencySymbol($currency),
+            'datetime' => $event->start_datetime->format('M j, Y g:i A'),
+            'location' => $location,
+        ]);
+
+        return redirect()->route('booking.contact', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
      * Step 2: Contact Information
      */
     public function contactInfo(Request $request)
@@ -686,6 +915,7 @@ class BookingFlowController extends Controller
         // filter by capacity here — fully-booked sessions still appear, the
         // option just notes "(waitlist)" so members can opt in.
         $sessions = collect();
+        $serviceSlots = collect();
         $selectedItem = $bookingState['selected_item'];
         if (($selectedItem['type'] ?? null) === 'class_plan' && !empty($selectedItem['class_plan_id'])) {
             $sessions = \App\Models\ClassSession::where('host_id', $host->id)
@@ -693,6 +923,18 @@ class BookingFlowController extends Controller
                 ->where('status', \App\Models\ClassSession::STATUS_PUBLISHED)
                 ->upcoming()
                 ->with(['primaryInstructor', 'room.location'])
+                ->orderBy('start_time')
+                ->limit(60)
+                ->get();
+        } elseif (($selectedItem['type'] ?? null) === 'service_plan' && !empty($selectedItem['id'])) {
+            // Mirror the class-session picker: available, upcoming slots for
+            // the chosen service plan so the customer can pick a time before
+            // payment instead of "to be scheduled".
+            $serviceSlots = \App\Models\ServiceSlot::where('host_id', $host->id)
+                ->where('service_plan_id', $selectedItem['id'])
+                ->available()
+                ->upcoming()
+                ->with(['instructor', 'location'])
                 ->orderBy('start_time')
                 ->limit(60)
                 ->get();
@@ -704,6 +946,7 @@ class BookingFlowController extends Controller
             'prefillData' => $prefillData,
             'isLoggedIn' => (bool) $member,
             'sessions' => $sessions,
+            'serviceSlots' => $serviceSlots,
         ]);
     }
 
@@ -720,6 +963,7 @@ class BookingFlowController extends Controller
             'email' => 'required|email|max:255',
             'phone' => 'required|string|max:50',
             'class_session_id' => 'nullable|integer',
+            'service_slot_id' => 'nullable|integer',
         ]);
 
         // Store contact info in session
@@ -730,11 +974,18 @@ class BookingFlowController extends Controller
             'phone' => $validated['phone'],
         ]);
 
+        $state = $this->bookingService->getState($request);
+        $selectedItem = $state['selected_item'] ?? [];
+
+        // Events are free, so there is no payment step: finalise the
+        // registration here and jump straight to the confirmation page.
+        if (($selectedItem['type'] ?? null) === 'event') {
+            return $this->finalizeEventRegistration($request, $host, $selectedItem);
+        }
+
         // For class_plan + single bookings, the customer also picked a specific
         // session — validate it belongs to this host/class plan, then merge into
         // selected_item so payment + confirmation know which session to book.
-        $state = $this->bookingService->getState($request);
-        $selectedItem = $state['selected_item'] ?? [];
         $isSingleClassPlan = ($selectedItem['type'] ?? null) === 'class_plan'
             && ($selectedItem['class_booking_type'] ?? 'single') === 'single';
 
@@ -759,7 +1010,111 @@ class BookingFlowController extends Controller
             $this->bookingService->setSelectedItem($request, $selectedItem);
         }
 
+        // For service_plan bookings the customer picks a slot only when buying
+        // a single session — series purchases prepay for N months and skip the
+        // slot picker. Mirror class_plan's single/series gating.
+        $isServicePlanSingle = ($selectedItem['type'] ?? null) === 'service_plan'
+            && ($selectedItem['service_booking_type'] ?? 'single') === 'single';
+
+        if ($isServicePlanSingle) {
+            if (empty($validated['service_slot_id'])) {
+                return back()->withInput()
+                    ->withErrors(['service_slot_id' => 'Please pick a time slot before continuing.']);
+            }
+            $slot = \App\Models\ServiceSlot::where('host_id', $host->id)
+                ->where('service_plan_id', $selectedItem['id'] ?? null)
+                ->available()
+                ->find((int) $validated['service_slot_id']);
+            if (!$slot) {
+                return back()->withInput()
+                    ->withErrors(['service_slot_id' => 'That slot is no longer available — please pick another.']);
+            }
+
+            $selectedItem['service_plan_id'] = $selectedItem['id'];
+            $selectedItem['service_slot_id'] = $slot->id;
+            $selectedItem['datetime'] = $slot->start_time->format('M j, Y g:i A');
+            $selectedItem['instructor'] = $slot->instructor?->name;
+            $selectedItem['location'] = $slot->location?->name;
+            $this->bookingService->setSelectedItem($request, $selectedItem);
+        }
+
         return redirect()->route('booking.payment', ['subdomain' => $host->subdomain]);
+    }
+
+    /**
+     * Finalise a free event registration: create the EventAttendee plus a $0
+     * "comp" transaction so the booking shares the same confirmation page and
+     * email as paid bookings. Called from saveContactInfo for event items so the
+     * flow skips the payment step entirely.
+     */
+    protected function finalizeEventRegistration(Request $request, Host $host, array $selectedItem)
+    {
+        $event = Event::where('id', $selectedItem['id'] ?? null)
+            ->where('host_id', $host->id)
+            ->where('visibility', 'public')
+            ->where('status', Event::STATUS_PUBLISHED)
+            ->first();
+
+        $eventUrl = $event
+            ? route('subdomain.event', ['subdomain' => $host->subdomain, 'event' => $event->id])
+            : route('subdomain.home', ['subdomain' => $host->subdomain]);
+
+        if (!$event || $event->start_datetime < now()) {
+            $this->bookingService->clearState($request);
+            return redirect($eventUrl)->with('error', 'This event is no longer accepting registrations.');
+        }
+
+        // Resolve the client from the contact info captured a moment ago.
+        $client = $this->bookingService->getOrCreateClient($request, $host);
+        if (!$client) {
+            return back()->with('error', 'Unable to complete your registration. Please try again.');
+        }
+
+        // Already registered? Send them back with a friendly note.
+        $existing = EventAttendee::where('event_id', $event->id)
+            ->where('client_id', $client->id)
+            ->whereNotIn('status', [EventAttendee::STATUS_CANCELLED])
+            ->first();
+        if ($existing) {
+            $this->bookingService->clearState($request);
+            return redirect($eventUrl)->with('error', 'You are already registered for this event.');
+        }
+
+        // Re-check capacity right before creating the attendee.
+        if ($event->capacity && $event->registeredAttendees()->count() >= $event->capacity) {
+            $this->bookingService->clearState($request);
+            return redirect($eventUrl)->with('error', 'Sorry, this event is full.');
+        }
+
+        EventAttendee::create([
+            'event_id' => $event->id,
+            'client_id' => $client->id,
+            'status' => EventAttendee::STATUS_REGISTERED,
+            'registered_at' => now(),
+        ]);
+
+        // Mirror paid bookings with a $0 comp transaction so the shared
+        // confirmation page + email work unchanged. Kept out of the studio's
+        // financial reports since no money changes hands.
+        $transaction = $this->transactionService->createFromBookingFlow(
+            $host,
+            $client,
+            $selectedItem,
+            Transaction::METHOD_COMP,
+            null
+        );
+        $transaction->update(['hide_from_books' => true]);
+        $transaction->markPaid();
+
+        $this->transactionService->sendConfirmationEmail($transaction->fresh());
+
+        $this->bookingService->clearState($request);
+        $this->markTransactionViewable($request, $transaction);
+
+        return redirect()->route('booking.confirmation', [
+            'subdomain' => $host->subdomain,
+            'transaction' => $transaction->id,
+        ]);
     }
 
     /**

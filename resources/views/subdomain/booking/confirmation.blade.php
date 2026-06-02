@@ -145,6 +145,14 @@
                                             Membership
                                         </span>
                                     </div>
+                                @elseif($transaction->type === 'event_registration')
+                                    <span class="text-2xl font-bold text-success">Free</span>
+                                    <div class="mt-1">
+                                        <span class="badge badge-success gap-1">
+                                            <span class="icon-[tabler--circle-check] size-3"></span>
+                                            Registered
+                                        </span>
+                                    </div>
                                 @else
                                     <span class="text-3xl font-bold text-primary">{{ $transaction->formatted_total }}</span>
                                     <div class="mt-1">

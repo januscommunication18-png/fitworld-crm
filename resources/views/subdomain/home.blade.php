@@ -181,8 +181,12 @@
             @php
                 $servicePrice = $service->getPriceForCurrency($selectedCurrency);
                 $svColor = $service->color ?? '#6366f1';
+                $serviceDetailUrl = route('subdomain.service-plan', ['subdomain' => $host->subdomain, 'servicePlan' => $service->id]);
             @endphp
             <div class="group relative bg-base-100 border border-base-200 rounded-2xl overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-200 flex flex-col">
+                {{-- Stretched link: whole card → detail page. Buttons sit above this on z-20. --}}
+                <a href="{{ $serviceDetailUrl }}" class="absolute inset-0 z-10" aria-label="{{ $service->name }} — view details"></a>
+
                 {{-- Image / placeholder banner --}}
                 @if($service->image_url)
                     <figure class="relative h-44 overflow-hidden bg-base-200">
@@ -194,9 +198,9 @@
                     </div>
                 @endif
 
-                <div class="p-5 flex flex-col flex-1">
+                <div class="p-5 relative flex flex-col flex-1">
                     <div class="flex items-start justify-between gap-3">
-                        <h3 class="text-lg font-semibold leading-tight flex-1 min-w-0">{{ $service->name }}</h3>
+                        <h3 class="text-lg font-semibold leading-tight group-hover:text-primary transition-colors flex-1 min-w-0">{{ $service->name }}</h3>
                         @if($servicePrice)
                         <div class="text-right shrink-0">
                             <div class="text-xl font-bold leading-none" style="color: {{ $svColor }};">
@@ -220,7 +224,7 @@
                     </div>
                     @endif
 
-                    <div class="flex items-center gap-2 mt-auto pt-4 border-t border-base-200" style="padding-top: 1rem; margin-top: 1.25rem;">
+                    <div class="relative z-20 flex items-center gap-2 mt-auto pt-4 border-t border-base-200" style="padding-top: 1rem; margin-top: 1.25rem;">
                         <form action="{{ route('booking.select-service-plan', ['subdomain' => $host->subdomain, 'servicePlan' => $service->id]) }}" method="POST" class="flex-1">
                             @csrf
                             <button type="submit" class="btn btn-primary btn-sm w-full">
@@ -254,8 +258,14 @@
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($classPasses as $pass)
-            @php $passPrice = $pass->getPriceForCurrency($selectedCurrency); @endphp
+            @php
+                $passPrice = $pass->getPriceForCurrency($selectedCurrency);
+                $passDetailUrl = route('subdomain.class-pass', ['subdomain' => $host->subdomain, 'classPass' => $pass->id]);
+            @endphp
             <div class="group relative bg-base-100 border border-base-200 rounded-2xl overflow-hidden hover:border-info/40 hover:shadow-lg transition-all duration-200 flex flex-col">
+                {{-- Stretched link: whole card → detail page. Buttons sit above this on z-20. --}}
+                <a href="{{ $passDetailUrl }}" class="absolute inset-0 z-10" aria-label="{{ $pass->name }} — view details"></a>
+
                 {{-- Image / placeholder banner --}}
                 @if($pass->image_url)
                     <figure class="relative h-44 overflow-hidden bg-base-200">
@@ -267,9 +277,9 @@
                     </div>
                 @endif
 
-                <div class="p-5 flex flex-col flex-1">
+                <div class="p-5 relative flex flex-col flex-1">
                     <div class="flex items-start justify-between gap-3">
-                        <h3 class="text-lg font-semibold leading-tight flex-1 min-w-0">{{ $pass->name }}</h3>
+                        <h3 class="text-lg font-semibold leading-tight group-hover:text-info transition-colors flex-1 min-w-0">{{ $pass->name }}</h3>
                         @if($passPrice !== null)
                         <div class="text-right shrink-0">
                             <div class="text-xl font-bold leading-none text-info">{{ $currencySymbol }}{{ number_format($passPrice, 0) }}</div>
@@ -300,7 +310,7 @@
                         @endif
                     </div>
 
-                    <div class="flex items-center gap-2 mt-auto pt-4 border-t border-base-200" style="padding-top: 1rem; margin-top: 1.25rem;">
+                    <div class="relative z-20 flex items-center gap-2 mt-auto pt-4 border-t border-base-200" style="padding-top: 1rem; margin-top: 1.25rem;">
                         <form action="{{ route('booking.select-class-pack', ['subdomain' => $host->subdomain, 'pack' => $pass->id]) }}" method="POST" class="flex-1">
                             @csrf
                             <input type="hidden" name="currency" value="{{ $selectedCurrency }}">
@@ -309,7 +319,7 @@
                                 {{ $trans['btn.book_now'] ?? 'Book Now' }}
                             </button>
                         </form>
-                        <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain]) }}" class="btn btn-soft btn-secondary btn-sm flex-1">
+                        <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain, 'type' => 'class_pass', 'id' => $pass->id]) }}" class="btn btn-soft btn-secondary btn-sm flex-1">
                             <span class="icon-[tabler--info-circle] size-4"></span>
                             {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
                         </a>
@@ -338,8 +348,12 @@
             @php
                 $planPrice = $plan->getPriceForCurrency($selectedCurrency);
                 $hasPriceInCurrency = $planPrice !== null;
+                $planDetailUrl = route('subdomain.membership', ['subdomain' => $host->subdomain, 'membershipPlan' => $plan->id]);
             @endphp
             <div class="group relative bg-base-100 border border-base-200 rounded-2xl overflow-hidden hover:border-success/40 hover:shadow-lg transition-all duration-200 flex flex-col">
+                {{-- Stretched link: whole card → detail page. Buttons sit above this on z-20. --}}
+                <a href="{{ $planDetailUrl }}" class="absolute inset-0 z-10" aria-label="{{ $plan->name }} — view details"></a>
+
                 {{-- Image / placeholder banner --}}
                 @if($plan->image_url)
                     <figure class="relative h-44 overflow-hidden bg-base-200">
@@ -351,9 +365,9 @@
                     </div>
                 @endif
 
-                <div class="p-5 flex flex-col flex-1">
+                <div class="p-5 relative flex flex-col flex-1">
                     <div class="flex items-start justify-between gap-3">
-                        <h3 class="text-lg font-semibold leading-tight flex-1 min-w-0">{{ $plan->name }}</h3>
+                        <h3 class="text-lg font-semibold leading-tight group-hover:text-success transition-colors flex-1 min-w-0">{{ $plan->name }}</h3>
                         <div class="text-right shrink-0">
                             @if($hasPriceInCurrency)
                             <div class="text-xl font-bold leading-none text-success">{{ $currencySymbol }}{{ number_format($planPrice, 0) }}</div>
@@ -403,7 +417,7 @@
                     </div>
                     @endif
 
-                    <div class="flex items-center gap-2 mt-auto pt-4 border-t border-base-200" style="padding-top: 1rem; margin-top: 1.25rem;">
+                    <div class="relative z-20 flex items-center gap-2 mt-auto pt-4 border-t border-base-200" style="padding-top: 1rem; margin-top: 1.25rem;">
                         @if($hasPriceInCurrency)
                         <form action="{{ route('booking.select-membership-plan', ['subdomain' => $host->subdomain, 'plan' => $plan->id]) }}" method="POST" class="flex-1">
                             @csrf
@@ -416,7 +430,7 @@
                         @else
                         <button type="button" class="btn btn-disabled btn-sm flex-1" disabled>{{ $trans['subdomain.home.unavailable'] ?? 'Unavailable' }}</button>
                         @endif
-                        <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain]) }}" class="btn btn-soft btn-secondary btn-sm flex-1">
+                        <a href="{{ route('subdomain.service-request', ['subdomain' => $host->subdomain, 'type' => 'membership', 'id' => $plan->id]) }}" class="btn btn-soft btn-secondary btn-sm flex-1">
                             <span class="icon-[tabler--info-circle] size-4"></span>
                             {{ $trans['subdomain.service_request.request_info'] ?? 'Request Info' }}
                         </a>
@@ -440,7 +454,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($upcomingEvents as $event)
-            <div class="card bg-base-100 shadow border border-base-200 overflow-hidden hover:shadow-lg transition-shadow">
+            @php $eventDetailUrl = route('subdomain.event', ['subdomain' => $host->subdomain, 'event' => $event->id]); @endphp
+            <div class="group card relative bg-base-100 shadow border border-base-200 overflow-hidden hover:shadow-lg hover:border-primary/40 transition-all">
+                {{-- Stretched link: whole card → detail page. Buttons sit above this on z-20. --}}
+                <a href="{{ $eventDetailUrl }}" class="absolute inset-0 z-10" aria-label="{{ $event->title }} — view details"></a>
+
                 {{-- Event Image or Gradient Header --}}
                 @if($event->image_url)
                 <figure class="relative h-32 overflow-hidden">
@@ -475,9 +493,9 @@
                 </div>
                 @endif
 
-                <div class="card-body p-4">
+                <div class="card-body relative p-4">
                     {{-- Title --}}
-                    <h3 class="card-title text-base line-clamp-1">{{ $event->title }}</h3>
+                    <h3 class="card-title text-base line-clamp-1 group-hover:text-primary transition-colors">{{ $event->title }}</h3>
 
                     {{-- Date & Time --}}
                     <div class="text-sm text-base-content/60 space-y-1">
@@ -503,7 +521,7 @@
                     @endif
 
                     {{-- Footer with spots and register --}}
-                    <div class="card-actions justify-between items-center mt-auto pt-3">
+                    <div class="card-actions relative z-20 justify-between items-center mt-auto pt-3">
                         @php
                             $spotsLeft = $event->capacity ? max(0, $event->capacity - $event->registered_attendees_count) : null;
                         @endphp

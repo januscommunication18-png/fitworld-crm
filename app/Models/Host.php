@@ -65,6 +65,17 @@ class Host extends Model
         'logo_path',
         'cover_image_path',
         'stripe_account_id',
+        'stripe_own_publishable_key',
+        'stripe_own_secret_key',
+        'stripe_own_webhook_secret',
+        'square_environment',
+        'square_application_id',
+        'square_access_token',
+        'square_location_id',
+        'paypal_environment',
+        'paypal_client_id',
+        'paypal_client_secret',
+        'paypal_webhook_id',
         'is_live',
         'onboarding_step',
         'onboarding_completed_at',
@@ -119,7 +130,47 @@ class Host extends Model
             'verified_at' => 'datetime',
             'trial_ends_at' => 'datetime',
             'subscription_ends_at' => 'datetime',
+            // Secret credentials — encrypted at rest. Publishable key / app id /
+            // location id are not secret so they stay plaintext.
+            'stripe_own_secret_key' => 'encrypted',
+            'stripe_own_webhook_secret' => 'encrypted',
+            'square_access_token' => 'encrypted',
+            'paypal_client_secret' => 'encrypted',
         ];
+    }
+
+    /**
+     * Never expose payment secrets when the model is serialized.
+     */
+    protected $hidden = [
+        'stripe_own_secret_key',
+        'stripe_own_webhook_secret',
+        'square_access_token',
+        'paypal_client_secret',
+    ];
+
+    /**
+     * The card processor the studio uses for online card payments:
+     * stripe_platform (default) | stripe_own | square.
+     */
+    public function getCardProcessorAttribute(): string
+    {
+        return $this->payment_settings['card_processor'] ?? 'stripe_platform';
+    }
+
+    public function hasOwnStripeKeys(): bool
+    {
+        return !empty($this->stripe_own_secret_key) && !empty($this->stripe_own_publishable_key);
+    }
+
+    public function hasSquareCredentials(): bool
+    {
+        return !empty($this->square_access_token) && !empty($this->square_location_id);
+    }
+
+    public function hasPaypalCredentials(): bool
+    {
+        return !empty($this->paypal_client_id) && !empty($this->paypal_client_secret);
     }
 
     /**

@@ -47,6 +47,9 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
 
         // Class plan (catalog) details — public marketing page for a class type
         Route::get('/class-plan/{classPlan}', [BookingController::class, 'classPlanDetails'])->name('subdomain.class-plan');
+        Route::get('/service-plan/{servicePlan}', [BookingController::class, 'servicePlanDetails'])->name('subdomain.service-plan');
+        Route::get('/class-pass/{classPass}', [BookingController::class, 'classPassDetails'])->name('subdomain.class-pass');
+        Route::get('/membership/{membershipPlan}', [BookingController::class, 'membershipDetails'])->name('subdomain.membership');
 
         // Event details
         Route::get('/event/{event}', [BookingController::class, 'eventDetails'])->name('subdomain.event');
@@ -123,10 +126,13 @@ Route::domain('{subdomain}.' . config('app.booking_domain', 'fitcrm.biz'))
         Route::get('/book/service/{servicePlanId}', [BookingFlowController::class, 'selectService'])->name('booking.select-service.filter')->where('servicePlanId', '[0-9]+');
         Route::post('/book/service/{slot}', [BookingFlowController::class, 'selectServiceSlot'])->name('booking.select-service-slot');
         Route::post('/book/service-plan/{servicePlan}', [BookingFlowController::class, 'selectServicePlanDirect'])->name('booking.select-service-plan');
+        Route::post('/book/service-plan/{servicePlan}/select', [BookingFlowController::class, 'processServicePlanType'])->name('booking.process-service-plan-type')->where('servicePlan', '[0-9]+');
         Route::get('/book/membership', [BookingFlowController::class, 'selectMembership'])->name('booking.select-membership');
         Route::get('/book/membership/{plan}', [BookingFlowController::class, 'showMembershipPlan'])->name('booking.show-membership-plan');
         Route::post('/book/membership/{plan}', [BookingFlowController::class, 'selectMembershipPlan'])->name('booking.select-membership-plan');
+        Route::post('/book/membership/{plan}/select', [BookingFlowController::class, 'processMembershipPlanType'])->name('booking.process-membership-plan-type')->where('plan', '[0-9]+');
         Route::post('/book/class-pack/{pack}', [BookingFlowController::class, 'selectClassPack'])->name('booking.select-class-pack');
+        Route::post('/book/event/{event}', [BookingFlowController::class, 'selectEvent'])->name('booking.select-event')->where('event', '[0-9]+');
 
         // Step 2: Contact Information
         Route::get('/book/contact', [BookingFlowController::class, 'contactInfo'])->name('booking.contact');

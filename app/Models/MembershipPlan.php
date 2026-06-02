@@ -244,6 +244,41 @@ class MembershipPlan extends Model
     }
 
     /**
+     * Prepay total for a billing period (in months) in a given currency.
+     * Mirrors ClassPlan/ServicePlan: billing_discounts is keyed by months and
+     * each entry may be a flat number or a currency-keyed map.
+     */
+    public function getBillingPeriodTotalForCurrency(int|string $months, ?string $currency = null): float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $months = (string) (int) $months;
+        $periodData = $this->billing_discounts[$months] ?? null;
+
+        if (is_array($periodData)) {
+            return (float) ($periodData[$currency] ?? 0);
+        }
+        return (float) ($periodData ?? 0);
+    }
+
+    /**
+     * True when the plan offers multi-month prepay options (3/6/9/12) with a
+     * positive total in the given currency — drives the billing-period picker
+     * on the booking contact page.
+     */
+    public function hasBillingPeriodOptionsForCurrency(?string $currency = null): bool
+    {
+        foreach (['3', '6', '9', '12'] as $months) {
+            if ($this->getBillingPeriodTotalForCurrency($months, $currency) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Get new member price for a specific currency
      */
     public function getNewMemberPriceForCurrency(?string $currency = null): ?float

@@ -74,6 +74,113 @@ $enabledManualMethods = $paymentSettings['manual_methods'] ?? [];
                         </label>
                     </div>
 
+                    {{-- Card Processor (shown only when card payments are enabled) --}}
+                    @php
+                        $cardProcessor = $paymentSettings['card_processor'] ?? 'stripe_platform';
+                        $processors = [
+                            'stripe_platform' => ['label' => 'Stripe Payment (Fit Platform)', 'desc' => "Process cards through FitCRM's managed Stripe — no setup needed.", 'icon' => 'brand-stripe'],
+                            'stripe_own'      => ['label' => 'Stripe Payment (Own)',         'desc' => 'Use your own Stripe account and keep full control of payouts.', 'icon' => 'brand-stripe'],
+                            'square'          => ['label' => 'Square Payment (Own)',          'desc' => 'Process cards through your Square account.', 'icon' => 'square-rounded'],
+                            'paypal_own'      => ['label' => 'Business PayPal (Own)',          'desc' => 'Process payments through your PayPal Business account.', 'icon' => 'brand-paypal'],
+                        ];
+                        // Whether each secret is already stored (so we can show a
+                        // "saved" state without ever echoing the secret back).
+                        $hasStripeSecret  = !empty($host->stripe_own_secret_key);
+                        $hasStripeWebhook = !empty($host->stripe_own_webhook_secret);
+                        $hasSquareToken   = !empty($host->square_access_token);
+                        $hasPaypalSecret  = !empty($host->paypal_client_secret);
+                        $squareEnv = $host->square_environment ?? 'production';
+                        $paypalEnv = $host->paypal_environment ?? 'live';
+                    @endphp
+                    <div id="card-processor-options" class="pl-4 ml-3 border-l-2 border-primary/20 space-y-2 {{ ($paymentSettings['accept_cards'] ?? true) ? '' : 'hidden' }}">
+                        <p class="text-xs font-medium text-base-content/70 pt-1">Card processor</p>
+                        @foreach($processors as $key => $proc)
+                        <div>
+                            <label class="flex items-center justify-between gap-4 p-3 rounded-xl border border-base-300 cursor-pointer hover:border-primary/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                                <div class="flex items-center gap-3">
+                                    <span class="icon-[tabler--{{ $proc['icon'] }}] size-6 text-primary"></span>
+                                    <div>
+                                        <span class="font-medium text-sm">{{ $proc['label'] }}</span>
+                                        <p class="text-xs text-base-content/60">{{ $proc['desc'] }}</p>
+                                    </div>
+                                </div>
+                                <input type="radio" name="card_processor" value="{{ $key }}" class="radio radio-primary card-processor-radio" {{ $cardProcessor === $key ? 'checked' : '' }} />
+                            </label>
+
+                            {{-- Stripe (Own) credentials --}}
+                            @if($key === 'stripe_own')
+                            <div class="processor-credentials mt-2 ml-2 pl-4 border-l border-base-300 space-y-3 {{ $cardProcessor === 'stripe_own' ? '' : 'hidden' }}" data-processor-fields="stripe_own">
+                                <div>
+                                    <label class="label-text text-xs" for="stripe_own_publishable_key">Publishable key</label>
+                                    <input type="text" id="stripe_own_publishable_key" class="input input-sm w-full mt-1" placeholder="pk_live_…" value="{{ $host->stripe_own_publishable_key }}" autocomplete="off" />
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="stripe_own_secret_key">Secret key @if($hasStripeSecret)<span class="badge badge-soft badge-success badge-xs ml-1">saved</span>@endif</label>
+                                    <input type="password" id="stripe_own_secret_key" class="input input-sm w-full mt-1" placeholder="{{ $hasStripeSecret ? 'Leave blank to keep current key' : 'sk_live_…' }}" autocomplete="new-password" />
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="stripe_own_webhook_secret">Webhook signing secret <span class="text-base-content/40">(optional)</span> @if($hasStripeWebhook)<span class="badge badge-soft badge-success badge-xs ml-1">saved</span>@endif</label>
+                                    <input type="password" id="stripe_own_webhook_secret" class="input input-sm w-full mt-1" placeholder="{{ $hasStripeWebhook ? 'Leave blank to keep current secret' : 'whsec_…' }}" autocomplete="new-password" />
+                                </div>
+                                <p class="text-xs text-base-content/50">Find these in your Stripe Dashboard → Developers → API keys.</p>
+                            </div>
+                            @endif
+
+                            {{-- Square credentials --}}
+                            @if($key === 'square')
+                            <div class="processor-credentials mt-2 ml-2 pl-4 border-l border-base-300 space-y-3 {{ $cardProcessor === 'square' ? '' : 'hidden' }}" data-processor-fields="square">
+                                <div>
+                                    <label class="label-text text-xs" for="square_environment">Environment</label>
+                                    <select id="square_environment" class="select select-sm w-full mt-1">
+                                        <option value="production" {{ $squareEnv === 'production' ? 'selected' : '' }}>Production</option>
+                                        <option value="sandbox" {{ $squareEnv === 'sandbox' ? 'selected' : '' }}>Sandbox (testing)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="square_application_id">Application ID</label>
+                                    <input type="text" id="square_application_id" class="input input-sm w-full mt-1" placeholder="sq0idp-…" value="{{ $host->square_application_id }}" autocomplete="off" />
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="square_access_token">Access token @if($hasSquareToken)<span class="badge badge-soft badge-success badge-xs ml-1">saved</span>@endif</label>
+                                    <input type="password" id="square_access_token" class="input input-sm w-full mt-1" placeholder="{{ $hasSquareToken ? 'Leave blank to keep current token' : 'EAAA…' }}" autocomplete="new-password" />
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="square_location_id">Location ID</label>
+                                    <input type="text" id="square_location_id" class="input input-sm w-full mt-1" placeholder="L…" value="{{ $host->square_location_id }}" autocomplete="off" />
+                                </div>
+                                <p class="text-xs text-base-content/50">Find these in your Square Developer Dashboard → your application → Credentials.</p>
+                            </div>
+                            @endif
+
+                            {{-- Business PayPal (Own) credentials --}}
+                            @if($key === 'paypal_own')
+                            <div class="processor-credentials mt-2 ml-2 pl-4 border-l border-base-300 space-y-3 {{ $cardProcessor === 'paypal_own' ? '' : 'hidden' }}" data-processor-fields="paypal_own">
+                                <div>
+                                    <label class="label-text text-xs" for="paypal_environment">Environment</label>
+                                    <select id="paypal_environment" class="select select-sm w-full mt-1">
+                                        <option value="live" {{ $paypalEnv === 'live' ? 'selected' : '' }}>Live</option>
+                                        <option value="sandbox" {{ $paypalEnv === 'sandbox' ? 'selected' : '' }}>Sandbox (testing)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="paypal_client_id">Client ID</label>
+                                    <input type="text" id="paypal_client_id" class="input input-sm w-full mt-1" placeholder="A…" value="{{ $host->paypal_client_id }}" autocomplete="off" />
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="paypal_client_secret">Client secret @if($hasPaypalSecret)<span class="badge badge-soft badge-success badge-xs ml-1">saved</span>@endif</label>
+                                    <input type="password" id="paypal_client_secret" class="input input-sm w-full mt-1" placeholder="{{ $hasPaypalSecret ? 'Leave blank to keep current secret' : 'E…' }}" autocomplete="new-password" />
+                                </div>
+                                <div>
+                                    <label class="label-text text-xs" for="paypal_webhook_id">Webhook ID <span class="text-base-content/40">(optional)</span></label>
+                                    <input type="text" id="paypal_webhook_id" class="input input-sm w-full mt-1" placeholder="WH-…" value="{{ $host->paypal_webhook_id }}" autocomplete="off" />
+                                </div>
+                                <p class="text-xs text-base-content/50">Find these in your PayPal Developer Dashboard → Apps &amp; Credentials → your app.</p>
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+                    </div>
+
                     {{-- Cash Payments --}}
                     <div class="flex items-center justify-between p-4 rounded-xl border border-base-300 hover:border-primary/50 transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                         <div class="flex items-center gap-4">
@@ -315,6 +422,28 @@ document.addEventListener('DOMContentLoaded', function() {
         currencySelect.addEventListener('change', updateNumberFormat);
     }
 
+    // Show the card-processor chooser only while card payments are enabled.
+    var acceptCards = document.getElementById('accept_cards');
+    var processorOptions = document.getElementById('card-processor-options');
+    if (acceptCards && processorOptions) {
+        acceptCards.addEventListener('change', function() {
+            processorOptions.classList.toggle('hidden', !this.checked);
+        });
+    }
+
+    // Reveal only the selected processor's credential fields.
+    function syncProcessorFields() {
+        var selected = document.querySelector('.card-processor-radio:checked');
+        var value = selected ? selected.value : null;
+        document.querySelectorAll('[data-processor-fields]').forEach(function(panel) {
+            panel.classList.toggle('hidden', panel.dataset.processorFields !== value);
+        });
+    }
+    document.querySelectorAll('.card-processor-radio').forEach(function(radio) {
+        radio.addEventListener('change', syncProcessorFields);
+    });
+    syncProcessorFields();
+
     document.querySelectorAll('.manual-method-toggle').forEach(function(toggle) {
         toggle.addEventListener('change', function() {
             var item = this.closest('.manual-method-item');
@@ -365,8 +494,24 @@ function savePaymentSettings() {
         };
     });
 
+    var selectedProcessor = document.querySelector('.card-processor-radio:checked');
+    var val = function(id) { var el = document.getElementById(id); return el ? el.value : ''; };
     var data = {
         accept_cards: document.getElementById('accept_cards').checked,
+        card_processor: selectedProcessor ? selectedProcessor.value : 'stripe_platform',
+        // Credentials. Secret fields are sent only when the user typed a new
+        // value; blank means "keep the currently stored secret".
+        stripe_own_publishable_key: val('stripe_own_publishable_key'),
+        stripe_own_secret_key: val('stripe_own_secret_key'),
+        stripe_own_webhook_secret: val('stripe_own_webhook_secret'),
+        square_environment: val('square_environment'),
+        square_application_id: val('square_application_id'),
+        square_access_token: val('square_access_token'),
+        square_location_id: val('square_location_id'),
+        paypal_environment: val('paypal_environment'),
+        paypal_client_id: val('paypal_client_id'),
+        paypal_client_secret: val('paypal_client_secret'),
+        paypal_webhook_id: val('paypal_webhook_id'),
         accept_cash: document.getElementById('accept_cash').checked,
         currency: document.getElementById('currency').value,
         send_receipts: document.getElementById('send_receipts').checked,

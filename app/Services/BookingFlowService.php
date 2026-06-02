@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ClassPack;
 use App\Models\ClassSession;
 use App\Models\Client;
+use App\Models\Event;
 use App\Models\Host;
 use App\Models\MembershipPlan;
 use App\Models\ServiceSlot;
@@ -124,6 +125,7 @@ class BookingFlowService
             'service_slot' => ServiceSlot::find($item['id']),
             'membership_plan' => MembershipPlan::find($item['id']),
             'class_pack' => ClassPack::find($item['id']),
+            'event' => Event::find($item['id']),
             default => null,
         };
     }
@@ -227,6 +229,7 @@ class BookingFlowService
             'service_slot' => 'Service',
             'membership_plan' => 'Membership',
             'class_pack' => 'Class Pack',
+            'event' => 'Event',
             default => 'Booking',
         };
     }

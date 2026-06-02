@@ -68,11 +68,11 @@
                             <div class="flex items-start justify-between">
                                 <div>
                                     <span class="badge badge-success badge-sm">Active</span>
-                                    <h3 class="font-semibold mt-1">{{ $pack->classPack?->name }}</h3>
+                                    <h3 class="font-semibold mt-1">{{ $pack->classPass?->name }}</h3>
                                 </div>
                             </div>
                             <div class="text-sm text-base-content/60 mt-2">
-                                {{ $pack->classes_remaining }} of {{ $pack->classPack?->class_count }} classes remaining
+                                {{ $pack->classes_remaining }} of {{ $pack->classPass?->class_count ?? $pack->classes_total }} classes remaining
                                 @if($pack->expires_at)
                                     <br>Expires {{ $pack->expires_at->format('M j, Y') }}
                                 @endif

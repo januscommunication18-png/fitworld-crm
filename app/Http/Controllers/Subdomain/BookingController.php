@@ -199,6 +199,131 @@ class BookingController extends Controller
     }
 
     /**
+     * Display service plan (catalog) details — public marketing page for a
+     * one-off service the studio offers (massage, PT, consultation, etc).
+     * Mirrors classPlanDetails: lists upcoming bookable slots.
+     */
+    public function servicePlanDetails(Request $request, string $subdomain, \App\Models\ServicePlan $servicePlan)
+    {
+        $host = $this->getHost($request);
+
+        if ($servicePlan->host_id !== $host->id) {
+            abort(404);
+        }
+
+        if (!$servicePlan->is_active || !($servicePlan->is_visible_on_booking_page ?? true)) {
+            abort(404);
+        }
+
+        // Next handful of available upcoming service slots.
+        $upcomingSlots = \App\Models\ServiceSlot::where('host_id', $host->id)
+            ->where('service_plan_id', $servicePlan->id)
+            ->available()
+            ->upcoming()
+            ->with(['instructor', 'location'])
+            ->orderBy('start_time')
+            ->limit(8)
+            ->get();
+
+        $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+
+        return view('subdomain.service-plan-details', [
+            'host' => $host,
+            'servicePlan' => $servicePlan,
+            'upcomingSlots' => $upcomingSlots,
+            'selectedCurrency' => $selectedCurrency,
+        ]);
+    }
+
+    /**
+     * Display class pass (credit pack) details — public marketing page for a
+     * pass the studio sells. Mirrors classPlanDetails/servicePlanDetails:
+     * shows pricing, validity, eligibility, and what the pass covers.
+     */
+    public function classPassDetails(Request $request, string $subdomain, ClassPass $classPass)
+    {
+        $host = $this->getHost($request);
+
+        if ($classPass->host_id !== $host->id) {
+            abort(404);
+        }
+
+        // Only active, publicly visible passes are reachable here.
+        if ($classPass->status !== ClassPass::STATUS_ACTIVE || !$classPass->visibility_public) {
+            abort(404);
+        }
+
+        // Resolve the things this pass covers (only the relevant set is populated
+        // based on the pass's eligibility_type).
+        $eligibleClassPlans = $classPass->eligibleClassPlans();
+        $eligibleInstructors = $classPass->eligibleInstructors();
+        $eligibleLocations = $classPass->eligibleLocations();
+
+        $eligibleServicePlans = ($classPass->eligibility_type === ClassPass::ELIGIBILITY_SERVICE_PLANS
+                && !empty($classPass->eligible_service_plan_ids))
+            ? ServicePlan::whereIn('id', $classPass->eligible_service_plan_ids)->get()
+            : collect();
+
+        $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+
+        return view('subdomain.class-pass-details', [
+            'host' => $host,
+            'classPass' => $classPass,
+            'eligibleClassPlans' => $eligibleClassPlans,
+            'eligibleServicePlans' => $eligibleServicePlans,
+            'eligibleInstructors' => $eligibleInstructors,
+            'eligibleLocations' => $eligibleLocations,
+            'selectedCurrency' => $selectedCurrency,
+        ]);
+    }
+
+    /**
+     * Display membership plan (catalog) details — public marketing page for a
+     * membership the studio sells. Mirrors classPassDetails: shows pricing,
+     * billing periods, what's included, and policies.
+     */
+    public function membershipDetails(Request $request, string $subdomain, MembershipPlan $membershipPlan)
+    {
+        $host = $this->getHost($request);
+
+        if ($membershipPlan->host_id !== $host->id) {
+            abort(404);
+        }
+
+        // Only active, publicly visible plans are reachable here.
+        if ($membershipPlan->status !== MembershipPlan::STATUS_ACTIVE || !$membershipPlan->visibility_public) {
+            abort(404);
+        }
+
+        // Class plans this membership covers (only when scoped to selected plans).
+        $eligibleClassPlans = $membershipPlan->coversAllClasses()
+            ? collect()
+            : $membershipPlan->classPlans()->get();
+
+        // Locations this membership is valid at (only when location-scoped).
+        $eligibleLocations = ($membershipPlan->location_scope_type === MembershipPlan::LOCATION_SELECTED
+                && !empty($membershipPlan->location_ids))
+            ? \App\Models\Location::whereIn('id', $membershipPlan->location_ids)->get()
+            : collect();
+
+        // Rentals included for free with the membership.
+        $freeRentals = !empty($membershipPlan->free_rental_ids)
+            ? \App\Models\RentalItem::whereIn('id', $membershipPlan->free_rental_ids)->get()
+            : collect();
+
+        $selectedCurrency = session("currency_{$host->id}", $host->default_currency ?? 'USD');
+
+        return view('subdomain.membership-details', [
+            'host' => $host,
+            'membershipPlan' => $membershipPlan,
+            'eligibleClassPlans' => $eligibleClassPlans,
+            'eligibleLocations' => $eligibleLocations,
+            'freeRentals' => $freeRentals,
+            'selectedCurrency' => $selectedCurrency,
+        ]);
+    }
+
+    /**
      * Display event details
      */
     public function eventDetails(Request $request, string $subdomain, Event $event)

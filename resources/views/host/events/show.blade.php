@@ -61,7 +61,6 @@
             @if($event->is_draft && auth()->user()->hasPermission('schedule.publish'))
                 <form action="{{ route('events.publish', $event) }}" method="POST" class="inline">
                     @csrf
-                    @method('PATCH')
                     <button type="submit" class="btn btn-success btn-sm">
                         <span class="icon-[tabler--send] size-4"></span>
                         Publish

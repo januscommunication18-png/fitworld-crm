@@ -129,9 +129,13 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <span id="booking-item-price" class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
+                                @if(($item['type'] ?? '') === 'event')
+                                    <span id="booking-item-price" class="text-2xl font-bold text-success">{{ $trans['btn.free'] ?? 'Free' }}</span>
+                                @else
+                                    <span id="booking-item-price" class="text-2xl font-bold text-primary">{{ $currencySymbol }}{{ number_format($item['price'] ?? 0, 2) }}</span>
+                                @endif
                                 @if(($item['type'] ?? '') === 'membership_plan')
-                                    <div class="text-sm text-base-content/60">{{ $item['billing_period'] ?? 'per month' }}</div>
+                                    <div id="booking-item-billing-period" class="text-sm text-base-content/60">{{ $item['billing_period'] ?? 'per month' }}</div>
                                 @endif
                                 @if(!empty($item['is_waitlist']))
                                     <div class="badge badge-warning badge-sm mt-1">Waitlist</div>
@@ -263,6 +267,134 @@
                             </div>
                         </div>
                         @endif
+
+                        {{-- Service Plan: Single (pick a slot) vs Series (billing period). --}}
+                        @if(($item['type'] ?? '') === 'service_plan')
+                        @php
+                            $svcCurrentType = $item['service_booking_type'] ?? 'single';
+                            $svcRawBillingDiscounts = $item['billing_discounts'] ?? [];
+                            $svcItemCurrency = $item['currency'] ?? ($host->default_currency ?? 'USD');
+                            $svcBillingDiscounts = [];
+                            foreach ($svcRawBillingDiscounts as $period => $value) {
+                                $svcBillingDiscounts[(string) $period] = is_array($value)
+                                    ? (float) ($value[$svcItemCurrency] ?? 0)
+                                    : (float) $value;
+                            }
+                            $svcHasSeriesOption = ($item['has_series_option'] ?? false)
+                                && collect($svcBillingDiscounts)->filter(fn($v) => $v > 0)->isNotEmpty();
+                        @endphp
+                        <div class="bg-base-100 rounded-xl border border-base-200 mt-4 p-4">
+                            <p class="text-sm font-medium text-base-content/70 mb-3">Booking Type</p>
+                            <div class="flex flex-wrap gap-2" id="service-booking-type-selector">
+                                <button type="button" data-type="single"
+                                    class="service-booking-type-btn btn btn-sm {{ $svcCurrentType === 'single' ? 'btn-primary' : 'btn-ghost border border-base-300' }}">
+                                    <span class="icon-[tabler--calendar-event] size-4"></span> Single Session
+                                </button>
+                                @if($svcHasSeriesOption)
+                                <button type="button" data-type="series"
+                                    class="service-booking-type-btn btn btn-sm {{ $svcCurrentType === 'series' ? 'btn-primary' : 'btn-ghost border border-base-300' }}">
+                                    <span class="icon-[tabler--calendar-repeat] size-4"></span> Series
+                                </button>
+                                @endif
+                            </div>
+
+                            {{-- Series: Billing Period Options --}}
+                            @if($svcHasSeriesOption)
+                            <div id="service-series-period-picker" class="{{ $svcCurrentType === 'series' ? '' : 'hidden' }} mt-3">
+                                <p class="text-xs text-base-content/60 mb-2">Select billing period</p>
+                                <div class="flex flex-wrap gap-2">
+                                    @php $svcPeriods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months']; @endphp
+                                    @foreach($svcPeriods as $months => $label)
+                                        @php $periodTotal = floatval($svcBillingDiscounts[$months] ?? 0); @endphp
+                                        @if($periodTotal > 0)
+                                            @php $m = (int) $months; $monthlyRate = $m > 0 ? $periodTotal / $m : 0; @endphp
+                                            <button type="button" data-period="{{ $months }}" data-price="{{ $periodTotal }}"
+                                                class="service-billing-period-btn btn btn-sm btn-ghost border border-base-content flex-col h-auto py-2 px-3">
+                                                <span class="text-xs text-base-content/60">{{ $label }}</span>
+                                                <span class="font-bold text-success">{{ $currencySymbol }}{{ number_format($periodTotal, 0) }}</span>
+                                                <span class="text-[10px] text-base-content/50">{{ $currencySymbol }}{{ number_format($monthlyRate, 2) }}/mo</span>
+                                            </button>
+                                        @endif
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+
+                            {{-- Single Session: pick a slot --}}
+                            <div id="service-single-slot-picker" class="{{ $svcCurrentType === 'single' ? '' : 'hidden' }} mt-4 pt-4 border-t border-base-200">
+                                <label class="label-text mb-1 block" for="service_slot_id">Pick a time slot <span class="text-error">*</span></label>
+                                @if(($serviceSlots ?? collect())->isEmpty())
+                                    <div class="alert alert-soft alert-warning text-sm">
+                                        <span class="icon-[tabler--alert-circle] size-4"></span>
+                                        <span>No available upcoming slots for this service right now. @if($svcHasSeriesOption) Please switch to Series or @endif The studio will reach out to schedule with you.</span>
+                                    </div>
+                                @else
+                                    @php $preselectedSlot = old('service_slot_id', $item['service_slot_id'] ?? ''); @endphp
+                                    <x-studio-select
+                                        name="__inner_service_slot_id"
+                                        id="service_slot_id"
+                                        placeholder="Select a date & time..."
+                                        :option-count="$serviceSlots->count()">
+                                        <option value="">-- Select a date & time --</option>
+                                        @foreach($serviceSlots as $slot)
+                                            @php
+                                                $bits = [
+                                                    $slot->start_time->format('D, M j · g:i A'),
+                                                    $slot->instructor?->name,
+                                                    $slot->location?->name,
+                                                ];
+                                                $label = implode(' · ', array_filter($bits));
+                                            @endphp
+                                            <option value="{{ $slot->id }}" {{ (string) $preselectedSlot === (string) $slot->id ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </x-studio-select>
+                                    @error('service_slot_id')
+                                        <p class="text-error text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
+                        {{-- Membership Plan: pick a prepay billing period (1 / 3 / 6 / 9 / 12 months). --}}
+                        @if(($item['type'] ?? '') === 'membership_plan')
+                        @php
+                            $msItemCurrency = $item['currency'] ?? ($host->default_currency ?? 'USD');
+                            $msRawDiscounts = $item['membership_billing_discounts'] ?? [];
+                            $msDiscounts = [];
+                            foreach ($msRawDiscounts as $period => $value) {
+                                $msDiscounts[(string) $period] = is_array($value)
+                                    ? (float) ($value[$msItemCurrency] ?? 0)
+                                    : (float) $value;
+                            }
+                            $msHasOptions = ($item['has_billing_options'] ?? false)
+                                && collect($msDiscounts)->filter(fn($v) => $v > 0)->isNotEmpty();
+                            $msSelectedMonths = (int) ($item['selected_months'] ?? 1);
+                        @endphp
+                        @if($msHasOptions)
+                        <div class="bg-base-100 rounded-xl border border-base-200 mt-4 p-4">
+                            <p class="text-sm font-medium text-base-content/70 mb-1">Choose how long to prepay</p>
+                            <p class="text-xs text-base-content/60 mb-3">Pay for several months up front — longer periods are usually discounted.</p>
+                            <div class="flex flex-wrap gap-2">
+                                @php $msPeriods = ['1' => '1 Month', '3' => '3 Months', '6' => '6 Months', '9' => '9 Months', '12' => '12 Months']; @endphp
+                                @foreach($msPeriods as $months => $label)
+                                    @php $periodTotal = floatval($msDiscounts[$months] ?? 0); @endphp
+                                    @if($periodTotal > 0)
+                                        @php $m = (int) $months; $monthlyRate = $m > 0 ? $periodTotal / $m : 0; @endphp
+                                        <button type="button" data-period="{{ $months }}" data-price="{{ $periodTotal }}"
+                                            class="membership-period-btn btn btn-sm flex-col h-auto py-2 px-3 {{ $msSelectedMonths === $m ? 'btn-success border-success' : 'btn-ghost border border-base-content' }}">
+                                            <span class="text-xs text-base-content/60">{{ $label }}</span>
+                                            <span class="font-bold text-success">{{ $currencySymbol }}{{ number_format($periodTotal, 0) }}</span>
+                                            <span class="text-[10px] text-base-content/50">{{ $currencySymbol }}{{ number_format($monthlyRate, 2) }}/mo</span>
+                                        </button>
+                                    @endif
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                        @endif
                     </div>
                 </div>
 
@@ -293,6 +425,8 @@
                                     {{-- Carries the class session id (synced from the session picker
                                           which lives in the header card, outside this form). --}}
                                     <input type="hidden" name="class_session_id" id="class_session_id_hidden" value="{{ old('class_session_id', $item['class_session_id'] ?? '') }}">
+                                    {{-- Same pattern for service slot id (service_plan bookings). --}}
+                                    <input type="hidden" name="service_slot_id" id="service_slot_id_hidden" value="{{ old('service_slot_id', $item['service_slot_id'] ?? '') }}">
 
                                     <div class="space-y-4">
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -361,7 +495,7 @@
 
                                     <div class="mt-8">
                                         <button type="submit" class="btn btn-primary btn-lg w-full gap-2">
-                                            Continue to Payment
+                                            {{ ($item['type'] ?? '') === 'event' ? ($trans['btn.complete_registration'] ?? 'Complete Registration') : 'Continue to Payment' }}
                                             <span class="icon-[tabler--arrow-right] size-5"></span>
                                         </button>
                                     </div>
@@ -589,6 +723,167 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
+</script>
+@endpush
+@endif
+
+@if(($item['type'] ?? '') === 'service_plan')
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var servicePlanId = '{{ $item["service_plan_id"] ?? $item["id"] ?? "" }}';
+    var csrfToken = '{{ csrf_token() }}';
+    var currencySymbol = '{{ $currencySymbol }}';
+
+    if (typeof HSSelect !== 'undefined') {
+        try { HSSelect.autoInit(); } catch (e) {}
+    }
+
+    // Service booking type buttons
+    document.querySelectorAll('.service-booking-type-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var type = this.dataset.type;
+            var data = { service_booking_type: type, _token: csrfToken };
+
+            var periodPicker = document.getElementById('service-series-period-picker');
+            var slotPicker = document.getElementById('service-single-slot-picker');
+            if (type === 'series') {
+                if (periodPicker) periodPicker.classList.remove('hidden');
+                if (slotPicker) slotPicker.classList.add('hidden');
+                var selectedPeriod = document.querySelector('.service-billing-period-btn.btn-success');
+                if (!selectedPeriod) {
+                    var firstPeriod = document.querySelector('.service-billing-period-btn');
+                    if (firstPeriod) { firstPeriod.click(); return; }
+                }
+                data.billing_period = selectedPeriod ? selectedPeriod.dataset.period : null;
+            } else {
+                if (periodPicker) periodPicker.classList.add('hidden');
+                if (slotPicker) slotPicker.classList.remove('hidden');
+            }
+
+            updateServiceBookingType(data, this);
+        });
+    });
+
+    // Service billing period buttons
+    document.querySelectorAll('.service-billing-period-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.service-billing-period-btn').forEach(function (b) {
+                b.classList.remove('btn-success', 'border-success');
+                b.classList.add('btn-ghost', 'border-base-content');
+            });
+            this.classList.remove('btn-ghost', 'border-base-content');
+            this.classList.add('btn-success', 'border-success');
+
+            var data = {
+                service_booking_type: 'series',
+                billing_period: this.dataset.period,
+                _token: csrfToken,
+            };
+            var seriesBtn = document.querySelector('.service-booking-type-btn[data-type="series"]');
+            updateServiceBookingType(data, seriesBtn);
+        });
+    });
+
+    function updateServiceBookingType(data, activeBtn) {
+        document.querySelectorAll('.service-booking-type-btn').forEach(function (b) {
+            b.classList.remove('btn-primary');
+            b.classList.add('btn-ghost', 'border', 'border-base-300');
+        });
+        if (activeBtn) {
+            activeBtn.classList.remove('btn-ghost', 'border-base-300');
+            activeBtn.classList.add('btn-primary');
+        }
+
+        fetch('{{ route("booking.process-service-plan-type", ["subdomain" => $host->subdomain, "servicePlan" => $item["service_plan_id"] ?? $item["id"] ?? 0]) }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+            body: JSON.stringify(data),
+        }).then(function (r) { return r.json(); }).then(function (resp) {
+            if (resp.success && resp.item) {
+                var nameEl = document.getElementById('booking-item-name');
+                var priceEl = document.getElementById('booking-item-price');
+                if (nameEl) nameEl.textContent = resp.item.name;
+                if (priceEl) priceEl.textContent = currencySymbol + parseFloat(resp.item.price).toFixed(2);
+            }
+        });
+    }
+
+    // Sync the slot picker → hidden form input
+    var slotSelect = document.getElementById('service_slot_id');
+    var slotHidden = document.getElementById('service_slot_id_hidden');
+    if (slotSelect && slotHidden) {
+        slotSelect.addEventListener('change', function () {
+            slotHidden.value = this.value || '';
+        });
+        if (slotSelect.value && !slotHidden.value) {
+            slotHidden.value = slotSelect.value;
+        }
+    }
+
+    // Block submit when Single mode and no slot picked.
+    var contactForm = document.getElementById('contact-info-form');
+    if (contactForm) {
+        contactForm.addEventListener('submit', function (e) {
+            var activeBtn = document.querySelector('.service-booking-type-btn.btn-primary');
+            var currentType = activeBtn ? activeBtn.dataset.type : '{{ $svcCurrentType ?? "single" }}';
+            if (currentType === 'single' && slotHidden && !slotHidden.value) {
+                e.preventDefault();
+                if (slotSelect) slotSelect.focus();
+                var picker = document.getElementById('service-single-slot-picker');
+                if (picker) picker.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                var existing = document.getElementById('service-slot-picker-error');
+                if (!existing && picker) {
+                    var p = document.createElement('p');
+                    p.id = 'service-slot-picker-error';
+                    p.className = 'text-error text-sm mt-2';
+                    p.textContent = 'Please pick a time slot before continuing.';
+                    picker.appendChild(p);
+                }
+            }
+        });
+    }
+});
+</script>
+@endpush
+@endif
+
+@if(($item['type'] ?? '') === 'membership_plan')
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var csrfToken = '{{ csrf_token() }}';
+    var currencySymbol = '{{ $currencySymbol }}';
+
+    // Prepay billing-period buttons — recompute price server-side and reflect it.
+    document.querySelectorAll('.membership-period-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.membership-period-btn').forEach(function (b) {
+                b.classList.remove('btn-success', 'border-success');
+                b.classList.add('btn-ghost', 'border-base-content');
+            });
+            this.classList.remove('btn-ghost', 'border-base-content');
+            this.classList.add('btn-success', 'border-success');
+
+            var data = { billing_period: this.dataset.period, _token: csrfToken };
+
+            fetch('{{ route("booking.process-membership-plan-type", ["subdomain" => $host->subdomain, "plan" => $item["id"] ?? 0]) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                body: JSON.stringify(data),
+            }).then(function (r) { return r.json(); }).then(function (resp) {
+                if (resp.success && resp.item) {
+                    var nameEl = document.getElementById('booking-item-name');
+                    var priceEl = document.getElementById('booking-item-price');
+                    var periodEl = document.getElementById('booking-item-billing-period');
+                    if (nameEl) nameEl.textContent = resp.item.name;
+                    if (priceEl) priceEl.textContent = currencySymbol + parseFloat(resp.item.price).toFixed(2);
+                    if (periodEl) periodEl.textContent = resp.item.billing_period || 'per month';
+                }
+            });
+        });
+    });
 });
 </script>
 @endpush

@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Client;
 use App\Models\CustomerMembership;
+use App\Models\EventAttendee;
 use App\Models\Host;
 use App\Models\Invoice;
 use App\Models\ClassPack;
@@ -71,11 +72,32 @@ class MemberPortalController extends Controller
             ->with(['membershipPlan', 'membershipPlan.classSessions'])
             ->get();
 
-        // Get active class packs (usable = has credits + not expired)
-        $activeClassPacks = $member->classPackPurchases()
+        // Get active class passes (usable = activated, has credits, not expired/frozen)
+        $activeClassPacks = $member->classPassPurchases()
             ->where('host_id', $host->id)
             ->usable()
-            ->with('classPack')
+            ->with('classPass')
+            ->get();
+
+        // Get upcoming events this member has registered for (not cancelled).
+        $upcomingEvents = $member->eventAttendances()
+            ->whereIn('status', [EventAttendee::STATUS_REGISTERED, EventAttendee::STATUS_CONFIRMED, EventAttendee::STATUS_WAITLISTED])
+            ->whereHas('event', function ($q) use ($host) {
+                $q->where('host_id', $host->id)->where('start_datetime', '>=', now());
+            })
+            ->with('event')
+            ->get()
+            ->sortBy(fn($a) => $a->event?->start_datetime)
+            ->values();
+
+        // Memberships & class passes bought via manual payment that are still
+        // awaiting confirmation — surfaced as "pending" so the member sees them
+        // before the studio marks the payment paid (which activates the plan).
+        $pendingPlanTransactions = Transaction::where('client_id', $member->id)
+            ->where('host_id', $host->id)
+            ->whereIn('type', [Transaction::TYPE_MEMBERSHIP_PURCHASE, Transaction::TYPE_CLASS_PACK_PURCHASE])
+            ->where('status', Transaction::STATUS_PENDING)
+            ->orderByDesc('created_at')
             ->get();
 
         // Get pending intake forms
@@ -92,6 +114,8 @@ class MemberPortalController extends Controller
             'recentTransactions' => $recentTransactions,
             'activeMemberships' => $activeMemberships,
             'activeClassPacks' => $activeClassPacks,
+            'upcomingEvents' => $upcomingEvents,
+            'pendingPlanTransactions' => $pendingPlanTransactions,
             'pendingIntakeForms' => $pendingIntakeForms,
         ]);
     }
@@ -217,12 +241,15 @@ class MemberPortalController extends Controller
 
         $query = Booking::where('client_id', $member->id)
             ->where('host_id', $host->id)
-            ->with([
-                'bookable',
-                'bookable.classPlan.instructors',
-                'bookable.primaryInstructor',
-                'bookable.room.location',
-            ]);
+            // bookable is polymorphic (ClassSession or ServiceSlot); eager-load
+            // each type's own relations so a service booking doesn't trip over
+            // class-only relations like classPlan/room.
+            ->with(['bookable' => function ($morphTo) {
+                $morphTo->morphWith([
+                    ClassSession::class => ['classPlan.instructors', 'primaryInstructor', 'room.location'],
+                    \App\Models\ServiceSlot::class => ['servicePlan', 'instructor', 'location'],
+                ]);
+            }]);
 
         if ($filter === 'upcoming') {
             $query->whereHas('bookable', function ($q) {
@@ -465,11 +492,11 @@ class MemberPortalController extends Controller
             ->with('membershipPlan')
             ->get();
 
-        // Member's active class packs
-        $activeClassPacks = $member->classPackPurchases()
+        // Member's active class passes
+        $activeClassPacks = $member->classPassPurchases()
             ->where('host_id', $host->id)
             ->usable()
-            ->with('classPack')
+            ->with('classPass')
             ->get();
 
         return view('subdomain.member.portal.memberships', [

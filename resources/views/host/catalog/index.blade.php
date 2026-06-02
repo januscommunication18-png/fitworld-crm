@@ -1114,7 +1114,6 @@
                             <li>
                                 <form action="{{ route('events.publish', $event) }}" method="POST">
                                     @csrf
-                                    @method('PATCH')
                                     <button type="submit" class="w-full text-left flex items-center gap-2">
                                         <span class="icon-[tabler--send] size-4"></span> {{ $trans['btn.publish'] ?? 'Publish' }}
                                     </button>

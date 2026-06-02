@@ -24,7 +24,7 @@
 
 
     {{-- Quick Stats --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div class="card bg-base-100">
             <div class="card-body">
                 <div class="flex items-center gap-4">
@@ -65,6 +65,20 @@
                         @endphp
                         <p class="text-2xl font-bold">{{ $totalClasses }}</p>
                         <p class="text-sm text-base-content/60">{{ $trans['member.dashboard.class_credits'] ?? 'Class Credits' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card bg-base-100">
+            <div class="card-body">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-info/10 flex items-center justify-center">
+                        <span class="icon-[tabler--calendar-star] size-6 text-info"></span>
+                    </div>
+                    <div>
+                        <p class="text-2xl font-bold">{{ $upcomingEvents->count() }}</p>
+                        <p class="text-sm text-base-content/60">{{ $trans['member.dashboard.registered_events'] ?? 'Registered Events' }}</p>
                     </div>
                 </div>
             </div>
@@ -216,9 +230,50 @@
         </div>
     </div>
 
-    {{-- Active Plans: Memberships, Class Packs, Class & Service Bookings --}}
+    {{-- Registered Events --}}
+    @if($upcomingEvents->count() > 0)
+    <div class="mt-6">
+        <h2 class="text-lg font-semibold mb-4">{{ $trans['member.dashboard.your_events'] ?? 'Your Registered Events' }}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($upcomingEvents as $attendee)
+                @php $event = $attendee->event; @endphp
+                @if($event)
+                <a href="{{ route('subdomain.event', ['subdomain' => $host->subdomain, 'event' => $event->id]) }}"
+                   class="card bg-base-100 hover:border-info/50 border border-base-200 transition-all">
+                    <div class="card-body">
+                        <div class="flex items-start gap-4">
+                            <div class="text-center min-w-[50px]">
+                                <p class="text-lg font-bold">{{ $event->start_datetime->format('j') }}</p>
+                                <p class="text-xs text-base-content/60 uppercase">{{ $event->start_datetime->format('M') }}</p>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold truncate">{{ $event->title }}</h3>
+                                <p class="text-sm text-base-content/60">
+                                    {{ $event->start_datetime->format('D, g:i A') }}
+                                    @if($event->event_type !== 'online' && $event->venue_name)
+                                        &bull; {{ $event->venue_name }}
+                                    @elseif($event->event_type === 'online')
+                                        &bull; Online
+                                    @endif
+                                </p>
+                                <span class="badge badge-sm mt-2 {{ $attendee->status === \App\Models\EventAttendee::STATUS_WAITLISTED ? 'badge-warning' : 'badge-info' }}">
+                                    {{ ucfirst($attendee->status) }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                @endif
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    {{-- Active Plans: Memberships, Class Passes (+ pending purchases) --}}
     @php
-        $hasActivePlans = $activeMemberships->count() > 0 || $activeClassPacks->count() > 0;
+        $hasActivePlans = $activeMemberships->count() > 0
+            || $activeClassPacks->count() > 0
+            || $pendingPlanTransactions->count() > 0;
     @endphp
     @if($hasActivePlans)
     <div class="mt-6">
@@ -276,19 +331,45 @@
                 <div class="card-body">
                     <div class="flex items-start justify-between">
                         <div>
-                            <span class="badge badge-secondary badge-sm mb-2">{{ $trans['member.dashboard.class_pack'] ?? 'Class Pack' }}</span>
-                            <h3 class="font-semibold">{{ $pack->classPack?->name ?? ($trans['member.dashboard.class_pack'] ?? 'Class Pack') }}</h3>
+                            <span class="badge badge-secondary badge-sm mb-2">{{ $trans['member.dashboard.class_pack'] ?? 'Class Pass' }}</span>
+                            <h3 class="font-semibold">{{ $pack->classPass?->name ?? ($trans['member.dashboard.class_pack'] ?? 'Class Pass') }}</h3>
                         </div>
                         <span class="badge badge-success">{{ $trans['common.active'] ?? 'Active' }}</span>
                     </div>
                     <p class="text-sm text-base-content/60 mt-2">
-                        <span class="font-medium text-lg">{{ $pack->classes_remaining }}</span> / {{ $pack->classPack?->class_count ?? '?' }} {{ $trans['member.dashboard.classes_remaining'] ?? 'classes remaining' }}
+                        <span class="font-medium text-lg">{{ $pack->classes_remaining }}</span> / {{ $pack->classPass?->class_count ?? $pack->classes_total ?? '?' }} {{ $trans['member.dashboard.classes_remaining'] ?? 'classes remaining' }}
                     </p>
                     @if($pack->expires_at)
                     <p class="text-sm text-base-content/60">
                         {{ $trans['member.dashboard.expires'] ?? 'Expires' }} {{ $pack->expires_at->format('M j, Y') }}
                     </p>
                     @endif
+                </div>
+            </div>
+            @endforeach
+
+            {{-- Pending purchases (manual payment awaiting confirmation) --}}
+            @foreach($pendingPlanTransactions as $pending)
+            @php
+                $isMembership = $pending->type === \App\Models\Transaction::TYPE_MEMBERSHIP_PURCHASE;
+            @endphp
+            <div class="card bg-base-100 border border-warning/30">
+                <div class="card-body">
+                    <div class="flex items-start justify-between">
+                        <div>
+                            <span class="badge {{ $isMembership ? 'badge-primary' : 'badge-secondary' }} badge-sm mb-2">
+                                {{ $isMembership ? ($trans['page.memberships'] ?? 'Membership') : ($trans['member.dashboard.class_pack'] ?? 'Class Pass') }}
+                            </span>
+                            <h3 class="font-semibold">{{ $pending->metadata['item_name'] ?? $pending->type_label }}</h3>
+                        </div>
+                        <span class="badge badge-warning gap-1">
+                            <span class="icon-[tabler--clock] size-3"></span>
+                            {{ $trans['member.dashboard.pending'] ?? 'Pending' }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-base-content/60 mt-2">
+                        {{ $trans['member.dashboard.awaiting_payment'] ?? 'Awaiting payment confirmation' }} &bull; {{ $pending->formatted_total }}
+                    </p>
                 </div>
             </div>
             @endforeach

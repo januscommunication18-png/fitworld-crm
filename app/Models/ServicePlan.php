@@ -157,6 +157,41 @@ class ServicePlan extends Model
     }
 
     /**
+     * Return the billing-period total for $months (1/3/6/9/12) in the given
+     * currency. Mirrors ClassPlan::getBillingPeriodTotalForCurrency — same
+     * billing_discounts JSON shape (per-currency or legacy flat number).
+     */
+    public function getBillingPeriodTotalForCurrency(int|string $months, ?string $currency = null): float
+    {
+        if ($currency === null) {
+            $currency = $this->host?->default_currency ?? 'USD';
+        }
+
+        $months = (string) (int) $months;
+        $periodData = $this->billing_discounts[$months] ?? null;
+
+        if (is_array($periodData)) {
+            return (float) ($periodData[$currency] ?? 0);
+        }
+        return (float) ($periodData ?? 0);
+    }
+
+    /**
+     * True if at least one billing period has a positive total for the given
+     * currency — the booking flow uses this to decide whether to render the
+     * "Series" affordance for this service plan.
+     */
+    public function hasSeriesOptionForCurrency(?string $currency = null): bool
+    {
+        foreach (['1', '3', '6', '9', '12'] as $months) {
+            if ($this->getBillingPeriodTotalForCurrency($months, $currency) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Get deposit for a specific currency
      */
     public function getDepositForCurrency(?string $currency = null): ?float

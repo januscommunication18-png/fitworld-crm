@@ -169,6 +169,25 @@ class TransactionConfirmationMail extends Mailable implements ShouldQueue
             }
         }
 
+        // Service-plan purchases (a service "type" rather than a specific slot)
+        // arrive without a date / time / instructor — the customer picks a
+        // slot later, or the studio reaches out to schedule. Replace blank
+        // values with a clear "To be scheduled" placeholder so the email
+        // doesn't render half-empty rows.
+        $isServicePlanWithoutSlot = ($tx->purchasable instanceof \App\Models\ServicePlan)
+            && empty($metadata['service_slot_id']);
+        if ($isServicePlanWithoutSlot) {
+            if (!$date) {
+                $date = 'To be scheduled';
+            }
+            if (!$time) {
+                $time = 'Studio will reach out to confirm';
+            }
+            if (!$instructorName) {
+                $instructorName = 'To be assigned';
+            }
+        }
+
         $bookingId = $this->booking?->id
             ? 'BK-' . $this->booking->id
             : ($tx->transaction_id ?: ('TX-' . $tx->id));

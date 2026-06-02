@@ -7,9 +7,12 @@ use App\Mail\TransactionConfirmationMail;
 use App\Models\Booking;
 use App\Models\ClassPack;
 use App\Models\ClassPackPurchase;
+use App\Models\ClassPass;
+use App\Models\ClassPassPurchase;
 use App\Models\ClassSession;
 use App\Models\Client;
 use App\Models\CustomerMembership;
+use App\Models\Event;
 use App\Models\Host;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
@@ -354,7 +357,19 @@ class TransactionService
         }
 
         $startDate = now();
-        $endDate = $this->calculateMembershipEndDate($plan, $startDate);
+
+        // Honor a prepaid multi-month window if the customer chose one at
+        // checkout (stored as e.g. "3 months" in the transaction metadata);
+        // otherwise fall back to the plan's natural interval. Only the explicit
+        // billing_period is trusted here — not item_name — so a number in the
+        // plan name can't be mistaken for a prepay window.
+        $billingPeriod = $transaction->metadata['billing_period'] ?? null;
+        $prepaidMonths = (is_string($billingPeriod) && preg_match('/(\d+)\s*month/i', $billingPeriod, $m))
+            ? (int) $m[1]
+            : null;
+        $endDate = ($prepaidMonths && $prepaidMonths > 1)
+            ? $startDate->copy()->addMonths($prepaidMonths)
+            : $this->calculateMembershipEndDate($plan, $startDate);
 
         // Determine credits based on plan type
         $creditsRemaining = null; // null = unlimited
@@ -385,36 +400,51 @@ class TransactionService
     }
 
     /**
-     * Activate a class pack purchase
+     * Activate a class pass (pack) purchase.
+     *
+     * Class packs and class passes share the `class_passes` table; the live
+     * purchase record is a ClassPassPurchase (the legacy ClassPackPurchase model
+     * points at a dropped table). Mirrors ClassPassService::create so the credit
+     * pack shows up in the member portal, reports, and booking credit lookups.
      */
-    public function activateClassPackPurchase(Transaction $transaction): ?ClassPackPurchase
+    public function activateClassPackPurchase(Transaction $transaction): ?ClassPassPurchase
     {
         if ($transaction->type !== Transaction::TYPE_CLASS_PACK_PURCHASE) {
             return null;
         }
 
-        $pack = $transaction->purchasable;
-        if (!($pack instanceof ClassPack)) {
+        // The purchasable is stored as a ClassPack instance, but both models map
+        // to class_passes — reload as ClassPass for the richer pass API.
+        $pass = ClassPass::where('host_id', $transaction->host_id)
+            ->find($transaction->purchasable_id);
+        if (!$pass) {
             return null;
         }
 
-        $expiresAt = $pack->validity_days
-            ? now()->addDays($pack->validity_days)
-            : null;
+        $now = now();
+        $activationType = $pass->activation_type ?? ClassPass::ACTIVATION_ON_PURCHASE;
 
-        $purchase = ClassPackPurchase::create([
+        // On-purchase passes start (and begin counting down their validity) now;
+        // on-first-booking passes activate later when the first credit is used.
+        $activatedAt = null;
+        $expiresAt = null;
+        if ($activationType === ClassPass::ACTIVATION_ON_PURCHASE) {
+            $activatedAt = $now;
+            $expiresAt = $pass->calculateExpirationDate($now);
+        }
+
+        return ClassPassPurchase::create([
             'host_id' => $transaction->host_id,
             'client_id' => $transaction->client_id,
-            'class_pack_id' => $pack->id,
-            'classes_remaining' => $pack->class_count,
-            'classes_used' => 0,
-            'price_paid' => $transaction->total_amount,
-            'purchased_at' => now(),
+            'class_pass_id' => $pass->id,
+            'classes_remaining' => $pass->class_count,
+            'classes_total' => $pass->class_count,
+            'credits_used' => 0,
+            'purchased_at' => $now,
+            'activated_at' => $activatedAt,
+            'activation_type' => $activationType,
             'expires_at' => $expiresAt,
-            'status' => 'active',
         ]);
-
-        return $purchase;
     }
 
     /**
@@ -707,6 +737,7 @@ class TransactionService
             'service_slot' => Transaction::TYPE_SERVICE_BOOKING,
             'membership_plan' => Transaction::TYPE_MEMBERSHIP_PURCHASE,
             'class_pack' => Transaction::TYPE_CLASS_PACK_PURCHASE,
+            'event' => Transaction::TYPE_EVENT_REGISTRATION,
             default => Transaction::TYPE_CLASS_BOOKING,
         };
     }
@@ -733,6 +764,9 @@ class TransactionService
             // navigate back to it.
             'class_plan' => \App\Models\ClassPlan::find($selectedItem['class_plan_id'] ?? $id),
             'service_plan' => \App\Models\ServicePlan::find($selectedItem['service_plan_id'] ?? $id),
+            // Event registrations point the purchasable at the event so the
+            // confirmation page / reports can navigate back to it.
+            'event' => Event::find($id),
             default => null,
         };
     }

@@ -20,6 +20,7 @@ class Transaction extends Model
     const TYPE_MEMBERSHIP_PURCHASE = 'membership_purchase';
     const TYPE_CLASS_PACK_PURCHASE = 'class_pack_purchase';
     const TYPE_RENTAL = 'rental';
+    const TYPE_EVENT_REGISTRATION = 'event_registration';
 
     // Status constants
     const STATUS_PENDING = 'pending';
@@ -353,6 +354,7 @@ class Transaction extends Model
             self::TYPE_MEMBERSHIP_PURCHASE => 'Membership Purchase',
             self::TYPE_CLASS_PACK_PURCHASE => 'Class Pack Purchase',
             self::TYPE_RENTAL => 'Rental',
+            self::TYPE_EVENT_REGISTRATION => 'Event Registration',
         ];
     }
 
