@@ -8,6 +8,7 @@ use App\Http\Middleware\AuthenticateMember;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckSecurityCode;
 use App\Http\Middleware\EnforceNavPermission;
+use App\Http\Middleware\ResolveStudioContext;
 use App\Http\Middleware\ResolveSubdomainHost;
 use App\Http\Middleware\SetCurrentHost;
 use App\Http\Middleware\TrackUserSession;
@@ -31,6 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
             // Register backoffice routes
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/backoffice.php'));
+
+            // FitCRM mobile app API — its own file, prefixed /api/v1.
+            // Registered before api.php so the v1 mobile routes resolve first.
+            \Illuminate\Support\Facades\Route::middleware('api')
+                ->prefix('api/v1')
+                ->group(base_path('routes/mobile.php'));
 
             // Load API routes with proper prefix and middleware
             \Illuminate\Support\Facades\Route::middleware('api')
@@ -70,6 +77,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'subdomain.host' => ResolveSubdomainHost::class,
             'permission' => CheckPermission::class,
             'auth.member' => AuthenticateMember::class,
+            'studio.context' => ResolveStudioContext::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -362,6 +362,41 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Resolve the flat list of permission keys this user effectively has for a
+     * host — owners get `['*']` (wildcard); everyone else gets their custom
+     * override list (if any) or the role defaults. Mirrors [hasPermission].
+     *
+     * @return array<int, string>
+     */
+    public function getEffectivePermissions(?Host $host = null): array
+    {
+        $currentHost = $host ?? $this->currentHost();
+
+        $role = $currentHost ? $this->getRoleForHost($currentHost) : $this->role;
+        if ($role === null && $currentHost && $this->host_id === $currentHost->id) {
+            $role = $this->role;
+        }
+        if ($role === null) {
+            return [];
+        }
+        if ($role === self::ROLE_OWNER) {
+            return ['*'];
+        }
+
+        $permissions = $currentHost ? $this->getPermissionsForHost($currentHost) : $this->permissions;
+        if (is_array($permissions) && ! empty($permissions)) {
+            // Associative map {key => bool} — keep the truthy keys.
+            if (array_keys($permissions) !== range(0, count($permissions) - 1)) {
+                return array_keys(array_filter($permissions, fn ($v) => (bool) $v));
+            }
+            // Flat list of granted keys.
+            return array_values($permissions);
+        }
+
+        return self::getDefaultPermissionsForRole($role);
+    }
+
+    /**
      * Check default permission for a specific role
      */
     protected function hasDefaultPermissionForRole(string $permission, string $role): bool

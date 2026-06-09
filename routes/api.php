@@ -7,6 +7,9 @@ use App\Http\Controllers\Api\WalkInBookingController;
 use App\Http\Controllers\Api\FitNearYouApiController;
 use Illuminate\Support\Facades\Route;
 
+// NOTE: The FitCRM mobile app's own routes (auth + studio-scoped listings)
+// live in routes/mobile.php, registered separately in bootstrap/app.php.
+
 Route::prefix('v1')->group(function () {
 
     // Signup endpoints (public)

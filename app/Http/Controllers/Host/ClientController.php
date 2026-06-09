@@ -303,6 +303,7 @@ class ClientController extends Controller
         $clientData = [
             'host_id' => $host->id,
             'created_by_user_id' => Auth::id(),
+            'created_via' => 'web',
 
             // Basic Information
             'first_name' => $validated['first_name'],

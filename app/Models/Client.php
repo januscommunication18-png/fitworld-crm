@@ -109,6 +109,7 @@ class Client extends Model implements AuthenticatableContract
         'membership_expires_at',
         'created_by_user_id',
         'updated_by_user_id',
+        'created_via',
         'archived_at',
         // Member Portal Fields
         'password',
@@ -421,11 +422,30 @@ class Client extends Model implements AuthenticatableContract
 
     public function scopeSearch(Builder $query, string $search): Builder
     {
-        return $query->where(function ($q) use ($search) {
-            $q->where('first_name', 'like', "%{$search}%")
-              ->orWhere('last_name', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%")
-              ->orWhere('phone', 'like', "%{$search}%");
+        $needle = strtolower(trim($search));
+        // Digits-only version of the term so a phone search ignores formatting
+        // (spaces, dashes, parentheses): "1234567890" matches "(123) 456-7890".
+        $digits = preg_replace('/\D+/', '', $search);
+
+        return $query->where(function ($q) use ($needle, $digits) {
+            $q->where('first_name', 'like', "%{$needle}%")
+              ->orWhere('last_name', 'like', "%{$needle}%")
+              ->orWhere('email', 'like', "%{$needle}%")
+              ->orWhere('city', 'like', "%{$needle}%")
+              ->orWhere('state_province', 'like', "%{$needle}%")
+              // Match the concatenated full name so "John Smith" finds the
+              // client even though neither column alone contains both words.
+              ->orWhereRaw('LOWER(CONCAT(first_name, " ", last_name)) LIKE ?', ["%{$needle}%"]);
+
+            if ($digits !== '') {
+                // Strip non-digits from the stored numbers before comparing so
+                // any phone formatting matches a digits-only search term.
+                $q->orWhereRaw("REGEXP_REPLACE(COALESCE(phone, ''), '[^0-9]', '') LIKE ?", ["%{$digits}%"])
+                  ->orWhereRaw("REGEXP_REPLACE(COALESCE(secondary_phone, ''), '[^0-9]', '') LIKE ?", ["%{$digits}%"]);
+            } else {
+                $q->orWhere('phone', 'like', "%{$needle}%")
+                  ->orWhere('secondary_phone', 'like', "%{$needle}%");
+            }
         });
     }
 

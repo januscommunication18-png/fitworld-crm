@@ -257,6 +257,11 @@
                                     <a href="{{ route('clients.show', $client) }}" class="font-semibold hover:text-primary transition-colors">
                                         {{ $client->full_name }}
                                     </a>
+                                    @if($client->created_via === 'mobile')
+                                        <span class="badge badge-soft badge-primary badge-xs gap-1 align-middle ml-1" title="Added via mobile app">
+                                            <span class="icon-[tabler--device-mobile] size-3"></span> Mobile
+                                        </span>
+                                    @endif
                                     <p class="text-sm text-base-content/60 truncate">{{ $client->email }}</p>
                                 </div>
                                 @php
@@ -369,6 +374,11 @@
                                             <a href="{{ route('clients.show', $client) }}" class="font-medium hover:text-primary">
                                                 {{ $client->full_name }}
                                             </a>
+                                            @if($client->created_via === 'mobile')
+                                                <span class="badge badge-soft badge-primary badge-xs gap-1 align-middle ml-1" title="Added via mobile app">
+                                                    <span class="icon-[tabler--device-mobile] size-3"></span> Mobile
+                                                </span>
+                                            @endif
                                             <div class="text-sm text-base-content/60">{{ $client->email }}</div>
                                         </div>
                                     </div>
