@@ -6,6 +6,7 @@ use App\Http\Controllers\Host\EmailTemplateController;
 use App\Mail\Concerns\UsesCustomTemplate;
 use App\Models\Booking;
 use App\Models\Transaction;
+use App\Services\QrImageService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -194,7 +195,11 @@ class TransactionConfirmationMail extends Mailable implements ShouldQueue
 
         $transactionIdDisplay = $tx->transaction_id ?: ('TX-' . $tx->id);
 
+        $qr = $this->qrUrls();
+
         return [
+            'qr_image_url' => $qr['image'],
+            'qr_download_url' => $qr['download'],
             'customer_name' => trim(($client?->first_name ?? '') . ' ' . ($client?->last_name ?? '')) ?: ($client?->email ?? ''),
             'customer_email' => $client?->email ?? '',
             'class_name' => $metadata['item_name'] ?? 'Booking',
@@ -316,6 +321,26 @@ class TransactionConfirmationMail extends Mailable implements ShouldQueue
         ];
     }
 
+    /**
+     * Build the check-in QR image + download URLs for the client. Only returned
+     * for paid (confirmed) bookings — the QR is meaningful once payment is done.
+     *
+     * @return array{image: string, download: string}
+     */
+    protected function qrUrls(): array
+    {
+        $client = $this->transaction->client;
+
+        if (! $client || ! $this->transaction->is_paid) {
+            return ['image' => '', 'download' => ''];
+        }
+
+        $token = $client->getOrCreateQrCode()->qr_token;
+        $url = route('checkin-qr.show', ['token' => $token]);
+
+        return ['image' => $url, 'download' => $url . '?dl=1'];
+    }
+
     protected function resolvePaymentInstructions(): string
     {
         $tx = $this->transaction;
@@ -348,6 +373,14 @@ class TransactionConfirmationMail extends Mailable implements ShouldQueue
 
             $attachments[] = Attachment::fromData(fn () => $this->pdfContent, $invoiceNumber . '.pdf')
                 ->withMime('application/pdf');
+        }
+
+        // Attach the client's check-in QR on confirmed (paid) bookings.
+        $client = $this->transaction->client;
+        if ($client && $this->transaction->is_paid) {
+            $png = app(QrImageService::class)->pngForClient($client);
+            $attachments[] = Attachment::fromData(fn () => $png, 'checkin-qr.png')
+                ->withMime('image/png');
         }
 
         return $attachments;

@@ -226,6 +226,23 @@ class ClassPlan extends Model
     }
 
     /**
+     * Flatten billing_discounts to ['1' => 100.0, ...] for a single currency,
+     * the shape the walk-in JS consumes via parseFloat(discounts[months]).
+     * Periods with no positive total are omitted.
+     */
+    public function getBillingDiscountsForCurrency(?string $currency = null): array
+    {
+        $flat = [];
+        foreach (['1', '3', '6', '9', '12'] as $months) {
+            $total = $this->getBillingPeriodTotalForCurrency($months, $currency);
+            if ($total > 0) {
+                $flat[$months] = $total;
+            }
+        }
+        return $flat;
+    }
+
+    /**
      * True if at least one billing period has a positive total for the given
      * currency. Mirrors getBillingPeriodTotalForCurrency() so the "Series Class"
      * affordance is shown only when there's actually something to buy.

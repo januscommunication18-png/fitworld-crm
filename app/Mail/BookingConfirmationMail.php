@@ -4,7 +4,9 @@ namespace App\Mail;
 
 use App\Models\Booking;
 use App\Models\QuestionnaireResponse;
+use App\Services\QrImageService;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
@@ -60,6 +62,8 @@ class BookingConfirmationMail extends Mailable
                 'studioName' => $host?->studio_name ?? 'Our Studio',
                 'questionnaireResponses' => $this->questionnaireResponses,
                 'hasQuestionnaires' => count($this->questionnaireResponses) > 0,
+                'qrImageSrc' => $this->qrImageSrc(),
+                'qrDownloadUrl' => $this->qrDownloadUrl(),
             ],
         );
     }
@@ -71,6 +75,54 @@ class BookingConfirmationMail extends Mailable
      */
     public function attachments(): array
     {
-        return [];
+        $png = $this->qrPng();
+
+        if (! $png) {
+            return [];
+        }
+
+        return [
+            Attachment::fromData(fn () => $png, 'checkin-qr.png')->withMime('image/png'),
+        ];
+    }
+
+    /**
+     * Raw PNG bytes of the client's check-in QR (null if no client).
+     */
+    protected function qrPng(): ?string
+    {
+        $client = $this->booking->client;
+
+        return $client
+            ? app(QrImageService::class)->pngForClient($client)
+            : null;
+    }
+
+    /**
+     * Inline image source (base64 data URI) for the client's check-in QR.
+     * A data URI renders self-contained — no CID/attachment resolution or
+     * external fetch needed — so it shows in previews and most mail clients.
+     */
+    protected function qrImageSrc(): ?string
+    {
+        $client = $this->booking->client;
+
+        return $client
+            ? app(QrImageService::class)->dataUriForToken($client->getOrCreateQrCode()->qr_token)
+            : null;
+    }
+
+    /**
+     * Public URL to view/download the client's check-in QR.
+     */
+    protected function qrDownloadUrl(): ?string
+    {
+        $client = $this->booking->client;
+
+        if (! $client) {
+            return null;
+        }
+
+        return route('checkin-qr.show', ['token' => $client->getOrCreateQrCode()->qr_token]);
     }
 }

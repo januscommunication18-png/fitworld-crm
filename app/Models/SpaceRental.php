@@ -92,12 +92,13 @@ class SpaceRental extends Model
         });
 
         static::created(function ($rental) {
-            // Log initial status
+            // Log initial status. The authenticated principal may be a
+            // Client (branded app); the log's updated_by references users.
             $rental->statusLogs()->create([
                 'from_status' => null,
                 'to_status' => $rental->status,
                 'notes' => 'Space rental created',
-                'updated_by' => auth()->id(),
+                'updated_by' => auth()->user() instanceof User ? auth()->id() : null,
             ]);
         });
     }

@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api\V1\Auth\AuthController as MobileAuthController;
 use App\Http\Controllers\Api\V1\BookingController as MobileBookingController;
+use App\Http\Controllers\Api\V1\BookingCreateController as MobileBookingCreateController;
 use App\Http\Controllers\Api\V1\ClassPassController as MobileClassPassController;
 use App\Http\Controllers\Api\V1\ClassSessionController as MobileClassSessionController;
 use App\Http\Controllers\Api\V1\ClientController as MobileClientController;
 use App\Http\Controllers\Api\V1\DashboardController as MobileDashboardController;
+use App\Http\Controllers\Api\V1\DigitalCheckinController as MobileDigitalCheckinController;
 use App\Http\Controllers\Api\V1\MembershipPlanController as MobileMembershipPlanController;
 use App\Http\Controllers\Api\V1\PaymentController as MobilePaymentController;
 use App\Http\Controllers\Api\V1\ScheduleController as MobileScheduleController;
@@ -46,6 +48,18 @@ Route::middleware(['auth:sanctum', 'studio.context'])->group(function () {
     Route::get('/bookings/series', [MobileBookingController::class, 'series']);
     Route::get('/bookings/{id}', [MobileBookingController::class, 'show'])->whereNumber('id');
 
+    // Add Booking (class / service / space rental) + form option feeds.
+    Route::get('/bookings/form-options', [MobileBookingCreateController::class, 'formOptions']);
+    // NB: not `{client}` — backoffice.php registers a global `client` → Host binding.
+    Route::get('/bookings/payment-options/{id}', [MobileBookingCreateController::class, 'paymentOptions'])->whereNumber('id');
+    Route::post('/bookings/quick-add-client', [MobileBookingCreateController::class, 'quickAddClient']);
+    Route::get('/bookings/class-options', [MobileBookingCreateController::class, 'classOptions']);
+    Route::get('/bookings/service-options', [MobileBookingCreateController::class, 'serviceOptions']);
+    Route::post('/class-sessions/{id}/bookings', [MobileBookingCreateController::class, 'storeClassBooking'])->whereNumber('id');
+    Route::post('/service-slots/{id}/bookings', [MobileBookingCreateController::class, 'storeServiceBooking'])->whereNumber('id');
+    Route::get('/space-rentals/quote', [MobileBookingCreateController::class, 'spaceRentalQuote']);
+    Route::post('/space-rentals', [MobileBookingCreateController::class, 'storeSpaceRental']);
+
     // Schedule — unified feed + per-type detail.
     Route::get('/schedule', [MobileScheduleController::class, 'index']);
     Route::get('/class-sessions', [MobileClassSessionController::class, 'index']);
@@ -54,6 +68,11 @@ Route::middleware(['auth:sanctum', 'studio.context'])->group(function () {
     Route::get('/service-slots/{id}', [MobileServiceSlotController::class, 'show'])->whereNumber('id');
     Route::get('/service-slots/{id}/bookings', [MobileServiceSlotController::class, 'bookings'])->whereNumber('id');
     Route::get('/space-rentals/{id}', [MobileSpaceRentalController::class, 'show'])->whereNumber('id');
+
+    // Digital Check-In (QR scanner + manual lookup)
+    Route::post('/digital-checkin/resolve', [MobileDigitalCheckinController::class, 'resolve']);
+    Route::post('/digital-checkin/confirm', [MobileDigitalCheckinController::class, 'confirm']);
+    Route::get('/digital-checkin/search', [MobileDigitalCheckinController::class, 'search']);
 
     // Clients
     Route::get('/clients', [MobileClientController::class, 'index']);

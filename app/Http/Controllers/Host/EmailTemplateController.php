@@ -28,10 +28,26 @@ class EmailTemplateController extends Controller
                     'instructor_name' => 'Instructor\'s name',
                     'location' => 'Location/address',
                     'booking_id' => 'Booking reference ID',
+                    'qr_image_url' => 'Client check-in QR code image URL',
+                    'qr_download_url' => 'Client check-in QR code download link',
                     'studio_name' => 'Your studio name',
                     'studio_phone' => 'Studio phone number',
                     'studio_email' => 'Studio email address',
                     'cancellation_policy' => 'Cancellation policy text',
+                ],
+            ],
+            'client_qr_code' => [
+                'name' => 'Check-In QR Code',
+                'description' => 'Sent manually from a client profile to give the client their personal check-in QR code',
+                'category' => 'transactional',
+                'variables' => [
+                    'customer_name' => 'Customer\'s full name',
+                    'customer_email' => 'Customer\'s email address',
+                    'qr_image_url' => 'Client check-in QR code image (inline)',
+                    'qr_download_url' => 'Client check-in QR code download link',
+                    'studio_name' => 'Your studio name',
+                    'studio_phone' => 'Studio phone number',
+                    'studio_email' => 'Studio email address',
                 ],
             ],
             'booking_received' => [
@@ -353,6 +369,7 @@ class EmailTemplateController extends Controller
     {
         $subjects = [
             'booking_confirmation' => 'Your Booking is Confirmed - {{class_name}}',
+            'client_qr_code' => 'Your Check-In QR Code - {{studio_name}}',
             'booking_received' => 'Booking Received — Payment Required ({{class_name}})',
             'payment_receipt' => 'Payment Receipt - Invoice #{{invoice_number}}',
             'waitlist_confirmation' => "You're on the Waitlist - {{class_name}}",
@@ -689,7 +706,23 @@ class EmailTemplateController extends Controller
     <li><strong>Location:</strong> {{location}}</li>
 </ul>
 <p>Booking Reference: {{booking_id}}</p>
+<div style="text-align:center;margin:24px 0;">
+    <p style="font-weight:bold;margin-bottom:8px;">Your Check-In QR Code</p>
+    <p style="margin:0 0 12px;color:#6b7280;font-size:14px;">Show this at the studio to check in. It works for all your bookings, services, and memberships.</p>
+    <img src="{{qr_image_url}}" alt="Your check-in QR code" width="200" height="200" style="border:1px solid #e5e7eb;border-radius:12px;padding:8px;background:#ffffff;">
+    <p style="margin-top:12px;"><a href="{{qr_download_url}}">Download QR Code</a></p>
+</div>
 <p>See you soon!</p>
+<p>{{studio_name}}</p>',
+
+            'client_qr_code' => '<h2>Your Check-In QR Code</h2>
+<p>Hi {{customer_name}},</p>
+<p>Here is your personal check-in QR code for {{studio_name}}. Show it at the studio to check in — it works for all your bookings, services, and memberships.</p>
+<div style="text-align:center;margin:24px 0;">
+    <img src="{{qr_image_url}}" alt="Your check-in QR code" width="220" height="220" style="border:1px solid #e5e7eb;border-radius:12px;padding:8px;background:#ffffff;">
+    <p style="margin-top:12px;"><a href="{{qr_download_url}}">Download QR Code</a></p>
+</div>
+<p>Keep this handy on your phone for a quick check-in. See you soon!</p>
 <p>{{studio_name}}</p>',
 
             'booking_received' => '<h2>Booking Received</h2>

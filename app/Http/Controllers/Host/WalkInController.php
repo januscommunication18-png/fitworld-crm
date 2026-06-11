@@ -132,7 +132,7 @@ class WalkInController extends Controller
             }])
             ->orderBy('start_time')
             ->get()
-            ->map(function ($session) {
+            ->map(function ($session) use ($host) {
                 return [
                     'id' => $session->id,
                     'title' => $session->title ?: $session->classPlan?->name,
@@ -146,7 +146,7 @@ class WalkInController extends Controller
                     'spots_remaining' => $session->capacity - $session->active_bookings_count,
                     'color' => $session->classPlan?->color ?? '#6366f1',
                     'price' => (float) $session->price > 0 ? $session->price : ($session->classPlan?->default_price ?? 0),
-                    'billing_discounts' => $session->classPlan?->billing_discounts ?? null,
+                    'billing_discounts' => $session->classPlan?->getBillingDiscountsForCurrency($host->default_currency ?? 'USD') ?: null,
                     'registration_fee' => (float) ($session->classPlan?->registration_fee ?? 0),
                     'cancellation_fee' => (float) ($session->classPlan?->cancellation_fee ?? 0),
                     'cancellation_grace_hours' => $session->classPlan?->cancellation_grace_hours ?? 48,
@@ -211,7 +211,7 @@ class WalkInController extends Controller
             }])
             ->orderBy('start_time')
             ->get()
-            ->map(function ($session) {
+            ->map(function ($session) use ($host) {
                 return [
                     'id' => $session->id,
                     'title' => $session->title ?: $session->classPlan?->name,
@@ -226,7 +226,7 @@ class WalkInController extends Controller
                     'spots_remaining' => $session->capacity - $session->active_bookings_count,
                     'color' => $session->classPlan?->color ?? '#6366f1',
                     'price' => (float) $session->price > 0 ? $session->price : ($session->classPlan?->default_price ?? 0),
-                    'billing_discounts' => $session->classPlan?->billing_discounts ?? null,
+                    'billing_discounts' => $session->classPlan?->getBillingDiscountsForCurrency($host->default_currency ?? 'USD') ?: null,
                     'registration_fee' => (float) ($session->classPlan?->registration_fee ?? 0),
                     'cancellation_fee' => (float) ($session->classPlan?->cancellation_fee ?? 0),
                     'cancellation_grace_hours' => $session->classPlan?->cancellation_grace_hours ?? 48,
@@ -1543,7 +1543,7 @@ class WalkInController extends Controller
             'duration_minutes' => $classPlan->default_duration_minutes ?? 60,
             'capacity' => $classPlan->default_capacity ?? 10,
             'price' => $classPlan->default_price ?? 0,
-            'billing_discounts' => $classPlan->billing_discounts ?? null,
+            'billing_discounts' => $classPlan->getBillingDiscountsForCurrency($host->default_currency ?? 'USD') ?: null,
             'registration_fee' => (float) ($classPlan->registration_fee ?? 0),
             'cancellation_fee' => (float) ($classPlan->cancellation_fee ?? 0),
             'cancellation_grace_hours' => $classPlan->cancellation_grace_hours ?? 48,
@@ -1866,7 +1866,7 @@ class WalkInController extends Controller
 
         $slots = $query->orderBy('start_time')->get();
 
-        $slotsData = $slots->map(function ($slot) {
+        $slotsData = $slots->map(function ($slot) use ($host) {
             return [
                 'id' => $slot->id,
                 'time' => $slot->start_time->format('g:i A') . ' - ' . $slot->end_time->format('g:i A'),
@@ -1879,7 +1879,7 @@ class WalkInController extends Controller
                 'formatted_price' => $slot->formatted_price,
                 'start_time_iso' => $slot->start_time->toIso8601String(),
                 'end_time_iso' => $slot->end_time->toIso8601String(),
-                'billing_discounts' => $slot->servicePlan?->billing_discounts ?? null,
+                'billing_discounts' => $slot->servicePlan?->getBillingDiscountsForCurrency($host->default_currency ?? 'USD') ?: null,
                 'service_plan_id' => $slot->service_plan_id,
                 'registration_fee' => (float) ($slot->servicePlan?->registration_fee ?? 0),
                 'cancellation_fee' => (float) ($slot->servicePlan?->cancellation_fee ?? 0),
@@ -1936,7 +1936,7 @@ class WalkInController extends Controller
         return response()->json([
             'duration_minutes' => $servicePlan->duration_minutes,
             'price' => $servicePlan->price,
-            'billing_discounts' => $servicePlan->billing_discounts ?? null,
+            'billing_discounts' => $servicePlan->getBillingDiscountsForCurrency($host->default_currency ?? 'USD') ?: null,
             'registration_fee' => (float) ($servicePlan->registration_fee ?? 0),
             'cancellation_fee' => (float) ($servicePlan->cancellation_fee ?? 0),
             'cancellation_grace_hours' => $servicePlan->cancellation_grace_hours ?? 48,
@@ -2813,7 +2813,7 @@ class WalkInController extends Controller
             ])
             ->orderBy('start_time')
             ->get()
-            ->map(function ($slot) {
+            ->map(function ($slot) use ($host) {
                 return [
                     'id' => $slot->id,
                     'title' => $slot->servicePlan?->name,
@@ -2824,7 +2824,7 @@ class WalkInController extends Controller
                     'instructor' => $slot->instructor?->name ?? 'TBD',
                     'location' => $slot->location?->name ?? null,
                     'price' => (float) $slot->price > 0 ? $slot->price : ($slot->servicePlan?->price ?? 0),
-                    'billing_discounts' => $slot->servicePlan?->billing_discounts ?? null,
+                    'billing_discounts' => $slot->servicePlan?->getBillingDiscountsForCurrency($host->default_currency ?? 'USD') ?: null,
                     'registration_fee' => (float) ($slot->servicePlan?->registration_fee ?? 0),
                     'cancellation_fee' => (float) ($slot->servicePlan?->cancellation_fee ?? 0),
                     'cancellation_grace_hours' => $slot->servicePlan?->cancellation_grace_hours ?? 48,

@@ -85,6 +85,8 @@ class Host extends Model
         'tax_settings',
         'client_settings',
         'member_portal_settings',
+        'client_app_token',
+        'client_app_settings',
         'policies',
         'terms_of_service',
         'privacy_policy',
@@ -120,6 +122,7 @@ class Host extends Model
             'tax_settings' => 'array',
             'client_settings' => 'array',
             'member_portal_settings' => 'array',
+            'client_app_settings' => 'array',
             'policies' => 'array',
             'is_live' => 'boolean',
             'has_premium_access' => 'boolean',
@@ -368,6 +371,66 @@ class Host extends Model
     }
 
     /**
+     * Get a branded client app setting with default fallback.
+     */
+    public function getClientAppSetting(string $key, $default = null)
+    {
+        return $this->client_app_settings[$key] ?? $default;
+    }
+
+    /**
+     * Default branded client app settings. Branding keys fall back to the
+     * booking page settings / logo at read time, so nulls here mean
+     * "inherit".
+     */
+    public static function defaultClientAppSettings(): array
+    {
+        return [
+            'enabled' => false,
+            'code_prefix' => null,       // derived from studio name on first save
+            'app_display_name' => null,  // falls back to studio_name
+            'primary_color' => null,     // falls back to booking_settings.primary_color
+            'theme' => null,             // falls back to booking_settings.theme
+            'onboarding_slides' => [],
+            'support_email' => null,
+            'support_phone' => null,
+        ];
+    }
+
+    public function isClientAppEnabled(): bool
+    {
+        return (bool) $this->getClientAppSetting('enabled', false);
+    }
+
+    /**
+     * Issue (or rotate) the app token baked into this studio's mobile build.
+     */
+    public function generateClientAppToken(): string
+    {
+        $this->client_app_token = 'csa_'.\Illuminate\Support\Str::random(48);
+        $this->save();
+
+        return $this->client_app_token;
+    }
+
+    /**
+     * Suggest a Client Token ID prefix from the studio name: initials of up
+     * to three words (e.g. "Zen Yoga Studio" → ZYS), or the first three
+     * letters of a single-word name. A–Z only, padded with X.
+     */
+    public function deriveClientCodePrefix(): string
+    {
+        $name = strtoupper(\Illuminate\Support\Str::ascii($this->studio_name ?? ''));
+        $words = preg_split('/[^A-Z]+/', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        $prefix = count($words) >= 2
+            ? implode('', array_map(fn ($w) => $w[0], array_slice($words, 0, 3)))
+            : substr($words[0] ?? '', 0, 3);
+
+        return str_pad(substr($prefix, 0, 3), 3, 'X');
+    }
+
+    /**
      * Get default policies
      */
     public static function defaultPolicies(): array
@@ -410,6 +473,12 @@ class Host extends Model
             // self check-in is still allowed up to self_checkin_late_minutes.
             'self_checkin_window_minutes' => 30,
             'self_checkin_late_minutes' => 30,
+
+            // Digital (QR) Check-in
+            'enable_digital_checkin' => true,
+            'enable_qr_checkin' => true,
+            'allow_staff_override' => true,
+            'block_unpaid_checkin' => true,
         ];
     }
 

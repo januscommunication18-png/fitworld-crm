@@ -23,6 +23,26 @@ Your booking at **{{ $studioName }}** has been confirmed.
 
 ---
 
+@if(!empty($qrImageSrc))
+## Your Check-In QR Code
+
+Show this code at the studio to check in. It's your personal code — it works for all your bookings, services, and memberships.
+
+<p style="text-align:center; margin:16px 0;">
+<img src="{{ $qrImageSrc }}" alt="Your check-in QR code" width="220" height="220" style="border:1px solid #e5e7eb; border-radius:12px; padding:8px; background:#ffffff;">
+</p>
+
+@if(!empty($qrDownloadUrl))
+<x-mail::button :url="$qrDownloadUrl . '?dl=1'">
+Download QR Code
+</x-mail::button>
+@endif
+
+The QR code is also attached to this email.
+
+---
+@endif
+
 @if($hasQuestionnaires)
 ## Please Complete Your Intake Form(s)
 

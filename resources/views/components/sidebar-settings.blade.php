@@ -79,6 +79,9 @@
     <li><a href="{{ route('settings.locations.policies') }}" class="{{ request()->routeIs('settings.locations.policies') ? 'active' : '' }}">
         <span class="icon-[tabler--file-text] size-4"></span> <span class="sidebar-label">Policies</span>
     </a></li>
+    <li><a href="{{ route('settings.check-in') }}" class="{{ request()->routeIs('settings.check-in') ? 'active' : '' }}">
+        <span class="icon-[tabler--qrcode] size-4"></span> <span class="sidebar-label">Check-In</span>
+    </a></li>
     @endif
     @endif
 
@@ -106,6 +109,9 @@
     </li>
     <li><a href="{{ route('settings.member-portal') }}" class="{{ request()->routeIs('settings.member-portal') ? 'active' : '' }}">
         <span class="icon-[tabler--users-cog] size-4"></span> <span class="sidebar-label">Client & Portal Settings</span>
+    </a></li>
+    <li><a href="{{ route('settings.client-app') }}" class="{{ request()->routeIs('settings.client-app') ? 'active' : '' }}">
+        <span class="icon-[tabler--device-mobile] size-4"></span> <span class="sidebar-label">Client App</span>
     </a></li>
     @endif
 

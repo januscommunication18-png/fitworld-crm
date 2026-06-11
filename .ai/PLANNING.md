@@ -2157,6 +2157,20 @@ this.$trans('booking.title')  // Returns translated text
 | AI Translation | Auto-translate using AI for initial population |
 | Client Language Preference | Per-client language override |
 
+### FEAT-010: Digital Check-In via QR (Iteration 1 — Web Prototype)
+
+- **Status:** In Progress
+- **Priority:** P1 (high)
+- **Description:** One permanent QR per **client** (not per booking) that staff scan to check the client into today's eligible items (booked class sessions, service slots, open-access membership). Iteration 1 is a dashboard web prototype with a camera scanner + manual lookup; logic is factored into a service so the Flutter staff app (`/api/v1`) can reuse it next.
+- **Decisions:**
+  - Token stored in new `client_qr_codes` table (`qr_token` 64-char, `status` active/disabled, `generated_at`, `last_used_at`). One active token per client; QR encodes the **opaque token only** (no IDs/URL).
+  - On scan: **auto check-in when exactly one option is eligible & in-window**; chooser when multiple; show reasons + optional staff override when none.
+  - **Reuse, not rebuild:** booking check-in fields + `BookingService::checkIn` (audit), `Booking::selfCheckInState()` window engine, `CustomerMembership`/`ClassPassPurchase` eligibility, `MembershipCheckin` for open-gym. No generic `checkins` table.
+- **Payment-completed rule** (service `bookingIsPaid()`): credit/comp methods → paid; else a completed `Payment` row → paid; else confirmed booking with `price_paid > 0` → paid; else unpaid (blockable via `block_unpaid_checkin`).
+- **Affected Areas:** `client_qr_codes` migration + `ClientQrCode` model; `Client` QR helpers; `app/Services/DigitalCheckinService.php`; `Host/DigitalCheckinController.php` + `digital-checkin.*` routes (gated `bookings.attendance`/`_own`); `resources/js/components/DigitalCheckin.vue` (+ `apps/digital-checkin.js`, `apps/client-qr.js`) using **html5-qrcode** + **qrcode** (npm, no CDN); client profile QR card; Check-In Settings (`PoliciesController@checkin/updateCheckin`, `settings/check-in.blade.php`, new Host policy keys `enable_digital_checkin`/`enable_qr_checkin`/`allow_staff_override`/`block_unpaid_checkin`); roster check-in method badge.
+- **Iteration 2 (planned):** `Api/V1/CheckinController` reuses `DigitalCheckinService::{resolveByToken,resolveEligibleOptions,checkIn}` over Sanctum for the Flutter staff app; member-portal QR display + QR-in-booking-email.
+- **Open Questions:** confirmed cash/"pay-at-studio" bookings (null `price_paid`) read as unpaid by default; per-host timezone for the check-in window; membership open-gym gating relies on plan `isOpenAccess()`/`qr_checkin_enabled`.
+
 <!-- Add feature plans below this line -->
 
 ---

@@ -23,6 +23,51 @@ class PoliciesController extends Controller
     }
 
     /**
+     * Show the Check-In Settings form.
+     */
+    public function checkin()
+    {
+        $host = auth()->user()->host;
+        $policies = array_merge(Host::defaultPolicies(), $host->policies ?? []);
+
+        return view('host.settings.check-in', [
+            'host' => $host,
+            'policies' => $policies,
+        ]);
+    }
+
+    /**
+     * Update Check-In Settings (digital/QR check-in + shared check-in window).
+     */
+    public function updateCheckin(Request $request)
+    {
+        $host = auth()->user()->host;
+
+        $validated = $request->validate([
+            'enable_digital_checkin' => 'boolean',
+            'enable_qr_checkin' => 'boolean',
+            'allow_self_checkin' => 'boolean',
+            'allow_staff_override' => 'boolean',
+            'block_unpaid_checkin' => 'boolean',
+            'self_checkin_window_minutes' => 'required|integer|min:0|max:240',
+            'self_checkin_late_minutes' => 'required|integer|min:0|max:240',
+        ]);
+
+        foreach ([
+            'enable_digital_checkin', 'enable_qr_checkin', 'allow_self_checkin',
+            'allow_staff_override', 'block_unpaid_checkin',
+        ] as $field) {
+            $validated[$field] = $request->boolean($field);
+        }
+
+        $host->policies = array_merge($host->policies ?? [], $validated);
+        $host->save();
+
+        return redirect()->route('settings.check-in')
+            ->with('success', 'Check-in settings updated successfully');
+    }
+
+    /**
      * Update policies settings (section-based)
      */
     public function update(Request $request)

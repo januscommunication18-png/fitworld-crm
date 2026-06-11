@@ -47,6 +47,7 @@ use App\Http\Controllers\Host\ClassSessionProgressController;
 use App\Http\Controllers\Host\WalkInController;
 use App\Http\Controllers\Host\PriceOverrideController;
 use App\Http\Controllers\Host\MembershipCheckinController;
+use App\Http\Controllers\Host\DigitalCheckinController;
 use App\Http\Controllers\Host\ScheduledMembershipController;
 use App\Http\Controllers\Host\SupportRequestController;
 use App\Http\Controllers\Api\QuestionnaireBuilderController;
@@ -85,6 +86,9 @@ Route::prefix('subscribe')->name('public.newsletter.')->group(function () {
     Route::post('/', [NewsletterSubscribeController::class, 'store'])->name('store');
     Route::get('/success', [NewsletterSubscribeController::class, 'success'])->name('success');
 });
+
+// Public Client Check-In QR image (token is the credential; ?dl=1 to download)
+Route::get('/checkin-qr/{token}', [\App\Http\Controllers\ClientQrController::class, 'show'])->name('checkin-qr.show');
 
 // Public Questionnaire Response Routes (no auth required)
 Route::prefix('q')->name('questionnaire.')->group(function () {
@@ -276,6 +280,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/clients/{id}/archive', [ClientController::class, 'archive'])->name('clients.archive')->where('id', '[0-9]+');
     Route::post('/clients/{id}/restore', [ClientController::class, 'restore'])->name('clients.restore')->where('id', '[0-9]+');
     Route::post('/clients/{id}/note', [ClientController::class, 'addNote'])->name('clients.note')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/send-qr', [ClientController::class, 'sendQr'])->name('clients.send-qr')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/send-app-invite', [ClientController::class, 'sendAppInvite'])->name('clients.send-app-invite')->where('id', '[0-9]+');
+    Route::post('/clients/{id}/regenerate-client-code', [ClientController::class, 'regenerateClientCode'])->name('clients.regenerate-client-code')->where('id', '[0-9]+');
     Route::post('/clients/{id}/convert-to-client', [ClientController::class, 'convertToClient'])->name('clients.convert-to-client')->where('id', '[0-9]+');
     Route::post('/clients/{id}/convert-to-member', [ClientController::class, 'convertToMember'])->name('clients.convert-to-member')->where('id', '[0-9]+');
     Route::post('/clients/{id}/clear-at-risk', [ClientController::class, 'clearAtRisk'])->name('clients.clear-at-risk')->where('id', '[0-9]+');
@@ -535,6 +542,14 @@ Route::middleware('auth')->group(function () {
     Route::post('/membership-checkin/{membershipCheckin}/checkout', [MembershipCheckinController::class, 'checkOut'])->name('membership-checkin.checkout');
     Route::get('/membership-checkin/{membershipPlan}/qr', [MembershipCheckinController::class, 'qrCheckin'])->name('membership-checkin.qr');
 
+    // Digital Check-In (QR scanner) — requires attendance permission
+    Route::middleware('permission:bookings.attendance,bookings.attendance_own')->group(function () {
+        Route::get('/digital-checkin', [DigitalCheckinController::class, 'index'])->name('digital-checkin.index');
+        Route::post('/digital-checkin/resolve', [DigitalCheckinController::class, 'resolve'])->name('digital-checkin.resolve');
+        Route::post('/digital-checkin/confirm', [DigitalCheckinController::class, 'confirm'])->name('digital-checkin.confirm');
+        Route::get('/digital-checkin/search', [DigitalCheckinController::class, 'searchClients'])->name('digital-checkin.search');
+    });
+
     // Walk-In Booking — requires bookings.create permission
     Route::middleware('permission:bookings.create')->group(function () {
         Route::get('/walk-in', [WalkInController::class, 'selectSession'])->name('walk-in.select');
@@ -784,6 +799,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:studio.policies')->group(function () {
         Route::get('/settings/locations/policies', [PoliciesController::class, 'index'])->name('settings.locations.policies');
         Route::put('/settings/locations/policies', [PoliciesController::class, 'update'])->name('settings.policies.update');
+        Route::get('/settings/check-in', [PoliciesController::class, 'checkin'])->name('settings.check-in');
+        Route::put('/settings/check-in', [PoliciesController::class, 'updateCheckin'])->name('settings.check-in.update');
     });
 
     // Location CRUD (parameterized routes must come AFTER specific routes)
@@ -846,6 +863,11 @@ Route::middleware('auth')->group(function () {
         // Settings - Member Portal
         Route::get('/settings/member-portal', [SettingsController::class, 'memberPortal'])->name('settings.member-portal');
         Route::put('/settings/member-portal', [SettingsController::class, 'updateMemberPortal'])->name('settings.member-portal.update');
+
+        // Settings - Branded Client App
+        Route::get('/settings/client-app', [SettingsController::class, 'clientApp'])->name('settings.client-app');
+        Route::put('/settings/client-app', [SettingsController::class, 'updateClientApp'])->name('settings.client-app.update');
+        Route::post('/settings/client-app/regenerate-token', [SettingsController::class, 'regenerateClientAppToken'])->name('settings.client-app.regenerate-token');
     });
 
     // Settings - Payments

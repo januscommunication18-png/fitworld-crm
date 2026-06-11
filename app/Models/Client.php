@@ -13,10 +13,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
 class Client extends Model implements AuthenticatableContract
 {
-    use HasFactory, Authenticatable, Notifiable;
+    use HasFactory, Authenticatable, HasApiTokens, Notifiable;
 
     // Status constants
     const STATUS_ACTIVE = 'active';
@@ -43,6 +44,7 @@ class Client extends Model implements AuthenticatableContract
         'first_name',
         'last_name',
         'email',
+        'client_code',
         'phone',
         'stripe_customer_id',
         'secondary_phone',
@@ -264,6 +266,85 @@ class Client extends Model implements AuthenticatableContract
     public function classPackPurchases(): HasMany
     {
         return $this->classPassPurchases();
+    }
+
+    /**
+     * Digital check-in QR codes (one active token per client).
+     */
+    public function qrCodes(): HasMany
+    {
+        return $this->hasMany(ClientQrCode::class);
+    }
+
+    public function activeQrCode(): ?ClientQrCode
+    {
+        return $this->qrCodes()->active()->first();
+    }
+
+    /**
+     * Return the client's active QR token, creating one if missing.
+     */
+    public function getOrCreateQrCode(): ClientQrCode
+    {
+        return $this->qrCodes()->firstOrCreate([
+            'host_id' => $this->host_id,
+            'status' => ClientQrCode::STATUS_ACTIVE,
+        ]);
+    }
+
+    /**
+     * Disable the current active token and issue a fresh one.
+     */
+    public function regenerateQrCode(): ClientQrCode
+    {
+        $this->qrCodes()->active()->update(['status' => ClientQrCode::STATUS_DISABLED]);
+
+        return $this->qrCodes()->create([
+            'host_id' => $this->host_id,
+            'status' => ClientQrCode::STATUS_ACTIVE,
+        ]);
+    }
+
+    /**
+     * Return the client's human-readable Client Token ID (the branded app
+     * login identifier, e.g. ZYS-SARAH-84922), generating it on first use.
+     */
+    public function getOrCreateClientCode(): string
+    {
+        if ($this->client_code) {
+            return $this->client_code;
+        }
+
+        return $this->regenerateClientCode();
+    }
+
+    /**
+     * Issue a fresh Client Token ID (replaces the previous one).
+     */
+    public function regenerateClientCode(): string
+    {
+        $host = $this->host ?? Host::find($this->host_id);
+        $prefix = $host?->getClientAppSetting('code_prefix')
+            ?: $host?->deriveClientCodePrefix()
+            ?: 'FIT';
+
+        $name = strtoupper(Str::ascii($this->first_name ?? ''));
+        $name = substr(preg_replace('/[^A-Z]/', '', $name), 0, 10) ?: 'MEMBER';
+
+        // Random digits with collision retry against the unique index;
+        // widen to 6 digits if 5 keeps colliding.
+        for ($attempt = 0; $attempt < 8; $attempt++) {
+            $digits = $attempt < 5 ? random_int(10000, 99999) : random_int(100000, 999999);
+            $code = "{$prefix}-{$name}-{$digits}";
+
+            if (! static::where('client_code', $code)->exists()) {
+                $this->update(['client_code' => $code]);
+
+                return $code;
+            }
+        }
+
+        throw new \RuntimeException('Unable to generate a unique client code.');
     }
 
     /**

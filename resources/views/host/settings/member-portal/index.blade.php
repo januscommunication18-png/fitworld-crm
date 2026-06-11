@@ -21,6 +21,18 @@
         <p class="text-base-content/60 mt-1">Manage client defaults and configure the member portal experience.</p>
     </div>
 
+    {{-- Branded Client App link --}}
+    <div class="bg-base-100 rounded-lg p-4 flex items-center gap-4">
+        <span class="icon-[tabler--device-mobile] size-8 text-primary shrink-0"></span>
+        <div class="flex-1">
+            <span class="font-semibold">Branded Client App</span>
+            <p class="text-sm text-base-content/60">Configure your studio's white-label mobile app — branding, onboarding slides, and the app token. Login method and member features below apply to the app too.</p>
+        </div>
+        <a href="{{ route('settings.client-app') }}" class="btn btn-primary btn-sm shrink-0">
+            <span class="icon-[tabler--settings] size-4"></span> Configure App
+        </a>
+    </div>
+
     <div class="accordion space-y-1.5" id="client-portal-accordion">
 
         {{-- ═══ 1. Client Defaults ═══ --}}

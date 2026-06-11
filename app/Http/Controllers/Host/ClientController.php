@@ -624,6 +624,7 @@ class ClientController extends Controller
 
         return view('host.clients.show', [
             'client' => $client,
+            'checkinQrCode' => $client->getOrCreateQrCode(),
             'customFields' => $customFields,
             'statuses' => Client::getStatuses(),
             'bookings' => $bookings,
@@ -929,6 +930,72 @@ class ClientController extends Controller
 
         return redirect()->route('clients.show', ['id' => $client->id, 'tab' => 'notes'])
             ->with('success', 'Note added successfully.');
+    }
+
+    /**
+     * Email the client their personal check-in QR code.
+     */
+    public function sendQr(int $id)
+    {
+        $client = Client::findOrFail($id);
+        $this->authorizeClient($client);
+
+        if (empty($client->email)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This client has no email address on file.',
+            ], 422);
+        }
+
+        \Illuminate\Support\Facades\Mail::to($client->email)
+            ->sendNow(new \App\Mail\ClientQrMail($client));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-in QR code sent to ' . $client->email . '.',
+        ]);
+    }
+
+    /**
+     * Email the client their Client ID for the branded mobile app.
+     */
+    public function sendAppInvite(int $id)
+    {
+        $client = Client::findOrFail($id);
+        $this->authorizeClient($client);
+
+        if (empty($client->email)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This client has no email address on file.',
+            ], 422);
+        }
+
+        $code = $client->getOrCreateClientCode();
+
+        \Illuminate\Support\Facades\Mail::to($client->email)
+            ->sendNow(new \App\Mail\ClientAppInviteMail($client, $code));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'App invite sent to ' . $client->email . '.',
+            'client_code' => $code,
+        ]);
+    }
+
+    /**
+     * Issue a fresh Client ID (the old one stops working immediately).
+     */
+    public function regenerateClientCode(int $id)
+    {
+        $client = Client::findOrFail($id);
+        $this->authorizeClient($client);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Client ID regenerated.',
+            'client_code' => $client->regenerateClientCode(),
+        ]);
     }
 
     /**

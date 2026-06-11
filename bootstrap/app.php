@@ -8,6 +8,8 @@ use App\Http\Middleware\AuthenticateMember;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\CheckSecurityCode;
 use App\Http\Middleware\EnforceNavPermission;
+use App\Http\Middleware\EnsureClientOfHost;
+use App\Http\Middleware\ResolveClientAppHost;
 use App\Http\Middleware\ResolveStudioContext;
 use App\Http\Middleware\ResolveSubdomainHost;
 use App\Http\Middleware\SetCurrentHost;
@@ -38,6 +40,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Support\Facades\Route::middleware('api')
                 ->prefix('api/v1')
                 ->group(base_path('routes/mobile.php'));
+
+            // FitStudioHQ branded client (consumer) app API — /api/client/v1.
+            \Illuminate\Support\Facades\Route::middleware('api')
+                ->prefix('api/client/v1')
+                ->group(base_path('routes/client.php'));
 
             // Load API routes with proper prefix and middleware
             \Illuminate\Support\Facades\Route::middleware('api')
@@ -78,6 +85,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => CheckPermission::class,
             'auth.member' => AuthenticateMember::class,
             'studio.context' => ResolveStudioContext::class,
+            'client.app' => ResolveClientAppHost::class,
+            'client.scope' => EnsureClientOfHost::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

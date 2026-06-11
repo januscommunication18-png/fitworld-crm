@@ -720,6 +720,33 @@
 
                 {{-- Sidebar --}}
                 <div class="space-y-6">
+                    {{-- Check-In QR Code --}}
+                    <div class="card bg-base-100">
+                        <div class="card-body p-4 items-center text-center">
+                            <h2 class="card-title text-base self-start">
+                                <span class="icon-[tabler--qrcode] size-5 text-primary"></span>
+                                Check-In QR
+                            </h2>
+                            <canvas id="client-checkin-qr"
+                                    class="mt-2 rounded-lg border border-base-200 p-2"
+                                    data-token="{{ $checkinQrCode->qr_token }}"></canvas>
+                            <p class="text-xs text-base-content/60 mt-2">
+                                Scan at the studio to check in. This code is unique to {{ $client->first_name }}.
+                            </p>
+                            <div class="flex gap-2 mt-3 w-full">
+                                <a href="{{ route('checkin-qr.show', ['token' => $checkinQrCode->qr_token]) }}?dl=1"
+                                   class="btn btn-soft btn-sm flex-1" download>
+                                    <span class="icon-[tabler--download] size-4"></span> Download
+                                </a>
+                                <button type="button" id="send-qr-btn" class="btn btn-primary btn-sm flex-1"
+                                        onclick="sendClientQr()">
+                                    <span class="icon-[tabler--mail] size-4"></span> Send to client
+                                </button>
+                            </div>
+                            <code class="text-[10px] text-base-content/40 break-all mt-2">{{ $checkinQrCode->qr_token }}</code>
+                        </div>
+                    </div>
+
                     {{-- Client Score Card --}}
                     <div class="card bg-base-100">
                         <div class="card-body p-4">
@@ -2460,6 +2487,10 @@
 @endforeach
 @endif
 
+@push('head')
+    @vite(['resources/js/apps/client-qr.js'])
+@endpush
+
 @push('scripts')
 <script>
 // Simple Toast Notification
@@ -2482,6 +2513,31 @@ function copyLink(url) {
     navigator.clipboard.writeText(url).then(() => {
         showToast('Link copied to clipboard!');
     });
+}
+
+async function sendClientQr() {
+    const btn = document.getElementById('send-qr-btn');
+    if (!btn) return;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Sending...';
+    try {
+        const response = await fetch('{{ route('clients.send-qr', $client->id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+        });
+        const data = await response.json();
+        showToast(data.message, data.success ? 'success' : 'error');
+    } catch (e) {
+        showToast('Failed to send QR code. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
+    }
 }
 
 // Handle send questionnaire form

@@ -606,9 +606,14 @@
                                                 @if($booking->status === 'cancelled')
                                                     <span class="text-base-content/30">-</span>
                                                 @elseif($booking->isCheckedIn())
-                                                    <div class="flex items-center justify-center gap-1 text-success">
-                                                        <span class="icon-[tabler--circle-check-filled] size-5"></span>
-                                                        <span class="text-xs">{{ $booking->checked_in_at->format('g:i A') }}</span>
+                                                    <div class="flex flex-col items-center justify-center gap-0.5 text-success">
+                                                        <div class="flex items-center gap-1">
+                                                            <span class="icon-[tabler--circle-check-filled] size-5"></span>
+                                                            <span class="text-xs">{{ $booking->checked_in_at->format('g:i A') }}</span>
+                                                        </div>
+                                                        @if($booking->checked_in_method)
+                                                            <span class="badge badge-soft badge-xs">{{ \App\Models\Booking::getCheckInMethods()[$booking->checked_in_method] ?? $booking->checked_in_method }}</span>
+                                                        @endif
                                                     </div>
                                                 @else
                                                     <span class="icon-[tabler--circle-dashed] size-5 text-base-content/30"></span>

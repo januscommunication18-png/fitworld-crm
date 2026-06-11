@@ -771,6 +771,94 @@ class SettingsController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────
+    // Branded Client App
+    // ─────────────────────────────────────────────────────────────
+
+    public function clientApp()
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        if (!auth()->user()->hasPermission('studio.client_settings', $host)) {
+            abort(403, 'You do not have permission to manage Client & Portal settings.');
+        }
+
+        $settings = array_merge(
+            \App\Models\Host::defaultClientAppSettings(),
+            $host->client_app_settings ?? []
+        );
+
+        if (empty($settings['code_prefix'])) {
+            $settings['code_prefix'] = $host->deriveClientCodePrefix();
+        }
+
+        return view('host.settings.client-app.index', compact('host', 'settings'));
+    }
+
+    public function updateClientApp(Request $request)
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        if (!auth()->user()->hasPermission('studio.client_settings', $host)) {
+            abort(403, 'You do not have permission to manage Client & Portal settings.');
+        }
+
+        $validated = $request->validate([
+            'enabled' => 'boolean',
+            'code_prefix' => 'required|string|min:2|max:5|regex:/^[A-Z]+$/',
+            'app_display_name' => 'nullable|string|max:60',
+            'primary_color' => 'nullable|regex:/^#[0-9A-Fa-f]{6}$/',
+            'theme' => 'nullable|in:light,dark,auto',
+            'support_email' => 'nullable|email|max:255',
+            'support_phone' => 'nullable|string|max:50',
+            'onboarding_slides' => 'nullable|array|max:5',
+            'onboarding_slides.*.title' => 'required|string|max:80',
+            'onboarding_slides.*.body' => 'nullable|string|max:300',
+        ]);
+
+        // Client codes embed the prefix, so it must be unique across studios.
+        $prefixTaken = \App\Models\Host::where('id', '!=', $host->id)
+            ->where('client_app_settings->code_prefix', $validated['code_prefix'])
+            ->exists();
+        if ($prefixTaken) {
+            return response()->json([
+                'success' => false,
+                'message' => "The prefix \"{$validated['code_prefix']}\" is already used by another studio.",
+            ], 422);
+        }
+
+        $validated['enabled'] = $request->boolean('enabled');
+        $validated['onboarding_slides'] = array_values($validated['onboarding_slides'] ?? []);
+
+        $host->update(['client_app_settings' => $validated]);
+
+        // First enable issues the app token automatically.
+        if ($validated['enabled'] && !$host->client_app_token) {
+            $host->generateClientAppToken();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Client app settings updated successfully.',
+            'client_app_token' => $host->client_app_token,
+        ]);
+    }
+
+    public function regenerateClientAppToken()
+    {
+        $host = auth()->user()->currentHost() ?? auth()->user()->host;
+
+        if (!auth()->user()->hasPermission('studio.client_settings', $host)) {
+            abort(403, 'You do not have permission to manage Client & Portal settings.');
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'App token regenerated. Existing app builds must be updated.',
+            'client_app_token' => $host->generateClientAppToken(),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // Payments
     // ─────────────────────────────────────────────────────────────
 

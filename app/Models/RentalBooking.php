@@ -66,12 +66,13 @@ class RentalBooking extends Model
         });
 
         static::created(function ($booking) {
-            // Log initial status
+            // Log initial status. The authenticated principal may be a
+            // Client (branded app); the log's updated_by references users.
             $booking->statusLogs()->create([
                 'from_status' => null,
                 'to_status' => $booking->fulfillment_status,
                 'notes' => 'Rental request created',
-                'updated_by' => auth()->id(),
+                'updated_by' => auth()->user() instanceof User ? auth()->id() : null,
             ]);
         });
     }

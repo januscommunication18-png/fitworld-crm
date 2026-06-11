@@ -159,6 +159,11 @@
                     <li><a href="{{ url('/schedule-planner') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('schedule-planner*') ? 'bg-primary/10 text-primary' : '' }}">
                         <span class="icon-[tabler--calendar-repeat] size-4 mr-2"></span>Schedule Planner
                     </a></li>
+                    @if($user->hasPermission('bookings.attendance') || $user->hasPermission('bookings.attendance_own'))
+                    <li><a href="{{ url('/digital-checkin') }}" class="block px-3 py-1.5 rounded-md text-sm text-base-content/70 hover:bg-base-content/5 hover:text-base-content {{ request()->is('digital-checkin') ? 'bg-primary/10 text-primary' : '' }}">
+                        <span class="icon-[tabler--qrcode] size-4 mr-2"></span>Digital Check-In
+                    </a></li>
+                    @endif
                     @endif
                     {{-- 1:1 Meetings --}}
                     @if($showOneOnOneMenu)

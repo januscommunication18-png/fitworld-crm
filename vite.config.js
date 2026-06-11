@@ -19,6 +19,8 @@ export default defineConfig({
                 'resources/js/layout.js',
                 'resources/js/apps/signup.js',
                 'resources/js/apps/dashboard.js',
+                'resources/js/apps/digital-checkin.js',
+                'resources/js/apps/client-qr.js',
                 'resources/js/questionnaire-builder.js',
                 'resources/js/schedule-calendar.js',
             ],
